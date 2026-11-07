@@ -4,11 +4,12 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
 
 import numpy as np
 from PIL import Image
-from radar import zoom_ville, assembler_gif
+from radar import zoom_ville, assembler_gif, atlas_gif
 
 
 class TestRadarZoom(unittest.TestCase):
@@ -63,6 +64,38 @@ class TestRadarZoom(unittest.TestCase):
         metadata=json.loads((self.root / 'zoom.json').read_text())
         self.assertEqual(metadata['intervalles_minutes'], [5.0]*7)
         self.assertFalse(metadata['diffusion_discord_autorisee'])
+
+    def test_atlas_deux_grilles_recentres_recadrables(self):
+        # Test de l'atlas diffuseur avec horodatage proche du temps reel.
+        now=datetime.now(timezone.utc).replace(second=0,microsecond=0)
+        stamps=[now-timedelta(minutes=10),now-timedelta(minutes=5)]
+        source=[]
+        for k,t in enumerate(stamps):
+            image=np.zeros((1536,1536),dtype=np.float32)
+            image[640+k*10:680+k*10,620:670]=25+k*8
+            label=t.strftime('%Y-%m-%dT%H-%M-%SZ')
+            np.savez_compressed(
+                self.grids/('radar-grid-'+label+'.npz'),
+                reflectivite=image,x0_m=-664972.4748,y0_m=1009030.6272,
+                dx_m=1000.0,dy_m=1000.0,
+                proj4='+proj=lcc +lat_1=45 +lat_0=45 +lon_0=0 +datum=WGS84 +units=m +no_defs',
+                observation_utc=t.isoformat())
+            source.append(t.strftime('%Y-%m-%dT%H:%M:%SZ'))
+        (self.root/'atlas-times.json').write_text(json.dumps(source))
+        argv=['atlas_gif.py','--dossier-grilles',str(self.grids),
+              '--horodatages',str(self.root/'atlas-times.json'),
+              '--sortie',str(self.root/'atlas.gif'),
+              '--manifest',str(self.root/'radar-atlas.json')]
+        with patch.object(sys,'argv',argv),patch.object(atlas_gif,'LAYERS',[]):
+            atlas_gif.main()
+        with Image.open(self.root/'atlas.gif') as im:
+            self.assertEqual(im.n_frames,2)
+            self.assertEqual(im.size,(1600,1600))
+        m=json.loads((self.root/'radar-atlas.json').read_text())
+        self.assertEqual(m['nombre_images'],2)
+        self.assertEqual(m['xmin'],-940000)
+        self.assertEqual(m['xmax'],940000)
+        self.assertFalse(m['georeferencement_valide'])
 
     def test_geometries_incoherentes_refusees(self):
         self.write_grid(0)
