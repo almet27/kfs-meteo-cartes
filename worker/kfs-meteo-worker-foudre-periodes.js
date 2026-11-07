@@ -893,6 +893,10 @@ async function foudreFond(canvas,city){
         let last=null;
         for(const pair of ring){
           if(!pair||pair.length<2)continue;
+          // Écarter les points hors secteur, afin de réduire le coût CPU.
+          const dx=Math.abs(Number(pair[0])-city.lon);
+          const dy=Math.abs(Number(pair[1])-city.lat);
+          if(dx>2.2||dy>1.5){last=null;continue;}
           const p=foudreXY(city,pair[1],pair[0]);
           if(last)canvas.line(last[0],last[1],p[0],p[1],F_COLORS.grid);
           last=p;
@@ -906,12 +910,15 @@ function foudreConcat(...arr){
   let i=0;for(const x of arr){result.set(x,i);i+=x.length;}return result;
 }
 function foudreU32(n){return new Uint8Array([n>>>24&255,n>>>16&255,n>>>8&255,n&255]);}
+const FOUDRE_CRC_TABLE=Uint32Array.from({length:256},(_,i)=>{
+  let c=i;
+  for(let k=0;k<8;k++)c=(c>>>1)^((c&1)?0xedb88320:0);
+  return c>>>0;
+});
 function foudreCrc(data){
   let crc=0xffffffff;
-  for(const value of data){
-    crc^=value;
-    for(let i=0;i<8;i++)crc=(crc>>>1)^((crc&1)?0xedb88320:0);
-  }
+  for(let i=0;i<data.length;i++)
+    crc=FOUDRE_CRC_TABLE[(crc^data[i])&255]^(crc>>>8);
   return (crc^0xffffffff)>>>0;
 }
 function foudreChunk(type,payload){
@@ -1183,8 +1190,8 @@ async function completeFoudre(interaction,rawCity,env,rawPeriode=30){
     const summary=periode===5?null:
       settled[1].status==="fulfilled"?settled[1].value:
       {state:"error",message:String(settled[1].reason?.message||settled[1].reason)};
-    if(!strikes&&periode===5)
-      throw Error("Derniers impacts Xweather indisponibles : "+mapError);
+    // Même sans détection d'impacts, conserver la carte du secteur.
+    // Distinguer une réponse vide d'une erreur d'accès à la source.
     const heure=new Date(strikes?.collecte||summary?.collecte||Date.now())
       .toLocaleString("fr-FR",{timeZone:"Europe/Paris",
         day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
@@ -1206,7 +1213,7 @@ async function completeFoudre(interaction,rawCity,env,rawPeriode=30){
       if(strikes.limite)message+="⚠️ Liste récente limitée à 1 000 décharges ; compteurs partiels.\n";
       if(strikes.cache)message+="_Carte basée sur un cache de 90 secondes au maximum._\n";
       if(strikes.pulses.length===0)
-        message+="Aucun impact nuage-sol récent détecté ; la carte n'est pas générée.\n";
+        message+="Aucun impact nuage-sol récent détecté : carte sans impact.\n";
     }else{
       message+="⚠️ **Carte 5 min indisponible** : "+mapError+
         ". Les statistiques ne sont pas une carte historique.\n";
@@ -1214,16 +1221,15 @@ async function completeFoudre(interaction,rawCity,env,rawPeriode=30){
     message+="_Source : [Vaisala Xweather](https://www.xweather.com/)"+
       " · 30 min à 24 h = agrégats, sans positions historiques._";
     if(message.length>1950)message=message.slice(0,1940);
-    // Le rendu PNG de la carte est distinct des statistiques ; son échec n'annule pas le bilan.
-    if(strikes?.pulses?.length){
-      try{
-        const {png}=await foudreImage(city,strikes.pulses);
-        await foudreMessage(interaction,message,png);
-        return;
-      }catch(e){
-        console.error("KFS /foudre rendu PNG",String(e));
-        message+="\n⚠️ Carte PNG non générée : statistiques ci-dessus préservées.";
-      }
+    // Toujours envoyer la carte du secteur, y compris lorsque le nombre d'impacts est zéro.
+    // Si l'API est en échec, ne pas présenter ce fond vide comme un ciel sans foudre.
+    try{
+      const {png}=await foudreImage(city,strikes?.pulses||[]);
+      await foudreMessage(interaction,message,png);
+      return;
+    }catch(e){
+      console.error("KFS /foudre rendu PNG",String(e));
+      message+="\n⚠️ Carte PNG indisponible : "+String(e.message||e).slice(0,100);
     }
     await foudreMessage(interaction,message,null);
   }catch(e){
