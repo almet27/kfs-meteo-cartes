@@ -522,6 +522,13 @@ jobs:
                   ha='center',fontsize=9,color='#b91c1c')
               fig_candidate.tight_layout(rect=[0,.04,1,1])
               fig_candidate.savefig(work/'radar-candidat-sans-decalage.png')
+              # Copie horodatee pour la future animation : fichier diagnostic,
+              # pas une autorisation de diffusion.
+              if observation_utc:
+                  from datetime import datetime as _dt
+                  stamp=_dt.fromisoformat(observation_utc).strftime('%Y-%m-%dT%H-%M-%SZ')
+                  fig_candidate.savefig(work/('radar-candidat-'+stamp+'.png'))
+                  print('IMAGE RADAR HORODATEE:',stamp,flush=True)
               (work/'radar-candidat-georeferencement.json').write_text(
                   json.dumps({
                       'observation_utc':observation_utc,
