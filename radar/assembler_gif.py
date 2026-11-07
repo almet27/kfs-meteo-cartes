@@ -28,8 +28,10 @@ def main():
     parser.add_argument("--duree-ms", type=int, default=650)
     parser.add_argument("--validation-confirmee", action="store_true",
                         help="A utiliser UNIQUEMENT apres validation du georeferencement")
+    parser.add_argument("--diagnostic", action="store_true",
+                        help="GIF de test avec filigrane NON VALIDE, jamais pour diffusion")
     args = parser.parse_args()
-    if not args.validation_confirmee:
+    if args.diagnostic == args.validation_confirmee:\n        parser.error("Choisir exactement un mode : --diagnostic OU --validation-confirmee.")
         parser.error("Georeferencement non confirme : refus de creer un GIF destine a la diffusion.")
     if len(args.images) < 2:
         parser.error("Il faut au moins deux observations distinctes pour une animation.")
@@ -54,7 +56,7 @@ def main():
         stamp = timestamp.strftime("%d/%m/%Y %H:%M UTC")
         draw.rectangle((8, 8, 265, 39), fill="#172b40")
         draw.text((15, 16), stamp, fill="white")
-        frames.append(frame)
+        if args.diagnostic:\n            warning = "RADAR NON VALIDE - DIAGNOSTIC UNIQUEMENT"\n            draw.rectangle((8, 46, 420, 79), fill="#8b1723")\n            draw.text((15, 55), warning, fill="white")\n        frames.append(frame)
     args.sortie.parent.mkdir(parents=True, exist_ok=True)
     frames[0].save(args.sortie, save_all=True, append_images=frames[1:],
                    duration=args.duree_ms, loop=0, optimize=True)
