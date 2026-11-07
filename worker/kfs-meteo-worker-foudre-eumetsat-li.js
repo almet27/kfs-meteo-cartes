@@ -1303,7 +1303,7 @@ async function completeFoudre(interaction,rawCity,env,rawPeriode=30){
       message+="📊 **Statistiques au sol : Vaisala Xweather**\n"+
         foudreSummaryLines(summary,periode)+"\n";
     message+="🛰️ **Carte : éclairs optiques Meteosat / EUMETSAT**\n"+
-      "Période cartographiée : **"+FOUDRE_PERIODES[mapWindow]+"**"+
+      "Période cartographiée : **"+(mapWindow===120?"2 heures":FOUDRE_PERIODES[mapWindow])+"**"+
       (mapWindow!==periode?" (maximum 2 h d'archive)":"")+".\n";
     if(li?.available){
       message+="✨ Éclairs satellitaires localisés dans les produits disponibles : **"+
