@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 import numpy as np
 from PIL import Image
-from radar import zoom_ville
+from radar import zoom_ville, assembler_gif
 
 
 class TestRadarZoom(unittest.TestCase):
@@ -61,6 +61,25 @@ class TestRadarZoom(unittest.TestCase):
         self.write_grid(0)
         self.run_zoom()
         self.assertFalse((self.root / 'zoom.gif').exists())
+
+
+    def test_lacune_20_minutes_acceptee_seulement_en_diagnostic(self):
+        source = []
+        for label, couleur in [('11-35-00', '#215c91'), ('11-55-00', '#9b4120')]:
+            path = self.root / f'radar-candidat-2026-11-07T{label}Z.png'
+            Image.new('RGB', (160, 120), couleur).save(path)
+            source.append(str(path))
+        params = ['assembler_gif.py', '--diagnostic', '--sortie',
+                  str(self.root / 'test-gap.gif')] + source
+        with patch.object(sys, 'argv', params), self.assertRaises(SystemExit):
+            assembler_gif.main()  # seuil par defaut : 15 minutes
+        self.assertFalse((self.root / 'test-gap.gif').exists())
+        params[2:2] = ['--intervalle-max-minutes', '25']
+        with patch.object(sys, 'argv', params):
+            assembler_gif.main()
+        with Image.open(self.root / 'test-gap.gif') as gif:
+            self.assertEqual(gif.n_frames, 2)
+            self.assertGreaterEqual(gif.info['duration'], 1200)
 
 
 if __name__ == '__main__':
