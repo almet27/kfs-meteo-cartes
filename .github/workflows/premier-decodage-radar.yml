@@ -286,6 +286,26 @@ jobs:
               adjacent_j=bool(scan&32)
               dx=float(m['Pixel size on horizontal - 1'][0])
               dy=float(m['Pixel size on horizontal - 2'][0])
+              # Ne pas accepter une observation obsolette ou une grille impossible.
+              if observation_utc is None:
+                  raise RuntimeError('Absence de date observation dans le BUFR')
+              obs_dt=datetime.fromisoformat(observation_utc.replace('Z','+00:00'))
+              age_min=(datetime.fromisoformat(captured_utc)-obs_dt).total_seconds()/60
+              if not -5 <= age_min <= 45:
+                  raise RuntimeError(f'Observation radar non recente : age {age_min:.1f} minutes')
+              if (nx,ny)!=(1536,1536) or not (500 <= dx <= 2000 and 500 <= dy <= 2000):
+                  raise RuntimeError(f'Dimensions ou pas radar inattendus : {nx}x{ny}, {dx}x{dy} m')
+              # Grille georeferencee partagee avec le moteur du zoom local.
+              # La transformation reste une HYPOTHESE non validee independamment.
+              radar_stamp=obs_dt.strftime('%Y-%m-%dT%H-%M-%SZ')
+              np.savez_compressed(
+                  work/('radar-grid-'+radar_stamp+'.npz'),
+                  reflectivite=arr.astype(np.float32),
+                  x0_m=np.float64(x0),y0_m=np.float64(y0),
+                  dx_m=np.float64(dx),dy_m=np.float64(dy),
+                  proj4=crs.to_proj4(),observation_utc=obs_dt.isoformat())
+              print('GRILLE RADAR GEOREFERENCÉE (diagnostic):',
+                    'radar-grid-'+radar_stamp+'.npz',flush=True)
               print('SCAN WMO i,j,adjacent-j:',scan_i,scan_j,adjacent_j,flush=True)
               # Diagnostic metadonnees avant toute nouvelle hypothese de projection.
               for key,values in m.items():
@@ -632,6 +652,7 @@ jobs:
           name: premiere-carte-radar
           path: |
             radar-sortie/*.png
+            radar-sortie/radar-grid-*.npz
             radar-sortie/audit-georeferencement.json
             radar-sortie/horodatage-observation-radar.json
             radar-sortie/noyaux-radar-hypotheses.geojson
