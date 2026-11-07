@@ -331,6 +331,52 @@ jobs:
               fig5.tight_layout()
               fig5.savefig(work/'diagnostic-scan-bufr-france.png')
               print('SCAN DIAGNOSTIC GENERE:',work/'diagnostic-scan-bufr-france.png',flush=True)
+              # Comparaison utile: les quatre arrangements des pixels sur la
+              # SEULE emprise couvrant les 34 stations. Le mode 224 indique
+              # l'ordre de parcours, mais ne suffit pas a prouver l'orientation
+              # geographique dans ce produit local Meteo-France.
+              fig6,axes6=plt.subplots(2,2,figsize=(15,14),dpi=115)
+              variants=[
+                  ('Lignes adjacentes / sans retournement',arr),
+                  ('Colonnes adjacentes / sans retournement',canonical),
+                  ('Lignes adjacentes / retournement 180',arr[::-1,::-1]),
+                  ('Colonnes adjacentes / retournement 180',canonical[::-1,::-1]),
+              ]
+              coast_features=[]
+              for label,url,color,width in layers:
+                  try:
+                      features=json.loads(get(url)).get('features',[])
+                      coast_features.append((features,color,width))
+                  except Exception as exc:
+                      print('AVERTISSEMENT fond de carte variantes:',label,str(exc)[:120],flush=True)
+              for ax,(name,values) in zip(axes6.flat,variants):
+                  ax.set_facecolor('#edf2f5')
+                  pixels=np.ma.masked_where(~(np.isfinite(values)&(values>=0)&(values<=70)),values)
+                  ax.imshow(pixels,extent=[x0,x0+nx*dx,y0-ny*dy,y0],
+                            origin='upper',cmap=cmap,vmin=0,vmax=55,
+                            interpolation='nearest',alpha=.85,zorder=2)
+                  ax3=ax
+                  for features,color,width in coast_features:
+                      for feature in features:
+                          geom=feature.get('geometry') or {}
+                          draw_geometry(geom.get('coordinates',[]),geom.get('type'),forward,color,width)
+                  for city,(lon,lat) in cities.items():
+                      cx,cy=forward.transform(lon,lat)
+                      ax.plot(cx,cy,'ko',markersize=2.5,zorder=5)
+                      ax.text(cx+8000,cy+8000,city,fontsize=8,
+                              path_effects=[pe.withStroke(linewidth=2,foreground='white')])
+                  ax.set_xlim(-550000,650000)
+                  ax.set_ylim(-250000,850000)
+                  ax.set_aspect('equal')
+                  ax.grid(alpha=.15)
+                  ax.set_title(name,fontsize=11)
+              ax3=old_ax3
+              fig6.suptitle('Mosaïque radar / France : 4 ordres de pixels sur emprise NW — NON VALIDES',
+                            fontsize=14)
+              fig6.tight_layout()
+              fig6.savefig(work/'diagnostic-quatre-ordres-pixels-fond-carte.png')
+              print('COMPARAISON PIXELS/FOND GENEREE :',
+                    work/'diagnostic-quatre-ordres-pixels-fond-carte.png',flush=True)
               ax3.plot(bx,by,'*',color='#d5274d',markersize=15,zorder=6)
               ax3.set_xlim(bx-150000,bx+150000)
               ax3.set_ylim(by-150000,by+150000)
