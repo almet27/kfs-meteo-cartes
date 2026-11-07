@@ -1,0 +1,43 @@
+name: Decoder BUFR radar Meteo-France
+
+on:
+  workflow_dispatch:
+
+jobs:
+  decoder:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Installer ecCodes et inspecter BUFR
+        env:
+          METEOFRANCE_API_KEY: ${{ secrets.METEOFRANCE_API_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libeccodes-tools
+          python3 - <<'PY'
+          import json,os,urllib.request,urllib.parse,gzip
+          base='https://public-api.meteofrance.fr/public/DPRadar/v1/'
+          h={'apikey':os.environ['METEOFRANCE_API_KEY']}
+          def fetch(u):
+              with urllib.request.urlopen(urllib.request.Request(u,headers=h),timeout=90) as r:return r.read()
+          doc=json.loads(fetch(base+'mosaiques/METROPOLE/observations/REFLECTIVITE'))
+          links=[l for l in doc.get('links',[]) if l.get('type')=='application/octet-stream+gzip']
+          if not links:raise SystemExit('Produit gzip introuvable')
+          url=urllib.parse.urljoin(base,links[0]['href'])
+          if urllib.parse.urlparse(url).hostname!='public-api.meteofrance.fr':raise SystemExit('Domaine inattendu')
+          data=gzip.decompress(fetch(url))
+          print('Taille BUFR:',len(data),'octets')
+          if not data.startswith(b'BUFR'):raise SystemExit('Signature BUFR absente')
+          open('/tmp/radar.bufr','wb').write(data)
+          PY
+          echo "=== Informations generales ==="
+          bufr_ls /tmp/radar.bufr | head -n 35 || true
+          echo "=== Descripteurs et dimensions ==="
+          for key in edition centre masterTableNumber numberOfSubsets compressedData unexpandedDescriptors; do
+            echo "Cle: $key"
+            bufr_get -p "$key" /tmp/radar.bufr 2>&1 | head -c 1200 || true
+            echo
+          done
+          echo "=== Structure des champs (extrait) ==="
+          bufr_dump -O /tmp/radar.bufr 2>&1 | head -n 85 || true
