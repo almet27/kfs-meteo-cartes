@@ -1,6 +1,12 @@
 name: Premier decodage radar Meteo-France
 on:
   workflow_dispatch:
+  schedule:
+    # Un cliche toutes les 10 minutes, en UTC (GitHub peut demarrer en retard).
+    - cron: '*/10 * * * *'
+concurrency:
+  group: radar-acquisition
+  cancel-in-progress: false
 jobs:
   decoder:
     runs-on: ubuntu-latest
