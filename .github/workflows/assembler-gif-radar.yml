@@ -90,10 +90,11 @@ jobs:
           import json,subprocess,sys
           images=sorted(Path('radar-historique').glob('radar-candidat-*.png'))
           pairs=[(datetime.strptime(p.stem.removeprefix('radar-candidat-'),'%Y-%m-%dT%H-%M-%SZ'),p) for p in images]
-          # Garder la derniere serie contigue, sans trou de plus de 15 min.
+          # Diagnostic : accepter exceptionnellement 25 min, avec avertissement visible dans le GIF.
+          # Le mode diffusion valide reste limite a 15 min.
           selected=[]
           for t,p in pairs:
-              if selected and (t-selected[-1][0]).total_seconds()>900:
+              if selected and (t-selected[-1][0]).total_seconds()>1500:
                   selected=[]
               selected.append((t,p))
           selected=selected[-8:]
@@ -114,6 +115,7 @@ jobs:
               Path('radar-sortie/diagnostic-assemblage.txt').write_text('Images trouvees : '+str(len(images))+'\\nObservations continues : '+str(len(selected))+'\\n')
               sys.exit(0)
           command=[sys.executable,'radar/assembler_gif.py','--diagnostic',
+                   '--intervalle-max-minutes','25',
                    '--sortie','radar-sortie/radar-diagnostic.gif']
           command.extend(str(p) for _,p in selected)
           print('Assemblage de',len(selected),'observations',flush=True)
