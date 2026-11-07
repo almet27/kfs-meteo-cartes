@@ -485,6 +485,58 @@ jobs:
                   encoding='utf-8')
               print('NOYAUX GEOJSON:',len(echo_features),'positions candidates',
                     flush=True)
+              # Candidat explicite : pas de decalage manuel, pas de retournement.
+              # Il reste NON VALIDE jusqu'a comparaison geographique quantitative.
+              candidate=arr
+              candidate_mask=np.ma.masked_where(
+                  ~(np.isfinite(candidate)&(candidate>=0)&(candidate<=70)),
+                  candidate)
+              fig_candidate,ax_candidate=plt.subplots(figsize=(11,10),dpi=135)
+              ax_candidate.set_facecolor('#edf2f5')
+              ax_candidate.imshow(candidate_mask,
+                  extent=[x0,x0+nx*dx,y0-ny*dy,y0],
+                  origin='upper',cmap=cmap,vmin=0,vmax=55,
+                  interpolation='nearest',alpha=.84,zorder=2)
+              ax3=ax_candidate
+              for features,color,width in coast_features:
+                  for feature in features:
+                      geom=feature.get('geometry') or {}
+                      draw_geometry(geom.get('coordinates',[]),geom.get('type'),
+                                    forward,color,width)
+              for city,(lon,lat) in cities.items():
+                  px,py=forward.transform(lon,lat)
+                  ax_candidate.plot(px,py,'ko',markersize=2.5,zorder=5)
+                  ax_candidate.text(px+7000,py+7000,city,fontsize=8,
+                                    path_effects=[pe.withStroke(
+                                        linewidth=2,foreground='white')])
+              ax3=old_ax3
+              ax_candidate.set_xlim(-550000,650000)
+              ax_candidate.set_ylim(-250000,850000)
+              ax_candidate.set_aspect('equal')
+              ax_candidate.set_title(
+                  'Radar candidat : lignes sans retournement — NON VALIDE',
+                  fontsize=12)
+              fig_candidate.text(.5,.015,
+                  'Observation UTC : '+str(observation_utc)+
+                  ' | Comparaison independante requise',
+                  ha='center',fontsize=9,color='#b91c1c')
+              fig_candidate.tight_layout(rect=[0,.04,1,1])
+              fig_candidate.savefig(work/'radar-candidat-sans-decalage.png')
+              (work/'radar-candidat-georeferencement.json').write_text(
+                  json.dumps({
+                      'observation_utc':observation_utc,
+                      'orientation_candidate':'lignes_adjacentes_sans_retournement',
+                      'projection_proj4':crs.to_proj4(),
+                      'origine_x_m':x0,'origine_y_m':y0,
+                      'pas_x_m':dx,'pas_y_m':dy,
+                      'largeur_pixels':nx,'hauteur_pixels':ny,
+                      'retournement':False,'transposition':False,
+                      'decalage_manuel_x_m':0,'decalage_manuel_y_m':0,
+                      'validation_externe':'PROVISOIRE',
+                      'diffusion_discord_autorisee':False
+                  },indent=2,ensure_ascii=False),encoding='utf-8')
+              print('RADAR CANDIDAT: sans decalage, diffusion interdite avant validation',
+                    flush=True)
               # Quatre hypotheses sur la MEME zone de Bourth. Aucune
               # correction arbitraire ni recalage par simple ressemblance.
               fig7,axes7=plt.subplots(2,2,figsize=(14,13),dpi=125)
@@ -570,4 +622,5 @@ jobs:
             radar-sortie/audit-georeferencement.json
             radar-sortie/horodatage-observation-radar.json
             radar-sortie/noyaux-radar-hypotheses.geojson
+            radar-sortie/radar-candidat-georeferencement.json
           if-no-files-found: ignore
