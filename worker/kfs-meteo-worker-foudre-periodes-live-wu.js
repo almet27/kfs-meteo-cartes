@@ -1516,7 +1516,6 @@ async function wuCurrent(city,env){
 function wuReport(city,pws){
   const {ob,stamp,distanceKm,stationId,stationName}=pws;
   const m=ob.metric||{},label=(ob.neighborhood||stationName||stationId).slice(0,80);
-  const stationUrl="https://www.wunderground.com/dashboard/pws/"+stationId;
   return "📡 **KFS MÉTÉO — /live "+city.name+
     (city.dept?" ("+city.dept+")":"")+"**\n"+
     "🛰️ **Véritables mesures d'une station Weather Underground (PWS)**\n"+
@@ -1538,13 +1537,8 @@ function wuReport(city,pws){
     "• Intensité instantanée : **"+wuFmt(m.precipRate,"mm/h",2)+"**\n"+
     "• Cumul depuis minuit (heure de la station) : **"+
       wuFmt(m.precipTotal,"mm",2)+"**\n\n"+
-    "🧭 **Autres mesures**\n"+
-    "• Pression ramenée au niveau de la mer : **"+wuFmt(m.pressure,"hPa")+"**\n"+
-    "• Rayonnement solaire : "+wuFmt(ob.solarRadiation,"W/m²",0)+
-      " · Indice UV : "+wuFmt(ob.uv,"",1)+"\n"+
     (Number(ob.qcStatus)===-1?"⚠️ Mesure non encore validée par le contrôle qualité.\n":"")+
     (pws.fromCache?"_Réponse conservée en cache 5 minutes au maximum._\n":"")+
-    "🔗 "+stationUrl+"\n"+
     "_Data provided by Weather Underground. "+
       "Mesures de station individuelle non représentatives de toute la commune._";
 }
