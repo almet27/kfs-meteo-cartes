@@ -16,7 +16,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 from pyproj import CRS, Transformer
-from zoom_ville import radar_grid
+try:
+    from radar.zoom_ville import radar_grid
+except ModuleNotFoundError:
+    from zoom_ville import radar_grid
 
 # Emprise LCC assez large pour un zoom de 180 km autour des villes metropolitaines.
 XMIN, XMAX = -940_000.0, 940_000.0
