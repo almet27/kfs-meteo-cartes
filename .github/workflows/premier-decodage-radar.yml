@@ -75,6 +75,27 @@ jobs:
           ns['deco_bufr']()
           messages=ns.get('datas_messages',[])
           print('Messages decodes:',len(messages),flush=True)
+          # Heure d'observation extraite du BUFR (et non heure du telechargement).
+          # Indispensable pour comparer une image radar externe au meme instant.
+          obs_times=[]
+          for msg in messages:
+              keys=('Year','Month','Day','Hour','Minute','Second')
+              if not all(msg.get(k) for k in keys):
+                  continue
+              try:
+                  from datetime import datetime,timezone
+                  dt=datetime(*(int(msg[k][0]) for k in keys),tzinfo=timezone.utc)
+                  obs_times.append(dt.isoformat(timespec='seconds'))
+              except (ValueError,TypeError,IndexError) as exc:
+                  print('AVERTISSEMENT date BUFR:',str(exc),flush=True)
+          observation_utc=obs_times[0] if obs_times else None
+          print('HORODATAGE OBSERVATION BUFR UTC:',observation_utc,flush=True)
+          (work/'horodatage-observation-radar.json').write_text(
+              json.dumps({'observation_utc':observation_utc,
+                          'capture_utc':captured_utc,
+                          'source':'Meteo-France DPRadar BUFR',
+                          'comparaison_externe_validee':False},
+                         indent=2,ensure_ascii=False),encoding='utf-8')
           for i,m in enumerate(messages):
               print('Message',i,'champs:',[(k,len(v)) for k,v in m.items()],flush=True)
           for m in messages:
@@ -507,4 +528,5 @@ jobs:
           path: |
             radar-sortie/*.png
             radar-sortie/audit-georeferencement.json
+            radar-sortie/horodatage-observation-radar.json
           if-no-files-found: ignore
