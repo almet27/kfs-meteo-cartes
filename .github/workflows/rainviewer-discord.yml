@@ -50,7 +50,7 @@ jobs:
                   return json.load(response)
 
           build = True
-          if os.environ.get("GITHUB_EVENT_NAME") == "schedule":
+          if os.environ.get("GITHUB_EVENT_NAME") in ("schedule", "workflow_dispatch"):
               try:
                   latest = read_json("https://api.rainviewer.com/public/weather-maps.json")
                   frames = latest.get("radar", {}).get("past", [])
