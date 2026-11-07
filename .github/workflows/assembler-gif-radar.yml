@@ -13,8 +13,12 @@ on:
 permissions:
   actions: read
   contents: read
+  pages: write
+  id-token: write
 jobs:
   gif-diagnostic:
+    outputs:
+      atlas_ready: ${{ steps.atlas_check.outputs.ready }}
     if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -163,6 +167,51 @@ jobs:
               '--ville',match['nom'],'--latitude',str(lat),'--longitude',str(lon),
               '--horodatages','radar-sortie/radar-images.json'],check=True)
           PY
+      - name: Creer l'atlas anime recadrable par ville
+        if: hashFiles('radar-sortie/radar-images.json') != ''
+        shell: bash
+        run: |
+          python radar/atlas_gif.py \
+            --dossier-grilles radar-historique \
+            --horodatages radar-sortie/radar-images.json \
+            --sortie radar-sortie/radar-atlas-diagnostic.gif \
+            --manifest radar-sortie/radar-atlas.json
+      - name: Preparer l'hebergement public du radar diagnostic
+        if: hashFiles('radar-sortie/radar-atlas-diagnostic.gif') != ''
+        shell: bash
+        run: |
+          mkdir -p radar-public
+          cp radar-sortie/radar-atlas-diagnostic.gif radar-sortie/radar-atlas.json radar-public/
+          touch radar-public/.nojekyll
+          cat > radar-public/index.html <<'HTML'
+          <!doctype html><html lang="fr"><meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <title>KFS Météo — radar expérimental</title>
+          <style>body{font:16px system-ui;max-width:900px;padding:24px;margin:auto;background:#eef2f6;color:#172d40}
+          img{max-width:100%;border-radius:12px}strong{color:#ad1831}</style>
+          <h1>Radar KFS Météo — diagnostic</h1>
+          <p><strong>GÉORÉFÉRENCEMENT NON VALIDÉ.</strong> Animation de démonstration,
+          ne pas utiliser pour une décision de sécurité météorologique.</p>
+          <img src="./radar-atlas-diagnostic.gif" alt="Radar de diagnostic">
+          <p>Source : Météo-France DPRadar (mosaïque de réflectivité).</p>
+          </html>
+          HTML
+      - name: Conserver l'atlas comme artefact de publication
+        if: hashFiles('radar-public/radar-atlas-diagnostic.gif') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: radar-atlas-publication
+          path: radar-public
+          retention-days: 2
+      - name: Indiquer si l'atlas est publiable
+        id: atlas_check
+        shell: bash
+        run: |
+          if [ -s radar-public/radar-atlas-diagnostic.gif ]; then
+            echo 'ready=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'ready=false' >> "$GITHUB_OUTPUT"
+          fi
       - name: Resume lisible du radar (GIF national et zoom)
         if: always()
         shell: bash
@@ -194,6 +243,7 @@ jobs:
                   return gif.n_frames
           n_nat=frames(national)
           n_loc=frames(local)
+          n_atlas=frames(root/'radar-atlas-diagnostic.gif')
           journal=root/'declenchements-radar.json'
           runs=json.loads(journal.read_text()) if journal.exists() else []
           n_scheduled=sum(r.get('event')=='schedule' for r in runs)
@@ -207,6 +257,7 @@ jobs:
               'grilles_disponibles_parmi_images':count_grid,
               'images_gif_national':n_nat,
               'images_gif_local':n_loc,
+              'images_gif_atlas':n_atlas,
               'declenchements_programmes_60min':n_scheduled,
               'declenchements_manuels_60min':n_manual,
               'regularite_automatique_confirmee':n_scheduled>=6,
@@ -224,6 +275,7 @@ jobs:
               '## Bilan du radar — diagnostic uniquement',
               f'- Images GIF France : **{n_nat}**',
               f'- Images GIF ville : **{n_loc}**',
+              f'- Images atlas recadrable : **{n_atlas}**',
               f'- Grilles radar disponibles : **{count_grid}/{len(times)}**',
               f'- Acquisitions automatiques lancees en 60 min : **{n_scheduled}** (objectif 6 minimum)',
               f'- Acquisitions manuelles lancees en 60 min : **{n_manual}**',
@@ -245,8 +297,35 @@ jobs:
             radar-sortie/radar-diagnostic.gif
             radar-sortie/radar-zoom-ville-diagnostic.gif
             radar-sortie/radar-zoom-ville-diagnostic.json
+            radar-sortie/radar-atlas-diagnostic.gif
+            radar-sortie/radar-atlas.json
             radar-sortie/radar-images.json
             radar-sortie/etat-radar.json
             radar-sortie/declenchements-radar.json
             radar-sortie/diagnostic-assemblage.txt
           if-no-files-found: warn
+
+  publication-pages:
+    name: Publier le radar diagnostic sur GitHub Pages
+    needs: gif-diagnostic
+    if: needs.gif-diagnostic.outputs.atlas_ready == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: radar-github-pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: radar-atlas-publication
+          path: radar-public
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: radar-public
+      - name: Deploy GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v4
