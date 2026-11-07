@@ -122,14 +122,6 @@ def decorate(ax, week):
             bbox={"facecolor": "white", "alpha": .86,
                   "edgecolor": "none", "pad": 1.2}, zorder=9)
 
-def draw_vectors(ax, data, idx):
-    u = grid(data, "wind_u_component_10m_mean", idx)
-    v = grid(data, "wind_v_component_10m_mean", idx)
-    xx, yy = np.meshgrid(LONS, LATS)
-    ax.quiver(xx, yy, u, v, color="#202b38", angles="uv", scale_units="width",
-              scale=140, width=0.003, headwidth=3, alpha=0.8, zorder=5,
-              transform=ccrs.PlateCarree())
-
 def render(data, weeks, chosen, mode):
     fig, axes = plt.subplots(2, 2, figsize=(14, 11),
                              constrained_layout=True,
@@ -155,7 +147,6 @@ def render(data, weeks, chosen, mode):
             contour = ax.contourf(xx, yy, thermal, levels=np.arange(-9, 10, 1),
                                   cmap="RdBu_r", extend="both", alpha=0.88,
                                   zorder=2, transform=ccrs.PlateCarree())
-        draw_vectors(ax, data, idx)
         decorate(ax, weeks[idx])
     if mode == "pressure":
         title="KFS MÉTÉO | EC46 — Pressions et centres d'action MOYENS"
