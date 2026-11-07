@@ -1,0 +1,35 @@
+name: PROTOTYPE cartes EC46 J+30 (sans production)
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'meteo-mois/maps_ec46.py'
+      - '.github/workflows/prototype-ec46-mois.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  maps:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Dépendances cartes
+        run: python -m pip install --disable-pip-version-check numpy matplotlib
+      - name: Vérifier le programme
+        run: python -m py_compile meteo-mois/maps_ec46.py
+      - name: Collecter la grille EC46 et créer les deux cartes
+        run: python meteo-mois/maps_ec46.py
+      - name: Archiver les cartes sans les publier
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ec46-cartes-4semaines-TEST
+          path: meteo-mois-preview/
+          if-no-files-found: warn
+          retention-days: 7
