@@ -1,0 +1,33 @@
+name: TEST EC46 hebdomadaire pour /meteo 1mois
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'meteo-mois/**'
+      - '.github/workflows/test-ec46-mois.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate-ec46:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Valider le script sans réseau
+        run: python -m py_compile meteo-mois/test_ec46_point.py
+      - name: Vérifier un point de prévision EC46
+        run: python meteo-mois/test_ec46_point.py
+      - name: Archiver le diagnostic (aucune donnée publiée)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: diagnostic-ec46-un-point
+          path: meteo-mois-validation/
+          if-no-files-found: warn
+          retention-days: 7
