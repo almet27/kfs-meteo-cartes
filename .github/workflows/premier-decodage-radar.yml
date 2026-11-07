@@ -411,6 +411,57 @@ jobs:
                   ax.grid(alpha=.15)
                   ax.set_title(name,fontsize=11)
               ax3=old_ax3
+              # Quatre hypotheses sur la MEME zone de Bourth. Aucune
+              # correction arbitraire ni recalage par simple ressemblance.
+              fig7,axes7=plt.subplots(2,2,figsize=(14,13),dpi=125)
+              local_stats={}
+              for ax,(name,values) in zip(axes7.flat,variants):
+                  ax.set_facecolor('#edf2f5')
+                  pixels=np.ma.masked_where(~(np.isfinite(values)&(values>=0)&(values<=70)),values)
+                  ax.imshow(pixels,extent=[x0,x0+nx*dx,y0-ny*dy,y0],
+                            origin='upper',cmap=cmap,vmin=0,vmax=55,
+                            interpolation='nearest',alpha=.82,zorder=2)
+                  ax3=ax
+                  for features,color,width in coast_features:
+                      for feature in features:
+                          geom=feature.get('geometry') or {}
+                          draw_geometry(geom.get('coordinates',[]),geom.get('type'),forward,color,width)
+                  for city,(lon,lat) in cities.items():
+                      cx,cy=forward.transform(lon,lat)
+                      if abs(cx-bx)<160000 and abs(cy-by)<160000:
+                          ax.plot(cx,cy,'ko',markersize=3,zorder=5)
+                          ax.text(cx+5000,cy+5000,city,fontsize=8,
+                                  path_effects=[pe.withStroke(linewidth=2,foreground='white')])
+                  ax.plot(bx,by,'*',color='#e22653',markersize=14,zorder=6)
+                  ax.set_xlim(bx-150000,bx+150000)
+                  ax.set_ylim(by-150000,by+150000)
+                  ax.set_aspect('equal')
+                  ax.grid(alpha=.12)
+                  ax.set_title(name,fontsize=10)
+                  # Statistique descriptive sur 30 km autour de Bourth.
+                  # Ce calcul ne valide PAS le positionnement des echos.
+                  ix=np.arange(nx)
+                  iy=np.arange(ny)
+                  cx=x0+(ix+.5)*dx
+                  cy=y0-(iy+.5)*dy
+                  xx=(cx>=bx-30000)&(cx<=bx+30000)
+                  yy=(cy>=by-30000)&(cy<=by+30000)
+                  local=values[np.ix_(yy,xx)]
+                  local_stats[name]={
+                      'pixels_valides':int(np.count_nonzero(np.isfinite(local)&(local>=0)&(local<=70))),
+                      'pixels_avec_echo_10dbz':int(np.count_nonzero(np.isfinite(local)&(local>=10)&(local<=70)))
+                  }
+              ax3=old_ax3
+              fig7.suptitle('Bourth : 4 hypotheses radar sur frontieres — NON VALIDEES',fontsize=14)
+              fig7.text(.5,.012,'Ne pas diffuser comme radar geolocalise avant verification independante',
+                        ha='center',color='#b91c1c',fontsize=10)
+              fig7.tight_layout(rect=[0,.03,1,.97])
+              fig7.savefig(work/'diagnostic-quatre-hypotheses-bourth.png')
+              audit['hypotheses_pixels_bourth_30km']=local_stats
+              (work/'audit-georeferencement.json').write_text(
+                  json.dumps(audit,indent=2,ensure_ascii=False),encoding='utf-8')
+              print('HYPOTHESES BOURTH:',local_stats,flush=True)
+              print('COMPARAISON BOURTH GENEREE:',work/'diagnostic-quatre-hypotheses-bourth.png',flush=True)
               fig6.suptitle('Mosaïque radar / France : 4 ordres de pixels sur emprise NW — NON VALIDES',
                             fontsize=14)
               fig6.tight_layout()
