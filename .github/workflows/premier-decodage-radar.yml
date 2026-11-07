@@ -1,10 +1,8 @@
 name: Premier decodage radar Meteo-France
 on:
+  # Ancien decodeur BUFR : diagnostic manuel uniquement.
+  # /radar utilise desormais les cartes RainViewer deja georeferencees.
   workflow_dispatch:
-  schedule:
-    # Essai toutes les 5 minutes, decale de 3 min pour eviter le pic de l'heure pile.
-    # GitHub peut retarder/sauter un cron : seule l'heure d'observation BUFR fait foi.
-    - cron: '3,8,13,18,23,28,33,38,43,48,53,58 * * * *'
 concurrency:
   group: radar-acquisition
   cancel-in-progress: false
