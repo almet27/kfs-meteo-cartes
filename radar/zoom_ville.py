@@ -28,6 +28,13 @@ def radar_grid(path):
         dx, dy = float(z['dx_m']), float(z['dy_m'])
         proj4 = str(z['proj4'].item())
         stamp = str(z['observation_utc'].item())
+    # Interdire toute reutilisation d'anciens fichiers Lambert errones.
+    projection = CRS.from_proj4(proj4).to_dict()
+    if (projection.get('proj') != 'stere' or
+        abs(float(projection.get('lat_0', 0))-90)>1e-6 or
+        abs(float(projection.get('lat_ts', 0))-45)>1e-6 or
+        abs(float(projection.get('lon_0', 0)))>1e-6):
+        raise ValueError(f'Projection radar non conforme (attendu polaire stereographique WGS84) : {path}')
     if arr.ndim != 2 or arr.shape != (1536, 1536):
         raise ValueError(f'Grille invalide : {path}: {arr.shape}')
     if not all(np.isfinite((x0, y0, dx, dy))) or not (500 <= dx <= 2000 and 500 <= dy <= 2000):
@@ -101,7 +108,13 @@ def main():
         if not path.is_file():
             print(f'GRILLE ABSENTE : {name} (ancienne acquisition sans export des donnees)', flush=True)
             continue
-        observation, arr, geo = radar_grid(path)
+        try:
+            observation, arr, geo = radar_grid(path)
+        except ValueError as error:
+            if 'Projection radar non conforme' in str(error):
+                print(f'GRILLE ANCIENNE EXCLUE : {path.name} (Lambert invalide)',flush=True)
+                continue
+            raise
         if observation != time:
             raise ValueError(f'Observation et horodatage divergent : {name}')
         if data and geo != data[0][2]:
