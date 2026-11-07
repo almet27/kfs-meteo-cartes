@@ -285,6 +285,46 @@ jobs:
               elif not any(x0<=px<=x0+nx*dx and y0-ny*dy<=py<=y0
                            for px,py in station_xy):
                   print('ALERTE: meme l hypothese nord-ouest ne couvre aucune station',flush=True)
+              # Rapport reproductible : separer l'emprise geographique du
+              # parcours des pixels. Les flags 224 ne prouvent pas a eux seuls
+              # l'orientation de la matrice dans ce produit local.
+              audit={
+                  'statut':'NON_VALIDE',
+                  'raison':'Ordre des pixels non confirme par reference externe horodatee',
+                  'source':'Meteo-France DPRadar REFLECTIVITE METROPOLE',
+                  'grille':{'largeur':nx,'hauteur':ny,'pas_x_m':dx,'pas_y_m':dy},
+                  'point_reference':{'latitude':lat0,'longitude':lon0,
+                                     'x_lambert_provisoire_m':x0,
+                                     'y_lambert_provisoire_m':y0},
+                  'projection':{'type_bufr':m.get('Projection type',[None])[0],
+                                'latitude_reference':m.get('Latitude de reference',[None])[0],
+                                'longitude_meridien_y':m.get("Longitude du meridien parallele a l'axe des Y",[None])[0],
+                                'proj4_diagnostic':crs.to_proj4()},
+                  'balayage':{'valeur':scan,'i_negatif':bool(scan&128),
+                               'j_positif':bool(scan&64),
+                               'points_consecutifs_j':bool(scan&32)},
+                  'stations':{'nombre':len(station_xy)},
+                  'hypotheses_emprise':{}
+              }
+              for label,si,sj in [('flags-224',scan_i,scan_j),
+                                   ('nord-ouest',1,-1),('nord-est',-1,-1),
+                                   ('sud-ouest',1,1),('sud-est',-1,1)]:
+                  xx=x0+si*nx*dx
+                  yy=y0+sj*ny*dy
+                  xmin,xmax=sorted((x0,xx))
+                  ymin,ymax=sorted((y0,yy))
+                  covered=sum(xmin<=px<=xmax and ymin<=py<=ymax
+                              for px,py in station_xy)
+                  audit['hypotheses_emprise'][label]={
+                      'stations_couvertes':covered,
+                      'xmin':xmin,'xmax':xmax,'ymin':ymin,'ymax':ymax}
+              (work/'audit-georeferencement.json').write_text(
+                  json.dumps(audit,indent=2,ensure_ascii=False),encoding='utf-8')
+              print('AUDIT GEO JSON: emprise nord-ouest couvre',
+                    audit['hypotheses_emprise']['nord-ouest']['stations_couvertes'],
+                    'stations sur',len(station_xy),flush=True)
+              if len(station_xy) and audit['hypotheses_emprise']['nord-ouest']['stations_couvertes']!=len(station_xy):
+                  raise RuntimeError('Emprise nord-ouest incompatible avec les stations BUFR')
               # Les emprises ne suffisent pas a valider le sens de balayage :
               # il faut ensuite verifier la projection et la convention du produit.
               # L'ordre j-adjacent signifie reshape(nx,ny).T, et non reshape(ny,nx).
@@ -396,5 +436,7 @@ jobs:
         if: always()
         with:
           name: premiere-carte-radar
-          path: radar-sortie/*.png
+          path: |
+            radar-sortie/*.png
+            radar-sortie/audit-georeferencement.json
           if-no-files-found: ignore
