@@ -29,31 +29,31 @@ jobs:
               # Reconstituer le nom a partir de l'horodatage BUFR stocke dans le JSON.
               # Ne jamais utiliser l'heure de lancement GitHub a sa place.
               python - "radar-temp/$run" radar-historique <<'PY'
-              import json,re,shutil,sys
-              from pathlib import Path
-              from datetime import datetime,timezone
-              source,target=map(Path,sys.argv[1:])
-              files=list(source.rglob('radar-candidat-????-??-??T??-??-??Z.png'))
-              if files:
-                  for p in files:
-                      shutil.copy2(p,target/p.name)
-                  print('Images horodatees existantes :',len(files),flush=True)
-              else:
-                  image=next(iter(source.rglob('radar-candidat-sans-decalage.png')),None)
-                  stamp=next(iter(source.rglob('horodatage-observation-radar.json')),None)
-                  if image and stamp:
-                      data=json.loads(stamp.read_text())
-                      raw=data.get('observation_utc')
-                      if raw:
-                          when=datetime.fromisoformat(raw.replace('Z','+00:00')).astimezone(timezone.utc)
-                          name='radar-candidat-'+when.strftime('%Y-%m-%dT%H-%M-%SZ')+'.png'
-                          shutil.copy2(image,target/name)
-                          print('Image ancienne horodatee depuis BUFR :',name,flush=True)
-                      else:
-                          print('Horodatage BUFR absent, image ignoree',flush=True)
+          import json,re,shutil,sys
+          from pathlib import Path
+          from datetime import datetime,timezone
+          source,target=map(Path,sys.argv[1:])
+          files=list(source.rglob('radar-candidat-????-??-??T??-??-??Z.png'))
+          if files:
+              for p in files:
+                  shutil.copy2(p,target/p.name)
+              print('Images horodatees existantes :',len(files),flush=True)
+          else:
+              image=next(iter(source.rglob('radar-candidat-sans-decalage.png')),None)
+              stamp=next(iter(source.rglob('horodatage-observation-radar.json')),None)
+              if image and stamp:
+                  data=json.loads(stamp.read_text())
+                  raw=data.get('observation_utc')
+                  if raw:
+                      when=datetime.fromisoformat(raw.replace('Z','+00:00')).astimezone(timezone.utc)
+                      name='radar-candidat-'+when.strftime('%Y-%m-%dT%H-%M-%SZ')+'.png'
+                      shutil.copy2(image,target/name)
+                      print('Image ancienne horodatee depuis BUFR :',name,flush=True)
                   else:
-                      print('Image ou JSON observation absent, run ignore',flush=True)
-              PY
+                      print('Horodatage BUFR absent, image ignoree',flush=True)
+              else:
+                  print('Image ou JSON observation absent, run ignore',flush=True)
+          PY
               echo "Contenu du run $run :"; find "radar-temp/$run" -type f | head -n 8
             else
               echo "AVERTISSEMENT: impossible de telecharger le run $run"
