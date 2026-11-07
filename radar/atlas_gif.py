@@ -125,7 +125,9 @@ def main():
         [int(round(c*255)) for c in color_map(i/255)[:3]]
         for i in range(256)], dtype=np.uint8)
     bg = np.array([235,241,245], dtype=np.uint8)
-    warning_font = font(18)
+    # Petit tampon discret, lisible apres zoom Discord sans masquer les precipitations.
+    # Les alertes de non-validation restent explicites dans le message Discord.
+    warning_font = font(11)
     frames = []
     gaps = [
         (data[i+1][0]-data[i][0]).total_seconds()/60
@@ -142,13 +144,19 @@ def main():
         draw = ImageDraw.Draw(im)
         for outline in outlines:
             draw.line(outline,fill='#748a9b',width=1)
-        # Filigrane repete: le diagnostic reste visible meme apres recadrage.
-        stamp_label = stamp.strftime('%H:%M UTC')
-        label = 'RADAR NON VALIDE - '+stamp_label
-        for y in range(90,HEIGHT,245):
-            for x in range(65,WIDTH,310):
-                draw.rectangle((x-8,y-3,x+270,y+29),fill='#f9e0e0')
-                draw.text((x,y),label,font=warning_font,fill='#971b2c')
+        # Un repere par zone, sans large bandeau qui masque la carte.
+        # L'heure UTC varie avec chaque image du GIF.
+        stamp_label = stamp.strftime('%H:%M')
+        label = 'DIAG ' + stamp_label + 'Z'
+        overlay = Image.new('RGBA', (WIDTH, HEIGHT), (0, 0, 0, 0))
+        tag = ImageDraw.Draw(overlay)
+        for y in range(50, HEIGHT, 215):
+            for x in range(50, WIDTH, 215):
+                tag.rounded_rectangle((x-5, y-3, x+91, y+15),
+                                      radius=4, fill=(255, 248, 248, 135))
+                tag.text((x, y), label, font=warning_font,
+                         fill=(124, 25, 39, 205))
+        im = Image.alpha_composite(im.convert('RGBA'), overlay).convert('RGB')
         frames.append(im)
     args.sortie.parent.mkdir(parents=True, exist_ok=True)
     durations = [max(150,min(3000,round(g*65))) for g in gaps]+[650]
