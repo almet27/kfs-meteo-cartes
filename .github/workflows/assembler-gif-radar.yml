@@ -85,6 +85,18 @@ jobs:
           done < radar-runs.txt
           echo "Images candidates disponibles :"
           find radar-historique -type f -name '*.png' | sort
+      - name: Verifier les declenchements automatiques sur 60 minutes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cutoff="$(date -u -d '60 minutes ago' +%Y-%m-%dT%H:%M:%SZ)"
+          gh run list --workflow premier-decodage-radar.yml --limit 60 --json event,createdAt,conclusion,databaseId | \
+            jq --arg cutoff "$cutoff" '[.[] | select(.createdAt >= $cutoff)]' > radar-sortie/declenchements-radar.json
+          echo "Acquisitions programmees / manuelles durant les 60 dernieres minutes :"
+          jq -r 'group_by(.event)[] | .[0].event + ": " + (length|tostring)' radar-sortie/declenchements-radar.json
       - name: Construire un GIF seulement si les observations sont continues
         shell: bash
         run: |
@@ -182,6 +194,10 @@ jobs:
                   return gif.n_frames
           n_nat=frames(national)
           n_loc=frames(local)
+          journal=root/'declenchements-radar.json'
+          runs=json.loads(journal.read_text()) if journal.exists() else []
+          n_scheduled=sum(r.get('event')=='schedule' for r in runs)
+          n_manual=sum(r.get('event')=='workflow_dispatch' for r in runs)
           status={
               'generation_utc':datetime.now(timezone.utc).isoformat(),
               'mode':'DIAGNOSTIC',
@@ -191,6 +207,9 @@ jobs:
               'grilles_disponibles_parmi_images':count_grid,
               'images_gif_national':n_nat,
               'images_gif_local':n_loc,
+              'declenchements_programmes_60min':n_scheduled,
+              'declenchements_manuels_60min':n_manual,
+              'regularite_automatique_confirmee':n_scheduled>=6,
               'radar_national_pret':n_nat>=2,
               'radar_local_pret':n_loc>=2,
               'cause_zoom_indisponible':(
@@ -206,6 +225,8 @@ jobs:
               f'- Images GIF France : **{n_nat}**',
               f'- Images GIF ville : **{n_loc}**',
               f'- Grilles radar disponibles : **{count_grid}/{len(times)}**',
+              f'- Acquisitions automatiques lancees en 60 min : **{n_scheduled}** (objectif 6 minimum)',
+              f'- Acquisitions manuelles lancees en 60 min : **{n_manual}**',
               f'- Derniere observation : **{times[-1] if times else "aucune"}**',
               '- Georeferencement : **NON VALIDE** (aucune diffusion Discord)',
           ]
@@ -226,5 +247,6 @@ jobs:
             radar-sortie/radar-zoom-ville-diagnostic.json
             radar-sortie/radar-images.json
             radar-sortie/etat-radar.json
+            radar-sortie/declenchements-radar.json
             radar-sortie/diagnostic-assemblage.txt
           if-no-files-found: warn
