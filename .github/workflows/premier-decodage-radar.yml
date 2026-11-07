@@ -261,6 +261,32 @@ jobs:
               print('PIXEL UNITS RAW:',repr(m['Pixel size on horizontal - 1'][:3]),
                     repr(m['Pixel size on horizontal - 2'][:3]),flush=True)
 
+              # Controle objectif : combien de radars declares dans le BUFR tombent
+              # dans l'emprise de la grille ? Une mosaique nationale devrait couvrir
+              # une grande majorite des stations, pas zero.
+              station_xy=[forward.transform(lon,lat) for lat,lon in
+                          zip(latitudes[1:],longitudes[1:])]
+              print('BUFR STATIONS GEO:',len(station_xy),flush=True)
+              for label,si,sj in [('flags-224',scan_i,scan_j),
+                                   ('nord-ouest',1,-1),('nord-est',-1,-1),
+                                   ('sud-ouest',1,1),('sud-est',-1,1)]:
+                  xx=x0+si*nx*dx
+                  yy=y0+sj*ny*dy
+                  xlo,xhi=sorted((x0,xx))
+                  ylo,yhi=sorted((y0,yy))
+                  inside=[i for i,(px,py) in enumerate(station_xy,1)
+                          if xlo<=px<=xhi and ylo<=py<=yhi]
+                  print('EMPRISE DIAGNOSTIC',label,
+                        'limites=',tuple(round(v) for v in (xlo,xhi,ylo,yhi)),
+                        'stations_couvertes=',len(inside),'sur',len(station_xy),
+                        'indices=',inside,flush=True)
+              if not station_xy:
+                  print('AVERTISSEMENT: aucun radar station identifiable',flush=True)
+              elif not any(x0<=px<=x0+nx*dx and y0-ny*dy<=py<=y0
+                           for px,py in station_xy):
+                  print('ALERTE: meme l hypothese nord-ouest ne couvre aucune station',flush=True)
+              # Les emprises ne suffisent pas a valider le sens de balayage :
+              # il faut ensuite verifier la projection et la convention du produit.
               # L'ordre j-adjacent signifie reshape(nx,ny).T, et non reshape(ny,nx).
               canonical=np.asarray(m['Horizontal reflectivity'],dtype=float)
               canonical=canonical.reshape(nx,ny).T if adjacent_j else canonical.reshape(ny,nx)
