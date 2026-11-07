@@ -16,6 +16,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
+from analysis_ec46 import build as build_bulletin
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 
@@ -27,8 +28,8 @@ FIELDS = [
     "wind_u_component_10m_mean", "wind_v_component_10m_mean",
 ]
 # Grille du TEST uniquement. Ne constitue pas une résolution cartographique opérationnelle.
-LONS = np.array([-60, -45, -30, -15, 0, 15, 30, 40], dtype=float)
-LATS = np.array([30, 38, 46, 54, 62, 70, 75], dtype=float)
+LONS = np.array([-60, -45, -30, -15, -5, 0, 5, 10, 15, 30, 40], dtype=float)
+LATS = np.array([30, 38, 42, 46, 50, 54, 62, 70, 75], dtype=float)
 N = len(LONS) * len(LATS)
 ALL_POINTS = [(float(lat), float(lon)) for lat in LATS for lon in LONS]
 
@@ -164,7 +165,7 @@ def render(data, weeks, chosen, mode):
         title="KFS MÉTÉO | EC46 — Anomalie thermique près du sol"
         label="Anomalie température 2 m (K, écart équivalent à °C)"
         file="anomalies-thermiques-4semaines-TEST.png"
-    fig.suptitle(title + "\nAtlantique Nord oriental – Europe | ÉCHANTILLONNAGE 56 POINTS, NON OPÉRATIONNEL",
+    fig.suptitle(title + f"\nAtlantique Nord oriental – Europe | ÉCHANTILLONNAGE {N} POINTS, NON OPÉRATIONNEL",
                  fontsize=15, weight="bold")
     fig.colorbar(contour, ax=axes.ravel().tolist(), shrink=.8, label=label, pad=.02)
     OUTPUT.mkdir(parents=True, exist_ok=True)
@@ -176,12 +177,20 @@ def main():
     data, weeks, chosen, units = api()
     products = [render(data, weeks, chosen, "pressure"),
                 render(data, weeks, chosen, "thermal")]
+    generated = datetime.now(timezone.utc).isoformat()
+    analysis = build_bulletin(data, weeks, chosen, generated)
+    (OUTPUT / "bulletin-TEST.txt").write_text(analysis["text"]+"\n", encoding="utf-8")
+    (OUTPUT / "analysis-TEST.json").write_text(
+        json.dumps(analysis, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     meta = {
         "status": "prototype_ne_pas_diffuser",
-        "generated_utc": datetime.now(timezone.utc).isoformat(),
+        "generated_utc": generated,
         "product": "ECMWF seamless weekly ensemble mean via Open-Meteo",
         "region": "Atlantique nord oriental / Europe",
         "points": N, "grid": "coarse_experimental",
+        "analysis": "analysis-TEST.json",
+        "analysis_text": "bulletin-TEST.txt",
+        "source_run_utc": None,
         "basemap": "Natural Earth 50m via Cartopy (coasts, land/ocean, borders)",
         "periods": [
             {"start": weeks[i], "end": str(date.fromisoformat(weeks[i]) + timedelta(days=6))}
