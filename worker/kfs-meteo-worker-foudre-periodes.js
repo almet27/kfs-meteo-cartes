@@ -944,16 +944,16 @@ async function foudreData(city,env){
     throw Error("Identifiants Xweather absents de Cloudflare.");
   const lat=city.lat.toFixed(3),lon=city.lon.toFixed(3);
   // Nouvelle version du cache : stocke aussi IC, les diagnostics et les types.
-  const key=new Request("https://kfs-foudre-cache.invalid/v3/"+lat+"/"+lon);
+  const key=new Request("https://kfs-foudre-cache.invalid/v4/"+lat+"/"+lon);
   const cache=caches.default;
   const cached=await cache.match(key);
   if(cached){
     const saved=await cached.json();
-    if(saved?.version===3&&Date.now()-saved.collecte<90000)
+    if(saved?.version===4&&Date.now()-saved.collecte<90000)
       return {...saved,cache:true};
   }
   const params=new URLSearchParams({
-    p:lat+","+lon,radius:"100km",filter:"all",limit:"1000",format:"json",
+    p:lat+","+lon,radius:"100km",limit:"1000",format:"json",
     client_id:env.XWEATHER_CLIENT_ID,client_secret:env.XWEATHER_CLIENT_SECRET
   });
   const res=await fetch("https://data.api.xweather.com/lightning/closest?"+params);
@@ -964,6 +964,8 @@ async function foudreData(city,env){
   const warnings=(Array.isArray(obj?.warnings)?obj.warnings:[obj?.warning,obj?.error])
     .map(w=>String(w?.code||""));
   const noData=err==="warn_no_data"||warnings.includes("warn_no_data");
+  if(err==="warn_invalid_param"||warnings.includes("warn_invalid_param"))
+    throw Error("Xweather : paramètre de recherche refusé (warn_invalid_param).");
   if(!noData&&(!res.ok||obj?.success!==true))
     throw Error("Xweather : erreur HTTP "+res.status+(err?" ("+err+")":""));
   if(!noData&&!Array.isArray(obj?.response))
@@ -996,7 +998,9 @@ async function foudreData(city,env){
     if(amp===null)diagnostic.sansIntensité++;
     pulses.push({type,amp,lat:latitude,lon:longitude});
   }
-  const value={version:3,pulses,diagnostic,collecte,limite:raw.length>=1000};
+  const value={version:4,pulses,diagnostic,collecte,limite:raw.length>=1000,
+    etat: noData?"aucun_resultat_api":raw.length===0?"liste_vide":"resultats",
+    codeApi:err||null,statusHttp:res.status};
   await cache.put(key,new Response(JSON.stringify(value),{
     headers:{"Cache-Control":"public,max-age=90","Content-Type":"application/json"}
   }));
@@ -1167,7 +1171,7 @@ async function foudreSummary(city,minutes,env){
   if(code==="warn_invalid_param")
     throw Error("Lightning Summary : paramètres de période refusés (ou non autorisés).");
   if(code==="warn_no_data"){
-    const empty={state:"empty",collecte:Date.now()};
+    const empty={state:"empty",reason:"warn_no_data",collecte:Date.now()};
     await caches.default.put(cacheKey,new Response(JSON.stringify(empty),{
       headers:{"Cache-Control":"public,max-age="+FOUDRE_SUMMARY_CACHE_S,
                "Content-Type":"application/json"}}));
@@ -1176,7 +1180,7 @@ async function foudreSummary(city,minutes,env){
   if(obj?.success!==true)
     throw Error(foudreSummaryError(res,obj));
   if(Array.isArray(obj.response)&&obj.response.length===0){
-    const empty={state:"empty",collecte:Date.now()};
+    const empty={state:"empty",reason:"liste_vide",collecte:Date.now()};
     await caches.default.put(cacheKey,new Response(JSON.stringify(empty),{
       headers:{"Cache-Control":"public,max-age="+FOUDRE_SUMMARY_CACHE_S,
                "Content-Type":"application/json"}}));
@@ -1197,8 +1201,9 @@ function foudreSummaryLines(summary,minutes){
     return "⚠️ **Statistiques "+FOUDRE_PERIODES[minutes]+" indisponibles** : "+
       String(summary.message||"Erreur API").slice(0,190)+"\n";
   if(summary.state==="empty")
-    return "ℹ️ **Statistiques "+FOUDRE_PERIODES[minutes]+"** : "+
-      "aucune décharge trouvée par Lightning Summary.\n";
+    return "⚠️ **Bilan "+FOUDRE_PERIODES[minutes]+" : aucune donnée Xweather fournie**"+
+      " ("+String(summary.reason||"réponse vide")+")."+
+      " Cela ne signifie pas absence d'orage.\n";
   const p=summary.data;
   return "📊 **Bilan Lightning Summary · "+FOUDRE_PERIODES[minutes]+"**\n"+
     "• Total des décharges **CG + IC** : **"+foudreNombre(p.count)+"**\n"+
@@ -1231,7 +1236,9 @@ async function completeFoudre(interaction,rawCity,env,rawPeriode=30){
         day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
     let message="⚡ **KFS MÉTÉO — Foudre "+city.name+" ("+city.dept+")**\n"+
       "📍 Rayon **100 km** · période choisie : **"+FOUDRE_PERIODES[periode]+
-      "** · consultation "+heure+"\n\n";
+      "** · consultation "+heure+"\n"+
+      "🧭 Centre interrogé : "+city.lat.toFixed(3)+"° N, "+
+        city.lon.toFixed(3)+"° E\n\n";
     if(periode>5)message+=foudreSummaryLines(summary,periode)+"\n";
     if(strikes){
       const cg=strikes.pulses.filter(x=>x.type==="cg");
@@ -1255,11 +1262,14 @@ async function completeFoudre(interaction,rawCity,env,rawPeriode=30){
         " décharges reçues (CG "+foudreNombre(d.cg)+
         " / IC "+foudreNombre(d.ic)+
         ") ; exclusions temps "+foudreNombre(d.écartéesTemps)+
-        ", coordonnées "+foudreNombre(d.écartéesPosition)+".\n";
+        ", coordonnées "+foudreNombre(d.écartéesPosition)+
+        " · État : "+String(strikes.etat||"inconnu")+
+        (strikes.codeApi?" ("+strikes.codeApi+")":"")+".\n";
       if(strikes.limite)message+="⚠️ Liste récente limitée à 1 000 décharges ; compteurs partiels.\n";
       if(strikes.cache)message+="_Carte basée sur un cache de 90 secondes au maximum._\n";
       if(strikes.pulses.length===0)
-        message+="Aucune décharge récente exploitable détectée : carte de repérage sans impacts.\n";
+        message+="⚠️ Aucune décharge fournie ou exploitable par Xweather sur "+
+          "les 5 dernières minutes. Ceci ne prouve pas l'absence de foudre.\n";
     }else{
       message+="⚠️ **Carte 5 min indisponible** : "+mapError+
         ". Les statistiques ne sont pas une carte historique.\n";
