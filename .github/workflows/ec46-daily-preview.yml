@@ -1,0 +1,56 @@
+name: EC46 — actualiser aperçus 4 semaines (séparé du bot)
+
+on:
+  schedule:
+    # Vérification quotidienne après la publication habituelle des champs EC46.
+    - cron: '23 21 * * *'
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/ec46-daily-preview.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: kfs-ec46-preview-daily
+  cancel-in-progress: false
+
+jobs:
+  update-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Isolation : code et images EC46 sur branche de test, jamais sur main.
+          ref: feature/meteo-1mois-atlantique-europe-plan
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Installer les dépendances
+        run: python -m pip install --disable-pip-version-check numpy matplotlib cartopy
+      - name: Vérifier les générateurs
+        run: python -m py_compile meteo-mois/maps_ec46.py meteo-mois/analysis_ec46.py
+      - name: Construire cartes et bulletin EC46 expérimentaux
+        run: python meteo-mois/maps_ec46.py
+      - name: Publier l'aperçu sur une branche isolée, pas sur GitHub Pages
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f meteo-mois-preview/
+          if git diff --cached --quiet; then
+            echo "Aucun changement dans l'aperçu"
+          else
+            git commit -m "preview(ec46): actualisation cartes et bulletin expérimentaux"
+            git push origin HEAD:refs/heads/feature/meteo-1mois-atlantique-europe-plan
+          fi
+      - name: Archiver l'aperçu pour inspection
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ec46-daily-preview
+          path: meteo-mois-preview/
+          retention-days: 7
+          if-no-files-found: warn
