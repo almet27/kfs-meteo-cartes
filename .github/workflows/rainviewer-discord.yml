@@ -33,13 +33,55 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Vérifier la présence d'une nouvelle image radar
+        id: nouveaute
+        run: |
+          python - <<'PY'
+          import datetime as dt
+          import json
+          import os
+          import urllib.request
+
+          def read_json(url, timeout=15):
+              request = urllib.request.Request(
+                  url, headers={"User-Agent":"KFS-Meteo-RainViewer-GitHub/1.0",
+                                "Cache-Control":"no-cache"})
+              with urllib.request.urlopen(request, timeout=timeout) as response:
+                  return json.load(response)
+
+          build = True
+          if os.environ.get("GITHUB_EVENT_NAME") == "schedule":
+              try:
+                  latest = read_json("https://api.rainviewer.com/public/weather-maps.json")
+                  frames = latest.get("radar", {}).get("past", [])
+                  latest_stamp = max(int(x["time"]) for x in frames)
+                  published = read_json(
+                      "https://almet27.github.io/kfs-meteo-cartes/rainviewer/"
+                      "radar-rainviewer.json?check=" +
+                      str(int(dt.datetime.now(dt.timezone.utc).timestamp())))
+                  pub_stamp = dt.datetime.fromisoformat(
+                      published["derniere_observation_utc"]).timestamp()
+                  build = latest_stamp > pub_stamp
+                  print("Dernier radar RainViewer :", latest_stamp)
+                  print("Dernier radar déjà publié :", pub_stamp)
+              except Exception as exc:
+                  print("Comparaison impossible, publication de secours :", str(exc)[:160])
+                  build = True
+          if not build:
+              print("Pas de nouvelle image radar : inutile de générer le même GIF.")
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+              output.write("build=" + ("true" if build else "false") + "\n")
+          PY
       - name: Installer Pillow pour assembler le GIF
+        if: steps.nouveaute.outputs.build == 'true'
         run: python -m pip install --disable-pip-version-check pillow
       - name: Tests de localisation et assemblage sans reseau
+        if: steps.nouveaute.outputs.build == 'true'
         run: |
           python -m py_compile rainviewer/build_atlas.py
           python -m unittest discover -s rainviewer -p 'test_*.py' -v
       - name: Construire la derniere animation RainViewer
+        if: steps.nouveaute.outputs.build == 'true'
         run: |
           python rainviewer/build_atlas.py --output radar-public/rainviewer
           python - <<'PY'
@@ -55,6 +97,7 @@ jobs:
                     m['derniere_observation_utc'])
           PY
       - name: Index public avec attribution RainViewer
+        if: steps.nouveaute.outputs.build == 'true'
         run: |
           cat > radar-public/index.html <<'HTML'
           <!doctype html><html lang="fr"><meta charset="utf-8">
@@ -69,14 +112,18 @@ jobs:
           Carte : contours France GeoJSON. Pour une consultation interactive,
           utiliser Windy.</p></html>
           HTML
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - if: steps.nouveaute.outputs.build == 'true'
+        uses: actions/configure-pages@v5
+      - if: steps.nouveaute.outputs.build == 'true'
+        uses: actions/upload-pages-artifact@v3
         with:
           path: radar-public
       - name: Publier sur GitHub Pages
+        if: steps.nouveaute.outputs.build == 'true'
         id: deployment
         uses: actions/deploy-pages@v4
       - name: Resume
+        if: steps.nouveaute.outputs.build == 'true'
         run: |
           echo '## Radar RainViewer publié' >> "$GITHUB_STEP_SUMMARY"
           cat radar-public/rainviewer/radar-rainviewer.json >> "$GITHUB_STEP_SUMMARY"
