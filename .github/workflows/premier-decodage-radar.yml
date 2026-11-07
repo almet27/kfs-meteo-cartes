@@ -2,9 +2,9 @@ name: Premier decodage radar Meteo-France
 on:
   workflow_dispatch:
   schedule:
-    # Une acquisition toutes les 10 min a des minutes decalees pour limiter les jobs perdus en debut d'heure.
-    # GitHub schedule n'est pas une horloge exacte; l'heure reelle vient du BUFR.
-    - cron: '3,13,23,33,43,53 * * * *'
+    # Essai toutes les 5 minutes, decale de 3 min pour eviter le pic de l'heure pile.
+    # GitHub peut retarder/sauter un cron : seule l'heure d'observation BUFR fait foi.
+    - cron: '3,8,13,18,23,28,33,38,43,48,53,58 * * * *'
 concurrency:
   group: radar-acquisition
   cancel-in-progress: false
