@@ -105,33 +105,46 @@ jobs:
               x0,y0=forward.transform(lon0,lat0)
               print('PROJECTION DIAGNOSTIC: point 0 lat/lon',lat0,lon0,'XY',x0,y0,flush=True)
               cities={'Bourth':(0.81,48.77),'Paris':(2.3522,48.8566),'Rouen':(1.0993,49.4431),'Caen':(-0.3707,49.1829),'Le Mans':(0.1996,48.0061),'Orleans':(1.9093,47.9029),'Lille':(3.0573,50.6292)}
-              # BUFR scan mode 224: bit 32 indique que les pixels consecutifs suivent j
-              # (par colonnes), contrairement a la lecture C en lignes.
+              # Diagnostic de TOUS les points geographiques annonces par le BUFR.
               scan=int(m['Mode de balayage'][0])
-              print('MODE BALAYAGE BUFR:',scan,'adjacent-j:',bool(scan&32),flush=True)
+              latitudes=[float(v) for v in m['Latitude (high accuracy)']]
+              longitudes=[float(v) for v in m['Longitude (high accuracy)']]
+              print('BUFR POINTS GEO COMPLETS:',list(zip(latitudes,longitudes)),flush=True)
+              print('BUFR SCAN:',scan,'bit128:',bool(scan&128),'bit64:',bool(scan&64),'bit32:',bool(scan&32),flush=True)
+              print('BUFR DIMENSIONS:',nx,ny,'PIXEL:',m['Pixel size on horizontal - 1'],m['Pixel size on horizontal - 2'],flush=True)
               fig2,axes=plt.subplots(2,4,figsize=(20,11),dpi=110)
+              # Hypothese A: donnees en lignes; hypothese B: donnees en colonnes.
+              # On fixe le premier pixel en haut/gauche ou en bas/droite selon les directions.
               for row,transposed in enumerate((False,True)):
                   base=arr.T if transposed else arr
                   for col,(sx,sy) in enumerate(((1,-1),(-1,-1),(1,1),(-1,1))):
                       ax=axes[row,col]
-                      plotarr=np.flip(base,axis=1) if sx<0 else base
-                      plotarr=np.flip(plotarr,axis=0) if sy>0 else plotarr
-                      masked=np.ma.masked_where(~(np.isfinite(plotarr)&(plotarr>=0)&(plotarr<=70)),plotarr)
-                      xlo,xhi=sorted((x0,x0+sx*nx*1000))
-                      ylo,yhi=sorted((y0,y0+sy*ny*1000))
-                      ax.imshow(masked,extent=[xlo,xhi,ylo,yhi],origin='upper',cmap=cmap,vmin=0,vmax=55)
+                      # L'image ne doit PAS etre retournee en plus de l'inversion des axes.
+                      x1=x0+sx*nx*1000
+                      y1=y0+sy*ny*1000
+                      extent=[min(x0,x1),max(x0,x1),min(y0,y1),max(y0,y1)]
+                      masked=np.ma.masked_where(~(np.isfinite(base)&(base>=0)&(base<=70)),base)
+                      ax.imshow(masked,extent=extent,origin='upper' if sy<0 else 'lower',
+                                cmap=cmap,vmin=0,vmax=55,interpolation='nearest')
                       for city,(lon,lat) in cities.items():
                           cx,cy=forward.transform(lon,lat)
                           ax.plot(cx,cy,'ko',markersize=2)
-                          ax.text(cx+7000,cy+7000,city,fontsize=7,color='black',path_effects=[pe.withStroke(linewidth=2,foreground='white')])
+                          ax.text(cx+7000,cy+7000,city,fontsize=7,color='black',
+                                  path_effects=[pe.withStroke(linewidth=2,foreground='white')])
+                      for idx,(lat,lon) in enumerate(zip(latitudes,longitudes)):
+                          px,py=forward.transform(lon,lat)
+                          ax.plot(px,py,'mx',markersize=5)
+                          ax.text(px+7000,py-12000,str(idx),color='magenta',fontsize=9,
+                                  path_effects=[pe.withStroke(linewidth=2,foreground='white')])
                       bx,by=forward.transform(*cities['Bourth'])
-                      ax.add_patch(Rectangle((bx-150000,by-150000),300000,300000,fill=False,edgecolor='magenta',linewidth=1.3))
-                      ax.set_xlim(bx-450000,bx+450000)
-                      ax.set_ylim(by-450000,by+450000)
+                      ax.add_patch(Rectangle((bx-150000,by-150000),300000,300000,
+                                             fill=False,edgecolor='magenta',linewidth=1.3))
+                      ax.set_xlim(bx-900000,bx+900000)
+                      ax.set_ylim(by-850000,by+850000)
                       ax.set_aspect('equal')
                       ax.grid(alpha=.15)
                       ax.set_title(f'Transpose={transposed}, x={sx:+d}, y={sy:+d}',fontsize=10)
-              fig2.suptitle(f'Diagnostic BUFR scan={scan} — comparer les 8 orientations (non validees)',fontsize=14)
+              fig2.suptitle('Diagnostic origine BUFR : croix magenta = points geographiques 0-5 (NON VALIDE)',fontsize=14)
               fig2.tight_layout()
               fig2.savefig(work/'diagnostic-georeferencement.png')
               print('DIAGNOSTIC GEO GENERE:',work/'diagnostic-georeferencement.png',flush=True)
