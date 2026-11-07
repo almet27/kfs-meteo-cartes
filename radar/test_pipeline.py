@@ -123,6 +123,11 @@ class TestRadarZoom(unittest.TestCase):
         x,y=p.transform(-9.965,53.67)
         self.assertAlmostEqual(x,-619652.074055906,delta=.01)
         self.assertAlmostEqual(y,-3526818.3379318174,delta=.01)
+        # Controle independant : Geotiff radar Meteo-France decrit sur ASNR Planet,
+        # origine -619652.0953618082 / -3526818.4591967165 m (ellipsoide
+        # d'aplatissement tres legerement different de WGS84).
+        self.assertLess(abs(x-(-619652.0953618082)),0.5)
+        self.assertLess(abs(y-(-3526818.4591967165)),0.5)
         x,y=p.transform(-0.3707,49.1829)
         self.assertAlmostEqual(x,-26263.047426323068,delta=.01)
         self.assertAlmostEqual(y,-4059187.424186607,delta=.01)
