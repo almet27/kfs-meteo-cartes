@@ -953,7 +953,13 @@ async function foudreData(city,env){
   const warnings=(Array.isArray(obj?.warnings)?obj.warnings:[obj?.warning,obj?.error])
     .map(w=>String(w?.code||""));
   const noData=(errorCode==="warn_no_data"||warnings.includes("warn_no_data"));
-  if(noData)return {pulses:[],collecte:Date.now(),limite:false,cache:false};
+  if(noData){
+    const empty={pulses:[],collecte:Date.now(),limite:false};
+    await cache.put(key,new Response(JSON.stringify(empty),{
+      headers:{"Cache-Control":"public,max-age=90","Content-Type":"application/json"}
+    }));
+    return {...empty,cache:false};
+  }
   if(!res.ok)
     throw Error("Xweather HTTP "+res.status+(errorCode?" ("+errorCode+")":""));
   if(obj.success!==true||!Array.isArray(obj.response))
@@ -1120,12 +1126,21 @@ async function foudreSummary(city,minutes,env){
   if(code==="warn_invalid_param")
     throw Error("Lightning Summary : paramètres de période refusés (ou non autorisés).");
   if(code==="warn_no_data"){
-    return {state:"empty",collecte:Date.now(),cache:false};
+    const empty={state:"empty",collecte:Date.now()};
+    await caches.default.put(cacheKey,new Response(JSON.stringify(empty),{
+      headers:{"Cache-Control":"public,max-age="+FOUDRE_SUMMARY_CACHE_S,
+               "Content-Type":"application/json"}}));
+    return {...empty,cache:false};
   }
   if(obj?.success!==true)
     throw Error(foudreSummaryError(res,obj));
-  if(Array.isArray(obj.response)&&obj.response.length===0)
-    return {state:"empty",collecte:Date.now(),cache:false};
+  if(Array.isArray(obj.response)&&obj.response.length===0){
+    const empty={state:"empty",collecte:Date.now()};
+    await caches.default.put(cacheKey,new Response(JSON.stringify(empty),{
+      headers:{"Cache-Control":"public,max-age="+FOUDRE_SUMMARY_CACHE_S,
+               "Content-Type":"application/json"}}));
+    return {...empty,cache:false};
+  }
   const value={state:"ok",data:foudreSummaryConvert(obj,minutes),collecte:Date.now()};
   await caches.default.put(cacheKey,new Response(JSON.stringify(value),{
     headers:{"Cache-Control":"public,max-age="+FOUDRE_SUMMARY_CACHE_S,
@@ -1183,6 +1198,11 @@ async function completeFoudre(interaction,rawCity,env,rawPeriode=30){
       message+="🗺️ **Carte des impacts CG : 5 dernières minutes uniquement**\n"+
         "🟠 Positifs : **"+foudreNombre(plus)+
         "** · 🔵 Négatifs : **"+foudreNombre(minus)+"**\n";
+      const biggest=[...strikes.pulses].sort((a,b)=>Math.abs(b.amp)-Math.abs(a.amp))
+        .slice(0,4).map(x=>(x.amp>=0?"+":"−")+
+          foudreKA(Math.abs(x.amp)));
+      if(biggest.length)message+="⚡ Courants récents les plus forts : **"+
+        biggest.join(" · ")+"**\n";
       if(strikes.limite)message+="⚠️ Liste récente limitée à 1 000 décharges ; compteurs partiels.\n";
       if(strikes.cache)message+="_Carte basée sur un cache de 90 secondes au maximum._\n";
       if(strikes.pulses.length===0)
