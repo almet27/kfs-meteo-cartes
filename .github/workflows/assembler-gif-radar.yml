@@ -34,7 +34,12 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p radar-historique radar-sortie
-          gh run list --workflow premier-decodage-radar.yml --status success --limit 48 --json databaseId --jq '.[].databaseId' > radar-runs.txt
+          # Seules les acquisitions recentes peuvent satisfaire le seuil de fraicheur.
+          # Eviter 48 telechargements d'artefacts anciens a chaque nouveau cycle.
+          cutoff="$(date -u -d '2 hours ago' +%Y-%m-%dT%H:%M:%SZ)"
+          gh run list --workflow premier-decodage-radar.yml --status success --limit 24 --json databaseId,createdAt | \
+            jq -r --arg cutoff "$cutoff" '.[] | select(.createdAt >= $cutoff) | .databaseId' > radar-runs.txt
+          echo "Acquisitions recentes a analyser : $(wc -l < radar-runs.txt)"
           while IFS= read -r run; do
             [ -n "$run" ] || continue
             mkdir -p "radar-temp/$run"
