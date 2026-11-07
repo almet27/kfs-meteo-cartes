@@ -1,0 +1,41 @@
+name: Identifier contenu radar decompresse
+
+on:
+  workflow_dispatch:
+
+jobs:
+  inspecter:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Examiner entete du produit radar
+        env:
+          METEOFRANCE_API_KEY: ${{ secrets.METEOFRANCE_API_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import gzip,io,json,os,urllib.request,urllib.parse,struct
+          base='https://public-api.meteofrance.fr/public/DPRadar/v1/'
+          headers={'apikey':os.environ['METEOFRANCE_API_KEY']}
+          def fetch(url):
+              req=urllib.request.Request(url,headers=headers)
+              with urllib.request.urlopen(req,timeout=90) as response:
+                  return response.read()
+          metadata=json.loads(fetch(base+'mosaiques/METROPOLE/observations/REFLECTIVITE'))
+          links=[l for l in metadata.get('links',[]) if l.get('type')=='application/octet-stream+gzip']
+          if not links:
+              raise SystemExit('Lien de produit gzip introuvable')
+          url=urllib.parse.urljoin(base,links[0]['href'])
+          if urllib.parse.urlparse(url).hostname!='public-api.meteofrance.fr':
+              raise SystemExit('Domaine du produit non attendu')
+          compressed=fetch(url)
+          print('Taille GZIP (octets):',len(compressed))
+          with gzip.GzipFile(fileobj=io.BytesIO(compressed)) as f:
+              head=f.read(512)
+          print('Premiers octets decompresses (hex):',head[:64].hex())
+          print('Premiers octets decompresses (ASCII):',repr(head[:160]))
+          signatures={'GRIB':b'GRIB','NetCDF classic':b'CDF','HDF5/NetCDF4':b'\x89HDF\r\n\x1a\n','PNG':b'\x89PNG','TIFF little-endian':b'II*\x00','TIFF big-endian':b'MM\x00*','ZIP':b'PK\x03\x04'}
+          for name,signature in signatures.items():
+              if head.startswith(signature):
+                  print('Format reconnu:',name)
+          PY
