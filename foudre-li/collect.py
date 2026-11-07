@@ -144,9 +144,11 @@ def combine(previous: dict, decoded: list[dict], names: list[str],
     names = [n for n in names
              if (product_ends(n) is not None and
                  product_ends(n) >= now - timedelta(hours=4))]
-    last_ends = [v for v in
-                 [previous.get("latest_product_end_utc")] +
-                 [iso(e) for n in names if (e := product_ends(n))]]
+    last_ends = [previous.get("latest_product_end_utc")]
+    for name in names:
+        ended = product_ends(name)
+        if ended is not None:
+            last_ends.append(iso(ended))
     last_ends = [v for v in last_ends if v]
     return {
         "schema": 1, "provider": "EUMETSAT-MTG-LI-LFL",
