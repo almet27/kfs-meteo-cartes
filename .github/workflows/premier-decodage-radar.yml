@@ -127,6 +127,50 @@ jobs:
               fig2.tight_layout()
               fig2.savefig(work/'diagnostic-georeferencement.png')
               print('DIAGNOSTIC GEO GENERE:',work/'diagnostic-georeferencement.png',flush=True)
+              # Carte de reference avec limites administratives (projection radar provisoire).
+              fig3,ax3=plt.subplots(figsize=(10,10),dpi=130)
+              ax3.set_facecolor('#edf2f5')
+              def draw_geometry(coords,kind,transformer,color,width):
+                  def ring(points):
+                      if len(points)<2:return
+                      xy=[transformer.transform(float(p[0]),float(p[1])) for p in points]
+                      ax3.plot([p[0] for p in xy],[p[1] for p in xy],color=color,lw=width,alpha=.85,zorder=3)
+                  if kind=='Polygon':
+                      for r in coords:ring(r)
+                  elif kind=='MultiPolygon':
+                      for polygon in coords:
+                          for r in polygon:ring(r)
+              layers=[
+                  ('departements','https://raw.githubusercontent.com/gregoiredavid/france-geojson/master/departements.geojson','#8094a4',.65),
+                  ('pays','https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson','#263c52',1.4)]
+              for label,url,color,width in layers:
+                  try:
+                      features=json.loads(get(url)).get('features',[])
+                      for feature in features:
+                          geom=feature.get('geometry') or {}
+                          draw_geometry(geom.get('coordinates',[]),geom.get('type'),forward,color,width)
+                      print('FRONTIERES',label,'dessinees:',len(features),flush=True)
+                  except Exception as exc:
+                      print('AVERTISSEMENT frontieres',label,type(exc).__name__,str(exc)[:160],flush=True)
+              bx,by=forward.transform(*cities['Bourth'])
+              # ATTENTION : georeferencement des echos non valide; afficher les limites et les villes
+              # sans superposer des precipitations potentiellement decalees.
+              for city,(lon,lat) in cities.items():
+                  cx,cy=forward.transform(lon,lat)
+                  if abs(cx-bx)<160000 and abs(cy-by)<160000:
+                      ax3.plot(cx,cy,'o',color='#172e48',markersize=4,zorder=5)
+                      ax3.text(cx+4500,cy+4500,city,fontsize=9,color='#172e48',zorder=5)
+              ax3.plot(bx,by,'*',color='#d5274d',markersize=15,zorder=6)
+              ax3.set_xlim(bx-150000,bx+150000)
+              ax3.set_ylim(by-150000,by+150000)
+              ax3.set_aspect('equal')
+              ax3.set_title('Bourth — fond de carte et limites administratives (radar a caler)')
+              ax3.set_xlabel('Projection Lambert — metres')
+              ax3.grid(alpha=.15)
+              fig3.tight_layout()
+              fig3.savefig(work/'carte-bourth-frontieres-departements.png')
+              print('CARTE BOURTH GENEREE:',work/'carte-bourth-frontieres-departements.png',flush=True)
+
               print('CARTE GENEREE:',work/'premiere-reflectivite.png',flush=True)
               break
           else:raise RuntimeError('Champ Horizontal reflectivity absent')
