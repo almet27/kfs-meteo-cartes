@@ -201,6 +201,46 @@ jobs:
               ax3.plot([scale_x,scale_x],[scale_y-3500,scale_y+3500],color='#233e54',lw=2,zorder=8)
               ax3.plot([scale_x+50000,scale_x+50000],[scale_y-3500,scale_y+3500],color='#233e54',lw=2,zorder=8)
               ax3.text(scale_x+25000,scale_y+6500,'50 km',ha='center',fontsize=10,color='#233e54',zorder=8)
+              # Premiere superposition de DIAGNOSTIC uniquement : le premier couple
+              # lat/lon est le point de grille; les 34 suivants sont des radars.
+              print('COORDONNEES: 1 origine de grille + 34 positions radar (34 stations WMO)',flush=True)
+              print('BUFR origine grille:',latitudes[0],longitudes[0],flush=True)
+              fig4,ax4=plt.subplots(figsize=(11,11),dpi=130)
+              ax4.set_facecolor('#edf2f5')
+              # 1536 km depuis le premier point en direction est/sud.
+              extent=[x0,x0+nx*1000,y0-ny*1000,y0]
+              masked=np.ma.masked_where(~(np.isfinite(arr)&(arr>=0)&(arr<=70)),arr)
+              ax4.imshow(masked,extent=extent,origin='upper',cmap=cmap,vmin=0,vmax=55,
+                         alpha=.85,interpolation='nearest',zorder=2)
+              # Dessiner le fond PAR-DESSUS les echos pour conserver les limites lisibles.
+              old_ax3=ax3
+              ax3=ax4
+              for label,url,color,width in layers:
+                  try:
+                      features=json.loads(get(url)).get('features',[])
+                      for feature in features:
+                          geom=feature.get('geometry') or {}
+                          draw_geometry(geom.get('coordinates',[]),geom.get('type'),forward,color,width)
+                  except Exception as exc:
+                      print('AVERTISSEMENT couche diagnostic:',label,str(exc)[:120],flush=True)
+              ax3=old_ax3
+              for city,(lon,lat) in cities.items():
+                  cx,cy=forward.transform(lon,lat)
+                  if abs(cx-bx)<160000 and abs(cy-by)<160000:
+                      ax4.plot(cx,cy,'ko',markersize=3,zorder=5)
+                      ax4.text(cx+4000,cy+4000,city,fontsize=9,zorder=5,
+                               path_effects=[pe.withStroke(linewidth=2,foreground='white')])
+              ax4.plot(bx,by,'*',color='#e22653',markersize=15,zorder=6)
+              ax4.set_xlim(bx-150000,bx+150000)
+              ax4.set_ylim(by-150000,by+150000)
+              ax4.set_aspect('equal')
+              ax4.set_title('DIAGNOSTIC — Radar + frontieres autour de Bourth (calage non valide)')
+              ax4.text(.5,.02,'POSITION DES ECHOS A VERIFIER — NE PAS UTILISER COMME PREVISION',
+                       transform=ax4.transAxes,ha='center',color='#b91c1c',fontsize=9,
+                       bbox={'facecolor':'white','alpha':.9,'edgecolor':'none'})
+              fig4.tight_layout()
+              fig4.savefig(work/'diagnostic-radar-sur-carte-bourth.png')
+              print('SUPERPOSITION TEST GENEREE:',work/'diagnostic-radar-sur-carte-bourth.png',flush=True)
               ax3.plot(bx,by,'*',color='#d5274d',markersize=15,zorder=6)
               ax3.set_xlim(bx-150000,bx+150000)
               ax3.set_ylim(by-150000,by+150000)
