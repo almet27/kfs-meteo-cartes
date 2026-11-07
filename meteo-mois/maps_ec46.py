@@ -16,6 +16,8 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
+import cartopy.crs as ccrs
+import cartopy.feature as cfeature
 
 OUTPUT = Path("meteo-mois-preview")
 SOURCE = "https://seasonal-api.open-meteo.com/v1/seasonal"
@@ -81,33 +83,56 @@ def grid(data, key, index):
     return np.array([x["weekly"][key][index] for x in data], dtype=float).reshape(len(LATS), len(LONS))
 
 def decorate(ax, week):
+    """Fond Natural Earth précis, en lon/lat WGS84 (données projetées en PlateCarree)."""
     d = date.fromisoformat(week)
     end = d + timedelta(days=6)
     ax.set_title(f"{d:%d/%m} – {end:%d/%m/%Y}", fontsize=11, weight="bold")
-    ax.set_xlim(float(LONS[0]), float(LONS[-1]))
-    ax.set_ylim(float(LATS[0]), float(LATS[-1]))
-    ax.set_xticks([-60, -40, -20, 0, 20, 40])
-    ax.set_yticks([30, 40, 50, 60, 70])
-    ax.grid(color="#5b6570", alpha=0.17, lw=0.6)
-    ax.set_xlabel("Longitude (°)", fontsize=8)
-    ax.set_ylabel("Latitude (°)", fontsize=8)
-    ax.tick_params(labelsize=8)
-    ax.set_aspect(1.15)
-    # Ce prototype n'affiche pas les frontières administratives :
-    # position géographique sans faux trait de côte interpolé.
-    ax.text(0.02, 0.02, "GRILLE EXPÉRIMENTALE", transform=ax.transAxes,
-            fontsize=8, color="black", alpha=0.72,
-            bbox={"facecolor": "white", "alpha": .75, "edgecolor": "none"})
+    ax.set_extent([float(LONS[0]), float(LONS[-1]),
+                   float(LATS[0]), float(LATS[-1])],
+                  crs=ccrs.PlateCarree())
+
+    # Terre et mer SOUS les champs ECMWF ; frontières et côtes AU-DESSUS.
+    ax.add_feature(cfeature.OCEAN.with_scale("50m"),
+                   facecolor="#dcebf5", edgecolor="none", zorder=0)
+    ax.add_feature(cfeature.LAND.with_scale("50m"),
+                   facecolor="#f1ede4", edgecolor="none", zorder=0.1)
+    ax.coastlines(resolution="50m", linewidth=0.75,
+                  color="#2e3942", zorder=7)
+    ax.add_feature(cfeature.BORDERS.with_scale("50m"),
+                   linewidth=0.45, edgecolor="#505b63", zorder=7)
+
+    gl = ax.gridlines(crs=ccrs.PlateCarree(), draw_labels=True,
+                      linewidth=0.45, alpha=0.25, linestyle="--",
+                      color="#3e515e", zorder=6)
+    gl.top_labels = False
+    gl.right_labels = False
+    gl.xlabel_style = {"size": 7}
+    gl.ylabel_style = {"size": 7}
+
+    # Petit repère lisible, sans cacher la France sous un symbole imposant.
+    ax.plot([2.2], [46.5], marker="o", markersize=2.5, color="#333333",
+            transform=ccrs.PlateCarree(), zorder=8)
+    ax.text(3.6, 46.6, "France", fontsize=7, weight="bold",
+            color="#26323a", transform=ccrs.PlateCarree(), zorder=8,
+            bbox={"facecolor": "white", "alpha": 0.62, "edgecolor": "none",
+                  "pad": 0.4})
+    ax.text(0.025, 0.027, "GRILLE EXPÉRIMENTALE",
+            transform=ax.transAxes, fontsize=8, color="#121820",
+            bbox={"facecolor": "white", "alpha": .86,
+                  "edgecolor": "none", "pad": 1.2}, zorder=9)
 
 def draw_vectors(ax, data, idx):
     u = grid(data, "wind_u_component_10m_mean", idx)
     v = grid(data, "wind_v_component_10m_mean", idx)
     xx, yy = np.meshgrid(LONS, LATS)
     ax.quiver(xx, yy, u, v, color="#202b38", angles="uv", scale_units="width",
-              scale=140, width=0.003, headwidth=3, alpha=0.78)
+              scale=140, width=0.003, headwidth=3, alpha=0.8, zorder=5,
+              transform=ccrs.PlateCarree())
 
 def render(data, weeks, chosen, mode):
-    fig, axes = plt.subplots(2, 2, figsize=(14, 11), constrained_layout=True)
+    fig, axes = plt.subplots(2, 2, figsize=(14, 11),
+                             constrained_layout=True,
+                             subplot_kw={"projection": ccrs.PlateCarree()})
     xx, yy = np.meshgrid(LONS, LATS)
     contour = None
     for ax, idx in zip(axes.flat, chosen):
@@ -115,17 +140,20 @@ def render(data, weeks, chosen, mode):
             anomaly = grid(data, "pressure_msl_anomaly", idx)
             pressure = grid(data, "pressure_msl_mean", idx)
             contour = ax.contourf(xx, yy, anomaly, levels=np.arange(-24, 25, 3),
-                                  cmap="RdBu_r", extend="both")
+                                  cmap="RdBu_r", extend="both", alpha=0.88,
+                                  zorder=2, transform=ccrs.PlateCarree())
             pmin, pmax = float(np.min(pressure)), float(np.max(pressure))
             levels = np.arange(np.floor(pmin/5)*5, np.ceil(pmax/5)*5+1, 5)
             if len(levels) >= 2:
                 lines = ax.contour(xx, yy, pressure, levels=levels, colors="#161e2b",
-                                   linewidths=.8, alpha=.85)
+                                   linewidths=.8, alpha=.85, zorder=3,
+                                   transform=ccrs.PlateCarree())
                 ax.clabel(lines, inline=True, fontsize=7, fmt="%d")
         else:
             thermal = grid(data, "temperature_2m_anomaly", idx)
             contour = ax.contourf(xx, yy, thermal, levels=np.arange(-9, 10, 1),
-                                  cmap="RdBu_r", extend="both")
+                                  cmap="RdBu_r", extend="both", alpha=0.88,
+                                  zorder=2, transform=ccrs.PlateCarree())
         draw_vectors(ax, data, idx)
         decorate(ax, weeks[idx])
     if mode == "pressure":
@@ -154,6 +182,7 @@ def main():
         "product": "ECMWF seamless weekly ensemble mean via Open-Meteo",
         "region": "Atlantique nord oriental / Europe",
         "points": N, "grid": "coarse_experimental",
+        "basemap": "Natural Earth 50m via Cartopy (coasts, land/ocean, borders)",
         "periods": [
             {"start": weeks[i], "end": str(date.fromisoformat(weeks[i]) + timedelta(days=6))}
             for i in chosen
