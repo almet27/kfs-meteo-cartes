@@ -473,11 +473,93 @@ async function forecast(city,echeance){
 
 }
 
+
+// === /meteo 1mois : prévisualisation EC46, sans toucher aux autres échéances ===
+// Données et cartes expérimentales; aucune prévision locale précise à J+30.
+const EC46_PREVIEW_BASE =
+  "https://raw.githubusercontent.com/almet27/kfs-meteo-cartes/" +
+  "feature/meteo-1mois-atlantique-europe-plan/meteo-mois-preview/";
+const EC46_PREVIEW_MAX_AGE_MS=72*3600000;
+
+async function ec46PreviewJson(file) {
+  const response=await fetch(EC46_PREVIEW_BASE+file+"?v="+Math.floor(Date.now()/3600000),{
+    headers:{"Accept":"application/json"},signal:AbortSignal.timeout(12000)
+  });
+  if(!response.ok)throw Error("EC46 "+file+" indisponible (HTTP "+response.status+")");
+  return response.json();
+}
+
+async function ec46MonthlyPreview(city) {
+  const manifest=await ec46PreviewJson("manifest-TEST.json");
+  if(manifest.status!=="prototype_ne_pas_diffuser" ||
+     !Number.isInteger(manifest.points)||manifest.points<90||
+     !Array.isArray(manifest.periods)||manifest.periods.length!==4||
+     !Array.isArray(manifest.files)||
+     !manifest.files.includes("centres-action-4semaines-TEST.png")||
+     !manifest.files.includes("anomalies-thermiques-4semaines-TEST.png"))
+    throw Error("Manifeste EC46 expérimental incomplet");
+  const age=Date.now()-Date.parse(manifest.generated_utc);
+  if(!Number.isFinite(age)||age< -600000||age>EC46_PREVIEW_MAX_AGE_MS)
+    throw Error("Cartes EC46 trop anciennes : nouveau run nécessaire");
+  const analysis=await ec46PreviewJson("analysis-TEST.json");
+  if(typeof analysis.text!=="string"||analysis.text.length<100||
+     analysis.text.length>12000||
+     !Array.isArray(analysis.weeks)||analysis.weeks.length!==4||
+     analysis.provenance?.operational!==false)
+    throw Error("Analyse EC46 expérimentale incomplète");
+  for(let i=0;i<4;i++) {
+    if(analysis.weeks[i].start!==manifest.periods[i].start||
+       analysis.weeks[i].end!==manifest.periods[i].end)
+      throw Error("Dates incohérentes entre cartes et texte EC46");
+  }
+  const images=[
+    EC46_PREVIEW_BASE+"centres-action-4semaines-TEST.png",
+    EC46_PREVIEW_BASE+"anomalies-thermiques-4semaines-TEST.png"
+  ];
+  const date=new Date(manifest.generated_utc).toLocaleString("fr-FR",{
+    timeZone:"Europe/Paris",day:"2-digit",month:"2-digit",
+    hour:"2-digit",minute:"2-digit"
+  });
+  const intro="🧪 **KFS MÉTÉO — Tendance EC46 en test**\n"+
+    "📍 Demande pour **"+city+"** — analyse générale **Atlantique / Europe / France**, "+
+    "pas une prévision précise de la ville.\n"+
+    "🕒 Cartes générées le **"+date+"** (heure de Paris) · "+manifest.points+" points.\n"+
+    "🗺️ **Centres d'action :** "+images[0]+"\n"+
+    "🌡️ **Anomalies thermiques :** "+images[1]+"\n"+
+    "⚠️ **Version expérimentale : résolution insuffisante pour diffusion météo opérationnelle.**";
+  return {
+    content:[intro,analysis.text],
+    embeds:[
+      {title:"EC46 · Pressions moyennes et anomalies · 4 semaines",
+       image:{url:images[0]},color:0x2267a5},
+      {title:"EC46 · Anomalies thermiques · 4 semaines",
+       image:{url:images[1]},color:0xb96836}
+    ]
+  };
+}
+
 async function complete(interaction, city, echeance) {
 
   let content;
+  let monthlyEmbeds=null;
 
-  try {content=await forecast(city,echeance);} catch(e){content=["⚠️ "+(e.message||"Erreur météo temporaire.")];}
+  try {
+    if(echeance==="1mois"){
+      try {
+        const preview=await ec46MonthlyPreview(city);
+        content=preview.content;
+        monthlyEmbeds=preview.embeds;
+      }catch(error){
+        console.warn("EC46 /meteo 1mois : repli texte existant",String(error));
+        const fallback=await forecast(city,echeance);
+        content=["ℹ️ Cartes EC46 expérimentales temporairement indisponibles. "+
+                 "Voici la tendance texte existante.",
+                 ...Array.isArray(fallback)?fallback:[fallback]];
+      }
+    }else{
+      content=await forecast(city,echeance);
+    }
+  }catch(e){content=["⚠️ "+(e.message||"Erreur météo temporaire.")];}
 
   const messages=(Array.isArray(content)?content:[content]).flatMap(message => {
     const parts=[];
@@ -498,7 +580,10 @@ async function complete(interaction, city, echeance) {
 
     const endpoint=i===0?base+"/messages/@original":base;
 
-    const r=await fetch(endpoint,{method:i===0?"PATCH":"POST",headers:{"content-type":"application/json"},body:JSON.stringify({content:messages[i],allowed_mentions:{parse:[]}})});
+    const payload={content:messages[i],allowed_mentions:{parse:[]}};
+    if(i===0&&monthlyEmbeds)payload.embeds=monthlyEmbeds;
+    const r=await fetch(endpoint,{method:i===0?"PATCH":"POST",
+      headers:{"content-type":"application/json"},body:JSON.stringify(payload)});
 
     if(!r.ok)console.error("Discord reply failed",r.status,await r.text());
 
