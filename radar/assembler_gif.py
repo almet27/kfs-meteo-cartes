@@ -31,8 +31,8 @@ def main():
     parser.add_argument("--diagnostic", action="store_true",
                         help="GIF de test avec filigrane NON VALIDE, jamais pour diffusion")
     args = parser.parse_args()
-    if args.diagnostic == args.validation_confirmee:\n        parser.error("Choisir exactement un mode : --diagnostic OU --validation-confirmee.")
-        parser.error("Georeferencement non confirme : refus de creer un GIF destine a la diffusion.")
+    if args.diagnostic == args.validation_confirmee:
+        parser.error("Choisir exactement un mode : --diagnostic OU --validation-confirmee.")
     if len(args.images) < 2:
         parser.error("Il faut au moins deux observations distinctes pour une animation.")
     if not 100 <= args.duree_ms <= 5000:
