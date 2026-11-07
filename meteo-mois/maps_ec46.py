@@ -1,0 +1,178 @@
+#!/usr/bin/env python3
+"""Prototype EC46 : deux cartes hebdomadaires sur l'Atlantique et l'Europe.
+
+Aucune diffusion Discord / aucune publication GitHub Pages.
+Maille volontairement grossière : NE PAS UTILISER EN PRÉVISION OPÉRATIONNELLE.
+"""
+from __future__ import annotations
+import json
+from datetime import date, datetime, timedelta, timezone
+from pathlib import Path
+from urllib.error import HTTPError
+from urllib.parse import urlencode
+from urllib.request import Request, urlopen
+
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import numpy as np
+
+OUTPUT = Path("meteo-mois-preview")
+SOURCE = "https://seasonal-api.open-meteo.com/v1/seasonal"
+FIELDS = [
+    "pressure_msl_mean", "pressure_msl_anomaly",
+    "temperature_2m_anomaly", "precipitation_anomaly",
+    "wind_u_component_10m_mean", "wind_v_component_10m_mean",
+]
+# Grille du TEST uniquement. Ne constitue pas une résolution cartographique opérationnelle.
+LONS = np.array([-60, -45, -30, -15, 0, 15, 30, 40], dtype=float)
+LATS = np.array([30, 38, 46, 54, 62, 70, 75], dtype=float)
+N = len(LONS) * len(LATS)
+ALL_POINTS = [(float(lat), float(lon)) for lat in LATS for lon in LONS]
+
+def api():
+    p = {
+        "latitude": ",".join(str(lat) for lat, lon in ALL_POINTS),
+        "longitude": ",".join(str(lon) for lat, lon in ALL_POINTS),
+        "models": "ecmwf_seasonal_ensemble_mean_seamless",
+        "forecast_days": 45, "timezone": "GMT",
+        "weekly": ",".join(FIELDS),
+    }
+    req = Request(SOURCE + "?" + urlencode(p), headers={
+        "Accept": "application/json",
+        "User-Agent": "KFS-Meteo-EC46-Synoptic-Prototype/0.1",
+    })
+    try:
+        with urlopen(req, timeout=110) as res:
+            result = json.load(res)
+    except HTTPError as exc:
+        raise RuntimeError(f"EC46 HTTP {exc.code}: {exc.read(500)!r}") from exc
+    if not isinstance(result, list) or len(result) != N:
+        raise RuntimeError(f"Réponse multi-points inattendue (attendus {N}, obtenus {len(result) if isinstance(result,list) else type(result).__name__}).")
+    weeks = result[0].get("weekly", {}).get("time", [])
+    if len(weeks) < 5:
+        raise RuntimeError("Moins de 5 semaines disponibles pour sélectionner quatre semaines complètes")
+    # Écarter la première semaine car elle peut déjà être en cours.
+    chosen = list(range(1, 5))
+    today = datetime.now(timezone.utc).date()
+    for i in chosen:
+        d = date.fromisoformat(weeks[i])
+        if d + timedelta(days=6) < today:
+            raise RuntimeError("Période EC46 entièrement passée : source obsolète")
+    for idx, item in enumerate(result):
+        if item.get("weekly", {}).get("time") != weeks:
+            raise RuntimeError("Semaines incohérentes entre points de grille")
+        for field in FIELDS:
+            values = item["weekly"].get(field)
+            if not isinstance(values, list) or len(values) != len(weeks):
+                raise RuntimeError(f"Champ manquant : {field} au point {idx}")
+            for i in chosen:
+                if not isinstance(values[i], (float, int)) or not np.isfinite(values[i]):
+                    raise RuntimeError(f"Donnée invalide : {field}, point {idx}, semaine {i}")
+    units = result[0].get("weekly_units", {})
+    assert units.get("pressure_msl_mean") == "hPa"
+    assert units.get("pressure_msl_anomaly") == "hPa"
+    assert units.get("temperature_2m_anomaly") in ("K", "°C")
+    assert units.get("wind_u_component_10m_mean") in ("km/h", "m/s")
+    assert units.get("wind_v_component_10m_mean") in ("km/h", "m/s")
+    return result, weeks, chosen, units
+
+def grid(data, key, index):
+    return np.array([x["weekly"][key][index] for x in data], dtype=float).reshape(len(LATS), len(LONS))
+
+def decorate(ax, week):
+    d = date.fromisoformat(week)
+    end = d + timedelta(days=6)
+    ax.set_title(f"{d:%d/%m} – {end:%d/%m/%Y}", fontsize=11, weight="bold")
+    ax.set_xlim(float(LONS[0]), float(LONS[-1]))
+    ax.set_ylim(float(LATS[0]), float(LATS[-1]))
+    ax.set_xticks([-60, -40, -20, 0, 20, 40])
+    ax.set_yticks([30, 40, 50, 60, 70])
+    ax.grid(color="#5b6570", alpha=0.17, lw=0.6)
+    ax.set_xlabel("Longitude (°)", fontsize=8)
+    ax.set_ylabel("Latitude (°)", fontsize=8)
+    ax.tick_params(labelsize=8)
+    ax.set_aspect(1.15)
+    # Ce prototype n'affiche pas les frontières administratives :
+    # position géographique sans faux trait de côte interpolé.
+    ax.text(0.02, 0.02, "GRILLE EXPÉRIMENTALE", transform=ax.transAxes,
+            fontsize=8, color="black", alpha=0.72,
+            bbox={"facecolor": "white", "alpha": .75, "edgecolor": "none"})
+
+def draw_vectors(ax, data, idx):
+    u = grid(data, "wind_u_component_10m_mean", idx)
+    v = grid(data, "wind_v_component_10m_mean", idx)
+    xx, yy = np.meshgrid(LONS, LATS)
+    ax.quiver(xx, yy, u, v, color="#202b38", angles="uv", scale_units="width",
+              scale=140, width=0.003, headwidth=3, alpha=0.78)
+
+def render(data, weeks, chosen, mode):
+    fig, axes = plt.subplots(2, 2, figsize=(14, 11), constrained_layout=True)
+    xx, yy = np.meshgrid(LONS, LATS)
+    contour = None
+    for ax, idx in zip(axes.flat, chosen):
+        if mode == "pressure":
+            anomaly = grid(data, "pressure_msl_anomaly", idx)
+            pressure = grid(data, "pressure_msl_mean", idx)
+            contour = ax.contourf(xx, yy, anomaly, levels=np.arange(-24, 25, 3),
+                                  cmap="RdBu_r", extend="both")
+            pmin, pmax = float(np.min(pressure)), float(np.max(pressure))
+            levels = np.arange(np.floor(pmin/5)*5, np.ceil(pmax/5)*5+1, 5)
+            if len(levels) >= 2:
+                lines = ax.contour(xx, yy, pressure, levels=levels, colors="#161e2b",
+                                   linewidths=.8, alpha=.85)
+                ax.clabel(lines, inline=True, fontsize=7, fmt="%d")
+        else:
+            thermal = grid(data, "temperature_2m_anomaly", idx)
+            contour = ax.contourf(xx, yy, thermal, levels=np.arange(-9, 10, 1),
+                                  cmap="RdBu_r", extend="both")
+        draw_vectors(ax, data, idx)
+        decorate(ax, weeks[idx])
+    if mode == "pressure":
+        title="KFS MÉTÉO | EC46 — Pressions et centres d'action MOYENS"
+        label="Anomalie de pression (hPa) · isolignes pression moyenne (hPa)"
+        file="centres-action-4semaines-TEST.png"
+    else:
+        title="KFS MÉTÉO | EC46 — Anomalie thermique près du sol"
+        label="Anomalie température 2 m (K, écart équivalent à °C)"
+        file="anomalies-thermiques-4semaines-TEST.png"
+    fig.suptitle(title + "\nAtlantique Nord oriental – Europe | ÉCHANTILLONNAGE 56 POINTS, NON OPÉRATIONNEL",
+                 fontsize=15, weight="bold")
+    fig.colorbar(contour, ax=axes.ravel().tolist(), shrink=.8, label=label, pad=.02)
+    OUTPUT.mkdir(parents=True, exist_ok=True)
+    fig.savefig(OUTPUT / file, dpi=140, facecolor="white")
+    plt.close(fig)
+    return file
+
+def main():
+    data, weeks, chosen, units = api()
+    products = [render(data, weeks, chosen, "pressure"),
+                render(data, weeks, chosen, "thermal")]
+    meta = {
+        "status": "prototype_ne_pas_diffuser",
+        "generated_utc": datetime.now(timezone.utc).isoformat(),
+        "product": "ECMWF seamless weekly ensemble mean via Open-Meteo",
+        "region": "Atlantique nord oriental / Europe",
+        "points": N, "grid": "coarse_experimental",
+        "periods": [
+            {"start": weeks[i], "end": str(date.fromisoformat(weeks[i]) + timedelta(days=6))}
+            for i in chosen
+        ],
+        "units": units, "files": products,
+        "warnings": [
+            "Source avec données non corrigées des biais, résolution grossière.",
+            "4 semaines moyennes ; ne prédit pas la position exacte des centres d'action.",
+            "Aucune donnée T850 ou Z500 ; les flèches représentent vent à 10m.",
+            "Pas de vérification de dispersion des membres de l'ensemble.",
+            "Aucune donnée importée dans le bot Discord.",
+        ],
+    }
+    (OUTPUT / "manifest-TEST.json").write_text(
+        json.dumps(meta, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    print(json.dumps({
+        "status": meta["status"], "periods": meta["periods"], "files": products,
+        "points": N,
+    }, ensure_ascii=False))
+
+if __name__ == "__main__":
+    main()
