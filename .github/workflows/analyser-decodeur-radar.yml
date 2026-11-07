@@ -1,0 +1,41 @@
+name: Etudier decodeur radar Météo-France
+
+on:
+  workflow_dispatch:
+
+jobs:
+  analyser:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Identifier les tables locales et la methode de decodage
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,urllib.request,csv,io
+          root='https://raw.githubusercontent.com/theperk08/Meteo_France_Radars/main/'
+          def load(path):
+              with urllib.request.urlopen(root+path,timeout=30) as r:return r.read().decode('utf-8-sig')
+          print('=== Table locale Météo-France 85 version 14 ===')
+          rows=list(csv.reader(io.StringIO(load('tables/localtabb_85_14.csv'))))
+          print('Lignes:',len(rows))
+          for row in rows[:7]:print(str(row)[:260])
+          print('=== Descripteurs absents de ecCodes ===')
+          for descriptor in ('001192','029192','025194','025192','006196','025210','048192','031192'):
+              matches=[r for r in rows if any(descriptor in str(cell).replace('-','').replace(' ','') for cell in r)]
+              print(descriptor,':',str(matches[:2])[:350] if matches else 'pas dans la table B')
+          print('=== Autres tables disponibles ===')
+          for name in ('tables/localtabd_85_14.csv','tables/bufrtabd_16.csv'):
+              try:
+                  lines=load(name).splitlines()
+                  print(name,'lignes',len(lines),'extrait',lines[:2])
+              except Exception as e:print(name,type(e).__name__)
+          print('=== Fonctions du notebook (extraits) ===')
+          notebook=json.loads(load('MeteoFrance_Bufr_Decoder.ipynb'))
+          for i,cell in enumerate(notebook.get('cells',[])):
+              src=''.join(cell.get('source',[]))
+              if cell.get('cell_type')=='code' and any(k in src.lower() for k in ('deco_bufr','bufrtabb','localtabb','mosaic')):
+                  lines=src.splitlines()
+                  hits=[(j,l.strip()) for j,l in enumerate(lines) if any(k in l.lower() for k in ('def deco_bufr','bufrtabb','localtabb','def ','table_dir','table_path','mosaic'))]
+                  print('Cellule',i,'lignes',len(lines),'indices',str(hits[:18])[:1200])
+          PY
