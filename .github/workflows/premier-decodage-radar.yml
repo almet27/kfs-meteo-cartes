@@ -465,12 +465,14 @@ jobs:
                       'pixels_avec_echo_10dbz':int(np.count_nonzero(np.isfinite(local)&(local>=10)&(local<=70)))
                   }
               ax3=old_ax3
-              fig7.suptitle('Bourth : 4 hypotheses radar sur frontieres — NON VALIDEES',fontsize=14)
-              fig7.text(.5,.975,'Capture UTC : '+captured_utc+' | Heure produit : '+str(product_times)[:140],
+              # Deux lignes distinctes pour eviter le chevauchement du titre.
+              fig7.suptitle('Bourth : 4 hypotheses radar sur frontieres — NON VALIDEES',
+                            fontsize=14,y=.995)
+              fig7.text(.5,.962,'Capture UTC : '+captured_utc+' | Heure produit : '+str(product_times)[:110],
                         ha='center',va='top',fontsize=8,color='#334155')
               fig7.text(.5,.012,'Ne pas diffuser comme radar geolocalise avant verification independante',
                         ha='center',color='#b91c1c',fontsize=10)
-              fig7.tight_layout(rect=[0,.03,1,.97])
+              fig7.tight_layout(rect=[0,.03,1,.925])
               fig7.savefig(work/'diagnostic-quatre-hypotheses-bourth.png')
               audit['hypotheses_pixels_bourth_30km']=local_stats
               (work/'audit-georeferencement.json').write_text(
