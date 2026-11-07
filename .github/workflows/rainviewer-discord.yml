@@ -1,0 +1,80 @@
+name: Publier radar RainViewer pour Discord
+
+on:
+  schedule:
+    # Les images RainViewer ont deja leur historique : un run produit 8 frames.
+    - cron: '7,22,37,52 * * * *'
+  workflow_dispatch:
+  push:
+    paths:
+      - 'rainviewer/*.py'
+      - '.github/workflows/rainviewer-discord.yml'
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: rainviewer-github-pages
+  cancel-in-progress: false
+
+jobs:
+  radar-rainviewer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Installer Pillow pour assembler le GIF
+        run: python -m pip install --disable-pip-version-check pillow
+      - name: Tests de localisation et assemblage sans reseau
+        run: |
+          python -m py_compile rainviewer/build_atlas.py
+          python -m unittest discover -s rainviewer -p 'test_*.py' -v
+      - name: Construire la derniere animation RainViewer
+        run: |
+          python rainviewer/build_atlas.py --output radar-public/rainviewer
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from PIL import Image
+          root=Path('radar-public/rainviewer')
+          m=json.loads((root/'radar-rainviewer.json').read_text())
+          with Image.open(root/'radar-rainviewer.gif') as gif:
+              assert gif.n_frames >= 2, 'Animation avec moins de 2 images'
+              assert gif.size == (1536,1536), 'Emprise radar invalide'
+              print('ANIMATION RADAR VERIFIEE:',gif.n_frames,'images',
+                    m['derniere_observation_utc'])
+          PY
+      - name: Index public avec attribution RainViewer
+        run: |
+          cat > radar-public/index.html <<'HTML'
+          <!doctype html><html lang="fr"><meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <title>KFS Météo — Radar RainViewer</title>
+          <style>body{font:16px system-ui;max-width:900px;padding:24px;margin:auto;background:#eef3f8;color:#172d40}
+          img{max-width:100%;border-radius:10px}</style>
+          <h1>Radar RainViewer · KFS Météo</h1>
+          <p>Animation des dernières observations radar, géolocalisées en Web Mercator.</p>
+          <img src="./rainviewer/radar-rainviewer.gif" alt="Radar animé France">
+          <p>Données : <a href="https://www.rainviewer.com/">RainViewer</a>.
+          Carte : contours France GeoJSON. Pour une consultation interactive,
+          utiliser Windy.</p></html>
+          HTML
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: radar-public
+      - name: Publier sur GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+      - name: Resume
+        run: |
+          echo '## Radar RainViewer publié' >> "$GITHUB_STEP_SUMMARY"
+          cat radar-public/rainviewer/radar-rainviewer.json >> "$GITHUB_STEP_SUMMARY"
