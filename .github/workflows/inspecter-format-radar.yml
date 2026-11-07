@@ -1,0 +1,59 @@
+name: Inspecter format produit radar
+
+on:
+  workflow_dispatch:
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Identifier le produit radar
+        env:
+          METEOFRANCE_API_KEY: ${{ secrets.METEOFRANCE_API_KEY }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,os,urllib.request,urllib.error,urllib.parse
+          base='https://public-api.meteofrance.fr/public/DPRadar/v1/'
+          headers={'apikey':os.environ['METEOFRANCE_API_KEY']}
+          def get(url):
+              req=urllib.request.Request(url,headers=headers)
+              try:
+                  with urllib.request.urlopen(req,timeout=40) as resp:
+                      body=resp.read(150000)
+                      print('HTTP:',resp.status,'Content-Type:',resp.headers.get('Content-Type'),'Taille lue:',len(body))
+                      return body,resp.headers.get('Content-Type','')
+              except urllib.error.HTTPError as e:
+                  print('HTTP:',e.code,'Content-Type:',e.headers.get('Content-Type'))
+                  return None,''
+          body,ctype=get(base+'mosaiques/METROPOLE/observations/REFLECTIVITE')
+          if body is None: raise SystemExit(1)
+          doc=json.loads(body)
+          for link in doc.get('links',[]):
+              print('Lien:',{k:v for k,v in link.items() if k!='href'})
+          candidates=[l for l in doc.get('links',[]) if l.get('rel')!='self' and l.get('href')]
+          if not candidates:
+              print('Aucun lien de produit trouve')
+              raise SystemExit(0)
+          href=candidates[0]['href']
+          target=urllib.parse.urljoin(base,href)
+          if urllib.parse.urlparse(target).hostname not in ('public-api.meteofrance.fr',):
+              print('Domaine du lien non autorise; requete ignoree')
+              raise SystemExit(0)
+          body,ctype=get(target)
+          if body is None: raise SystemExit(0)
+          try:
+              obj=json.loads(body)
+              print('Reponse JSON:')
+              def brief(v,depth=0):
+                  if depth>4:return '...'
+                  if isinstance(v,dict):return {k:brief(x,depth+1) for k,x in v.items() if not any(w in k.lower() for w in ('key','secret','token'))}
+                  if isinstance(v,list):return {'nombre':len(v),'premier':brief(v[0],depth+1) if v else None}
+                  if isinstance(v,str):
+                      if v.startswith(('https://','http://')):return '[URL masquee]'
+                      return v[:200]
+                  return v
+              print(json.dumps(brief(obj),ensure_ascii=False,indent=2)[:7000])
+          except (ValueError,UnicodeDecodeError):
+              print('Fichier binaire, premiers octets (hex):',body[:24].hex())
+          PY
