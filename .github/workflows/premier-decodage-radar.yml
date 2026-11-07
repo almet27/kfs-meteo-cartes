@@ -40,6 +40,16 @@ jobs:
           if not os.environ.get('METEOFRANCE_API_KEY'):raise RuntimeError('Secret METEOFRANCE_API_KEY manquant')
           endpoint='https://public-api.meteofrance.fr/public/DPRadar/v1/mosaiques/METROPOLE/observations/REFLECTIVITE'
           metadata=json.loads(get(endpoint,{'apikey':os.environ['METEOFRANCE_API_KEY'],'User-Agent':'KFS-Meteo-Radar/1.0'}))
+          # Conserver l'heure exacte du produit pour une comparaison externe.
+          # Ne jamais sauvegarder les URLs de telechargement (potentiellement signees).
+          from datetime import datetime,timezone
+          captured_utc=datetime.now(timezone.utc).isoformat(timespec='seconds')
+          product_times={}
+          for key in ('date','datetime','time','timestamp','validityTime','validityDate','observationTime','dateObservation','updated','lastUpdate'):
+              if key in metadata:
+                  product_times[key]=metadata[key]
+          print('HORODATAGE CAPTURE UTC:',captured_utc,flush=True)
+          print('HORODATAGE METADONNEES:',product_times,flush=True)
           links=metadata.get('links',[])
           candidates=[l['href'] for l in links if l.get('rel','').endswith('/data') and l.get('href')]
           if not candidates:raise RuntimeError('Aucun lien BUFR dans la reponse : '+str(links)[:900])
@@ -290,6 +300,9 @@ jobs:
               # l'orientation de la matrice dans ce produit local.
               audit={
                   'statut':'NON_VALIDE',
+                  'capture_utc':captured_utc,
+                  'horodatage_produit':product_times,
+                  'reference_externe':'A comparer a une image radar independante au meme instant UTC',
                   'raison':'Ordre des pixels non confirme par reference externe horodatee',
                   'source':'Meteo-France DPRadar REFLECTIVITE METROPOLE',
                   'grille':{'largeur':nx,'hauteur':ny,'pas_x_m':dx,'pas_y_m':dy},
@@ -453,6 +466,8 @@ jobs:
                   }
               ax3=old_ax3
               fig7.suptitle('Bourth : 4 hypotheses radar sur frontieres — NON VALIDEES',fontsize=14)
+              fig7.text(.5,.975,'Capture UTC : '+captured_utc+' | Heure produit : '+str(product_times)[:140],
+                        ha='center',va='top',fontsize=8,color='#334155')
               fig7.text(.5,.012,'Ne pas diffuser comme radar geolocalise avant verification independante',
                         ha='center',color='#b91c1c',fontsize=10)
               fig7.tight_layout(rect=[0,.03,1,.97])
