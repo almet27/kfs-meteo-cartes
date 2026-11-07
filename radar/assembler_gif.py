@@ -26,6 +26,8 @@ def main():
     parser.add_argument("images", nargs="+", type=Path)
     parser.add_argument("--sortie", type=Path, required=True)
     parser.add_argument("--duree-ms", type=int, default=650)
+    parser.add_argument("--intervalle-max-minutes", type=int, default=15,
+                        help="15 min pour une animation fiable ; jusqu'a 25 min en diagnostic avec avertissement")
     parser.add_argument("--validation-confirmee", action="store_true",
                         help="A utiliser UNIQUEMENT apres validation du georeferencement")
     parser.add_argument("--diagnostic", action="store_true",
@@ -33,6 +35,8 @@ def main():
     args = parser.parse_args()
     if args.diagnostic == args.validation_confirmee:
         parser.error("Choisir exactement un mode : --diagnostic OU --validation-confirmee.")
+    if not 5 <= args.intervalle_max_minutes <= (25 if args.diagnostic else 15):
+        parser.error("Intervalle maximal : 15 min en mode valide, 25 min en diagnostic.")
     if len(args.images) < 2:
         parser.error("Il faut au moins deux observations distinctes pour une animation.")
     if not 100 <= args.duree_ms <= 5000:
@@ -41,11 +45,17 @@ def main():
     times = [t for t, _ in ordered]
     if len(set(times)) != len(times):
         parser.error("Horodatages en double : chaque image doit correspondre a une observation distincte.")
-    if any((b-a).total_seconds() > 900 for a, b in zip(times, times[1:])):
-        parser.error("Intervalle de plus de 15 min entre deux observations : animation discontinue.")
+    gaps = [(b-a).total_seconds()/60 for a, b in zip(times, times[1:])]
+    if any(gap > args.intervalle_max_minutes for gap in gaps):
+        parser.error(f"Intervalle de plus de {args.intervalle_max_minutes} min : animation discontinue.")
+    if args.diagnostic:
+        for gap in gaps:
+            if gap > 15:
+                print(f"AVERTISSEMENT : trou de {gap:g} min entre deux observations BUFR. "
+                      "Aucune image n'a ete inventee.", flush=True)
     frames = []
     size = None
-    for timestamp, path in ordered:
+    for index, (timestamp, path) in enumerate(ordered):
         with Image.open(path) as source:
             frame = source.convert("RGB")
         if size is None:
@@ -60,10 +70,17 @@ def main():
             warning = "RADAR NON VALIDE - DIAGNOSTIC UNIQUEMENT"
             draw.rectangle((8, 46, 420, 79), fill="#8b1723")
             draw.text((15, 55), warning, fill="white")
+            if index < len(gaps) and gaps[index] > 15:
+                note = f"TROU : prochain radar dans {gaps[index]:g} min"
+                draw.rectangle((8, 85, 320, 116), fill="#9a3412")
+                draw.text((15, 94), note, fill="white")
         frames.append(frame)
     args.sortie.parent.mkdir(parents=True, exist_ok=True)
+    # Duree proportionnelle a l'intervalle reel : une lacune n'accelere pas artificiellement l'animation.
+    durations = [max(150, min(3000, round(args.duree_ms * gap / 10))) for gap in gaps]
+    durations.append(args.duree_ms)
     frames[0].save(args.sortie, save_all=True, append_images=frames[1:],
-                   duration=args.duree_ms, loop=0, optimize=True)
+                   duration=durations, loop=0, optimize=True)
     print(f"GIF cree : {args.sortie} ({len(frames)} observations, {times[0]} a {times[-1]})")
 
 if __name__ == "__main__":
