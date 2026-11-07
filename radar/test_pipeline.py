@@ -22,14 +22,14 @@ class TestRadarZoom(unittest.TestCase):
         self.times = ['2026-11-07T11:10:00Z', '2026-11-07T11:20:00Z']
         (self.root / 'radar-images.json').write_text(json.dumps(self.times))
 
-    def write_grid(self, minute, x0=-664972.4748):
+    def write_grid(self, minute, x0=-619652.074055906):
         image = np.zeros((1536, 1536), dtype=np.float32)
         image[600+minute:650+minute, 600:650] = 32.0
         np.savez_compressed(
             self.grids / f'radar-grid-2026-11-07T11-{10+minute:02d}-00Z.npz',
-            reflectivite=image, x0_m=x0, y0_m=1009030.6272,
+            reflectivite=image, x0_m=x0, y0_m=-3526818.3379318174,
             dx_m=1000.0, dy_m=1000.0,
-            proj4='+proj=lcc +lat_1=45 +lat_0=45 +lon_0=0 +datum=WGS84 +units=m +no_defs',
+            proj4='+proj=stere +lat_0=90 +lat_ts=45 +lon_0=0 +datum=WGS84 +units=m +no_defs',
             observation_utc=f'2026-11-07T11:{10+minute:02d}:00+00:00')
 
     def run_zoom(self):
@@ -76,9 +76,9 @@ class TestRadarZoom(unittest.TestCase):
             label=t.strftime('%Y-%m-%dT%H-%M-%SZ')
             np.savez_compressed(
                 self.grids/('radar-grid-'+label+'.npz'),
-                reflectivite=image,x0_m=-664972.4748,y0_m=1009030.6272,
+                reflectivite=image,x0_m=-619652.074055906,y0_m=-3526818.3379318174,
                 dx_m=1000.0,dy_m=1000.0,
-                proj4='+proj=lcc +lat_1=45 +lat_0=45 +lon_0=0 +datum=WGS84 +units=m +no_defs',
+                proj4='+proj=stere +lat_0=90 +lat_ts=45 +lon_0=0 +datum=WGS84 +units=m +no_defs',
                 observation_utc=t.isoformat())
             source.append(t.strftime('%Y-%m-%dT%H:%M:%SZ'))
         (self.root/'atlas-times.json').write_text(json.dumps(source))
@@ -93,18 +93,43 @@ class TestRadarZoom(unittest.TestCase):
             self.assertEqual(im.size,(1600,1600))
         m=json.loads((self.root/'radar-atlas.json').read_text())
         self.assertEqual(m['nombre_images'],2)
-        self.assertEqual(m['xmin'],-940000)
-        self.assertEqual(m['xmax'],940000)
+        self.assertEqual(m['xmin'],-900000)
+        self.assertEqual(m['xmax'],1100000)
         self.assertFalse(m['georeferencement_valide'])
+        self.assertEqual(m['projection_kind'],'stereographique_polaire_WGS84')
+        self.assertEqual(m['schema'],2)
         marker=self.root/'radar-marker.png'
         self.assertTrue(marker.exists())
         with Image.open(marker) as png:
             self.assertEqual(png.size,(56,56))
             self.assertEqual(png.mode,'RGBA')
 
+    def test_refus_ancienne_grille_lambert(self):
+        self.write_grid(0)
+        old=self.grids/'radar-grid-2026-11-07T11-10-00Z.npz'
+        with np.load(old,allow_pickle=False) as z:
+            data={key:z[key] for key in z.files}
+        data['proj4']=np.array(
+            '+proj=lcc +lat_1=45 +lat_0=45 +lon_0=0 +datum=WGS84 +units=m +no_defs')
+        np.savez_compressed(old,**data)
+        with self.assertRaisesRegex(ValueError,'Projection radar non conforme'):
+            zoom_ville.radar_grid(old)
+
+    def test_projection_stereographique_coordinates_officielles(self):
+        from pyproj import CRS, Transformer
+        proj=CRS.from_proj4(
+            '+proj=stere +lat_0=90 +lat_ts=45 +lon_0=0 +datum=WGS84 +units=m +no_defs')
+        p=Transformer.from_crs('EPSG:4326',proj,always_xy=True)
+        x,y=p.transform(-9.965,53.67)
+        self.assertAlmostEqual(x,-619652.074055906,delta=.01)
+        self.assertAlmostEqual(y,-3526818.3379318174,delta=.01)
+        x,y=p.transform(-0.3707,49.1829)
+        self.assertAlmostEqual(x,-26263.047426323068,delta=.01)
+        self.assertAlmostEqual(y,-4059187.424186607,delta=.01)
+
     def test_geometries_incoherentes_refusees(self):
         self.write_grid(0)
-        self.write_grid(10, x0=-664900.0)
+        self.write_grid(10, x0=-619500.0)
         with self.assertRaisesRegex(ValueError, 'Geometrie incoherente'):
             self.run_zoom()
         self.assertFalse((self.root / 'zoom.gif').exists())
