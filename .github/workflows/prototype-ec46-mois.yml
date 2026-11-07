@@ -20,7 +20,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Dépendances cartes
-        run: python -m pip install --disable-pip-version-check numpy matplotlib
+        run: python -m pip install --disable-pip-version-check numpy matplotlib cartopy
       - name: Vérifier le programme
         run: python -m py_compile meteo-mois/maps_ec46.py
       - name: Collecter la grille EC46 et créer les deux cartes
