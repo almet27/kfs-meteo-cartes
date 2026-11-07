@@ -241,6 +241,50 @@ jobs:
               fig4.tight_layout()
               fig4.savefig(work/'diagnostic-radar-sur-carte-bourth.png')
               print('SUPERPOSITION TEST GENEREE:',work/'diagnostic-radar-sur-carte-bourth.png',flush=True)
+              # Diagnostic strict du scan BUFR (bits WMO 128/64/32).
+              # 128 : i negatif; 64 : j positif; 32 : points consecutifs suivant j.
+              # Ne pas publier avant confirmation du sens et du coin de reference.
+              scan_i=-1 if scan&128 else 1
+              scan_j=1 if scan&64 else -1
+              adjacent_j=bool(scan&32)
+              dx=float(m['Pixel size on horizontal - 1'][0])
+              dy=float(m['Pixel size on horizontal - 2'][0])
+              print('SCAN WMO i,j,adjacent-j:',scan_i,scan_j,adjacent_j,flush=True)
+              # L'ordre j-adjacent signifie reshape(nx,ny).T, et non reshape(ny,nx).
+              canonical=np.asarray(m['Horizontal reflectivity'],dtype=float)
+              canonical=canonical.reshape(nx,ny).T if adjacent_j else canonical.reshape(ny,nx)
+              fig5,axes5=plt.subplots(2,2,figsize=(15,14),dpi=120)
+              for row,base in enumerate((arr,canonical)):
+                  for col,mode in enumerate(('BUFR flags','NW reference')):
+                      ax=axes5[row,col]
+                      if mode=='BUFR flags':
+                          xi,yj=scan_i,scan_j
+                      else:
+                          xi,yj=1,-1
+                      xe=x0+xi*nx*dx
+                      ye=y0+yj*ny*dy
+                      plot=np.ma.masked_where(~(np.isfinite(base)&(base>=0)&(base<=70)),base)
+                      # base[0,0] is the first grid point: map its pixel to x0,y0.
+                      # For imshow, use the signed extent and origin upper (row0 at top of extent).
+                      ax.imshow(plot,extent=[x0,xe,ye,y0],origin='upper',
+                                cmap=cmap,vmin=0,vmax=55,interpolation='nearest',alpha=.85)
+                      for city,(lon,lat) in cities.items():
+                          cx,cy=forward.transform(lon,lat)
+                          ax.plot(cx,cy,'ko',markersize=2)
+                          ax.text(cx+7000,cy+7000,city,fontsize=8,color='black',
+                                  path_effects=[pe.withStroke(linewidth=2,foreground='white')])
+                      for idx,(lat,lon) in enumerate(zip(latitudes[1:],longitudes[1:]),start=1):
+                          px,py=forward.transform(lon,lat)
+                          ax.plot(px,py,'m.',markersize=3)
+                      ax.set_xlim(-650000,650000)
+                      ax.set_ylim(-200000,1100000)
+                      ax.set_aspect('equal')
+                      ax.grid(alpha=.15)
+                      ax.set_title(f'{"Colonne-adjacente" if row else "Ligne-adjacente"} / {mode}')
+              fig5.suptitle('Validation balayage BUFR 224 — vue France entiere, radar non valide',fontsize=14)
+              fig5.tight_layout()
+              fig5.savefig(work/'diagnostic-scan-bufr-france.png')
+              print('SCAN DIAGNOSTIC GENERE:',work/'diagnostic-scan-bufr-france.png',flush=True)
               ax3.plot(bx,by,'*',color='#d5274d',markersize=15,zorder=6)
               ax3.set_xlim(bx-150000,bx+150000)
               ax3.set_ylim(by-150000,by+150000)
