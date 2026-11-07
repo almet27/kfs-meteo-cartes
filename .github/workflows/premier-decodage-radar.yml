@@ -160,6 +160,26 @@ jobs:
                   if abs(cx-bx)<160000 and abs(cy-by)<160000:
                       ax3.plot(cx,cy,'o',color='#172e48',markersize=4,zorder=5)
                       ax3.text(cx+4500,cy+4500,city,fontsize=9,color='#172e48',zorder=5)
+              # Etiquettes des departements : coordonnees approximatives de leur chef-lieu.
+              departments={
+                  'Eure':(1.15,49.02),'Orne':(0.15,48.59),
+                  'Calvados':(-0.60,49.10),'Seine-Maritime':(0.85,49.65),
+                  'Eure-et-Loir':(1.30,48.35),'Yvelines':(1.85,48.75),
+                  'Sarthe':(0.20,48.15),'Oise':(2.40,49.42),
+                  'Manche':(-1.20,49.10),'Mayenne':(-0.65,48.30)
+              }
+              for name,(lon,lat) in departments.items():
+                  dx,dy=forward.transform(lon,lat)
+                  if abs(dx-bx)<140000 and abs(dy-by)<140000:
+                      ax3.text(dx,dy,name,fontsize=8,color='#62788a',ha='center',alpha=.9,zorder=4,
+                          path_effects=[pe.withStroke(linewidth=2,foreground='#edf2f5')])
+              # Barre d'echelle dans la projection metrique.
+              scale_x=bx-130000
+              scale_y=by-128000
+              ax3.plot([scale_x,scale_x+50000],[scale_y,scale_y],color='#233e54',lw=3,zorder=8)
+              ax3.plot([scale_x,scale_x],[scale_y-3500,scale_y+3500],color='#233e54',lw=2,zorder=8)
+              ax3.plot([scale_x+50000,scale_x+50000],[scale_y-3500,scale_y+3500],color='#233e54',lw=2,zorder=8)
+              ax3.text(scale_x+25000,scale_y+6500,'50 km',ha='center',fontsize=10,color='#233e54',zorder=8)
               ax3.plot(bx,by,'*',color='#d5274d',markersize=15,zorder=6)
               ax3.set_xlim(bx-150000,bx+150000)
               ax3.set_ylim(by-150000,by+150000)
