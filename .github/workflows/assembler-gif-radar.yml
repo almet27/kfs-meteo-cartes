@@ -28,7 +28,7 @@ jobs:
         run: python -m pip install --disable-pip-version-check pillow pyproj numpy matplotlib
       - name: Verifier les scripts et les tests radar
         run: |
-          python -m py_compile radar/assembler_gif.py radar/zoom_ville.py
+          python -m py_compile radar/assembler_gif.py radar/zoom_ville.py radar/atlas_gif.py
           python -m unittest discover -s radar -p 'test_*.py' -v
       - name: Recuperer les dernieres observations radar
         env:
@@ -109,8 +109,29 @@ jobs:
           from pathlib import Path
           from datetime import datetime,timezone
           import json,subprocess,sys
+          from radar.zoom_ville import radar_grid
           images=sorted(Path('radar-historique').glob('radar-candidat-*.png'))
-          pairs=[(datetime.strptime(p.stem.removeprefix('radar-candidat-'),'%Y-%m-%dT%H-%M-%SZ'),p) for p in images]
+          pairs=[]
+          excluded_old=0
+          for p in images:
+              stamp=p.stem.removeprefix('radar-candidat-')
+              grid=Path('radar-historique')/('radar-grid-'+stamp+'.npz')
+              if not grid.is_file():
+                  excluded_old+=1
+                  continue
+              try:
+                  observed, values, geo = radar_grid(grid)
+              except ValueError as exc:
+                  if 'Projection radar non conforme' in str(exc):
+                      excluded_old+=1
+                      continue
+                  raise
+              t=datetime.strptime(stamp,'%Y-%m-%dT%H-%M-%SZ')
+              if observed.replace(tzinfo=None)!=t:
+                  raise RuntimeError(f'Image et grille discordantes : {p.name}')
+              pairs.append((t,p))
+          print('ANCIENNES CARTES LAMBERT OU SANS GRILLE EXCLUES:',excluded_old,flush=True)
+          # AUCUNE image de l'ancien referentiel Lambert n'entre dans l'animation.
           # Diagnostic : accepter exceptionnellement 25 min, avec avertissement visible dans le GIF.
           # Le mode diffusion valide reste limite a 15 min.
           selected=[]
