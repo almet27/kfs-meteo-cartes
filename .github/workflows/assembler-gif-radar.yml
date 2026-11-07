@@ -208,7 +208,7 @@ jobs:
               lines.append('- Zoom indisponible : au moins deux grilles recentes et compatibles sont necessaires.')
           if summary:
               with open(summary,'a',encoding='utf-8') as file:
-                  file.write('\\n'.join(lines)+'\\n')
+                  file.write('\n'.join(lines)+'\n')
           print('BILAN RADAR:',json.dumps(status,ensure_ascii=False),flush=True)
           PY
       - uses: actions/upload-artifact@v4
