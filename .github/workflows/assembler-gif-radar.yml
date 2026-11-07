@@ -122,7 +122,8 @@ jobs:
           subprocess.run([sys.executable,'radar/zoom_ville.py',
               '--entree','radar-sortie/radar-diagnostic.gif',
               '--sortie','radar-sortie/radar-zoom-ville-diagnostic.gif',
-              '--ville',match['nom'],'--latitude',str(lat),'--longitude',str(lon)],check=True)
+              '--ville',match['nom'],'--latitude',str(lat),'--longitude',str(lon),
+              '--horodatages','radar-sortie/radar-images.json'],check=True)
           PY
       - uses: actions/upload-artifact@v4
         if: always()
@@ -131,5 +132,6 @@ jobs:
           path: |
             radar-sortie/radar-diagnostic.gif
             radar-sortie/radar-zoom-ville-diagnostic.gif
+            radar-sortie/radar-images.json
             radar-sortie/diagnostic-assemblage.txt
           if-no-files-found: warn
