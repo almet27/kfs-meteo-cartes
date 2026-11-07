@@ -28,7 +28,8 @@ jobs:
           import matplotlib
           matplotlib.use('Agg')
           import matplotlib.pyplot as plt
-          # Decodeur tiers fige sur un commit connu pour eviter toute rupture amont.\n          root='https://raw.githubusercontent.com/theperk08/Meteo_France_Radars/a89383b435b26625909a70a16f7be5b75ce54ba5/'
+          # Decodeur tiers fige sur un commit connu pour eviter toute rupture amont.
+          root='https://raw.githubusercontent.com/theperk08/Meteo_France_Radars/a89383b435b26625909a70a16f7be5b75ce54ba5/'
           def get(url,headers=None):
               req=urllib.request.Request(url,headers=headers or {'User-Agent':'KFS-Meteo-Radar/1.0'})
               label='Meteo-France API' if 'meteofrance.fr' in url else 'Tables/decodeur GitHub'
