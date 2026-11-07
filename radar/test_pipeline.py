@@ -96,6 +96,11 @@ class TestRadarZoom(unittest.TestCase):
         self.assertEqual(m['xmin'],-940000)
         self.assertEqual(m['xmax'],940000)
         self.assertFalse(m['georeferencement_valide'])
+        marker=self.root/'radar-marker.png'
+        self.assertTrue(marker.exists())
+        with Image.open(marker) as png:
+            self.assertEqual(png.size,(56,56))
+            self.assertEqual(png.mode,'RGBA')
 
     def test_geometries_incoherentes_refusees(self):
         self.write_grid(0)
