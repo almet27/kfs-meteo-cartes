@@ -1038,7 +1038,7 @@ async function completeFoudre(interaction,rawCity,env){
       "Carte : chiffres signés en kA, taille croissante avec le courant.\n"+
       (result.limite?"⚠️ Résultats limités à 1 000 impulsions.\n":"")+
       (result.cache?"_Données mises en cache jusqu'à 90 s._\n":"")+
-      "_Données : Vaisala Xweather · contours : france-geojson._";
+      "_Données : [Powered by Vaisala Xweather](https://www.xweather.com/) · contours : france-geojson._";
     await foudreMessage(interaction,content,png);
   }catch(e){
     console.error("KFS /foudre",String(e));
