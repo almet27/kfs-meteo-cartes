@@ -174,6 +174,21 @@ def build_frames(host,entries,lines):
         print('Image',index,'/',len(entries),'UTC',ts,'tuiles',valid,flush=True)
     return results,counts
 
+def create_marker(path):
+    """Repere transparent pour la ville demandee, a superposer sur le GIF."""
+    im=Image.new('RGBA',(56,56),(0,0,0,0))
+    d=ImageDraw.Draw(im)
+    d.ellipse((15,15,41,41),fill=(255,255,255,235))
+    d.ellipse((19,19,37,37),fill=(215,35,71,255),
+              outline=(104,10,38,255),width=2)
+    d.ellipse((24,24,32,32),fill=(255,255,255,255))
+    for a,b,c,dest in ((28,2,28,14),(28,42,28,54),
+                       (2,28,14,28),(42,28,54,28)):
+        d.line((a,b,c,dest),fill=(255,255,255,255),width=4)
+        d.line((a,b,c,dest),fill=(191,21,53,255),width=2)
+    im.save(path)
+
+
 def run(output,now=None):
     now=int(time.time()) if now is None else int(now)
     meta=json.loads(request_bytes(API,maximum=1000000))
@@ -200,6 +215,7 @@ def run(output,now=None):
     }
     (output/'radar-rainviewer.json').write_text(
         json.dumps(manifest,ensure_ascii=False,indent=2),encoding='utf-8')
+    create_marker(output/'radar-marker.png')
     (output/'.nojekyll').touch()
     print('GIF RainViewer genere:',gif,
           'images:',len(frames),'octets:',gif.stat().st_size,flush=True)
