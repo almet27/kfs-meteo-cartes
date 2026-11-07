@@ -1,0 +1,68 @@
+name: EUMETSAT LI — carte des éclairs optiques KFS
+
+on:
+  schedule:
+    # Produits LFL agrégés par cycles d'environ 10 min.
+    - cron: '6,16,26,36,46,56 * * * *'
+  workflow_dispatch:
+  push:
+    paths:
+      - 'foudre-li/collect.py'
+      - 'foudre-li/test_collect.py'
+      - '.github/workflows/eumetsat-li-foudre.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: kfs-eumetsat-li-collect
+  cancel-in-progress: false
+
+jobs:
+  lfl:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Vérifier les secrets sans afficher leur valeur
+        id: auth
+        env:
+          EUMETSAT_CONSUMER_KEY: ${{ secrets.EUMETSAT_CONSUMER_KEY }}
+          EUMETSAT_CONSUMER_SECRET: ${{ secrets.EUMETSAT_CONSUMER_SECRET }}
+        shell: bash
+        run: |
+          if [[ -n "$EUMETSAT_CONSUMER_KEY" && -n "$EUMETSAT_CONSUMER_SECRET" ]]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Collecte EUMETSAT non activée : deux secrets Actions requis."
+          fi
+      - name: Installer les dépendances EUMETSAT
+        run: python -m pip install --disable-pip-version-check eumdac netCDF4 numpy requests
+      - name: Tester le décodeur sans réseau ni secrets
+        run: |
+          python -m py_compile foudre-li/collect.py foudre-li/test_collect.py
+          python -m unittest discover -s foudre-li -p 'test_*.py' -v
+      - name: Collecter les nouvelles observations officielles
+        if: steps.auth.outputs.ready == 'true'
+        env:
+          EUMETSAT_CONSUMER_KEY: ${{ secrets.EUMETSAT_CONSUMER_KEY }}
+          EUMETSAT_CONSUMER_SECRET: ${{ secrets.EUMETSAT_CONSUMER_SECRET }}
+        run: python foudre-li/collect.py --out foudre-li/flash-points.json
+      - name: Publier les observations sans toucher aux autres fichiers
+        if: steps.auth.outputs.ready == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add foudre-li/flash-points.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Actualiser les éclairs satellitaires EUMETSAT LI"
+            git push
+          else
+            echo "Aucun nouveau produit LI : carte inchangée."
+          fi
