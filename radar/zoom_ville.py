@@ -106,7 +106,7 @@ def main():
             raise ValueError(f'Observation et horodatage divergent : {name}')
         if data and geo != data[0][2]:
             raise ValueError(f'Geometrie incoherente entre acquisitions : {name}')
-        if data and (time - data[-1][0]).total_seconds() > 900:
+        if data and (time - data[-1][0]).total_seconds() > 1500:
             data = []  # Pas de zoom a partir de grilles discontinues.
         data.append((time, arr, geo))
     if len(data) < 2:
@@ -135,7 +135,8 @@ def main():
     ax.set_xlim(bounds[0], bounds[1]); ax.set_ylim(bounds[2], bounds[3])
     ax.set_aspect('equal'); ax.axis('off')
     frames = []
-    for stamp, values, _ in data:
+    gaps = [(data[i+1][0]-data[i][0]).total_seconds()/60 for i in range(len(data)-1)]
+    for index, (stamp, values, _) in enumerate(data):
         artist.set_data(masked(values))
         stream = io.BytesIO()
         fig.savefig(stream, format='png', dpi=120)
@@ -146,16 +147,22 @@ def main():
         draw.rectangle((0, 0, 720, 65), fill='#152536')
         draw.text((17, 11), f'Radar {a.ville[:65]} - rayon {a.rayon_km:g} km', fill='white')
         draw.text((17, 37), stamp.strftime('%d/%m/%Y %H:%M UTC'), fill='#f1f5f9')
+        if index < len(gaps) and gaps[index] > 15:
+            draw.rectangle((0, 650, 720, 690), fill='#9a3412')
+            draw.text((15, 663), f'TROU : prochaine observation dans {gaps[index]:g} min', fill='white')
         draw.rectangle((0, 690, 720, 720), fill='#8b1723')
         draw.text((15, 699), 'GEOGRAPHIE NON VALIDEE - DIAGNOSTIC UNIQUEMENT', fill='white')
         frames.append(frame)
     plt.close(fig)
     a.sortie.parent.mkdir(parents=True, exist_ok=True)
-    frames[0].save(a.sortie, save_all=True, append_images=frames[1:], duration=650, loop=0, optimize=True)
+    durations = [max(150, min(3000, round(650 * gap / 10))) for gap in gaps] + [650]
+    frames[0].save(a.sortie, save_all=True, append_images=frames[1:],
+                   duration=durations, loop=0, optimize=True)
     metadata = {
         'ville': a.ville, 'latitude': a.latitude, 'longitude': a.longitude,
         'rayon_km': a.rayon_km, 'observations_utc': [d[0].isoformat() for d in data],
         'fonds_charges': fond, 'geo_source': 'BUFR hypothese Lambert non validee',
+        'intervalles_minutes': gaps, 'lacunes_signalees': [g for g in gaps if g > 15],
         'diffusion_discord_autorisee': False,
     }
     a.sortie.with_suffix('.json').write_text(json.dumps(metadata, ensure_ascii=False, indent=2), encoding='utf-8')
