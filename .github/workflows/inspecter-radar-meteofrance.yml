@@ -1,0 +1,36 @@
+name: Inspecter produits radar Meteo-France
+
+on:
+  workflow_dispatch:
+
+jobs:
+  inspecter:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Examiner les metadonnees REFLECTIVITE
+        env:
+          METEOFRANCE_API_KEY: ${{ secrets.METEOFRANCE_API_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$METEOFRANCE_API_KEY"
+          URL="https://public-api.meteofrance.fr/public/DPRadar/v1/mosaiques/METROPOLE/observations/REFLECTIVITE"
+          CODE=$(curl -sSL -o /tmp/radar.json -w "%{http_code}" -H "apikey: $METEOFRANCE_API_KEY" "$URL")
+          echo "HTTP $CODE"
+          test "$CODE" = "200"
+          python3 - <<'PY'
+          import json
+          with open('/tmp/radar.json') as f:
+              obj=json.load(f)
+          def summarize(value, depth=0):
+              if depth>4: return '...'
+              if isinstance(value,dict):
+                  return {k:summarize(v,depth+1) for k,v in value.items() if not any(t in k.lower() for t in ('token','key','secret','authorization'))}
+              if isinstance(value,list):
+                  return {'nombre':len(value),'premier_element':summarize(value[0],depth+1) if value else None}
+              if isinstance(value,str):
+                  if value.startswith(('http://','https://')): return '[URL masquee]'
+                  return value[:160]
+              return value
+          print(json.dumps(summarize(obj),ensure_ascii=False,indent=2)[:7000])
+          PY
