@@ -275,10 +275,19 @@ jobs:
                       xe=x0+xi*nx*dx
                       ye=y0+yj*ny*dy
                       plot=np.ma.masked_where(~(np.isfinite(base)&(base>=0)&(base<=70)),base)
-                      # base[0,0] is the first grid point: map its pixel to x0,y0.
-                      # For imshow, use the signed extent and origin upper (row0 at top of extent).
-                      ax.imshow(plot,extent=[x0,xe,ye,y0],origin='upper',
+                      # Le premier pixel est au point (x0,y0). L'orientation
+                      # doit suivre les signes i/j, sans inversion supplementaire.
+                      # extent est [x_gauche,x_droite,y_bas,y_haut] ; origin='upper'
+                      # met la premiere ligne du cote y_haut.
+                      ybottom,ytop=(ye,y0) if yj<0 else (y0,ye)
+                      ax.imshow(plot,extent=[x0,xe,ybottom,ytop],
+                                origin='upper' if yj<0 else 'lower',
                                 cmap=cmap,vmin=0,vmax=55,interpolation='nearest',alpha=.85)
+                      ax.plot(x0,y0,marker='X',color='red',markersize=8,zorder=8)
+                      ax.text(x0+12000,y0,'Origine BUFR',fontsize=8,color='red')
+                      print('SCAN EXTENT:',mode,'transpose=',bool(row),
+                            'first=',(x0,y0),'last=',(xe,ye),
+                            'dxdy=',(dx,dy),flush=True)
                       for city,(lon,lat) in cities.items():
                           cx,cy=forward.transform(lon,lat)
                           ax.plot(cx,cy,'ko',markersize=2)
