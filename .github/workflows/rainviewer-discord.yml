@@ -2,8 +2,10 @@ name: Publier radar RainViewer pour Discord
 
 on:
   schedule:
-    # Les images RainViewer ont deja leur historique : un run produit 8 frames.
-    - cron: '7,22,37,52 * * * *'
+    # Vérification toutes les 5 minutes, décalée de :00 pour éviter
+    # les périodes de forte charge des planificateurs GitHub Actions.
+    # RainViewer peut fournir des observations plus espacées (souvent 10 min).
+    - cron: '2,7,12,17,22,27,32,37,42,47,52,57 * * * *'
   workflow_dispatch:
   push:
     paths:
