@@ -147,6 +147,18 @@ def main():
         draw.rectangle((0, 0, 720, 65), fill='#152536')
         draw.text((17, 11), f'Radar {a.ville[:65]} - rayon {a.rayon_km:g} km', fill='white')
         draw.text((17, 37), stamp.strftime('%d/%m/%Y %H:%M UTC'), fill='#f1f5f9')
+        # Legende compacte : les memes teintes que le rendu radar (5-55 dBZ).
+        draw.text((430, 4), 'Reflectivite (dBZ)', fill='#f1f5f9')
+        for level in (5, 15, 25, 35, 45, 55):
+            slot=(level-5)//10
+            xx=428+slot*44
+            rgba=cmap((level-5)/50)
+            color=tuple(round(255*c) for c in rgba[:3])
+            draw.rectangle((xx, 23, xx+37, 36), fill=color)
+            draw.text((xx+12, 43), str(level), fill='#f1f5f9')
+        # Le repere rouge central est le centre geocode de la commune.
+        draw.text((374, 337), a.ville[:28], fill='#b42342',
+                  stroke_width=2, stroke_fill='white')
         if index < len(gaps) and gaps[index] > 15:
             draw.rectangle((0, 650, 720, 690), fill='#9a3412')
             draw.text((15, 663), f'TROU : prochaine observation dans {gaps[index]:g} min', fill='white')
