@@ -1,0 +1,82 @@
+name: Premier decodage radar Meteo-France
+on:
+  workflow_dispatch:
+jobs:
+  decoder:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Installer les dependances
+        run: python -m pip install --disable-pip-version-check numpy pandas matplotlib
+      - name: Decoder et dessiner la reflectivite
+        env:
+          METEOFRANCE_API_KEY: ${{ secrets.METEOFRANCE_API_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p radar-sortie
+          python - <<'PY'
+          import os,json,gzip,urllib.request,pathlib,sys
+          import numpy as np
+          import matplotlib
+          matplotlib.use('Agg')
+          import matplotlib.pyplot as plt
+          root='https://raw.githubusercontent.com/theperk08/Meteo_France_Radars/main/'
+          def get(url,headers=None):
+              req=urllib.request.Request(url,headers=headers or {'User-Agent':'KFS-Meteo-Radar/1.0'})
+              with urllib.request.urlopen(req,timeout=90) as r:return r.read()
+          if not os.environ.get('METEOFRANCE_API_KEY'):raise RuntimeError('Secret METEOFRANCE_API_KEY manquant')
+          endpoint='https://public-api.meteofrance.fr/public/DPRadar/v1/mosaiques/METROPOLE/observations/REFLECTIVITE'
+          metadata=json.loads(get(endpoint,{'apikey':os.environ['METEOFRANCE_API_KEY'],'User-Agent':'KFS-Meteo-Radar/1.0'}))
+          links=metadata.get('links',[])
+          candidates=[l['href'] for l in links if l.get('rel','').endswith('/data') and l.get('href')]
+          if not candidates:raise RuntimeError('Aucun lien BUFR dans la reponse : '+str(links)[:900])
+          data=get(candidates[0])
+          raw=gzip.decompress(data) if data[:2]==b'\x1f\x8b' else data
+          if raw[:4]!=b'BUFR':raise RuntimeError('Fichier non BUFR')
+          work=pathlib.Path('radar-sortie')
+          (work/'radar.bufr').write_bytes(raw)
+          tables=work/'tables'
+          tables.mkdir(exist_ok=True)
+          for name in ['bufrtabb_16.csv','bufrtabd_16.csv','localtabb_85_14.csv','localtabd_85_14.csv']:
+              (tables/name).write_bytes(get(root+'tables/'+name))
+          notebook=json.loads(get(root+'MeteoFrance_Bufr_Decoder.ipynb'))
+          ns={}
+          exec('import os,gzip,math,numpy as np,pandas as pd',ns)
+          for idx in [5,6,7,8,9,10,11]:
+              exec(''.join(notebook['cells'][idx]['source']),ns)
+          ns.update(DIR_PATH=str(work),FILE_NAME='radar.bufr',DIR_PATH_TABLE=str(tables),
+              FIC_TAB_B='bufrtabb_{master}.csv',FIC_TAB_D='bufrtabd_{master}.csv',
+              FIC_LOCAL_TAB_B='localtabb_{center}_{local}.csv',
+              FIC_LOCAL_TAB_D='localtabd_{center}_{local}.csv',affiche_descriptors=False)
+          print('BUFR taille:',len(raw),'octets',flush=True)
+          ns['deco_bufr']()
+          messages=ns.get('datas_messages',[])
+          print('Messages decodes:',len(messages),flush=True)
+          for i,m in enumerate(messages):
+              print('Message',i,'champs:',[(k,len(v)) for k,v in m.items()],flush=True)
+          for m in messages:
+              if 'Horizontal reflectivity' not in m:continue
+              nx=int(m['Number of pixels per row'][0])
+              ny=int(m['Number of pixels per column'][0])
+              arr=np.asarray(m['Horizontal reflectivity'],dtype=float)
+              if arr.size!=nx*ny:raise RuntimeError(f'Grille incompatible {arr.size} vs {nx}x{ny}')
+              arr=arr.reshape(ny,nx)
+              fig,ax=plt.subplots(figsize=(10,10),dpi=130)
+              im=ax.imshow(arr,origin='upper',vmin=0,vmax=55,cmap='turbo')
+              ax.set_title('Meteo-France — Reflectivite radar (dBZ)')
+              ax.set_xlabel('Pixels radar (georeferencement a verifier)')
+              fig.colorbar(im,ax=ax,label='dBZ')
+              fig.tight_layout()
+              fig.savefig(work/'premiere-reflectivite.png')
+              print('CARTE GENEREE:',work/'premiere-reflectivite.png',flush=True)
+              break
+          else:raise RuntimeError('Champ Horizontal reflectivity absent')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: premiere-carte-radar
+          path: radar-sortie/*.png
+          if-no-files-found: ignore
