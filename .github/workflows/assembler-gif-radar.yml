@@ -1,6 +1,12 @@
 name: Assembler GIF radar de diagnostic
 on:
   workflow_dispatch:
+    inputs:
+      ville:
+        description: 'Nom de la commune pour le zoom radar'
+        required: true
+        default: 'Bourth'
+        type: string
 permissions:
   actions: read
   contents: read
@@ -11,7 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Installer Pillow
-        run: python -m pip install --disable-pip-version-check pillow
+        run: python -m pip install --disable-pip-version-check pillow pyproj
       - name: Recuperer les dernieres observations radar
         env:
           GH_TOKEN: ${{ github.token }}
@@ -88,11 +94,35 @@ jobs:
           print('Assemblage de',len(selected),'observations',flush=True)
           subprocess.run(command,check=True)
           PY
+      - name: Zoom radar diagnostic sur la commune
+        if: hashFiles('radar-sortie/radar-diagnostic.gif') != ''
+        env:
+          VILLE: ${{ inputs.ville }}
+        run: |
+          python - <<'PY'
+          import json,os,subprocess,sys,urllib.parse,urllib.request
+          ville=os.environ.get('VILLE','Bourth').strip()
+          if not ville or len(ville)>100:
+              raise SystemExit('Nom de commune invalide')
+          url='https://geo.api.gouv.fr/communes?'+urllib.parse.urlencode(
+              {'nom':ville,'fields':'nom,centre','format':'json','geometry':'centre','limit':10})
+          with urllib.request.urlopen(url,timeout=20) as r:
+              communes=json.load(r)
+          match=next((c for c in communes if c['nom'].casefold()==ville.casefold()),None)
+          if match is None:
+              raise SystemExit('Commune introuvable ou ambigue : '+ville)
+          lon,lat=match['centre']['coordinates']
+          subprocess.run([sys.executable,'radar/zoom_ville.py',
+              '--entree','radar-sortie/radar-diagnostic.gif',
+              '--sortie','radar-sortie/radar-zoom-ville-diagnostic.gif',
+              '--ville',match['nom'],'--latitude',str(lat),'--longitude',str(lon)],check=True)
+          PY
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: radar-gif-diagnostic
           path: |
             radar-sortie/radar-diagnostic.gif
+            radar-sortie/radar-zoom-ville-diagnostic.gif
             radar-sortie/diagnostic-assemblage.txt
           if-no-files-found: warn
