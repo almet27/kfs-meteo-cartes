@@ -1,5 +1,8 @@
 name: Assembler GIF radar de diagnostic
 on:
+  workflow_run:
+    workflows: ['Premier decodage radar Meteo-France']
+    types: [completed]
   workflow_dispatch:
     inputs:
       ville:
@@ -12,6 +15,7 @@ permissions:
   contents: read
 jobs:
   gif-diagnostic:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -100,7 +104,7 @@ jobs:
       - name: Zoom radar diagnostic sur la commune
         if: hashFiles('radar-sortie/radar-diagnostic.gif') != ''
         env:
-          VILLE: ${{ inputs.ville }}
+          VILLE: ${{ inputs.ville || 'Bourth' }}
         run: |
           python - <<'PY'
           import json,os,subprocess,sys,urllib.parse,urllib.request
