@@ -56,3 +56,18 @@ Sources de référence :
 - Rejet d'un résumé renvoyant une période incorrecte : OK.
 - Test de refus d'accès `insufficient_scope` et du cache Summary : OK.
 - **Non testé sur l'API Xweather avec tes véritables identifiants**, non testé sur Discord Cloudflare en production et aucun déploiement effectué.
+
+
+## Correction : activité orageuse visible mais carte vide (novembre 2026)
+
+- `filter=all` est maintenant envoyé explicitement à Xweather pour recevoir CG et IC.
+- La **carte affiche les CG** : jaune (positif), bleu (négatif), gris (courant non fourni) ; et les **IC en violet** (cercle creux), afin de distinguer les décharges dans le nuage des impacts au sol.
+- Une décharge sans intensité connue reste visible (valeur `n/d`) au lieu d'être rejetée.
+- Le message Discord donne le nombre total de décharges reçues, la répartition CG / IC et les exclusions pour données trop anciennes ou sans coordonnées.
+- Si aucune décharge n'est renvoyée, la carte de repérage reste affichée ; si Xweather est inaccessible, le message le dit explicitement et ne présente pas le fond vide comme une observation d'absence de foudre.
+- Les refus HTTP de Discord lors du dépôt du PNG ne sont plus silencieux : un message d'erreur apparaît et les journaux Cloudflare donnent le statut d'envoi.
+- Le cache des impacts a été versionné pour éviter de réutiliser un ancien format CG seulement.
+- Les statistiques de 30 minutes à 24 heures restent inchangées et indépendantes.
+- Attribution : Xweather demande un lien « Powered by Vaisala Xweather » (https://www.xweather.com/docs/weather-api/resources/attribution). Le lien reste mais sous forme d'un crédit bref et discret en bas ; la suppression complète ne respecterait pas leur guide d'attribution.
+
+**Tests** : syntaxe du Worker validée ; réponses Xweather simulées incluant CG, IC, absence de courant, données périmées, et zone sans décharge ; cache vérifié. **Aucun essai authentifié réel / aucun déploiement Cloudflare effectué.**
