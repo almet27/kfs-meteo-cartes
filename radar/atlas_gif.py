@@ -70,6 +70,23 @@ def get_contours(transformer):
     print('Contours geographiques retenus :', len(lines), flush=True)
     return lines
 
+def make_city_marker(path):
+    """Petit repere geographique transparent pour le centre du zoom Discord."""
+    marker = Image.new('RGBA', (56, 56), (0, 0, 0, 0))
+    d = ImageDraw.Draw(marker)
+    # Bord blanc pour rester lisible sur des echos radar jaunes ou violets.
+    d.ellipse((16, 16, 40, 40), fill=(255, 255, 255, 225),
+              outline=(255, 255, 255, 255), width=5)
+    d.ellipse((18, 18, 38, 38), fill=(242, 55, 79, 235),
+              outline=(133, 19, 39, 255), width=2)
+    d.ellipse((25, 25, 31, 31), fill=(255, 255, 255, 255))
+    for x0, y0, x1, y1 in ((28, 2, 28, 14), (28, 42, 28, 54),
+                           (2, 28, 14, 28), (42, 28, 54, 28)):
+        d.line((x0,y0,x1,y1),fill=(255,255,255,255),width=5)
+        d.line((x0,y0,x1,y1),fill=(181,24,53,255),width=2)
+    marker.save(path)
+
+
 def select_data(directory, times):
     chosen = []
     for value in times:
@@ -182,6 +199,7 @@ def main():
         'centre_projection_lon_0':0.0,
     }
     args.manifest.write_text(json.dumps(manifest,ensure_ascii=False,indent=2),encoding='utf-8')
+    make_city_marker(args.sortie.parent/'radar-marker.png')
     print('ATLAS DIAGNOSTIC:',args.sortie,'frames=',len(frames),
           'size=',WIDTH,'x',HEIGHT,'derniere=',latest.isoformat(),flush=True)
 
