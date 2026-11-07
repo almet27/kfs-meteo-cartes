@@ -181,7 +181,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p radar-public
-          cp radar-sortie/radar-atlas-diagnostic.gif radar-sortie/radar-atlas.json radar-public/
+          cp radar-sortie/radar-atlas-diagnostic.gif radar-sortie/radar-atlas.json radar-sortie/radar-marker.png radar-public/
           touch radar-public/.nojekyll
           cat > radar-public/index.html <<'HTML'
           <!doctype html><html lang="fr"><meta charset="utf-8">
@@ -299,6 +299,7 @@ jobs:
             radar-sortie/radar-zoom-ville-diagnostic.json
             radar-sortie/radar-atlas-diagnostic.gif
             radar-sortie/radar-atlas.json
+            radar-sortie/radar-marker.png
             radar-sortie/radar-images.json
             radar-sortie/etat-radar.json
             radar-sortie/declenchements-radar.json
