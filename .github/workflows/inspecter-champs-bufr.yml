@@ -1,0 +1,60 @@
+name: Inspecter champs BUFR radar
+
+on:
+  workflow_dispatch:
+
+jobs:
+  inspecter:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Decoder les cles BUFR avec ecCodes
+        env:
+          METEOFRANCE_API_KEY: ${{ secrets.METEOFRANCE_API_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libeccodes0 libeccodes-data
+          python3 -m pip install --quiet --break-system-packages eccodes
+          python3 - <<'PY'
+          import os,json,gzip,urllib.request,urllib.parse
+          from eccodes import codes_bufr_new_from_file,codes_set,codes_keys_iterator_new,codes_keys_iterator_next,codes_keys_iterator_get_name,codes_keys_iterator_delete,codes_get,codes_get_size,codes_release
+          base='https://public-api.meteofrance.fr/public/DPRadar/v1/'
+          def fetch(u):
+              with urllib.request.urlopen(urllib.request.Request(u,headers={'apikey':os.environ['METEOFRANCE_API_KEY']}),timeout=90) as r:return r.read()
+          doc=json.loads(fetch(base+'mosaiques/METROPOLE/observations/REFLECTIVITE'))
+          link=next(x for x in doc['links'] if x.get('type')=='application/octet-stream+gzip')
+          u=urllib.parse.urljoin(base,link['href'])
+          if urllib.parse.urlparse(u).hostname!='public-api.meteofrance.fr':raise SystemExit('Domaine inattendu')
+          data=gzip.decompress(fetch(u))
+          with open('/tmp/radar.bufr','wb') as f:f.write(data)
+          with open('/tmp/radar.bufr','rb') as f:
+              h=codes_bufr_new_from_file(f)
+              if h is None:raise SystemExit('Message BUFR introuvable')
+              try:
+                  codes_set(h,'unpack',1)
+                  it=codes_keys_iterator_new(h)
+                  count=0
+                  seen=set()
+                  try:
+                      while codes_keys_iterator_next(it):
+                          name=codes_keys_iterator_get_name(it)
+                          if name in seen or name.startswith('#'):continue
+                          seen.add(name)
+                          try:
+                              size=codes_get_size(h,name)
+                              if size>12:
+                                  print(f'{name}: tableau de {size} valeurs')
+                              else:
+                                  value=codes_get(h,name)
+                                  if isinstance(value,(str,int,float)):
+                                      print(f'{name}: {str(value)[:110]}')
+                                  else:print(f'{name}: {type(value).__name__} ({size} valeurs)')
+                          except Exception as e:print(f'{name}: non lisible ({type(e).__name__})')
+                          count+=1
+                          if count>=110:
+                              print('Affichage limite aux 110 premieres cles')
+                              break
+                  finally:codes_keys_iterator_delete(it)
+              finally:codes_release(h)
+          PY
