@@ -996,7 +996,7 @@ async function foudreData(city,env){
     const amp=Number.isFinite(item?.ob?.pulse?.peakamp)?
       item.ob.pulse.peakamp:null;
     if(amp===null)diagnostic.sansIntensité++;
-    pulses.push({type,amp,lat:latitude,lon:longitude});
+    pulses.push({type,amp,lat:latitude,lon:longitude,ts:Math.round(time),id:String(item?.id||"").slice(0,80)});
   }
   const value={version:4,pulses,diagnostic,collecte,limite:raw.length>=1000,
     etat: noData?"aucun_resultat_api":raw.length===0?"liste_vide":"resultats",
@@ -1392,6 +1392,8 @@ async function faLocalHistory(city,env){
          x.ts<earliest||x.ts>Date.now()/1000+60||
          !Number.isFinite(x.lat)||!Number.isFinite(x.lon)||
          Math.abs(x.lat)>90||Math.abs(x.lon)>180||
+         Math.abs(x.lat-city.lat)>0.94||
+         Math.abs(x.lon-city.lon)>100/(111.2*Math.max(0.35,Math.cos(city.lat*Math.PI/180)))||
          faGeoDistKm(city.lat,city.lon,x.lat,x.lon)>100)continue;
       const event={lat:x.lat,lon:x.lon,type:x.type,
         amp:Number.isFinite(x.amp)?x.amp:null,ts:x.ts,id:x.id};
@@ -1423,6 +1425,25 @@ async function completeFoudre(interaction,rawCity,env,rawPeriode=30){
     const summary=periode===5?null:
       settled[1].status==="fulfilled"?settled[1].value:
       {state:"error",message:String(settled[1].reason?.message||settled[1].reason)};
+    // Ajouter les snapshots des 30 dernières minutes seulement si collecte D1
+    // activée, autorisée, configurée et alimentée.
+    let archive=null,displayPulses=strikes?.pulses||[];
+    if(periode>5&&faEnabled(env)){
+      try{
+        archive=await faLocalHistory(city,env);
+        if(archive.sampleCount>0){
+          const byId=new Map();
+          for(const ob of [...archive.pulses,...displayPulses]){
+            if(!Number.isFinite(ob.lat)||!Number.isFinite(ob.lon))continue;
+            byId.set(faPulseKey({...ob,ts:ob.ts||0}),ob);
+          }
+          displayPulses=[...byId.values()];
+        }
+      }catch(e){
+        archive={active:true,pulses:[],sampleCount:0,
+          coverage:"lecture D1 en erreur : "+String(e.message||e).slice(0,90)};
+      }
+    }
     // Même sans détection d'impacts, conserver la carte du secteur.
     // Distinguer une réponse vide d'une erreur d'accès à la source.
     const heure=new Date(strikes?.collecte||summary?.collecte||Date.now())
@@ -1434,36 +1455,51 @@ async function completeFoudre(interaction,rawCity,env,rawPeriode=30){
       "🧭 Centre interrogé : "+city.lat.toFixed(3)+"° N, "+
         city.lon.toFixed(3)+"° E\n\n";
     if(periode>5)message+=foudreSummaryLines(summary,periode)+"\n";
-    if(strikes){
-      const cg=strikes.pulses.filter(x=>x.type==="cg");
-      const ic=strikes.pulses.filter(x=>x.type==="ic");
+    if(strikes||archive?.sampleCount>0){
+      const showArchive=periode>5&&archive?.sampleCount>0;
+      const cg=displayPulses.filter(x=>x.type==="cg");
+      const ic=displayPulses.filter(x=>x.type==="ic");
       const plus=cg.filter(x=>Number.isFinite(x.amp)&&x.amp>0).length;
       const minus=cg.filter(x=>Number.isFinite(x.amp)&&x.amp<0).length;
-      message+="🗺️ **Carte de l'activité électrique : 5 dernières minutes**\n"+
+      message+="🗺️ **Carte de l'activité électrique : "+
+        (showArchive?"jusqu'à 30 minutes (archive locale)":"5 dernières minutes")+
+        "**\n"+
         "⚡ Nuage-sol (CG) : **"+foudreNombre(cg.length)+
         "** · intranuageux (IC) : **"+foudreNombre(ic.length)+"**\n"+
         "🟠 CG positifs : **"+foudreNombre(plus)+
         "** · 🔵 CG négatifs : **"+foudreNombre(minus)+
         "** · 🟣 IC : cercles violets\n";
+      if(showArchive){
+        message+="🕒 Archive D1 : "+foudreNombre(archive.sampleCount)+
+          " captures (dont "+foudreNombre(archive.successfulPolls)+
+          " succès, "+foudreNombre(archive.failedPolls)+
+          " sans données/erreur) ; dernière il y a "+
+          (archive.lastPollMinutes===null?"?":archive.lastPollMinutes)+" min.\n"+
+          "⚠️ Couverture "+archive.coverage+" ; événements uniques, collecte"+
+          " démarrée à l'activation et impossible à reconstituer avant.\n";
+        if(archive.truncated)message+="⚠️ Historique limité pour garder la carte lisible.\n";
+      }else if(periode>5){
+        message+="ℹ️ Pas d'historique local utilisable : carte récente uniquement.\n";
+      }
       const biggest=cg.filter(x=>Number.isFinite(x.amp))
         .sort((a,b)=>Math.abs(b.amp)-Math.abs(a.amp))
         .slice(0,4).map(x=>(x.amp>=0?"+":"−")+
           foudreKA(Math.abs(x.amp)));
       if(biggest.length)message+="⚡ Courants CG les plus forts : **"+
         biggest.join(" · ")+"**\n";
-      const d=strikes.diagnostic;
-      if(d)message+="🔎 Réponse Xweather : "+foudreNombre(d.reçues)+
+      const d=strikes?.diagnostic;
+      if(d)message+="🔎 Réponse Xweather récente : "+foudreNombre(d.reçues)+
         " décharges reçues (CG "+foudreNombre(d.cg)+
         " / IC "+foudreNombre(d.ic)+
         ") ; exclusions temps "+foudreNombre(d.écartéesTemps)+
         ", coordonnées "+foudreNombre(d.écartéesPosition)+
         " · État : "+String(strikes.etat||"inconnu")+
         (strikes.codeApi?" ("+strikes.codeApi+")":"")+".\n";
-      if(strikes.limite)message+="⚠️ Liste récente limitée à 1 000 décharges ; compteurs partiels.\n";
-      if(strikes.cache)message+="_Carte basée sur un cache de 90 secondes au maximum._\n";
-      if(strikes.pulses.length===0)
-        message+="⚠️ Aucune décharge fournie ou exploitable par Xweather sur "+
-          "les 5 dernières minutes. Ceci ne prouve pas l'absence de foudre.\n";
+      if(strikes?.limite)message+="⚠️ Liste récente limitée à 1 000 décharges ; compteurs partiels.\n";
+      if(strikes?.cache)message+="_Données 5 min récentes mises en cache jusqu'à 90 s._\n";
+      if(displayPulses.length===0)
+        message+="⚠️ Aucune décharge exploitable : l'absence de points ne prouve pas"+
+          " l'absence de foudre.\n";
     }else{
       message+="⚠️ **Carte 5 min indisponible** : "+mapError+
         ". Les statistiques ne sont pas une carte historique.\n";
@@ -1474,7 +1510,7 @@ async function completeFoudre(interaction,rawCity,env,rawPeriode=30){
     // Toujours envoyer la carte du secteur, y compris lorsque le nombre d'impacts est zéro.
     // Si l'API est en échec, ne pas présenter ce fond vide comme un ciel sans foudre.
     try{
-      const {png}=await foudreImage(city,strikes?.pulses||[]);
+      const {png}=await foudreImage(city,displayPulses);
       await foudreMessage(interaction,message,png);
       return;
     }catch(e){
@@ -1883,6 +1919,30 @@ export default {
   async fetch(request,env,ctx) {
 
     const url=new URL(request.url);
+
+    if(url.pathname==="/foudre-archive-status"){
+      if(request.method!=="GET")return new Response("Method Not Allowed",{status:405});
+      if(!env.SETUP_KEY||request.headers.get("Authorization")!=="Bearer "+env.SETUP_KEY)
+        return new Response("Unauthorized",{status:401});
+      const zones=faConfiguredZones(env);
+      const status={active:faEnabled(env),hasD1:!!env.FOUDRE_DB,
+        rightsConfirmed:env.FOUDRE_ARCHIVE_RIGHTS_CONFIRMED==="true",
+        zones,monthlyLimit:faMonthlyLimit(env)};
+      if(env.FOUDRE_DB){
+        try{
+          const usage=await env.FOUDRE_DB.prepare(
+            "SELECT requests FROM foudre_archive_usage WHERE month=?"
+          ).bind(faMonth()).first();
+          status.monthlyUsed=Number(usage?.requests||0);
+          const rows=await env.FOUDRE_DB.prepare(
+            "SELECT zone,MAX(poll_at) AS last_poll FROM"+
+            " foudre_archive_snapshots GROUP BY zone"
+          ).all();
+          status.latest=rows.results||[];
+        }catch(e){status.problem="D1 : "+String(e.message||e).slice(0,140)}
+      }
+      return json(status);
+    }
 
     if (url.pathname==="/radar-status") {
 
