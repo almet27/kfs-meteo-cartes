@@ -72,7 +72,7 @@ def sentence(place, value):
     return (
         f"**{place} :** {pressure} ({value['msl_anomaly']:+.1f} hPa), "
         f"pression moyenne {value['msl']:.0f} hPa. "
-        f"Températures {thermal} ({value['t2m_anomaly']:+.1f} °C) ; "
+        f"Situation thermique : {thermal} ({value['t2m_anomaly']:+.1f} °C) ; "
         f"{rains} ({value['precip_anomaly']:+.0f} mm/semaine). "
         f"À 10 m, {wind} (u = {value['u']:+.0f} km/h)."
     )
