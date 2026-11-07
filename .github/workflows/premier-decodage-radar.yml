@@ -8,7 +8,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Installer les dependances
-        run: python -m pip install --disable-pip-version-check numpy pandas matplotlib pyproj
+        run: python -m pip install --disable-pip-version-check numpy pandas matplotlib pyproj scipy
       - name: Decoder et dessiner la reflectivite
         env:
           METEOFRANCE_API_KEY: ${{ secrets.METEOFRANCE_API_KEY }}
@@ -445,6 +445,46 @@ jobs:
                   ax.grid(alpha=.15)
                   ax.set_title(name,fontsize=11)
               ax3=old_ax3
+              # Extraire des noyaux de reflectivite pour comparaison objective
+              # avec une observation de reference horodatee. Les centres
+              # ci-dessous sont HYPOTHETIQUES, jamais des positions validees.
+              from scipy.ndimage import label as connected_label
+              from pyproj import Transformer as GeoTransformer
+              inverse=GeoTransformer.from_crs(crs,'EPSG:4326',always_xy=True)
+              echo_features=[]
+              for name,values in variants:
+                  mask=np.isfinite(values)&(values>=20)&(values<=70)
+                  components,ncomponents=connected_label(mask)
+                  areas=np.bincount(components.ravel())
+                  selected=sorted(
+                      (i for i in range(1,ncomponents+1) if areas[i]>=25),
+                      key=lambda i:int(areas[i]),reverse=True)[:12]
+                  print('NOYAUX RADAR',name,'total=',ncomponents,
+                        '>=25pixels=',len(selected),flush=True)
+                  for rank,i in enumerate(selected,1):
+                      yy,xx=np.where(components==i)
+                      xc=x0+(float(np.mean(xx))+.5)*dx
+                      yc=y0-(float(np.mean(yy))+.5)*dy
+                      lon,lat=inverse.transform(xc,yc)
+                      feature={
+                          'type':'Feature',
+                          'geometry':{'type':'Point','coordinates':[round(lon,5),round(lat,5)]},
+                          'properties':{
+                              'hypothese':name,'rang':rank,
+                              'observation_utc':observation_utc,
+                              'seuil_dbz':20,'pixels':int(areas[i]),
+                              'maximum_dbz':round(float(np.max(values[yy,xx])),2),
+                              'georeferencement_valide':False}}
+                      echo_features.append(feature)
+                      print('NOYAU HYPOTHETIQUE',name,rank,
+                            'lat/lon=',round(lat,4),round(lon,4),
+                            'pixels=',int(areas[i]),flush=True)
+              (work/'noyaux-radar-hypotheses.geojson').write_text(
+                  json.dumps({'type':'FeatureCollection',
+                              'features':echo_features},ensure_ascii=False,indent=2),
+                  encoding='utf-8')
+              print('NOYAUX GEOJSON:',len(echo_features),'positions candidates',
+                    flush=True)
               # Quatre hypotheses sur la MEME zone de Bourth. Aucune
               # correction arbitraire ni recalage par simple ressemblance.
               fig7,axes7=plt.subplots(2,2,figsize=(14,13),dpi=125)
@@ -529,4 +569,5 @@ jobs:
             radar-sortie/*.png
             radar-sortie/audit-georeferencement.json
             radar-sortie/horodatage-observation-radar.json
+            radar-sortie/noyaux-radar-hypotheses.geojson
           if-no-files-found: ignore
