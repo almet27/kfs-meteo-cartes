@@ -1227,8 +1227,7 @@ function icReport(city,station,result){
     (station.distanceKm>50?"⚠️ La station est éloignée : mesures non représentatives de la commune.\n":"")+
     "ℹ️ Mesures d'une station physique disponible à proximité, "+
       "pas une observation effectuée dans toute la ville.\n"+
-    "🔗 https://www.infoclimat.fr/observations-meteo/temps-reel/"+
-      encodeURIComponent(station.id)+".html\n"+
+    "🔗 https://www.infoclimat.fr/opendata/\n"+
     "_Source : Association Infoclimat / réseau StatIC ou station officielle ; "+
       "réutilisation non commerciale, crédit de la station._";
   if(message.length>1950)throw Error("Bulletin Infoclimat trop long.");
