@@ -1535,9 +1535,7 @@ function wuReport(city,pws){
     "• Cumul depuis minuit (heure de la station) : **"+
       wuFmt(m.precipTotal,"mm",2)+"**\n\n"+
     (Number(ob.qcStatus)===-1?"⚠️ Mesure non encore validée par le contrôle qualité.\n":"")+
-    (pws.fromCache?"_Réponse conservée en cache 5 minutes au maximum._\n":"")+
-    "_Data provided by Weather Underground. "+
-      "Mesures de station individuelle non représentatives de toute la commune._";
+    "_Source : Weather Underground._";
 }
 
 async function liveSend(interaction,message){
