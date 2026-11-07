@@ -1514,13 +1514,10 @@ async function wuCurrent(city,env){
   throw Error("Aucune mesure PWS valide : "+lastError);
 }
 function wuReport(city,pws){
-  const {ob,stamp,distanceKm,stationId,stationName}=pws;
-  const m=ob.metric||{},label=(ob.neighborhood||stationName||stationId).slice(0,80);
+  const {ob,stamp}=pws;
+  const m=ob.metric||{};
   return "📡 **KFS MÉTÉO — /live "+city.name+
     (city.dept?" ("+city.dept+")":"")+"**\n"+
-    "🛰️ **Véritables mesures d'une station Weather Underground (PWS)**\n"+
-    "📍 Station : **"+label+"** · "+stationId+"\n"+
-    (wuOk(distanceKm)?"Distance : "+wuFmt(distanceKm,"km")+" de "+city.name+"\n":"")+
     "🕒 Dernier relevé : **"+stamp.time+"** (Paris)"+
       " · il y a "+wuFmt(stamp.age,"min",0)+"\n\n"+
     "🌡️ **Température et humidité**\n"+
