@@ -1337,6 +1337,15 @@ async function faPollZone(zone,env){
     "retenus",events.length,"coût API",cost===null?"non communiqué":cost);
 }
 async function faCollectScheduled(env){
+  // La purge doit aussi tourner quand la collecte est coupée :
+  // aucune archive durable ne doit subsister par simple désactivation.
+  if(env.FOUDRE_DB){
+    try{
+      await env.FOUDRE_DB.prepare(
+        "DELETE FROM foudre_archive_snapshots WHERE poll_at<?"
+      ).bind(Math.floor(Date.now()/1000)-FA_STORE_S).run();
+    }catch(e){console.warn("KFS archive nettoyage",String(e.message||e).slice(0,120))}
+  }
   if(!faEnabled(env)){
     console.log("KFS /foudre archive non active (droits/variable/D1 manquants).");
     return;
@@ -1354,11 +1363,6 @@ async function faCollectScheduled(env){
     try{await faPollZone(zone,env)}
     catch(e){console.error("KFS archive D1",zone,String(e.message||e).slice(0,120))}
   }
-  try{
-    await env.FOUDRE_DB.prepare(
-      "DELETE FROM foudre_archive_snapshots WHERE poll_at<?"
-    ).bind(Math.floor(Date.now()/1000)-FA_STORE_S).run();
-  }catch(e){console.warn("KFS archive nettoyage",String(e.message||e).slice(0,120))}
 }
 async function faLocalHistory(city,env){
   if(!faEnabled(env))return {active:false,pulses:[],coverage:"désactivée"};
