@@ -946,10 +946,18 @@ async function foudreData(city,env){
     client_id:env.XWEATHER_CLIENT_ID,client_secret:env.XWEATHER_CLIENT_SECRET
   });
   const res=await fetch("https://data.api.xweather.com/lightning/closest?"+params);
-  if(!res.ok)throw Error("Xweather : erreur HTTP "+res.status);
-  const obj=await res.json();
+  let obj;
+  try{obj=await res.json();}
+  catch{throw Error("Xweather : réponse HTTP "+res.status+" non JSON.");}
+  const errorCode=String(obj?.error?.code||"").slice(0,55).replace(/[^A-Za-z0-9_-]/g,"");
+  const warnings=(Array.isArray(obj?.warnings)?obj.warnings:[obj?.warning,obj?.error])
+    .map(w=>String(w?.code||""));
+  const noData=(errorCode==="warn_no_data"||warnings.includes("warn_no_data"));
+  if(noData)return {pulses:[],collecte:Date.now(),limite:false,cache:false};
+  if(!res.ok)
+    throw Error("Xweather HTTP "+res.status+(errorCode?" ("+errorCode+")":""));
   if(obj.success!==true||!Array.isArray(obj.response))
-    throw Error("Xweather : réponse non valide.");
+    throw Error("Xweather : réponse inattendue"+(errorCode?" ("+errorCode+")":"")+".");
   const collecte=Date.now();
   const pulses=obj.response.filter(x=>
     String(x?.ob?.pulse?.type||"").toLowerCase()==="cg"&&
@@ -1023,6 +1031,19 @@ async function completeFoudre(interaction,rawCity,env){
   try{
     const city=await radarVille(rawCity);
     const result=await foudreData(city,env);
+    if(result.pulses.length===0){
+      const date=new Date(result.collecte).toLocaleString("fr-FR",{
+        timeZone:"Europe/Paris",day:"2-digit",month:"2-digit",
+        hour:"2-digit",minute:"2-digit"});
+      await foudreMessage(interaction,
+        "⚡ **KFS MÉTÉO — /foudre "+city.name+" ("+city.dept+")**\n"+
+        "✅ Connexion Xweather établie.\n"+
+        "📍 Rayon **100 km** · période **5 dernières minutes** avant "+date+"\n"+
+        "Aucun impact **nuage-sol** (CG) détecté dans cette zone.\n"+
+        "Les impacts intranuageux (IC) ne sont pas affichés.\n"+
+        "_Powered by [Vaisala Xweather](https://www.xweather.com/)._",null);
+      return;
+    }
     const {png,shown}=await foudreImage(city,result.pulses);
     const plus=shown.filter(x=>x.amp>0).length,minus=shown.filter(x=>x.amp<0).length;
     const strongest=[...shown].sort((a,b)=>Math.abs(b.amp)-Math.abs(a.amp))
@@ -1044,7 +1065,8 @@ async function completeFoudre(interaction,rawCity,env){
     console.error("KFS /foudre",String(e));
     await foudreMessage(interaction,
       "⚠️ **/foudre indisponible** : "+String(e.message||"Erreur inconnue")+
-      "\nAucun impact fictif n'a été ajouté.",null);
+      "\nConsulte les journaux Cloudflare si la génération de carte échoue. "+
+      "Aucun impact fictif n'a été ajouté.",null);
   }
 }
 
