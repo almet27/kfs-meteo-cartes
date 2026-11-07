@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Creer un atlas GIF radar georeference recadrable par ville (DIAGNOSTIC).
 
-L'emprise et la projection sont strictement identiques pour toutes les frames.
-Le Lambert candidat n'a PAS ete valide par une comparaison independante.
+La projection stéréographique polaire WGS84 provient du descriptif officiel
+Météo-France IMFR27 (16/01/2024), latitude de référence 45°.
+Une validation de positionnement indépendante est encore nécessaire.
 """
 import argparse
 import json
@@ -22,8 +23,11 @@ except ModuleNotFoundError:
     from zoom_ville import radar_grid
 
 # Emprise LCC assez large pour un zoom de 180 km autour des villes metropolitaines.
-XMIN, XMAX = -940_000.0, 940_000.0
-YMIN, YMAX = -640_000.0, 1_240_000.0
+# Emprise de l'atlas dans la projection stereographique polaire WGS84,
+# latitude vraie 45 N / meridien central 0, en metres.
+# Limites fixes pour rendre les recadrages reproductibles entre observations.
+XMIN, XMAX = -900_000.0, 1_100_000.0
+YMIN, YMAX = -5_400_000.0, -3_400_000.0
 WIDTH = HEIGHT = 1600
 RADIUS_KM = 180
 LAYERS = [
@@ -94,7 +98,13 @@ def select_data(directory, times):
         path = directory / ('radar-grid-'+when.strftime('%Y-%m-%dT%H-%M-%SZ')+'.npz')
         if not path.is_file():
             continue
-        observed, values, geo = radar_grid(path)
+        try:
+            observed, values, geo = radar_grid(path)
+        except ValueError as error:
+            if 'Projection radar non conforme' in str(error):
+                print('ANCIENNE GRILLE LAMBERT EXCLUE:',path.name,flush=True)
+                continue
+            raise
         if observed != when:
             raise ValueError('Horodatage incorrect : '+path.name)
         if chosen and geo != chosen[0][2]:
@@ -181,8 +191,11 @@ def main():
                    duration=durations,loop=0,optimize=True)
     # Conserver un manifeste explicite, sans jamais annoncer de validation.
     manifest = {
-        'schema': 1,
+        'schema': 2,
         'mode': 'diagnostic',
+        'projection_kind': 'stereographique_polaire_WGS84',
+        'latitude_reference_deg': 45.0,
+        'longitude_centrale_deg': 0.0,
         'georeferencement_valide': False,
         'diffusion_meteorologique_validee': False,
         'projection_proj4': proj4,
