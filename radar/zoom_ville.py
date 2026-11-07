@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Zoom radar GIF diagnostic sur une commune francaise (non valide pour diffusion)."""
 import argparse
+import json
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageSequence
 from pyproj import Transformer
@@ -10,6 +11,7 @@ def main():
     p.add_argument('--entree',required=True,type=Path)
     p.add_argument('--sortie',required=True,type=Path)
     p.add_argument('--ville',required=True)
+    p.add_argument('--horodatages',type=Path)
     p.add_argument('--latitude',type=float,required=True)
     p.add_argument('--longitude',type=float,required=True)
     p.add_argument('--rayon-km',type=float,default=180)
@@ -23,9 +25,10 @@ def main():
         '+proj=lcc +lat_1=45 +lat_0=45 +lon_0=0 +datum=WGS84 +units=m +no_defs',
         always_xy=True)
     x,y=transformer.transform(a.longitude,a.latitude)
+    times=json.loads(a.horodatages.read_text()) if a.horodatages else []
     frames=[]; durations=[]
     with Image.open(a.entree) as gif:
-        for frame in ImageSequence.Iterator(gif):
+        for index,frame in enumerate(ImageSequence.Iterator(gif)):
             im=frame.convert('RGB')
             w,h=im.size
             # Zone des axes Matplotlib du radar candidat (fractions de la figure).
@@ -43,7 +46,8 @@ def main():
             d=ImageDraw.Draw(crop)
             d.rectangle((0,0,720,62),fill='#152536')
             d.text((18,12),f'Radar {a.ville} | rayon {a.rayon_km:g} km',fill='white')
-            d.text((18,36),'DIAGNOSTIC - POSITION NON VALIDEE',fill='#ff9b9b')
+            stamp=times[index].replace('T',' ').replace('Z',' UTC') if index<len(times) else 'heure inconnue'
+            d.text((18,35),stamp+' | NON VALIDE',fill='#ff9b9b')
             d.ellipse((353,353,367,367),fill='#ff2020',outline='white',width=2)
             d.line((360,341,360,379),fill='white',width=2)
             d.line((341,360,379,360),fill='white',width=2)
