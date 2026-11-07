@@ -26,7 +26,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p radar-historique radar-sortie
-          gh run list --workflow premier-decodage-radar.yml --status success --limit 12 --json databaseId --jq '.[].databaseId' > radar-runs.txt
+          gh run list --workflow premier-decodage-radar.yml --status success --limit 48 --json databaseId --jq '.[].databaseId' > radar-runs.txt
           while IFS= read -r run; do
             [ -n "$run" ] || continue
             mkdir -p "radar-temp/$run"
@@ -84,6 +84,9 @@ jobs:
                   selected=[]
               selected.append((t,p))
           selected=selected[-8:]
+          print('Observations retenues :',len(selected),'sur',len(images),'images horodatees',flush=True)
+          for t,p in selected:
+              print(' -',t.isoformat(),'UTC',flush=True)
           if len(selected)<2:
               print('AUCUN GIF: moins de deux observations distinctes disponibles. Verifier les fichiers radar-candidat horodates dans les artefacts.',flush=True)
               Path('radar-sortie/diagnostic-assemblage.txt').write_text('Images trouvees : '+str(len(images))+'\\nObservations continues : '+str(len(selected))+'\\n')
