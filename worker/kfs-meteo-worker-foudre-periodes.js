@@ -818,7 +818,7 @@ async function completeRadar(interaction,rawCity){
 
 const F_W=600,F_H=600,F_X=300,F_Y=308,F_R=228;
 const F_COLORS={bg:[15,28,44,255],grid:[46,69,84,255],border:[100,126,142,255],
-  pos:[255,196,74,255],neg:[64,189,250,255],white:[240,248,255,255],
+  pos:[255,196,74,255],neg:[64,189,250,255],ic:[188,111,243,255],unknown:[171,181,191,255],white:[240,248,255,255],
   black:[7,16,25,255]};
 function foudreCanvas(){
   const pixels=new Uint8Array(F_W*F_H*4);
@@ -943,46 +943,65 @@ async function foudreData(city,env){
   if(!env.XWEATHER_CLIENT_ID||!env.XWEATHER_CLIENT_SECRET)
     throw Error("Identifiants Xweather absents de Cloudflare.");
   const lat=city.lat.toFixed(3),lon=city.lon.toFixed(3);
-  // Cache de 90 secondes, pour diminuer la consommation du quota gratuit.
-  const key=new Request("https://kfs-foudre-cache.invalid/"+lat+"/"+lon);
+  // Nouvelle version du cache : stocke aussi IC, les diagnostics et les types.
+  const key=new Request("https://kfs-foudre-cache.invalid/v3/"+lat+"/"+lon);
   const cache=caches.default;
-  const hit=await cache.match(key);
-  if(hit)return {...await hit.json(),cache:true};
+  const cached=await cache.match(key);
+  if(cached){
+    const saved=await cached.json();
+    if(saved?.version===3&&Date.now()-saved.collecte<90000)
+      return {...saved,cache:true};
+  }
   const params=new URLSearchParams({
-    p:lat+","+lon,radius:"100km",limit:"1000",format:"json",
+    p:lat+","+lon,radius:"100km",filter:"all",limit:"1000",format:"json",
     client_id:env.XWEATHER_CLIENT_ID,client_secret:env.XWEATHER_CLIENT_SECRET
   });
   const res=await fetch("https://data.api.xweather.com/lightning/closest?"+params);
   let obj;
   try{obj=await res.json();}
   catch{throw Error("Xweather : réponse HTTP "+res.status+" non JSON.");}
-  const errorCode=String(obj?.error?.code||"").slice(0,55).replace(/[^A-Za-z0-9_-]/g,"");
+  const err=String(obj?.error?.code||"").slice(0,55).replace(/[^A-Za-z0-9_-]/g,"");
   const warnings=(Array.isArray(obj?.warnings)?obj.warnings:[obj?.warning,obj?.error])
     .map(w=>String(w?.code||""));
-  const noData=(errorCode==="warn_no_data"||warnings.includes("warn_no_data"));
-  if(noData){
-    const empty={pulses:[],collecte:Date.now(),limite:false};
-    await cache.put(key,new Response(JSON.stringify(empty),{
-      headers:{"Cache-Control":"public,max-age=90","Content-Type":"application/json"}
-    }));
-    return {...empty,cache:false};
-  }
-  if(!res.ok)
-    throw Error("Xweather HTTP "+res.status+(errorCode?" ("+errorCode+")":""));
-  if(obj.success!==true||!Array.isArray(obj.response))
-    throw Error("Xweather : réponse inattendue"+(errorCode?" ("+errorCode+")":"")+".");
+  const noData=err==="warn_no_data"||warnings.includes("warn_no_data");
+  if(!noData&&(!res.ok||obj?.success!==true))
+    throw Error("Xweather : erreur HTTP "+res.status+(err?" ("+err+")":""));
+  if(!noData&&!Array.isArray(obj?.response))
+    throw Error("Xweather : format inattendu (liste des décharges absente).");
+
   const collecte=Date.now();
-  const pulses=obj.response.filter(x=>
-    String(x?.ob?.pulse?.type||"").toLowerCase()==="cg"&&
-    Number.isFinite(x?.ob?.pulse?.peakamp)&&
-    Number.isFinite(x?.loc?.lat)&&Number.isFinite(x?.loc?.long)&&
-    Number.isFinite(x?.ob?.timestamp)&&
-    collecte/1000-x.ob.timestamp>=-30&&collecte/1000-x.ob.timestamp<=330
-  ).map(x=>({amp:x.ob.pulse.peakamp,lat:x.loc.lat,lon:x.loc.long}));
-  const value={pulses,collecte,limite:obj.response.length>=1000};
+  const raw=noData?[]:obj.response;
+  const diagnostic={reçues:raw.length,cg:0,ic:0,autres:0,
+    écartéesTemps:0,écartéesPosition:0,sansIntensité:0};
+  const pulses=[];
+  for(const item of raw){
+    const type=String(item?.ob?.pulse?.type||"").toLowerCase();
+    if(type!=="cg"&&type!=="ic"){diagnostic.autres++;continue;}
+    if(type==="cg")diagnostic.cg++;else diagnostic.ic++;
+    const latitude=item?.loc?.lat,longitude=item?.loc?.long;
+    if(!Number.isFinite(latitude)||!Number.isFinite(longitude)||
+       Math.abs(latitude)>90||Math.abs(longitude)>180){
+      diagnostic.écartéesPosition++;continue;
+    }
+    // La source renvoie normalement les cinq dernières minutes. Une marge
+    // de quelques minutes tolère les latences de transmission et d'horloge.
+    const time=Number.isFinite(item?.ob?.timestamp)?item.ob.timestamp:
+      Number.isFinite(item?.ob?.timestampMS)?item.ob.timestampMS/1000:
+      Number.isFinite(item?.ob?.age)?collecte/1000-item.ob.age:null;
+    if(time===null||time>collecte/1000+60||time<collecte/1000-600){
+      diagnostic.écartéesTemps++;continue;
+    }
+    const amp=Number.isFinite(item?.ob?.pulse?.peakamp)?
+      item.ob.pulse.peakamp:null;
+    if(amp===null)diagnostic.sansIntensité++;
+    pulses.push({type,amp,lat:latitude,lon:longitude});
+  }
+  const value={version:3,pulses,diagnostic,collecte,limite:raw.length>=1000};
   await cache.put(key,new Response(JSON.stringify(value),{
     headers:{"Cache-Control":"public,max-age=90","Content-Type":"application/json"}
   }));
+  const cost=res.headers?.get("X-Cost-Tokens");
+  if(cost&&/^\d+$/.test(cost))console.log("/foudre: tokens Xweather lightning:",cost);
   return {...value,cache:false};
 }
 async function foudreImage(city,pulses){
@@ -998,19 +1017,31 @@ async function foudreImage(city,pulses){
   const shown=[];
   for(const s of pulses){
     const [x,y]=foudreXY(city,s.lat,s.lon);
-    if(Math.hypot(x-F_X,y-F_Y)>F_R)continue;
+    if(!Number.isFinite(x)||!Number.isFinite(y)||
+       Math.hypot(x-F_X,y-F_Y)>F_R)continue;
     shown.push({...s,x,y});
   }
   for(const s of shown){
-    const color=s.amp>=0?F_COLORS.pos:F_COLORS.neg;
-    const radius=Math.max(3,Math.min(9,3+Math.floor(Math.abs(s.amp)/25000)));
+    const isIC=s.type==="ic";
+    // CG : jaune positif, bleu négatif, gris sans intensité.
+    // IC : violet, centre ajouré, pour ne pas les confondre avec des impacts au sol.
+    const color=isIC?F_COLORS.ic:
+      s.amp===null?F_COLORS.unknown:
+      s.amp>=0?F_COLORS.pos:F_COLORS.neg;
+    const radius=isIC?4:!Number.isFinite(s.amp)?4:
+      Math.max(3,Math.min(9,3+Math.floor(Math.abs(s.amp)/25000)));
     c.dot(s.x,s.y,radius+2,F_COLORS.black);
     c.dot(s.x,s.y,radius,color);
-    c.line(s.x-3,s.y,s.x+3,s.y,F_COLORS.black);
-    if(s.amp>=0)c.line(s.x,s.y-3,s.x,s.y+3,F_COLORS.black);
+    if(isIC){
+      c.dot(s.x,s.y,2,F_COLORS.bg);
+    }else{
+      c.line(s.x-3,s.y,s.x+3,s.y,F_COLORS.black);
+      if(s.amp!==null&&s.amp>=0)c.line(s.x,s.y-3,s.x,s.y+3,F_COLORS.black);
+    }
   }
-  // Sur la carte, nombres signes des 12 impacts les plus puissants, en kA.
-  for(const s of [...shown].sort((a,b)=>Math.abs(b.amp)-Math.abs(a.amp)).slice(0,12)){
+  // Étiquettes kA sur les CG uniquement, au maximum 12 pour préserver la lisibilité.
+  for(const s of [...shown].filter(x=>x.type==="cg"&&Number.isFinite(x.amp))
+     .sort((a,b)=>Math.abs(b.amp)-Math.abs(a.amp)).slice(0,12)){
     const value=(s.amp>=0?"+":"-")+Math.round(Math.abs(s.amp)/1000);
     const x=Math.max(6,Math.min(F_W-value.length*8-6,Math.round(s.x+10)));
     const y=Math.max(5,Math.min(F_H-20,Math.round(s.y-22)));
@@ -1037,10 +1068,13 @@ async function foudreMessage(interaction,content,png){
              body:JSON.stringify({content,allowed_mentions:{parse:[]}})};
   }
   const response=await fetch(url,options);
-  if(!response.ok)console.error("Discord /foudre",response.status,
-                                (await response.text()).slice(0,300));
+  if(!response.ok){
+    // Avant, une erreur lors du transfert de l'image ne remontait jamais au bot.
+    const detail=(await response.text()).slice(0,160);
+    console.error("Discord /foudre upload failed",response.status,detail);
+    throw Error("Discord a refusé l'image (HTTP "+response.status+").");
+  }
 }
-
 // === /foudre : statistiques sur 5 min, 30 min, 1 h, 6 h et 24 h ===
 // La carte montre uniquement les décharges CG des cinq dernières minutes.
 // Lightning Summary fournit des totaux incluant CG et IC, pas un historique géolocalisé.
@@ -1200,26 +1234,38 @@ async function completeFoudre(interaction,rawCity,env,rawPeriode=30){
       "** · consultation "+heure+"\n\n";
     if(periode>5)message+=foudreSummaryLines(summary,periode)+"\n";
     if(strikes){
-      const plus=strikes.pulses.filter(x=>x.amp>0).length;
-      const minus=strikes.pulses.filter(x=>x.amp<0).length;
-      message+="🗺️ **Carte des impacts CG : 5 dernières minutes uniquement**\n"+
-        "🟠 Positifs : **"+foudreNombre(plus)+
-        "** · 🔵 Négatifs : **"+foudreNombre(minus)+"**\n";
-      const biggest=[...strikes.pulses].sort((a,b)=>Math.abs(b.amp)-Math.abs(a.amp))
+      const cg=strikes.pulses.filter(x=>x.type==="cg");
+      const ic=strikes.pulses.filter(x=>x.type==="ic");
+      const plus=cg.filter(x=>Number.isFinite(x.amp)&&x.amp>0).length;
+      const minus=cg.filter(x=>Number.isFinite(x.amp)&&x.amp<0).length;
+      message+="🗺️ **Carte de l'activité électrique : 5 dernières minutes**\n"+
+        "⚡ Nuage-sol (CG) : **"+foudreNombre(cg.length)+
+        "** · intranuageux (IC) : **"+foudreNombre(ic.length)+"**\n"+
+        "🟠 CG positifs : **"+foudreNombre(plus)+
+        "** · 🔵 CG négatifs : **"+foudreNombre(minus)+
+        "** · 🟣 IC : cercles violets\n";
+      const biggest=cg.filter(x=>Number.isFinite(x.amp))
+        .sort((a,b)=>Math.abs(b.amp)-Math.abs(a.amp))
         .slice(0,4).map(x=>(x.amp>=0?"+":"−")+
           foudreKA(Math.abs(x.amp)));
-      if(biggest.length)message+="⚡ Courants récents les plus forts : **"+
+      if(biggest.length)message+="⚡ Courants CG les plus forts : **"+
         biggest.join(" · ")+"**\n";
+      const d=strikes.diagnostic;
+      if(d)message+="🔎 Réponse Xweather : "+foudreNombre(d.reçues)+
+        " décharges reçues (CG "+foudreNombre(d.cg)+
+        " / IC "+foudreNombre(d.ic)+
+        ") ; exclusions temps "+foudreNombre(d.écartéesTemps)+
+        ", coordonnées "+foudreNombre(d.écartéesPosition)+".\n";
       if(strikes.limite)message+="⚠️ Liste récente limitée à 1 000 décharges ; compteurs partiels.\n";
       if(strikes.cache)message+="_Carte basée sur un cache de 90 secondes au maximum._\n";
       if(strikes.pulses.length===0)
-        message+="Aucun impact nuage-sol récent détecté : carte sans impact.\n";
+        message+="Aucune décharge récente exploitable détectée : carte de repérage sans impacts.\n";
     }else{
       message+="⚠️ **Carte 5 min indisponible** : "+mapError+
         ". Les statistiques ne sont pas une carte historique.\n";
     }
-    message+="_Source : [Vaisala Xweather](https://www.xweather.com/)"+
-      " · 30 min à 24 h = agrégats, sans positions historiques._";
+    message+="_[Powered by Vaisala Xweather](https://www.xweather.com/)"+
+      " · 30 min à 24 h : statistiques, sans positions historiques._";
     if(message.length>1950)message=message.slice(0,1940);
     // Toujours envoyer la carte du secteur, y compris lorsque le nombre d'impacts est zéro.
     // Si l'API est en échec, ne pas présenter ce fond vide comme un ciel sans foudre.
@@ -1228,8 +1274,8 @@ async function completeFoudre(interaction,rawCity,env,rawPeriode=30){
       await foudreMessage(interaction,message,png);
       return;
     }catch(e){
-      console.error("KFS /foudre rendu PNG",String(e));
-      message+="\n⚠️ Carte PNG indisponible : "+String(e.message||e).slice(0,100);
+      console.error("KFS /foudre PNG/envoi",String(e));
+      message+="\n⚠️ Image non envoyée : "+String(e.message||e).slice(0,100);
     }
     await foudreMessage(interaction,message,null);
   }catch(e){
