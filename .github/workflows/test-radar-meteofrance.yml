@@ -1,0 +1,35 @@
+name: Test API radar Meteo-France
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-radar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verifier acces API radar
+        env:
+          METEOFRANCE_API_KEY: ${{ secrets.METEOFRANCE_API_KEY }}
+        shell: bash
+        run: |
+          if [ -z "$METEOFRANCE_API_KEY" ]; then
+            echo "::error::Secret METEOFRANCE_API_KEY absent ou vide"
+            exit 1
+          fi
+          URL="https://public-api.meteofrance.fr/public/DPRadar/v1/mosaiques/METROPOLE/observations/REFLECTIVITE"
+          HTTP_CODE=$(curl --silent --show-error --location --output /tmp/radar-response.json --write-out "%{http_code}" --header "apikey: $METEOFRANCE_API_KEY" "$URL")
+          echo "Code HTTP Météo-France : $HTTP_CODE"
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "::error::Acces radar refuse ou indisponible (HTTP $HTTP_CODE)."
+            exit 1
+          fi
+          python3 - <<'PY'
+          import json
+          with open("/tmp/radar-response.json", encoding="utf-8") as f:
+              data = json.load(f)
+          print("Réponse JSON valide. Type :", type(data).__name__)
+          if isinstance(data, dict):
+              print("Champs disponibles :", ", ".join(data.keys()))
+          elif isinstance(data, list):
+              print("Nombre d'éléments :", len(data))
+          PY
