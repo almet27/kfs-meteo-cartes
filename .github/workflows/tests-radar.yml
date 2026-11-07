@@ -1,0 +1,31 @@
+name: Tests de fiabilite radar
+on:
+  push:
+    paths:
+      - 'radar/*.py'
+      - '.github/workflows/tests-radar.yml'
+      - '.github/workflows/assembler-gif-radar.yml'
+      - '.github/workflows/premier-decodage-radar.yml'
+  pull_request:
+    paths:
+      - 'radar/*.py'
+      - '.github/workflows/tests-radar.yml'
+      - '.github/workflows/assembler-gif-radar.yml'
+      - '.github/workflows/premier-decodage-radar.yml'
+permissions:
+  contents: read
+jobs:
+  tests-radar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Installer les dependances des tests
+        run: python -m pip install --disable-pip-version-check numpy pillow matplotlib pyproj
+      - name: Verifier les scripts
+        run: python -m py_compile radar/assembler_gif.py radar/zoom_ville.py
+      - name: Tests GIF, horodatages et georeferencement coherent
+        run: python -m unittest discover -s radar -p 'test_*.py' -v
