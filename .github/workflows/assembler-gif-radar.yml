@@ -330,7 +330,8 @@ jobs:
   publication-pages:
     name: Publier le radar diagnostic sur GitHub Pages
     needs: gif-diagnostic
-    if: needs.gif-diagnostic.outputs.atlas_ready == 'true'
+    # L'ancien atlas BUFR ne doit plus ecraser la page RainViewer.
+    if: false
     runs-on: ubuntu-latest
     timeout-minutes: 10
     concurrency:
