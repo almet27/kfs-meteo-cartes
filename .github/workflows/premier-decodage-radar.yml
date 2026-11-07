@@ -32,7 +32,7 @@ jobs:
           links=metadata.get('links',[])
           candidates=[l['href'] for l in links if l.get('rel','').endswith('/data') and l.get('href')]
           if not candidates:raise RuntimeError('Aucun lien BUFR dans la reponse : '+str(links)[:900])
-          data=get(candidates[0])
+          data=get(candidates[0],{'apikey':os.environ['METEOFRANCE_API_KEY'],'User-Agent':'KFS-Meteo-Radar/1.0'})
           raw=gzip.decompress(data) if data[:2]==b'\x1f\x8b' else data
           if raw[:4]!=b'BUFR':raise RuntimeError('Fichier non BUFR')
           work=pathlib.Path('radar-sortie')
