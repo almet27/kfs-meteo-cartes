@@ -8,7 +8,7 @@ on:
       - '.github/workflows/prototype-ec46-mois.yml'
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   maps:
@@ -33,3 +33,16 @@ jobs:
           path: meteo-mois-preview/
           if-no-files-found: warn
           retention-days: 7
+
+      - name: Publier uniquement sur la branche de test (aucun impact GitHub Pages)
+        if: github.ref == 'refs/heads/feature/meteo-1mois-atlantique-europe-plan'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f meteo-mois-preview/
+          if git diff --cached --quiet; then
+            echo "Cartes inchangées"
+          else
+            git commit -m "preview(ec46): publier les cartes expérimentales géoréférencées"
+            git push origin HEAD:refs/heads/feature/meteo-1mois-atlantique-europe-plan
+          fi
