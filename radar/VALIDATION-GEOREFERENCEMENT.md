@@ -26,3 +26,23 @@
 - Ensuite seulement : collecte de plusieurs observations, GIF animé et intégration de `/radar ville:<ville>` dans le bot Discord, **sans toucher à `/meteo`**.
 
 **Important :** une image sans échos près de Bourth ne démontre pas que le radar est mal placé ; elle ne permet pas non plus de le valider. Il faut comparer les échos là où il pleut à la même heure.
+
+
+## Source de référence retrouvée le 7 novembre 2026
+
+- Archives Météo60 : https://www.meteo60.fr/aller-plus-loin/archives-cartes — la page indique que les radars zoomables sont accessibles depuis les observations en direct et archivés pendant trois mois.
+- Archives radar Météo-France : https://donneespubliques-int.meteofrance.fr/?fond=rubrique&id_rubrique=27 — référence officielle à privilégier si le créneau exact est accessible.
+- Attention : une image de radar « en direct » n'est pas une preuve pour le 7 novembre 2026 à **11:05 UTC**. La référence doit afficher explicitement ce créneau.
+- La mosaïque BUFR est une réflectivité en **dBZ** ; si la référence exprime une intensité en mm/h, ne pas comparer directement les valeurs numériques, mais seulement la position des structures d'échos avec prudence.
+- Météo60 limite la réutilisation de ses images animées/zoomables ; utiliser l'archive pour une vérification visuelle, pas pour republier son contenu sans autorisation.
+
+### Fichier de noyaux reçu
+
+Le GeoJSON `noyaux-radar-hypotheses.geojson` contient des centres de noyaux **hypothétiques**, calculés pour quatre rangements possibles de la matrice. Ne pas transformer ces points en observations géolocalisées validées. La présence de 48 centres ne valide aucune orientation.
+
+### Procédure de contrôle sur l'archive
+
+1. Ouvrir l'archive Météo60, afficher le 07/11/2026 à 12:05 heure de Paris (11:05 UTC), et conserver une capture montrant clairement la date et l'heure.
+2. Vérifier la carte de référence sur plusieurs zones de précipitations et relever au moins trois centres géographiques.
+3. Comparer les centres relevés aux quatre groupes du GeoJSON ; une orientation qui place les noyaux en Manche et une autre qui les place dans le sud-est ne peuvent pas être considérées équivalentes.
+4. Si la référence n'est pas disponible exactement à 11:05 UTC, laisser l'audit **NON_VALIDÉ** et refaire une acquisition synchronisée avec une autre source.
