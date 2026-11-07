@@ -56,7 +56,11 @@ def main():
         stamp = timestamp.strftime("%d/%m/%Y %H:%M UTC")
         draw.rectangle((8, 8, 265, 39), fill="#172b40")
         draw.text((15, 16), stamp, fill="white")
-        if args.diagnostic:\n            warning = "RADAR NON VALIDE - DIAGNOSTIC UNIQUEMENT"\n            draw.rectangle((8, 46, 420, 79), fill="#8b1723")\n            draw.text((15, 55), warning, fill="white")\n        frames.append(frame)
+        if args.diagnostic:
+            warning = "RADAR NON VALIDE - DIAGNOSTIC UNIQUEMENT"
+            draw.rectangle((8, 46, 420, 79), fill="#8b1723")
+            draw.text((15, 55), warning, fill="white")
+        frames.append(frame)
     args.sortie.parent.mkdir(parents=True, exist_ok=True)
     frames[0].save(args.sortie, save_all=True, append_images=frames[1:],
                    duration=args.duree_ms, loop=0, optimize=True)
