@@ -25,7 +25,10 @@ jobs:
             [ -n "$run" ] || continue
             mkdir -p "radar-temp/$run"
             if gh run download "$run" -n premiere-carte-radar -D "radar-temp/$run"; then
-              find "radar-temp/$run" -maxdepth 1 -name 'radar-candidat-????-??-??T??-??-??Z.png' -exec cp -n '{}' radar-historique/ \;
+              find "radar-temp/$run" -type f -name 'radar-candidat-*.png' ! -name 'radar-candidat-sans-decalage.png' -exec cp -n '{}' radar-historique/ \;
+              echo "Contenu du run $run :"; find "radar-temp/$run" -type f | head -n 8
+            else
+              echo "AVERTISSEMENT: impossible de telecharger le run $run"
             fi
           done < radar-runs.txt
           echo "Images candidates disponibles :"
@@ -48,7 +51,9 @@ jobs:
               selected.append((t,p))
           selected=selected[-8:]
           if len(selected)<2:
-              raise SystemExit('Au moins deux observations consecutives sont necessaires. Relancer plus tard.')
+              print('AUCUN GIF: moins de deux observations distinctes disponibles. Verifier les fichiers radar-candidat horodates dans les artefacts.',flush=True)
+              Path('radar-sortie/diagnostic-assemblage.txt').write_text('Images trouvees : '+str(len(images))+'\\nObservations continues : '+str(len(selected))+'\\n')
+              sys.exit(0)
           command=[sys.executable,'radar/assembler_gif.py','--diagnostic',
                    '--sortie','radar-sortie/radar-diagnostic.gif']
           command.extend(str(p) for _,p in selected)
@@ -59,5 +64,7 @@ jobs:
         if: always()
         with:
           name: radar-gif-diagnostic
-          path: radar-sortie/radar-diagnostic.gif
+          path: |
+            radar-sortie/radar-diagnostic.gif
+            radar-sortie/diagnostic-assemblage.txt
           if-no-files-found: warn
