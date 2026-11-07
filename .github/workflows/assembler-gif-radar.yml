@@ -21,7 +21,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Installer Pillow
-        run: python -m pip install --disable-pip-version-check pillow pyproj
+        run: python -m pip install --disable-pip-version-check pillow pyproj numpy matplotlib
       - name: Recuperer les dernieres observations radar
         env:
           GH_TOKEN: ${{ github.token }}
@@ -46,7 +46,8 @@ jobs:
           files=list(source.rglob('radar-candidat-????-??-??T??-??-??Z.png'))
           if files:
               for p in files:
-                  shutil.copy2(p,target/p.name)
+                  if not (target/p.name).exists():
+                      shutil.copy2(p,target/p.name)
               print('Images horodatees existantes :',len(files),flush=True)
           else:
               image=next(iter(source.rglob('radar-candidat-sans-decalage.png')),None)
@@ -57,12 +58,16 @@ jobs:
                   if raw:
                       when=datetime.fromisoformat(raw.replace('Z','+00:00')).astimezone(timezone.utc)
                       name='radar-candidat-'+when.strftime('%Y-%m-%dT%H-%M-%SZ')+'.png'
-                      shutil.copy2(image,target/name)
+                      if not (target/name).exists():
+                          shutil.copy2(image,target/name)
                       print('Image ancienne horodatee depuis BUFR :',name,flush=True)
                   else:
                       print('Horodatage BUFR absent, image ignoree',flush=True)
               else:
                   print('Image ou JSON observation absent, run ignore',flush=True)
+          for grid in source.rglob('radar-grid-????-??-??T??-??-??Z.npz'):
+              if not (target/grid.name).exists():
+                  shutil.copy2(grid,target/grid.name)
           PY
               echo "Contenu du run $run :"; find "radar-temp/$run" -type f | head -n 8
             else
@@ -77,8 +82,8 @@ jobs:
           set -euo pipefail
           python - <<'PY'
           from pathlib import Path
-          from datetime import datetime
-          import subprocess,sys
+          from datetime import datetime,timezone
+          import json,subprocess,sys
           images=sorted(Path('radar-historique').glob('radar-candidat-*.png'))
           pairs=[(datetime.strptime(p.stem.removeprefix('radar-candidat-'),'%Y-%m-%dT%H-%M-%SZ'),p) for p in images]
           # Garder la derniere serie contigue, sans trou de plus de 15 min.
@@ -88,6 +93,15 @@ jobs:
                   selected=[]
               selected.append((t,p))
           selected=selected[-8:]
+          # Pas de GIF trompeur a partir de donnees anciennes.
+          if selected:
+              age=(datetime.now(timezone.utc)-selected[-1][0].replace(tzinfo=timezone.utc)).total_seconds()/60
+              if age>45 or age < -5:
+                  print(f'DONNEES OBSOLETES : derniere observation agee de {age:.1f} min. GIF non regenere.',flush=True)
+                  selected=[]
+          Path('radar-sortie/radar-images.json').write_text(
+              json.dumps([t.strftime('%Y-%m-%dT%H:%M:%SZ') for t,_ in selected],indent=2),
+              encoding='utf-8')
           print('Observations retenues :',len(selected),'sur',len(images),'images horodatees',flush=True)
           for t,p in selected:
               print(' -',t.isoformat(),'UTC',flush=True)
@@ -103,6 +117,7 @@ jobs:
           PY
       - name: Zoom radar diagnostic sur la commune
         if: hashFiles('radar-sortie/radar-diagnostic.gif') != ''
+        continue-on-error: true
         env:
           VILLE: ${{ inputs.ville || 'Bourth' }}
         run: |
@@ -120,7 +135,7 @@ jobs:
               raise SystemExit('Commune introuvable ou ambigue : '+ville)
           lon,lat=match['centre']['coordinates']
           subprocess.run([sys.executable,'radar/zoom_ville.py',
-              '--entree','radar-sortie/radar-diagnostic.gif',
+              '--dossier-grilles','radar-historique',
               '--sortie','radar-sortie/radar-zoom-ville-diagnostic.gif',
               '--ville',match['nom'],'--latitude',str(lat),'--longitude',str(lon),
               '--horodatages','radar-sortie/radar-images.json'],check=True)
@@ -132,6 +147,7 @@ jobs:
           path: |
             radar-sortie/radar-diagnostic.gif
             radar-sortie/radar-zoom-ville-diagnostic.gif
+            radar-sortie/radar-zoom-ville-diagnostic.json
             radar-sortie/radar-images.json
             radar-sortie/diagnostic-assemblage.txt
           if-no-files-found: warn
