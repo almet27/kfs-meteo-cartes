@@ -1,0 +1,36 @@
+name: TEST integration Discord EC46 beta (aucun déploiement)
+
+on:
+  push:
+    paths:
+      - 'worker/kfs-meteo-worker-foudre-periodes-live-wu.js'
+      - '.github/workflows/test-ec46-discord-beta.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  worker-beta:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Vérifier la syntaxe JavaScript du Worker
+        run: node --check worker/kfs-meteo-worker-foudre-periodes-live-wu.js
+      - name: Vérifier les quatre commandes et le repli
+        run: |
+          node <<'NODE'
+          const fs=require('node:fs');
+          const s=fs.readFileSync('worker/kfs-meteo-worker-foudre-periodes-live-wu.js','utf8');
+          for(const name of [
+            'async function complete(', 'async function completeRadar(',
+            'async function completeFoudre(', 'async function completeLive(',
+            'async function ec46MonthlyPreview(', 'monthlyEmbeds=preview.embeds',
+            'const fallback=await forecast(city,echeance)',
+          ]) {
+            if(!s.includes(name))throw new Error('Bloc absent : '+name);
+          }
+          if(s.includes('KFS radar : déclenchement Cron inattendu, ignoré.'))
+            throw new Error('Code du scheduler présent dans le Worker Discord');
+          console.log('Intégration statique OK, sans exécution Discord.');
+          NODE
