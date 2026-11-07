@@ -50,6 +50,20 @@ class TestRadarZoom(unittest.TestCase):
         self.assertEqual(len(metadata['observations_utc']), 2)
         self.assertFalse(metadata['diffusion_discord_autorisee'])
 
+    def test_huit_observations_regulieres_generent_huit_images(self):
+        minutes=list(range(0,40,5))
+        self.times=[f'2026-11-07T11:{10+m:02d}:00Z' for m in minutes]
+        (self.root / 'radar-images.json').write_text(json.dumps(self.times))
+        for minute in minutes:
+            self.write_grid(minute)
+        self.run_zoom()
+        with Image.open(self.root / 'zoom.gif') as gif:
+            self.assertEqual(gif.n_frames, 8)
+            self.assertEqual(gif.size, (720, 720))
+        metadata=json.loads((self.root / 'zoom.json').read_text())
+        self.assertEqual(metadata['intervalles_minutes'], [5.0]*7)
+        self.assertFalse(metadata['diffusion_discord_autorisee'])
+
     def test_geometries_incoherentes_refusees(self):
         self.write_grid(0)
         self.write_grid(10, x0=-664900.0)
