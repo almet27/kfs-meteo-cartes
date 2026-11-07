@@ -1,0 +1,48 @@
+name: Publier les cartes synoptiques ECMWF
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '30 9,21 * * *'
+permissions:
+  contents: write
+concurrency:
+  group: cartes-ecmwf
+  cancel-in-progress: false
+jobs:
+  cartes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libeccodes-dev
+          pip install ecmwf-opendata cfgrib eccodes xarray numpy matplotlib cartopy
+      - name: Generate maps
+        run: python generate_synoptic.py
+      - name: Publier les cartes dans le dépôt public
+        run: |
+          mkdir -p cartes
+          cp synoptic-output/pression-j6-j10.png cartes/
+          cp synoptic-output/pression-j11-j15.png cartes/
+          cp synoptic-output/metadata.json cartes/
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add cartes/
+          if ! git diff --cached --quiet; then
+            git commit -m "Actualiser les cartes ECMWF"
+            git push
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cartes-ecmwf
+          path: |
+            cartes/*.png
+            cartes/metadata.json
+          retention-days: 7
