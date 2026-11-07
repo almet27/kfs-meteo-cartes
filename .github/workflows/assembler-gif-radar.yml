@@ -146,6 +146,71 @@ jobs:
               '--ville',match['nom'],'--latitude',str(lat),'--longitude',str(lon),
               '--horodatages','radar-sortie/radar-images.json'],check=True)
           PY
+      - name: Resume lisible du radar (GIF national et zoom)
+        if: always()
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from datetime import datetime,timezone
+          from PIL import Image
+          import json,os
+          root=Path('radar-sortie')
+          root.mkdir(exist_ok=True)
+          source=root/'radar-images.json'
+          try:
+              times=json.loads(source.read_text()) if source.exists() else []
+          except (OSError, ValueError):
+              times=[]
+          # Le format des grilles est AAAA-MM-JJTHH-MM-SSZ ; les heures de la liste
+          # sont AAAA-MM-JJTHH:MM:SSZ.
+          def grid_name(stamp):
+              dt=datetime.fromisoformat(stamp.replace('Z','+00:00'))
+              return 'radar-grid-'+dt.strftime('%Y-%m-%dT%H-%M-%SZ')+'.npz'
+          count_grid=sum((Path('radar-historique')/grid_name(t)).is_file() for t in times)
+          national=root/'radar-diagnostic.gif'
+          local=root/'radar-zoom-ville-diagnostic.gif'
+          def frames(path):
+              if not path.exists():
+                  return 0
+              with Image.open(path) as gif:
+                  return gif.n_frames
+          n_nat=frames(national)
+          n_loc=frames(local)
+          status={
+              'generation_utc':datetime.now(timezone.utc).isoformat(),
+              'mode':'DIAGNOSTIC',
+              'publication_discord_autorisee':False,
+              'observation_plus_recente_utc':times[-1] if times else None,
+              'images_selectionnees':len(times),
+              'grilles_disponibles_parmi_images':count_grid,
+              'images_gif_national':n_nat,
+              'images_gif_local':n_loc,
+              'radar_national_pret':n_nat>=2,
+              'radar_local_pret':n_loc>=2,
+              'cause_zoom_indisponible':(
+                  None if n_loc>=2 else
+                  ('moins_de_deux_grilles_recentes' if count_grid<2 else
+                   'echec_zoom_ou_grilles_incompatibles')),
+              'georeferencement_valide':False
+          }
+          (root/'etat-radar.json').write_text(json.dumps(status,indent=2,ensure_ascii=False))
+          summary=os.environ.get('GITHUB_STEP_SUMMARY')
+          lines=[
+              '## Bilan du radar — diagnostic uniquement',
+              f'- Images GIF France : **{n_nat}**',
+              f'- Images GIF ville : **{n_loc}**',
+              f'- Grilles radar disponibles : **{count_grid}/{len(times)}**',
+              f'- Derniere observation : **{times[-1] if times else "aucune"}**',
+              '- Georeferencement : **NON VALIDE** (aucune diffusion Discord)',
+          ]
+          if n_loc<2:
+              lines.append('- Zoom indisponible : au moins deux grilles recentes et compatibles sont necessaires.')
+          if summary:
+              with open(summary,'a',encoding='utf-8') as file:
+                  file.write('\\n'.join(lines)+'\\n')
+          print('BILAN RADAR:',json.dumps(status,ensure_ascii=False),flush=True)
+          PY
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -155,5 +220,6 @@ jobs:
             radar-sortie/radar-zoom-ville-diagnostic.gif
             radar-sortie/radar-zoom-ville-diagnostic.json
             radar-sortie/radar-images.json
+            radar-sortie/etat-radar.json
             radar-sortie/diagnostic-assemblage.txt
           if-no-files-found: warn
