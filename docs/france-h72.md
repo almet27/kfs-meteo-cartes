@@ -23,12 +23,24 @@ Sur chaque `push` de modification du moteur, le workflow lance un test réduit s
 
 ## Détection des nouveaux runs
 
-Le workflow [KFS France - détection des nouveaux cycles](../actions/workflows/watch-france-cycles.yml) interroge les sources toutes les 20 minutes et sauvegarde seulement les changements dans `forecast-maps/france/latest-cycles.json`. Un nouveau cycle confirmé à l'échéance +72 h peut déclencher une génération complète en artefact GitHub avec le `GITHUB_TOKEN` du dépôt. Cela ne garantit **pas** une disponibilité immédiate : les produits ECMWF / NOAA sont mis en ligne progressivement, et GitHub Actions peut retarder les événements planifiés.
+Le workflow [KFS France - détection des nouveaux cycles](../actions/workflows/watch-france-cycles.yml) contrôle ECMWF / NOAA toutes les 20 minutes. Les cartes Europe peuvent être regénérées plus tôt lorsqu'un nouveau run est détecté. Les mises à jour France automatiques restent suspendues tant que la publication du site complet et le bot Discord ne sont pas validés.
 
-## Diffusion Discord : étape encore non opérationnelle
+## Hébergement GRATUIT prévu : GitHub Pages
 
-Les images France sont **dans les artefacts de GitHub Actions**, pas encore sur un hébergement public stable. La commande `/modele` du bot Cloudflare reste orientée vers les cartes Europe existantes.
+Aucun abonnement Cloudflare R2 ni stockage o2switch ne sont nécessaires.
 
-Pour activer la diffusion France sans accumuler des centaines d'images dans l'historique Git, il faut brancher un cache de cartes (Cloudflare R2 conseillé) avec une politique d'expiration, puis ajouter l'option `zone=france` aux commandes Discord. La connexion Cloudflare actuelle ne possède pas les droits R2 lecture/écriture ; ne pas intégrer le bot avant que ce blocage soit levé.
+Le script `scripts/build_france_pages.py` construit un site temporaire **sans ajouter les images dans l'historique Git**. Il récupère les dernières archives GitHub Actions par modèle, les convertit en WebP et prépare `forecast-maps/france/metadata.json`. Le site conserve également les cartes Europe et les ressources existantes afin d'éviter de casser le site.
 
-Les workflows actuels et les anciennes cartes Europe ne sont pas remplacés.
+Sécurités de la publication finale :
+- les 4 modèles IFS, AIFS, GFS et AIGFS doivent avoir tous leurs pas natifs jusqu'à +72 h ;
+- aucun pas manquant n'est remplacé par une image artificielle ;
+- le run de chaque modèle doit correspondre au dernier cycle confirmé ;
+- la taille totale du site doit rester sous 450 Mo.
+
+Le workflow [Préparer GitHub Pages](../actions/workflows/pages-france-snapshot.yml) est en mode validation uniquement par défaut. `publish=false` produit un rapport sans déploiement ; `publish=true` exige que l'administrateur ait choisi **Settings → Pages → Source : GitHub Actions**. Attention : Pages ne contient qu'un site par dépôt, donc son déploiement peut remplacer un site Pages existant ; ne pas activer sans vérification.
+
+## Discord
+
+La commande `/modele` de Cloudflare fonctionne actuellement avec les cartes Europe ; le choix `zone=france` ne sera activé qu'après validation des liens HTTPS publics du nouveau site Pages, pour éviter des liens cassés.
+
+Ne pas considérer `/modele` France comme déployé tant que la migration des cartes et la commande Discord n'ont pas été testées de bout en bout.
