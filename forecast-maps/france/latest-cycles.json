@@ -1,34 +1,38 @@
 {
   "schema": 1,
-  "generated_utc": "2026-11-08T22:28:34Z",
+  "generated_utc": "2026-11-08T22:30:19Z",
   "models": {
     "ifs": {
       "source": "ECMWF IFS Open Data",
       "native_step_h": 3,
       "latest_first_step_utc": "2026-11-08T12:00:00Z",
-      "latest_72h_step_utc": "2026-11-08T12:00:00Z",
-      "fully_available_72h": true
+      "latest_72h_temperature_step_utc": "2026-11-08T12:00:00Z",
+      "temperature_72h_available_for_latest_run": true,
+      "all_required_fields_verified": false
     },
     "aifs-single": {
       "source": "ECMWF AIFS Open Data",
       "native_step_h": 6,
       "latest_first_step_utc": "2026-11-08T12:00:00Z",
-      "latest_72h_step_utc": "2026-11-08T12:00:00Z",
-      "fully_available_72h": true
+      "latest_72h_temperature_step_utc": "2026-11-08T12:00:00Z",
+      "temperature_72h_available_for_latest_run": true,
+      "all_required_fields_verified": false
     },
     "gfs": {
       "source": "NOAA NCEP GFS",
       "native_step_h": 3,
       "latest_first_step_utc": "2026-11-08T18:00:00Z",
-      "latest_72h_step_utc": "2026-11-08T18:00:00Z",
-      "fully_available_72h": true
+      "latest_72h_temperature_step_utc": "2026-11-08T18:00:00Z",
+      "temperature_72h_available_for_latest_run": true,
+      "all_required_fields_verified": false
     },
     "aigfs": {
       "source": "NOAA NCEP AIGFS",
       "native_step_h": 6,
       "latest_first_step_utc": "2026-11-08T18:00:00Z",
-      "latest_72h_step_utc": "2026-11-08T18:00:00Z",
-      "fully_available_72h": true
+      "latest_72h_temperature_step_utc": "2026-11-08T18:00:00Z",
+      "temperature_72h_available_for_latest_run": true,
+      "all_required_fields_verified": false
     }
   },
   "warnings": {},
