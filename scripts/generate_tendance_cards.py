@@ -330,7 +330,7 @@ def write_j15(stage, meta, data, now):
     }
 
 
-def write_premium_stage(stage, meta, data, now):
+def write_premium_stage(stage, meta, data, now, risk_document):
     """Infographie européenne 16:9 : champs météorologiques réels et risques non inventés."""
     step=stage["step"]
     if step=="360":
@@ -349,6 +349,16 @@ def write_premium_stage(stage, meta, data, now):
         model_a="IFS"
         model_b="AIFS"
     date=parsed(details["valid_utc"])
+    hazards=next((a for a in risk_document["stages"] if a["id"]==stage["id"]),None)
+    if not hazards or hazards["step_h"]!=int(step):
+        raise RuntimeError("Données de risque manquantes "+stage["id"])
+    if parsed(hazards["run_utc"])!=parsed(details["run_utc"]):
+        raise RuntimeError("Run de risques désynchronisé "+stage["id"])
+    if parsed(hazards["valid_utc"])!=date:
+        raise RuntimeError("Validité carte/risques différente")
+    risk_map=Path(hazards["background_path"])
+    if not risk_map.is_file() or risk_map.stat().st_size<20000:
+        raise RuntimeError("Fond géoréférencé non généré")
     W2,H2=1600,900
     canvas=Image.new("RGBA",(W2,H2),(5,30,60,255))
     bgd=ImageDraw.Draw(canvas)
@@ -356,7 +366,8 @@ def write_premium_stage(stage, meta, data, now):
         t=y/H2
         bgd.line((0,y,W2,y),fill=(round(5+4*t),round(28+22*t),round(55+29*t),255),width=1)
     # Real ECMWF synoptic chart with isobars and Z500, no synthetic fronts or centres.
-    hero=map_crop(chart,(1544,565)).convert("RGBA")
+    hero=Image.open(risk_map).convert("RGBA")
+    if hero.size!=(1544,565):raise RuntimeError("Fond géoréférencé : dimensions inattendues")
     tint=Image.new("RGBA",hero.size,(5,28,69,23))
     hero=Image.alpha_composite(hero,tint)
     mask=Image.new("L",hero.size,0)
@@ -379,20 +390,25 @@ def write_premium_stage(stage, meta, data, now):
     d.rounded_rectangle((1180,621,1550,705),radius=17,fill=(247,204,112,244))
     txt(d,(1200,636),"Confiance : "+stage["confidence"],23,(21,40,62),True)
     txt(d,(1200,676),"Tendance, pas vigilance",18,(21,40,62))
-    # The model diagnostics do not contain geolocated hazard verification.
-    # Display the seven requested legend icons neutrally, never fake their locations.
+    # Seuils indicatifs ; absence de signal != champ absent.
     d.rounded_rectangle((25,737,1574,851),radius=23,fill=(6,29,58,245),
                         outline=(87,182,240,255),width=2)
-    icons=[("❄","NEIGE"),("◆","VERGLAS"),("ϟ","ORAGE"),
-           ("≋","TEMPÊTE"),("°","GEL"),("☀","CANICULE"),("≈","INONDATION")]
-    width=220
-    for i,(ic,label) in enumerate(icons):
-        x=35+i*width
+    labels=[("neige","NEIGE"),("verglas","VERGLAS"),("orage","ORAGE"),
+            ("tempete","VENT FORT"),("gel","GEL"),("canicule","CANICULE"),
+            ("inondation","INONDATION"),("pluie_forte","PLUIE FORTE")]
+    palette={"absent":(165,199,217,255),"possible":(250,202,99,255),
+             "marque":(255,118,92,255),"indisponible":(136,164,185,255)}
+    pretty={"absent":"Pas de signal","possible":"Possible","marque":"Marqué",
+            "indisponible":"Non calculé"}
+    width=192
+    for i,(key,label) in enumerate(labels):
+        x=38+i*width
         if i:
-            d.line((x,754,x,837),fill=(91,135,177,180),width=2)
-        txt(d,(x+20,763),label,21,"white",True)
-        txt(d,(x+20,802),"Non évalué",18,"muted")
-    txt(d,(37,859),"RISQUES : pas de pictogrammes localisés sans validation des champs vent, pluie, neige et température de surface.",16,"light")
+            d.line((x-8,754,x-8,837),fill=(91,135,177,180),width=2)
+        state=hazards["risks"][key]["status"]
+        txt(d,(x+5,764),label,17,"white",True)
+        txt(d,(x+5,807),pretty[state],17,palette[state],True)
+    txt(d,(37,860),"Signaux indicatifs : vent moyen 10 m, pluie et neige /6 h. Crues, verglas, orages et chaleur non évalués. Pas de vigilance officielle.",15,"light")
     out=OUT/("tendance-carte-"+stage["id"]+".png")
     canvas.convert("RGB").save(out,"PNG",optimize=True)
     runs={model_a.lower():details["run_utc"],model_b.lower():other_run}
@@ -401,8 +417,8 @@ def write_premium_stage(stage, meta, data, now):
        "size_bytes":out.stat().st_size, "run_utc":runs,
        "valid_utc":details["valid_utc"], "title":stage["period"]+" — synthèse synoptique "+model_a+" / "+model_b,
        "confidence_label":stage["confidence"]+" (indicative)",
-       "risk_status":"non_evalue", "style":"kfs-premium-16-9-v3",
-       "note":"Carte fondée sur des champs synoptiques ; risques ponctuels non géolocalisés."}
+       "risk_status":"partial_georeferenced", "risks":hazards["risks"], "risk_markers":hazards["markers"], "style":"kfs-premium-16-9-v4",
+       "note":"Pictogrammes géoréférencés ECMWF. Seuils indicatifs, pas une vigilance."}
 
 def main():
     now=datetime.now(timezone.utc)
@@ -416,7 +432,12 @@ def main():
         if not timedelta(hours=-1)<now-moment<timedelta(hours=48):
             raise RuntimeError("Source météorologique trop ancienne ou future")
     if data.get("errors"):raise RuntimeError("Diagnostic numérique incomplet")
-    maps=[write_premium_stage(s,meta,data,now) for s in STAGES]
+    risks=json.loads((OUT/"tendance-risques.json").read_text(encoding="utf-8"))
+    if risks.get("schema_version")!=1 or risks.get("atlas_generated_utc")!=meta["generated_utc"]:
+        raise RuntimeError("Analyse des risques non synchronisée avec les cartes Europe")
+    if abs((parsed(risks["generated_utc"])-parsed(data["generated_utc"])).total_seconds())>7200:
+        raise RuntimeError("Dates de traitement cartes / risques trop éloignées")
+    maps=[write_premium_stage(s,meta,data,now,risks) for s in STAGES]
     manifest={
       "schema_version":1,"status":"illustrative_model_maps",
       "generated_utc":now.isoformat(),"source_generated_utc":data["generated_utc"],
