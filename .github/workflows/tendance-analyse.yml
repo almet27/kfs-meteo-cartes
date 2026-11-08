@@ -47,7 +47,11 @@ jobs:
           if ! git diff --cached --quiet; then
             git commit -m 'Actualiser analyse synoptique technique sans publication Discord'
             for attempt in 1 2 3 4 5; do
-              git pull --rebase
+              if ! git pull --rebase; then
+                git rebase --abort || true
+                echo 'Publication concurrente détectée : conservation des données déjà en ligne.'
+                exit 0
+              fi
               if git push; then exit 0; fi
               sleep 5
             done
