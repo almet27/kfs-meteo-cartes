@@ -1,0 +1,36 @@
+name: Cartes prévisions Europe IFS AIFS
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '45 5,11,17,23 * * *'
+permissions:
+  contents: write
+concurrency:
+  group: europe-forecast-maps
+  cancel-in-progress: false
+jobs:
+  cartes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 110
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Installer les bibliothèques
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libeccodes-dev
+          pip install ecmwf-opendata cfgrib eccodes xarray numpy matplotlib cartopy
+      - name: Générer les cartes Europe
+        run: python scripts/generate_europe_forecasts.py
+      - name: Publier les cartes
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add forecast-maps/europe/
+          if ! git diff --cached --quiet; then
+            git commit -m 'Actualiser cartes Europe IFS AIFS'
+            git pull --rebase
+            git push
+          fi
