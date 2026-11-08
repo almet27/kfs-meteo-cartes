@@ -368,7 +368,7 @@ def write_premium_stage(stage, meta, data, now, risk_document):
     # Real ECMWF synoptic chart with isobars and Z500, no synthetic fronts or centres.
     hero=Image.open(risk_map).convert("RGBA")
     if hero.size!=(1544,565):raise RuntimeError("Fond géoréférencé : dimensions inattendues")
-    tint=Image.new("RGBA",hero.size,(5,28,69,23))
+    tint=Image.new("RGBA",hero.size,(2,29,66,8))
     hero=Image.alpha_composite(hero,tint)
     mask=Image.new("L",hero.size,0)
     ImageDraw.Draw(mask).rounded_rectangle((0,0,1543,564),radius=22,fill=255)
@@ -378,37 +378,72 @@ def write_premium_stage(stage, meta, data, now, risk_document):
     d.rectangle((0,0,12,H2),fill=(46,181,247,255))
     cloud(d,39,23)
     txt(d,(166,22),"KFS MÉTÉO",37,"white",True)
-    txt(d,(40,91),"TENDANCE GÉNÉRALE   •   "+stage["period"],43,"white",True)
+    txt(d,(40,86),"Jusqu'au "+str(date.day)+" "+MONTHS[date.month-1],49,"white",True)
     d.rounded_rectangle((1005,25,1549,80),radius=25,fill=(208,233,251,245))
     txt(d,(1023,36),"ECMWF "+model_a+"  •  "+model_b,25,(9,42,77),True)
-    d.rounded_rectangle((46,176,850,253),radius=19,fill=(6,27,53,235))
-    txt(d,(64,185),stage["period"]+"  •  "+date.strftime("%d/%m/%Y %H:%M")+" UTC",27,"white",True)
-    txt(d,(64,223),"Géopotentiel 500 hPa et pression réelle • "+model_a,17,"light")
-    d.rounded_rectangle((44,622,1165,707),radius=17,fill=(7,29,56,232),outline=(65,161,218,220),width=2)
-    txt(d,(62,633),"FLUX MOYEN SUR LA FRANCE : "+sector(flow.get("from_deg")),27,"white",True)
-    txt(d,(62,677),"Température 850 hPa : "+model_a+" %+0.1f°C  |  "%t850+model_b+" %+0.1f°C"%other_t,21,"light")
-    d.rounded_rectangle((1180,621,1550,705),radius=17,fill=(247,204,112,244))
-    txt(d,(1200,636),"Confiance : "+stage["confidence"],23,(21,40,62),True)
-    txt(d,(1200,676),"Tendance, pas vigilance",18,(21,40,62))
-    # Seuils indicatifs ; absence de signal != champ absent.
-    d.rounded_rectangle((25,737,1574,851),radius=23,fill=(6,29,58,245),
-                        outline=(87,182,240,255),width=2)
+    # A forecast-based editorial headline, not a fabricated synopsis.
+    wind_dir=sector(flow.get("from_deg"))
+    rain_state=hazards["risks"]["pluie_forte"]["status"]
+    wind_state=hazards["risks"]["tempete"]["status"]
+    if rain_state=="marque":
+        synopsis="Passages pluvieux marqués"
+    elif wind_state=="marque":
+        synopsis="Flux dynamique et vent soutenu"
+    elif wind_dir in ("sud-ouest","ouest-sud-ouest") and t850>=5:
+        synopsis="Influence océanique de sud-ouest"
+    elif t850<0:
+        synopsis="Refroidissement en altitude"
+    else:
+        synopsis="Flux dominant de "+wind_dir
+    d.rounded_rectangle((46,173,915,226),radius=25,fill=(211,236,250,250))
+    txt(d,(67,183),synopsis,25,(9,42,77),True)
+    d.rounded_rectangle((46,234,770,271),radius=14,fill=(5,30,54,229))
+    txt(d,(63,243),stage["period"]+"  •  "+date.strftime("%d/%m/%Y %H:%M")+" UTC",20,"white",True)
+    # Decorative flow arrow points in the measured mean 850-hPa wind direction.
+    canvas=curve_arrow(canvas,(873,504),flow.get("from_deg"),scale=.51)
+    d=ImageDraw.Draw(canvas)
+    # Compact risk ribbon, with all eight categories.
+    d.rounded_rectangle((30,634,1570,721),radius=23,fill=(6,32,60,237),
+                        outline=(87,187,232,234),width=2)
     labels=[("neige","NEIGE"),("verglas","VERGLAS"),("orage","ORAGE"),
             ("tempete","VENT FORT"),("gel","GEL"),("canicule","CANICULE"),
-            ("inondation","INONDATION"),("pluie_forte","PLUIE FORTE")]
+            ("inondation","CRUES"),("pluie_forte","PLUIE FORTE")]
     palette={"absent":(165,199,217,255),"possible":(250,202,99,255),
-             "marque":(255,118,92,255),"indisponible":(136,164,185,255)}
+             "marque":(255,118,92,255),"relief_uniquement":(184,217,249,255),
+             "indisponible":(136,164,185,255)}
     pretty={"absent":"Pas de signal","possible":"Possible","marque":"Marqué",
-            "indisponible":"Non calculé"}
-    width=192
+            "relief_uniquement":"Relief seul","indisponible":"Non calculé"}
+    cell_width=190
     for i,(key,label) in enumerate(labels):
-        x=38+i*width
-        if i:
-            d.line((x-8,754,x-8,837),fill=(91,135,177,180),width=2)
+        x=43+i*cell_width
+        if i:d.line((x-8,647,x-8,709),fill=(102,157,195,140),width=2)
         state=hazards["risks"][key]["status"]
-        txt(d,(x+5,764),label,17,"white",True)
-        txt(d,(x+5,807),pretty[state],17,palette[state],True)
-    txt(d,(37,860),"Signaux indicatifs : vent moyen 10 m, pluie et neige /6 h. Crues, verglas, orages et chaleur non évalués. Pas de vigilance officielle.",15,"light")
+        txt(d,(x+4,650),label,17,"white",True)
+        txt(d,(x+4,683),pretty.get(state,"Non calculé"),16,
+            palette.get(state,"muted"),True)
+    # Main editorial four-part bar inspired by the user's reference image.
+    d.rounded_rectangle((30,735,1570,864),radius=28,
+                        fill=(7,31,60,248),outline=(104,193,239,240),width=3)
+    for separator in (418,810,1202):
+        d.line((separator,753,separator,848),fill=(115,177,209,180),width=2)
+    txt(d,(55,756),"FLUX DOMINANT",19,"cyan",True)
+    flow_text="Flux de "+wind_dir
+    if wind_dir.startswith(("est","ouest")):flow_text="Flux d'"+wind_dir
+    txt(d,(55,802),flow_text[:24],25,"white",True)
+    txt(d,(445,756),"MASSE D'AIR",19,"cyan",True)
+    txt(d,(445,802),temp_desc(t850)[:27],23,"white",True)
+    txt(d,(830,756),"RISQUE PRINCIPAL",19,"cyan",True)
+    if rain_state=="marque":principal="Pluies soutenues"
+    elif wind_state=="marque":principal="Vent fort"
+    elif hazards["risks"]["neige"]["status"]=="marque":principal="Neige hors relief"
+    elif rain_state=="possible":principal="Pluie possible"
+    elif wind_state=="possible":principal="Vent possible"
+    else:principal="Signal faible ou incertain"
+    txt(d,(830,802),principal,22,"white",True)
+    txt(d,(1220,752),"CONFIANCE",19,"cyan",True)
+    d.rounded_rectangle((1216,794,1548,852),radius=26,fill=(251,209,110,255))
+    txt(d,(1232,812),stage["confidence"],23,(20,40,62),True)
+    txt(d,(37,875),"Neige hors relief : altitude ≤800 m (Copernicus GLO-90) • Champs ECMWF validés, indications non officielles.",14,"light")
     out=OUT/("tendance-carte-"+stage["id"]+".png")
     canvas.convert("RGB").save(out,"PNG",optimize=True)
     runs={model_a.lower():details["run_utc"],model_b.lower():other_run}
@@ -417,8 +452,8 @@ def write_premium_stage(stage, meta, data, now, risk_document):
        "size_bytes":out.stat().st_size, "run_utc":runs,
        "valid_utc":details["valid_utc"], "title":stage["period"]+" — synthèse synoptique "+model_a+" / "+model_b,
        "confidence_label":stage["confidence"]+" (indicative)",
-       "risk_status":"partial_georeferenced", "risks":hazards["risks"], "risk_markers":hazards["markers"], "style":"kfs-premium-16-9-v4",
-       "note":"Pictogrammes géoréférencés ECMWF. Seuils indicatifs, pas une vigilance."}
+       "risk_status":"altitude_filtered_georeferenced", "risks":hazards["risks"], "risk_markers":hazards["markers"], "style":"kfs-editorial-premium-16-9-v5",
+       "note":"Pictogrammes géoréférencés ECMWF, neige hors relief Copernicus GLO-90, pas une vigilance."}
 
 def main():
     now=datetime.now(timezone.utc)

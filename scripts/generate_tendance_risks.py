@@ -8,6 +8,9 @@ géographiques et les mêmes runs ECMWF vérifiés.
 from __future__ import annotations
 import json
 import math
+import time
+from urllib.parse import urlencode
+from urllib.request import urlopen
 from pathlib import Path
 from datetime import datetime, timezone, timedelta
 import numpy as np
@@ -19,6 +22,11 @@ import matplotlib.pyplot as plt
 import matplotlib.patheffects as pe
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
+from cartopy.io import shapereader
+from shapely.geometry import Point
+from shapely.ops import unary_union
+from shapely.prepared import prep
+from matplotlib.colors import LinearSegmentedColormap
 from matplotlib.offsetbox import AnnotationBbox, DrawingArea
 from matplotlib.patches import Circle, FancyBboxPatch, PathPatch
 from matplotlib.lines import Line2D
@@ -31,7 +39,11 @@ STAGES=[("j3",72,"ifs"),("j7",168,"ifs"),("j10",240,"ifs"),("j15",360,"aifs-sing
 GEOGRAPHY=(-45,35,31,75)
 FOCUS=(-10,12,41,53)
 CATEGORIES=("neige","verglas","orage","tempete","gel","canicule","inondation","pluie_forte")
-COLORS={"vent_fort":"#FFD06B","tempete":"#F46C55","pluie_forte":"#39CAFF","neige":"#E9F7FF"}
+COLORS={"vent_fort":"#FFCE66","tempete":"#FB765A","pluie_forte":"#37CFFF","neige":"#BCEBFF"}
+SNOW_ALT_MAX_M=800
+ELEVATION_ENDPOINT="https://api.open-meteo.com/v1/elevation"
+_TERRAIN_CACHE={}
+_LAND_GEOMETRY=None
 
 def when(value):
     return datetime.fromisoformat(value.replace("Z","+00:00")).astimezone(timezone.utc)
@@ -106,44 +118,165 @@ def status(v,low,high):
     return "marque" if v>=high else "possible" if v>=low else "absent"
 
 
+
+def land_geometry():
+    """Coastline filter: the ocean must not count as lowland snowfall."""
+    global _LAND_GEOMETRY
+    if _LAND_GEOMETRY is None:
+        _LAND_GEOMETRY=prep(unary_union(list(cfeature.LAND.geometries())))
+    return _LAND_GEOMETRY
+
+def fetch_elevations(coords):
+    """Copernicus DEM GLO-90 from Open-Meteo; at most 100 positions/request.
+
+    Querying candidate grid cells (not a whole continent) keeps requests light.
+    An API failure never silently classifies unverified mountain snow as lowland.
+    """
+    missing=[(lon,lat) for lon,lat in coords if (lon,lat) not in _TERRAIN_CACHE]
+    for start in range(0,len(missing),95):
+        batch=missing[start:start+95]
+        params=urlencode({
+            "latitude":",".join(f"{lat:.3f}" for lon,lat in batch),
+            "longitude":",".join(f"{lon:.3f}" for lon,lat in batch)
+        })
+        error=None
+        for trial in range(3):
+            try:
+                with urlopen(ELEVATION_ENDPOINT+"?"+params,timeout=24) as resp:
+                    values=json.load(resp).get("elevation")
+                if not isinstance(values,list) or len(values)!=len(batch):
+                    raise RuntimeError("Nombre d'altitudes incohérent")
+                for key,elev in zip(batch,values):
+                    if not isinstance(elev,(float,int)) or not math.isfinite(elev):
+                        raise RuntimeError("Altitude absente ou invalide")
+                    _TERRAIN_CACHE[key]=float(elev)
+                error=None
+                break
+            except Exception as exc:
+                error=exc
+                time.sleep(1+trial*2)
+        if error is not None:
+            raise RuntimeError("Altitude Copernicus non accessible : "+str(error)[:140])
+    return {key:_TERRAIN_CACHE[key] for key in coords}
+
+def snow_off_mountain(lon,lat,snow):
+    """Evaluate snow on sampled grid maxima with independent 90-m terrain data.
+
+    Samples at most one model-grid maximum per 0.5-degree cell, over land.
+    A maximum from mountains cannot drive the 'lowland' risk label.
+    """
+    ys,xs=np.where(np.isfinite(snow)&(snow>=0.5))
+    land=land_geometry()
+    selected_cells={}
+    for j,i in zip(ys,xs):
+        x,y=float(lon[i]),float(lat[j])
+        if not (FOCUS[0]<=x<=FOCUS[1] and FOCUS[2]<=y<=FOCUS[3]):
+            continue
+        if not land.intersects(Point(x,y)):
+            continue
+        key=(int(math.floor(x*2)),int(math.floor(y*2)))
+        value=float(snow[j,i])
+        if key not in selected_cells or value>selected_cells[key][0]:
+            selected_cells[key]=(value,x,y)
+    candidates=sorted(selected_cells.values(),reverse=True)
+    if not candidates:
+        return [],{"status":"absent","max":0.0,"unit":"mm équiv. eau/6h",
+                   "reason":"Pas de neige ≥ 0,5 mm/6h sur le domaine terrestre"}
+    # Keep a geographically broad sample, including potential weak snowfall in plains.
+    # Avoid declaring all snow relief-only if lowlands have not been evaluated.
+    if len(candidates)>500:
+        return [],{"status":"indisponible","reason":"Échantillon terrain trop vaste : vérification incomplète"}
+    elevations=fetch_elevations([(x,y) for value,x,y in candidates])
+    low=[]
+    high=[]
+    for value,x,y in candidates:
+        elev=elevations[(x,y)]
+        record={"lon":round(x,2),"lat":round(y,2),"value":round(value,1),
+                "kind":"neige","altitude_m":round(elev)}
+        if elev<=SNOW_ALT_MAX_M:
+            low.append(record)
+        else:
+            high.append(record)
+    # A valley below 800 m can still lie in the Alps/Pyrenees.
+    # Exclude snowfall on the mountainous surroundings, not only high peaks.
+    if low:
+        neighbours=[]
+        around={}
+        for p in low:
+            key=(p["lon"],p["lat"])
+            offsets=((0.25,0),(-0.25,0),(0,0.20),(0,-0.20),
+                     (0.18,0.15),(-0.18,0.15),(0.18,-0.15),(-0.18,-0.15))
+            pts=[(round(p["lon"]+dx,3),round(p["lat"]+dy,3)) for dx,dy in offsets]
+            around[key]=pts
+            neighbours.extend(pts)
+        # Elevations must be verifiable; don't count an unknown mountain valley as plain.
+        adjacent=fetch_elevations(list(dict.fromkeys(neighbours)))
+        plains=[]
+        for p in low:
+            nearby=max(adjacent[c] for c in around[(p["lon"],p["lat"])])
+            if nearby>=1200 and nearby-p["altitude_m"]>=400:
+                p["terrain_context"]="zone montagneuse (relief voisin élevé)"
+                high.append(p)
+            else:
+                p["terrain_context"]="hors relief marqué"
+                plains.append(p)
+        low=plains
+    highest=max((p["value"] for p in low),default=0)
+    if highest>=2:st="marque"
+    elif highest>=0.5:st="possible"
+    elif high:st="relief_uniquement"
+    else:st="absent"
+    markers=[]
+    for p in sorted(low,key=lambda p:p["value"],reverse=True):
+        if all(distance_km(p["lon"],p["lat"],q["lon"],q["lat"])>=180 for q in markers):
+            markers.append(p)
+        if len(markers)>=3:break
+    return markers,{"status":st,"max":round(highest,1),"unit":"mm équiv. eau/6h",
+        "reason":f"Neige hors relief ≤ {SNOW_ALT_MAX_M} m, hors vallée de montagne (Copernicus GLO-90) ; relief : "+str(len(high))+" zones échantillonnées",
+        "mountain_signal":bool(high), "mountain_max":round(max((p["value"] for p in high),default=0),1),
+        "lowland_sample_count":len(low),"highland_sample_count":len(high),
+        "terrain_source":"Copernicus DEM GLO-90 via Open-Meteo"}
+
 def weather_pictogram(kind):
     """Vector pictograms (no letter glyphs or system emoji fonts).
 
     White pictogram on a risk-coloured circular pin:
     wind swirls, rainy cloud and snowflake.
     """
-    area=DrawingArea(46,46,0,0)
+    area=DrawingArea(52,52,0,0)
     bg=COLORS[kind]
-    area.add_artist(Circle((23,23),21,facecolor=bg,edgecolor="white",linewidth=2.2))
+    area.add_artist(Circle((27,23),23,facecolor="#03172F",edgecolor="none",alpha=.50))
+    area.add_artist(Circle((26,27),22,facecolor=bg,edgecolor="#EAF8FF",linewidth=2.4))
+    area.add_artist(Circle((26,27),18.5,facecolor="none",edgecolor="#FFFFFF",linewidth=.6,alpha=.48))
     ink="#092B49"
     if kind in ("vent_fort","tempete"):
         # Three curved air-stream lines, with trailing gust curls.
-        for y,delta in ((31,2),(23,0),(15,-2)):
-            verts=[(9,y),(16,y+3),(25,y+3),(30,y),
-                   (35,y-3),(38,y-1),(37,y+3)]
+        for y in (35,27,19):
+            verts=[(12,y),(19,y+3),(27,y+3),(32,y),
+                   (37,y-3),(40,y-1),(39,y+3)]
             codes=[MplPath.MOVETO]+[MplPath.CURVE4]*6
             area.add_artist(PathPatch(MplPath(verts,codes),fill=False,
                         edgecolor=ink,linewidth=2.6,capstyle="round"))
-        area.add_artist(Circle((12,13),2.2,facecolor=ink,edgecolor="none"))
+        area.add_artist(Circle((14,15),2.2,facecolor=ink,edgecolor="none"))
     elif kind=="pluie_forte":
         # Stylised cloud with three rain streaks.
-        area.add_artist(Circle((17,28),7.2,facecolor="white",edgecolor="none"))
-        area.add_artist(Circle((25,32),9,facecolor="white",edgecolor="none"))
-        area.add_artist(Circle((33,27),6.8,facecolor="white",edgecolor="none"))
-        area.add_artist(FancyBboxPatch((12,24),25,8,boxstyle="round,pad=0,rounding_size=4",
+        area.add_artist(Circle((19,31),7.2,facecolor="white",edgecolor="none"))
+        area.add_artist(Circle((27,35),9,facecolor="white",edgecolor="none"))
+        area.add_artist(Circle((35,30),6.8,facecolor="white",edgecolor="none"))
+        area.add_artist(FancyBboxPatch((14,27),25,8,boxstyle="round,pad=0,rounding_size=4",
                                        facecolor="white",edgecolor="none"))
-        for x in (17,24,31):
-            area.add_artist(Line2D([x+1,x-2],[19,12],linewidth=2.7,
+        for x in (19,26,33):
+            area.add_artist(Line2D([x+1,x-2],[21,14],linewidth=2.7,
                           color=ink,solid_capstyle="round"))
     elif kind=="neige":
         for angle in (0,60,120):
             a=math.radians(angle)
             dx,dy=13*math.cos(a),13*math.sin(a)
-            area.add_artist(Line2D([23-dx,23+dx],[23-dy,23+dy],
+            area.add_artist(Line2D([26-dx,26+dx],[27-dy,27+dy],
                          color="white",linewidth=2.7,solid_capstyle="round"))
             # Two barbs at both ends of each snowflake arm.
             for sign in (-1,1):
-                ex,ey=23+sign*dx,23+sign*dy
+                ex,ey=26+sign*dx,27+sign*dy
                 ax0,ay0=-sign*math.cos(a),-sign*math.sin(a)
                 px,py=-math.sin(a),math.cos(a)
                 for side in (-1,1):
@@ -165,15 +298,32 @@ def render(id,run,fields,marks):
     ax=fig.add_axes([0,0,1,1],projection=ccrs.PlateCarree())
     ax.set_extent(GEOGRAPHY,crs=ccrs.PlateCarree())
     ax.set_aspect("auto")
-    cmap=plt.get_cmap("turbo")
-    ax.contourf(xx,yy,geop,levels=np.arange(470,605,5),cmap=cmap,
+    # Premium cartographic styling inspired by the supplied TV-weather reference:
+    # authentic natural-earth relief under genuine geopotential/isobars.
+    ax.set_facecolor("#06315A")
+    try:
+        ax.stock_img()
+    except Exception:
+        ax.add_feature(cfeature.OCEAN,facecolor="#06406B")
+        ax.add_feature(cfeature.LAND,facecolor="#73A56C")
+    cmap=LinearSegmentedColormap.from_list("kfs_synoptic",
+       ["#073967","#0D629A","#36A1BC","#65C5B6","#9DC885","#E3C179","#EF985A"])
+    ax.contourf(xx,yy,geop,levels=np.arange(470,605,5),cmap=cmap,alpha=.32,
                 extend="both",transform=ccrs.PlateCarree())
+    # Cyan precipitation veils are derived only from the 6-hour model field.
+    if "rain6h" in fields:
+        rr=fields["rain6h"][2][np.ix_(iy,ix)]
+        shade=np.ma.masked_where(~np.isfinite(rr)|(rr<2),rr)
+        if np.ma.count(shade):
+            ax.contourf(xx,yy,shade,levels=[2,5,10,20,40,80,160],
+                        colors=["#42BDF2","#22B8ED","#009BC9","#1579BA","#2869AD","#4458AB"],
+                        alpha=.25,extend="max",transform=ccrs.PlateCarree(),zorder=5)
     cs=ax.contour(xx,yy,pres,levels=np.arange(940,1061,5),
                   colors="white",linewidths=1.05,transform=ccrs.PlateCarree())
     labels=ax.clabel(cs,fmt="%d",inline=True,fontsize=8,colors="white")
     for a in labels:a.set_path_effects([pe.Stroke(linewidth=2.5,foreground="#173147"),pe.Normal()])
-    ax.coastlines("110m",linewidth=.65,color="#10283C")
-    ax.add_feature(cfeature.BORDERS,linewidth=.48,edgecolor="#122A43")
+    ax.coastlines("110m",linewidth=.85,color="#EFF6F9",zorder=10)
+    ax.add_feature(cfeature.BORDERS,linewidth=.56,edgecolor="#E2EFF5",alpha=.82,zorder=10)
     for mark in marks:
         x,y=mark["lon"],mark["lat"]
         icon=weather_pictogram(mark["kind"])
@@ -225,24 +375,30 @@ def calculate(id,step,model,atlas,now):
                       "reason":"Signal de vent soutenu, pas une vigilance tempête"}
     risks["pluie_forte"]={"status":status(vr,10,20),"max":round(vr,1),"unit":"mm/6h",
                           "reason":"Cumul des 6 heures précédant l'échéance"}
-    risks["neige"]={"status":status(vs,0.5,2),"max":round(vs,1),"unit":"mm équivalent-eau/6h",
-                    "reason":"Neige modélisée : pas une hauteur de neige au sol"}
+    try:
+        snow_markers,snow_info=snow_off_mountain(x,y,snow)
+    except Exception as exc:
+        # Never assume an altitude from model T850 or from approximate polygons.
+        snow_markers=[]
+        snow_info={"status":"indisponible","reason":"Filtre altitude indisponible : "+str(exc)[:155]}
+    risks["neige"]=snow_info
     risks["inondation"]={"status":"indisponible",
                          "reason":"Crue non déductible d'un seul cumul de pluie de 6 h"}
     markers=(peaks(x,y,wind,50,"vent_fort",3) +
              peaks(x,y,rain,10,"pluie_forte",4) +
-             peaks(x,y,snow,0.5,"neige",3))
+             snow_markers)
     # Adjacent pin collision is undesirable even across different phenomena.
     selected=[]
     for p in sorted(markers,key=lambda p:p["value"],reverse=True):
         if all(distance_km(p["lon"],p["lat"],q["lon"],q["lat"])>=125 for q in selected):
             selected.append(p)
+    f["rain6h"]=(x,y,rain,recorded,"mm")
     background=render(id,recorded,f,selected)
     return {"id":id,"step_h":step,"model":model,"run_utc":recorded,
             "valid_utc":(run+timedelta(hours=step)).isoformat(),
             "background_path":str(background),"risks":risks,"markers":selected,
             "risk_scope":"France et secteurs proches, domaine rectangulaire terre + mer",
-            "method":"Seuils indicatifs vent moyen 10m, pluie/neige 6h. Aucun diagnostic de vigilance."}
+            "method":"Vent moyen 10m, pluie/neige 6h ; neige hors relief selon altitudes GLO-90 ; pas une vigilance officielle."}
 
 def main():
     now=datetime.now(timezone.utc)
@@ -252,7 +408,7 @@ def main():
         records.append(calculate(id,step,model,atlas,now))
     output={"schema_version":1,"generated_utc":now.isoformat(),
             "atlas_generated_utc":atlas["generated_utc"],
-            "reference":"ECMWF Open Data — champs bruts géoréférencés",
+            "reference":"ECMWF Open Data, Copernicus DEM GLO-90 via Open-Meteo — champs géoréférencés",
             "stages":records}
     (OUT/"tendance-risques.json").write_text(json.dumps(output,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
     print(json.dumps({"generated_utc":output["generated_utc"],
