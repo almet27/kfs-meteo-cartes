@@ -1,4 +1,4 @@
-name: KFS France - detection des nouveaux cycles (20 minutes)
+name: KFS France - detection des nouveaux cycles (10 minutes)
 
 on:
   workflow_dispatch:
@@ -7,7 +7,7 @@ on:
       - 'scripts/check_france_cycles.py'
       - '.github/workflows/watch-france-cycles.yml'
   schedule:
-    - cron: '07,27,47 * * * *' # verification 20 min, sans declenchement de lourdes cartes
+    - cron: '03,13,23,33,43,53 * * * *' # controle chaque 10 min, publication progressive
 
 permissions:
   contents: write
@@ -52,37 +52,33 @@ jobs:
             done
             exit 1
           fi
-      - name: Lancer atlas France sur nouveaux cycles ; maintenir les autres routines existantes
-        if: ${{ steps.poll.outputs.ready_models != '' }}
+      - name: Actualiser uniquement la France aux premieres échéances disponibles
+        if: ${{ steps.poll.outputs.ready_models != '' || steps.poll.outputs.early_models != '' }}
         env:
           GH_TOKEN: ${{ github.token }}
-          MODELS: ${{ steps.poll.outputs.ready_models }}
+          COMPLETE: ${{ steps.poll.outputs.ready_models }}
+          EARLY: ${{ steps.poll.outputs.early_models }}
         run: |
-          IFS=',' read -ra MODEL_ARRAY <<< "$MODELS"
-          ecmwf_new=0
-          noaa_new=0
-          for model in "${MODEL_ARRAY[@]}"; do
-            case "$model" in
-              ifs|aifs-single)
-                ecmwf_new=1
-                echo "Nouveau run ECMWF $model : generation France native jusqu'a 72 h"
-                gh workflow run france-h72.yml --ref main -f modele="$model" -f horizon=72
-                ;;
-              gfs|aigfs)
-                noaa_new=1
-                echo "Nouveau run NOAA $model : generation France native jusqu'a 72 h"
-                gh workflow run france-h72.yml --ref main -f modele="$model" -f horizon=72
-                ;;
-              *) echo "Modele inconnu ignore : $model" ;;
-            esac
-          done
-          # Conserver /modele Europe au plus proche des sorties sources.
-          # Une seule regeneration par famille et par nouveau cycle.
-          if [ "$ecmwf_new" = 1 ]; then
-            echo "Actualiser IFS/AIFS Europe des la detection du nouveau run"
-            gh workflow run previsions-europe.yml --ref main
+          # Aucune commande ne touche aux workflows ni aux cartes Europe.
+          if [ -n "$EARLY" ]; then
+            IFS=',' read -ra EARLY_ARRAY <<< "$EARLY"
+            for model in "${EARLY_ARRAY[@]}"; do
+              case "$model" in
+                ifs|aifs-single|gfs|aigfs)
+                  echo "Premieres echeances disponibles : +12 h $model"
+                  gh workflow run france-h72.yml --ref main -f modele="$model" -f horizon=12
+                  ;;
+              esac
+            done
           fi
-          if [ "$noaa_new" = 1 ]; then
-            echo "Actualiser GFS/AIGFS Europe des la detection du nouveau run"
-            gh workflow run previsions-noaa.yml --ref main
+          if [ -n "$COMPLETE" ]; then
+            IFS=',' read -ra FULL_ARRAY <<< "$COMPLETE"
+            for model in "${FULL_ARRAY[@]}"; do
+              case "$model" in
+                ifs|aifs-single|gfs|aigfs)
+                  echo "Nouveau cycle complet France : +72 h $model"
+                  gh workflow run france-h72.yml --ref main -f modele="$model" -f horizon=72
+                  ;;
+              esac
+            done
           fi
