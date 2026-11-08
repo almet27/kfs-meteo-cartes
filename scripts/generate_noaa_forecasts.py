@@ -119,7 +119,7 @@ for model,title in [("gfs","GFS"),("aigfs","AIGFS")]:
         # Precipitations totales des 6 h precedentes en mm d'eau.
         # Le produit AIGFS ne distingue pas la pluie et la neige ; ne pas inventer une partition.
         try:
-            accumulation=f":APCP:surface:{step-6}-{step} hour acc:"
+            accumulation=f":APCP:surface:{step-6}-{step} hour acc"
             lon,lat,total,units=field(model,step,pressure_product,accumulation)
             if np.nanmin(total)<-1 or np.nanmax(total)>1500:
                 raise ValueError("Cumuls de précipitation inattendus : "+units)
