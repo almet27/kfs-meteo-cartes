@@ -1,6 +1,7 @@
-> **BULLETIN D'ESSAI — NON PUBLIÉ AUTOMATIQUEMENT SUR DISCORD**
-> Horodatage de rédaction : 2026-11-08T17:47:16.975Z
-> Source numérique : forecast-maps/tendance/tendance-analyse-donnees.json (2026-11-08T17:44:32.276635+00:00)
+> **BULLETIN D'ESSAI — EN PRÉVISUALISATION PRIVÉE**
+> Horodatage de rédaction : 2026-11-08T18:49:28.022Z
+> Source numérique : forecast-maps/tendance/tendance-analyse-donnees.json (2026-11-08T18:46:31.137451+00:00)
+> Modèles : ECMWF IFS, ECMWF AIFS et NOAA GFS
 
 # KFS MÉTÉO — Prévisions synoptiques : de l'influence océanique aux incertitudes de mi-novembre
 *Bulletin d'essai rédigé avec ChatGPT le 8 novembre 2026 — France et Europe occidentale*
@@ -15,6 +16,8 @@ Autour de **J+3**, IFS et AIFS font apparaître sur le domaine France un **coura
 
 Pour la France, **une ambiance relativement douce et potentiellement changeante** paraît donc plus cohérente qu'une arrivée généralisée d'air continental froid à cette première échéance. Si des fronts atlantiques accompagnent cette circulation, la façade ouest et les régions proches de la Manche pourraient être les premières concernées par des passages nuageux et pluvieux. Les secteurs plus à l'est pourraient connaître une évolution décalée. **Il s'agit de conséquences possibles du flux, pas d'une prévision établie de précipitations** : les champs de pluie et les trajectoires frontales n'ont pas été vérifiés dans ce diagnostic.
 
+**Apport du GFS.** Le modèle américain confirme un flux de sud-ouest à 850 hPa (provenance proche de 220°) et une masse d'air douce, autour de **8,2 °C à 850 hPa**, très proche des résultats IFS/AIFS. Cette convergence des trois sorties rend le **signal de circulation océanique assez solide** à cette échéance, sans préjuger de la quantité de pluie dans chaque région.
+
 ![Carte synoptique européenne J+3 : IFS et AIFS](https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j3.png)
 
 ## Autour du 15 novembre : hausse des pressions, mais désaccord sur le courant
@@ -24,6 +27,8 @@ Vers **J+7**, un changement apparaît : les deux modèles prévoient une **hauss
 C'est surtout **l'orientation des courants en altitude** qui distingue les solutions. Sur le domaine France, IFS présente un vent vectoriel moyen à 850 hPa **venant du sud**, proche de 6,6 m/s, alors qu'AIFS conserve un flux **d'ouest-sud-ouest**, plus soutenu, près de 11,7 m/s. Ces valeurs décrivent l'étage 850 hPa, pas les rafales au sol. En parallèle, l'air à 850 hPa se rafraîchit dans les deux modèles, mais davantage dans AIFS : environ **6,3 °C dans IFS contre 4,1 °C dans AIFS**.
 
 Deux lectures météorologiques deviennent alors possibles. **Si l'influence des hautes pressions domine**, le temps pourrait devenir plus stable sur plusieurs régions, même sans redoux marqué en altitude. **Si le courant océanique plus dynamique d'AIFS se maintient**, l'ouest et le nord-ouest de la France resteraient davantage exposés à de nouvelles perturbations, selon leur trajectoire réelle. La présence d'un flux de sud dans IFS ne suffit pas à conclure à un réchauffement : l'évolution thermique dépend aussi du déplacement des structures d'altitude et du champ de température en amont.
+
+**GFS apporte une troisième solution :** courant de sud-ouest à 850 hPa (environ 217°) avec une température proche de **5,9 °C**, située entre IFS et AIFS. Sa pression moyenne plus élevée sur la France (**environ 1021 hPa**) suggère une influence anticyclonique potentiellement plus marquée dans cette simulation. Les trois modèles ne placent donc pas exactement les mêmes structures : la question est de savoir si le flux océanique restera actif ou sera davantage freiné.
 
 ![Carte synoptique européenne J+7 : IFS et AIFS](https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j7.png)
 
@@ -35,15 +40,17 @@ Dans la solution IFS, cette orientation plus nord-ouest associée à une masse d
 
 Les pressions restent relativement basses sur le domaine nord-atlantique dans les deux simulations, ce qui invite à suivre les systèmes dépressionnaires circulant entre l'océan et le nord de l'Europe. Leur position exacte par rapport à la France reste à préciser avec les cartes détaillées et les ensembles. Pour les régions françaises, le contraste à surveiller serait celui entre **une influence maritime plus fraîche** et **une circulation d'ouest relativement plus douce**, dont les conséquences locales dépendraient des trajectoires des fronts et de l'orographie.
 
+**GFS se rapproche ici davantage d'AIFS sur la masse d'air** : environ **3,1 °C à 850 hPa**, contre 3,4 °C dans AIFS et 1,3 °C dans IFS. Son vent moyen à 850 hPa vient de l'ouest-sud-ouest (proche de 254°), tandis que la pression moyenne sur la France est **plus basse, autour de 1001 hPa**. Cela renforce l'intérêt de suivre une éventuelle circulation perturbée, mais ne permet pas de prévoir les fronts ou les précipitations sans consulter les champs correspondants.
+
 ![Carte synoptique européenne J+10 : IFS et AIFS](https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j10.png)
 
 ## Au-delà de J+10 : tendance encore incomplète
 
-Les échéances de **J+11 à J+15** ne disposent pas, dans ce bulletin d'essai, d'un diagnostic chiffré comparable pour l'ensemble des modèles. Il serait trompeur d'en déduire une persistance automatique du scénario de J+10. Les tendances des **semaines 3 et 4** restent également **non disponibles** : les anomalies de température et de précipitations IFS Extended, ainsi que leur dispersion d'ensemble, ne sont pas encore validées dans le circuit KFS MÉTÉO.
+**GFS apporte un premier signal isolé vers J+15**, autour du **23 novembre** : il prévoit une température moyenne à 850 hPa proche de **−0,6 °C** sur le domaine France, avec un flux moyen **de nord-est** à ce niveau et une pression moyenne voisine de **1017 hPa**. Un tel scénario pourrait correspondre à une évolution plus fraîche en altitude, **mais il n'est pas confirmé par des ensembles ni par une comparaison homogène avec IFS/AIFS à cette échéance**. Il ne doit donc pas être interprété comme l'annonce d'une vague de froid ou d'un temps sec généralisé. Les tendances des **semaines 3 et 4** restent **non disponibles** : les anomalies IFS Extended et leur dispersion ne sont pas encore validées dans le circuit KFS MÉTÉO.
 
 ## Ce qui rend la prévision incertaine
 
-**Le point de convergence le plus solide concerne le début de période** : un flux sud-ouest océanique et une masse d'air relativement douce à 850 hPa. Ensuite, les modèles s'accordent davantage sur un rafraîchissement en altitude que sur sa vitesse, les courants dominants ou l'architecture des centres d'action.
+**Les trois modèles convergent surtout au début de période** : IFS, AIFS et GFS montrent un flux océanique de sud-ouest et une masse d'air relativement douce à 850 hPa. Ensuite, les modèles s'accordent davantage sur un rafraîchissement en altitude que sur sa vitesse, les courants dominants ou l'architecture des centres d'action.
 
 Vers J+7, le débat oppose surtout une circulation plus méridienne dans IFS à une influence plus franchement océanique dans AIFS. Vers J+10, les deux modèles gardent une composante occidentale, mais divergent sur son orientation et la température de la masse d'air. Les cycles ne sont pas strictement synchronisés : **IFS utilise ici les runs 06 UTC puis 00 UTC, tandis qu'AIFS utilise le run 12 UTC**. Les champs comparés peuvent donc avoir des heures de validité décalées. Leur désaccord ne constitue pas, à lui seul, une mesure probabiliste de l'incertitude.
 
@@ -55,4 +62,4 @@ La tendance actuelle évoque **une première phase océanique relativement douce
 
 Pour la France, la question centrale n'est donc pas encore « combien de degrés ou de millimètres ? », mais **quelle circulation s'imposera et par quelles régions les masses d'air et les perturbations pourront-elles pénétrer ?** Les prochains runs et, surtout, les ensembles permettront de départager plus sérieusement ces possibilités.
 
-*Sources et méthode : ECMWF Open Data, champs de pression au niveau de la mer, géopotentiel 500 hPa, température et composantes du vent à 850 hPa pour IFS/AIFS. Valeurs moyennées sur un large domaine France et alentours, non équivalentes à des prévisions locales. Document de travail, non destiné à une diffusion automatique tant que les données sub-saisonnières ne sont pas validées.*
+*Sources et méthode : ECMWF Open Data (IFS/AIFS) et NOAA NCEP NOMADS (GFS), champs de pression au niveau de la mer, géopotentiel 500 hPa, température et composantes du vent à 850 hPa. Valeurs moyennées sur un large domaine France et alentours, non équivalentes à des prévisions locales. Document de travail, non destiné à une diffusion automatique tant que les données sub-saisonnières ne sont pas validées.*
