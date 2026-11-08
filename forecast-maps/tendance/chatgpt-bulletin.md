@@ -1,6 +1,6 @@
 > **BULLETIN D'ESSAI — EN PRÉVISUALISATION PRIVÉE**
-> Horodatage de rédaction : 2026-11-08T18:49:28.022Z
-> Source numérique : forecast-maps/tendance/tendance-analyse-donnees.json (2026-11-08T18:46:31.137451+00:00)
+> Horodatage de rédaction : 2026-11-08T18:53:28.884Z
+> Source numérique : forecast-maps/tendance/tendance-analyse-donnees.json (2026-11-08T18:52:03.597651+00:00)
 > Modèles : ECMWF IFS, ECMWF AIFS et NOAA GFS
 
 # KFS MÉTÉO — Prévisions synoptiques : de l'influence océanique aux incertitudes de mi-novembre
