@@ -84,6 +84,8 @@ for model, title in [("gfs","GFS"),("aigfs","AIGFS")]:
         except Exception as e:
             METADATA["errors"][key]=str(e)[:350]
 (OUT/"noaa-metadata.json").write_text(json.dumps(METADATA,ensure_ascii=False,indent=2),encoding="utf-8")
+if METADATA["errors"]:
+    print("NOAA diagnostics:",json.dumps(METADATA["errors"],ensure_ascii=False),flush=True)
 if not METADATA["maps"]:
     raise RuntimeError("No genuine GFS/AIGFS fields retrieved; publication aborted")
 print({k:len(v) for k,v in METADATA["maps"].items()})
