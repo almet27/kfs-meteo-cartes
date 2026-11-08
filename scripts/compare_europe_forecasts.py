@@ -27,10 +27,11 @@ for step in STEPS:
             path=path.get(field) if isinstance(path,dict) else None
             tile=Image.new("RGB",(TILE_W,TILE_H),"white")
             d=ImageDraw.Draw(tile)
-            date=source.get("generated_utc","")[:16].replace("T"," ")
+            run=source.get("runs_utc",{}).get(model,{}).get(str(step),source.get("run_utc",""))
+            date=run[:16].replace("T"," ") if run else "inconnu"
             d.rectangle((0,0,TILE_W,TITLE_H),fill="#172c48")
             d.text((15,10),f"{name} • +{step} h",font=header,fill="white")
-            d.text((TILE_W-268,16),f"Génération : {date} UTC",font=font,fill="#d9e2ed")
+            d.text((TILE_W-268,16),f"Run modèle : {date} UTC",font=font,fill="#d9e2ed")
             if path and (ROOT/Path(path).name).is_file():
                 try:
                     with Image.open(ROOT/Path(path).name) as im:
@@ -45,12 +46,13 @@ for step in STEPS:
                 if model=="ifs" and step==360:d.text((35,145),"IFS ouvert : pas de +360 h",font=font,fill="#6b6b6b")
             panels.append(tile)
         if not successes:continue
-        comparison=Image.new("RGB",(TILE_W*2,TILE_H*2+64),"white")
+        comparison=Image.new("RGB",(TILE_W*2,TILE_H*2+84),"white")
         d=ImageDraw.Draw(comparison)
-        d.rectangle((0,0,TILE_W*2,64),fill="#f4f7fa")
-        d.text((25,14),f"KFS MÉTÉO | Europe | +{step} h | {label}",font=header,fill="#182f4b")
+        d.rectangle((0,0,TILE_W*2,84),fill="#f4f7fa")
+        d.text((25,12),f"KFS MÉTÉO | Atlantique Nord · Groenland · Europe | +{step} h | {label}",font=header,fill="#182f4b")
+        d.text((25,47),"Run modèle (UTC) indiqué séparément pour chaque panneau — et non heure de fabrication de l’image.",font=font,fill="#37506c")
         for i,tile in enumerate(panels):
-            comparison.paste(tile,((i%2)*TILE_W,64+(i//2)*TILE_H))
+            comparison.paste(tile,((i%2)*TILE_W,84+(i//2)*TILE_H))
         filename=f"compare-h{step:03}-{field}.png"
         comparison.save(ROOT/filename,optimize=True)
         result["maps"].setdefault(str(step),{})[field]={"path":"forecast-maps/europe/"+filename,"available":successes,"total":4}
