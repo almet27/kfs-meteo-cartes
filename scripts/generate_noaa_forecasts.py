@@ -6,8 +6,12 @@ from pathlib import Path
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+import matplotlib.patheffects as pe
 from matplotlib.colors import ListedColormap, BoundaryNorm
-from kfs_premium_palettes import KFS_Z500_CMAP, KFS_Z500_NORM, KFS_T850_CMAP, KFS_T850_NORM
+from kfs_premium_palettes import (
+    KFS_Z500_CMAP, KFS_Z500_NORM, KFS_Z500_LEVELS, KFS_Z500_TICKS,
+    KFS_T850_CMAP, KFS_T850_NORM, KFS_T850_LEVELS, KFS_T850_TICKS,
+)
 import numpy as np
 import cartopy.crs as ccrs
 import cartopy.feature as cf
@@ -164,11 +168,11 @@ for model,title in [("gfs","GFS"),("aigfs","AIGFS")]:
             if model=="gfs" and step in DIAG_STEPS:
                 diag_fields["t850"]=regional_means(lon,lat,t850-273.15)
             fig,ax=canvas()
-            shade=ax.contourf(lon,lat,t850-273.15,levels=np.arange(-36,38,2),
+            shade=ax.contourf(lon,lat,t850-273.15,levels=KFS_T850_LEVELS,
                               cmap=KFS_T850_CMAP,norm=KFS_T850_NORM,
                               extend="both",transform=ccrs.PlateCarree())
-            fig.colorbar(shade,ax=ax,orientation="horizontal",pad=.04,shrink=.8,ticks=[-24,-16,-8,0,8,16,24],
-                         label="Température à 850 hPa (°C) · Palette KFS premium")
+            fig.colorbar(shade,ax=ax,orientation="horizontal",pad=.04,shrink=.8,ticks=KFS_T850_TICKS,
+                         label="Température à 850 hPa (°C) · Couleurs KFS météo")
             ax.set_title(f"KFS MÉTÉO | {title} | Atlantique Nord · Groenland · Europe | +{step} h\nTempérature 850 hPa · Run : {RUN.strftime('%d/%m %H:%M')} UTC · Validité : {(RUN+timedelta(hours=step)).strftime('%d/%m %H:%M')} UTC")
             save(fig,model,step,"t850")
         except Exception as e:
@@ -184,17 +188,24 @@ for model,title in [("gfs","GFS"),("aigfs","AIGFS")]:
                 diag_fields["msl"]=regional_means(lon,lat,msl/100)
                 diag_fields["z500"]=regional_means(lon,lat,z500/10)
             fig,ax=canvas()
-            shade=ax.contourf(lon,lat,z500/10,levels=np.arange(460,625,4),
+            shade=ax.contourf(lon,lat,z500/10,levels=KFS_Z500_LEVELS,
                               cmap=KFS_Z500_CMAP,norm=KFS_Z500_NORM,
                               extend="both",transform=ccrs.PlateCarree())
-            heights=ax.contour(lon,lat,z500/10,levels=np.arange(460,625,8),
-                               colors="#322f41",linewidths=.8,transform=ccrs.PlateCarree())
-            ax.clabel(heights,inline=True,fmt="%d",fontsize=7)
-            lines=ax.contour(lon,lat,msl/100,levels=np.arange(940,1061,4),
-                             colors="#1b547b",linestyles="dashed",linewidths=.8,transform=ccrs.PlateCarree())
-            ax.clabel(lines,inline=True,fmt="%d",fontsize=7)
-            fig.colorbar(shade,ax=ax,orientation="horizontal",pad=.04,shrink=.8,ticks=[500,520,540,560,580,600],
-                         label="Hauteur géopotentielle Z500 (dam) · Palette KFS premium")
+            # Z500 est colore, les lignes blanches representent UNIQUEMENT la MSLP.
+            # Les isohypses sombres sont supprimees pour ne pas masquer les isobares.
+            lines=ax.contour(
+                lon,lat,msl/100,levels=np.arange(940,1061,5),
+                colors="#FFFFFF",linewidths=1.25,linestyles="solid",
+                transform=ccrs.PlateCarree())
+            labels=ax.clabel(lines,inline=True,inline_spacing=4,
+                             fmt="%d",fontsize=7.5,colors="#FFFFFF")
+            for label in labels:
+                label.set_path_effects([
+                    pe.Stroke(linewidth=2.0,foreground="#122337"),
+                    pe.Normal(),
+                ])
+            fig.colorbar(shade,ax=ax,orientation="horizontal",pad=.04,shrink=.8,ticks=KFS_Z500_TICKS,
+                         label="Géopotentiel Z500 (dam) · Couleurs KFS météo")
             ax.set_title(f"KFS MÉTÉO | {title} | Atlantique Nord · Groenland · Europe | +{step} h\nZ500 (dam) et pression au sol (hPa) · Run : {RUN.strftime('%d/%m %H:%M')} UTC · Validité : {(RUN+timedelta(hours=step)).strftime('%d/%m %H:%M')} UTC")
             save(fig,model,step,"z500_msl")
         except Exception as e:
