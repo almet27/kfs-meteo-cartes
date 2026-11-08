@@ -145,6 +145,15 @@ def gfs_field(state, step, key):
         "cicep": r":CICEP:surface:[0-9]+ hour fcst:",
         "cfrzr": r":CFRZR:surface:[0-9]+ hour fcst:",
     }[key]
+    if key=="tp" and model=="gfs":
+        # The source includes both run-to-date and short-window APCP.
+        # Select EXACTLY the preceding native 3-hour interval.
+        begin=step-3
+        patt=rf":APCP:surface:{begin}-{step} hour acc"
+    if key=="tp" and model=="aigfs":
+        # AIGFS native native interval; never silently use a run-to-date sum.
+        begin=step-6
+        patt=rf":APCP:surface:{begin}-{step} hour acc"
     # NOAA AIGFS can briefly publish a GRIB index before a subset becomes
     # reachable from every mirror. Retry the SAME cycle and SAME field only.
     retries = 3 if model == "aigfs" else 1
