@@ -1,0 +1,250 @@
+#!/usr/bin/env python3
+"""KFS METEO: numerical synoptic evidence and carefully qualified long-form analysis.
+
+Preview only. IFS/AIFS deterministic Open Data snapshots are NOT weekly anomalies,
+precipitation projections or sub-seasonal ensembles. Do not auto-post to Discord.
+"""
+from __future__ import annotations
+import json
+import math
+import pathlib
+from datetime import datetime, timedelta, timezone
+
+import numpy as np
+import xarray as xr
+from ecmwf.opendata import Client
+
+OUT = pathlib.Path("forecast-maps/tendance")
+OUT.mkdir(parents=True, exist_ok=True)
+STEPS = (72, 168, 240)
+MODELS = {"ifs": "ECMWF IFS", "aifs-single": "ECMWF AIFS"}
+REGIONS = {
+    "france": ("France et alentours", (-5.5, 8.5, 42, 51.5)),
+    "atlantique": ("Atlantique nord-est", (-42, -12, 40, 62)),
+    "europe": ("Europe occidentale", (-11, 16, 42, 59)),
+    "groenland": ("Groenland et environs", (-59, -18, 59, 81)),
+}
+PARAMS = (
+    ("t850", {"param":"t","levelist":850}, "t", lambda a: a-273.15),
+    ("msl", {"param":"msl"}, "msl", lambda a: a/100.0),
+    ("z500", {"param":"gh","levelist":500}, "gh", lambda a: a/10.0),
+)
+
+def read_grib(path, name):
+    ds = xr.open_dataset(path, engine="cfgrib", backend_kwargs={"indexpath":""})
+    try:
+        a = ds[name].squeeze().load()
+        lat = np.asarray(a.latitude.values, dtype=float)
+        lon = ((np.asarray(a.longitude.values, dtype=float)+180)%360)-180
+        z = np.asarray(a.values, dtype=float)
+        if lat.ndim != 1 or lon.ndim != 1 or z.ndim != 2:
+            raise ValueError("Expected regular 2-D lat lon field")
+        run = np.datetime_as_string(np.asarray(a.time.values),unit="m")+"Z"
+        return lon,lat,z,run
+    finally:
+        ds.close()
+
+def boxes(lon, lat, raw):
+    result={}
+    for key,(name,(west,east,south,north)) in REGIONS.items():
+        xx = np.where((lon>=west)&(lon<=east))[0]
+        yy = np.where((lat>=south)&(lat<=north))[0]
+        if len(xx)<2 or len(yy)<2:
+            continue
+        data = raw[np.ix_(yy,xx)]
+        mask=np.isfinite(data)
+        if mask.mean()<0.9:
+            continue
+        weights=np.broadcast_to(np.cos(np.radians(lat[yy]))[:,None],data.shape)
+        mean=np.average(data[mask],weights=weights[mask])
+        result[key]={
+            "region":name,
+            "mean":round(float(mean),2),
+            "min":round(float(np.min(data[mask])),2),
+            "max":round(float(np.max(data[mask])),2),
+            "grid_points":int(mask.sum()),
+            "note":"Domaine rectangulaire, pouvant inclure des zones maritimes."
+        }
+    return result
+
+def acquisition():
+    now=datetime.now(timezone.utc)
+    data={"status":"numerical_preview","generated_utc":now.isoformat(),
+          "models":{},"errors":{},"steps_h":list(STEPS),
+          "variables":{"t850":"temperatures degC at 850 hPa",
+                       "msl":"mean sea level pressure hPa",
+                       "z500":"geopotential height 500 hPa dam"}}
+    for model in MODELS:
+        client=Client(source="ecmwf",model=model,resol="0p25")
+        data["models"][model]={}
+        for step in STEPS:
+            key=str(step)
+            fields={}
+            runs=set()
+            for variable,kwargs,name,conversion in PARAMS:
+                target=OUT / ("temporary-"+model+"-"+key+"-"+variable+".grib2")
+                try:
+                    client.retrieve(stream="oper",type="fc",step=step,target=str(target),**kwargs)
+                    lon,lat,field,run=read_grib(target,name)
+                    if variable=="msl" and not 90000<np.nanmedian(field)<110000:
+                        raise ValueError("MSLP source not in Pa")
+                    if variable=="t850" and not 150<np.nanmedian(field)<340:
+                        raise ValueError("T850 source not in Kelvin")
+                    if variable=="z500" and not 4000<np.nanmedian(field)<6500:
+                        raise ValueError("Z500 source not in metres")
+                    fields[variable]=boxes(lon,lat,conversion(field))
+                    runs.add(run)
+                except Exception as e:
+                    data["errors"][model+"-"+key+"-"+variable]=str(e)[:250]
+                finally:
+                    target.unlink(missing_ok=True)
+            if len(fields)==len(PARAMS) and len(runs)==1:
+                issue=runs.pop()
+                issue_dt=datetime.fromisoformat(issue.replace("Z","+00:00"))
+                if now-issue_dt>timedelta(days=3) or issue_dt>now+timedelta(hours=1):
+                    data["errors"][model+"-"+key]="Run trop ancien ou futur"
+                    continue
+                data["models"][model][key]={
+                    "run_utc":issue,
+                    "valid_utc":(issue_dt+timedelta(hours=step)).isoformat(),
+                    "fields":fields}
+            else:
+                data["errors"][model+"-"+key]="Champs ou cycles incomplets."
+    return data
+
+def fmt(x,dec=1):
+    return (("%+."+str(dec)+"f")%x).replace(".",",")
+
+def get(data,model,step,var,reg):
+    return data.get("models",{}).get(model,{}).get(str(step),{}).get("fields",{}).get(var,{}).get(reg,{}).get("mean")
+
+def compare(data,step,variable,region,unit):
+    a=get(data,"ifs",step,variable,region)
+    b=get(data,"aifs-single",step,variable,region)
+    if a is None or b is None:
+        return ("Pour +%s h, il manque au moins un champ valide de %s sur %s : "
+                "aucune conclusion comparative n'est possible."%(step,variable,region))
+    diff=round(b-a,1)
+    return ("A +%s h, la moyenne calculée sur le domaine %s atteint %.1f %s dans "
+            "IFS et %.1f %s dans AIFS (AIFS moins IFS : %s %s). "
+            "C'est un écart entre deux sorties de modèles et non une incertitude "
+            "probabiliste mesurée."%(step,REGIONS[region][0],a,unit,b,unit,fmt(diff),unit))
+
+def report(data):
+    created=datetime.fromisoformat(data["generated_utc"])
+    valid=sum(len(x) for x in data["models"].values())
+    if valid<4:
+        raise RuntimeError("Pas assez de champs numériques cohérents : pas de bulletin")
+    parts=[
+        "# KFS MÉTÉO — Analyse synoptique approfondie (maquette technique)",
+        "",
+        "> **Non diffusée sur Discord.** Analyse de sorties déterministes ponctuelles "
+        "IFS et AIFS. Ce document n'est pas une prévision probabiliste à quatre semaines.",
+        "",
+        "Génération : "+created.strftime("%d/%m/%Y %H:%M UTC")+". "
+        "Source : ECMWF Open Data. Champs utilisés : température à 850 hPa, "
+        "pression au niveau de la mer et géopotentiel à 500 hPa. "
+        "Toutes les heures citées sont en UTC.",
+        "",
+        "## 1. Méthode et limites de lecture",
+        "",
+        "Nous confrontons les prévisions numériques à +72, +168 et +240 heures. "
+        "Les valeurs fournies sont des moyennes spatiales calculées sur des boîtes "
+        "géographiques fixes, non des observations au sol ni des anomalies par "
+        "rapport à la climatologie. Une boîte peut comprendre la mer et la terre. "
+        "Une température à 850 hPa caractérise une masse d'air en altitude : "
+        "elle ne doit pas être présentée comme la température ressentie à deux mètres. "
+        "La pression moyenne d'un vaste secteur ne suffit pas pour localiser "
+        "précisément les centres dépressionnaires. Les données de précipitations "
+        "ne sont pas incluses dans ce diagnostic.",
+        "",
+        "## 2. Première partie — évolution à court terme",
+        "",
+        compare(data,72,"t850","france","°C"),
+        "",
+        compare(data,72,"msl","atlantique","hPa"),
+        "",
+        compare(data,72,"z500","europe","dam"),
+        "",
+        "La lecture croisée des trois champs sert à examiner la cohérence du "
+        "scénario synoptique à une échéance donnée. Elle ne démontre pas à elle "
+        "seule un régime de NAO, un blocage anticyclonique ni une trajectoire "
+        "des perturbations. Pour identifier ces structures, il faudrait examiner "
+        "les gradients, les anomalies par rapport à une référence climatique "
+        "et, idéalement, un ensemble de prévisions.",
+        "",
+        "## 3. Deuxième partie — évolution à moyen terme",
+        "",
+        compare(data,168,"t850","france","°C"),
+        "",
+        compare(data,168,"msl","atlantique","hPa"),
+        "",
+        compare(data,168,"z500","groenland","dam"),
+        "",
+        "À ce délai, les écarts entre deux modèles peuvent augmenter. Un accord "
+        "ponctuel entre IFS et AIFS est intéressant, mais ne fournit pas à lui "
+        "seul un niveau de confiance élevé. Il est nécessaire de comparer "
+        "plusieurs cycles et d'examiner la dispersion des membres d'ensemble "
+        "pour apprécier la robustesse d'une tendance.",
+        "",
+        "## 4. Troisième partie — fin de la période déterministe",
+        "",
+        compare(data,240,"t850","france","°C"),
+        "",
+        compare(data,240,"msl","atlantique","hPa"),
+        "",
+        compare(data,240,"z500","europe","dam"),
+        "",
+        "L'échéance de +240 heures représente un état de l'atmosphère prévu "
+        "à environ dix jours, pas la moyenne de la deuxième semaine. "
+        "Les détails géographiques sont à interpréter comme une possibilité "
+        "de scénario, et non comme une prévision stabilisée de chaque région. "
+        "Cette prudence s'applique encore davantage au-delà de J+10.",
+        "",
+        "## 5. Semaines 3 et 4 : état de disponibilité",
+        "",
+        "**Aucun signal de température, précipitation, NAO ou géopotentiel pour "
+        "les semaines 3 et 4 n'est publié ici.** L'accès automatisé aux "
+        "anomalies hebdomadaires IFS Extended n'est pas encore vérifié. "
+        "La prévision sub-saisonnière devrait s'appuyer sur une moyenne d'ensemble, "
+        "les anomalies hebdomadaires et leur dispersion, pas sur la prolongation "
+        "arbitraire des champs à J+10. Toute estimation mensuelle précise "
+        "sans ces données serait trompeuse.",
+        "",
+        "## 6. Signaux à surveiller",
+        "",
+        "Les prochaines actualisations devront notamment contrôler les "
+        "tendances de pression entre les Açores, l'Atlantique nord et le "
+        "Groenland, la position des dorsales et talwegs à 500 hPa, ainsi "
+        "que la stabilité du contraste thermique à 850 hPa. La NAO, l'AO, "
+        "la MJO et le vortex polaire ne seront commentés que si des indicateurs "
+        "documentés et actualisés sont disponibles : ce sont des moteurs "
+        "possibles de la circulation, pas des explications automatiques.",
+        "",
+        "## 7. Conclusion et confiance",
+        "",
+        "**Confiance qualitative : non évaluée.** Les sorties numériques "
+        "ponctuelles seules ne justifient pas une probabilité ou une mention "
+        "« confiance élevée ». Un futur bulletin opérationnel devra "
+        "ajouter la dispersion d'ensemble, les anomalies hebdomadaires "
+        "IFS Extended, une comparaison des runs successifs, puis une "
+        "vérification météorologique des interprétations avant diffusion.",
+        "",
+        "Cette maquette démontre que des chiffres extraits directement des "
+        "champs de modèles peuvent alimenter une discussion météorologique "
+        "documentée. Elle ne constitue pas encore le bulletin définitif "
+        "sur quatre semaines destiné aux membres du Discord KFS MÉTÉO.",
+    ]
+    return "\n".join(parts)+"\n"
+
+def main():
+    data=acquisition()
+    if data["errors"]:
+        print("Données incomplètes :",json.dumps(data["errors"],ensure_ascii=False))
+    data_path=OUT/"tendance-analyse-donnees.json"
+    data_path.write_text(json.dumps(data,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
+    md=report(data)
+    (OUT/"tendance-analyse-apercu.md").write_text(md,encoding="utf-8")
+    print("Rapport de",len(md.split()),"mots;",sum(map(len,data["models"].values())),"couples modèle-échéance; non diffusé.")
+if __name__=="__main__":
+    main()
