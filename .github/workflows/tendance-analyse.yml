@@ -6,6 +6,7 @@ on:
   push:
     paths:
       - 'scripts/generate_tendance_analysis.py'
+      - 'forecast-maps/europe/noaa-diagnostics.json'
       - '.github/workflows/tendance-analyse.yml'
 permissions:
   contents: write
