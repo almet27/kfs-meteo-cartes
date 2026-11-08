@@ -20,6 +20,7 @@ from pathlib import Path
 import json
 import math
 import sys
+import time
 
 import matplotlib
 matplotlib.use("Agg")
@@ -131,8 +132,6 @@ def gfs_field(state, step, key):
     model=state["model"]
     product=("pgrb2.0p25" if model=="gfs" else
              ("pres" if key=="t850" else "sfc"))
-    h = Herbie(state["cycle"].replace(tzinfo=None), model=model,
-               product=product, fxx=step, verbose=False)
     patt = {
         "2t": r":TMP:2 m above ground:",
         "t850": r":TMP:850 mb:",
@@ -142,13 +141,26 @@ def gfs_field(state, step, key):
         "tp": r":APCP:surface:",
         "cpofp": r":CPOFP:surface:",
     }[key]
-    ds = h.xarray(patt, remove_grib=True)
-    if ds is None or len(ds.data_vars) != 1:
-        raise ValueError("GFS field unavailable/ambiguous: " + key)
-    try:
-        return area(ds[list(ds.data_vars)[0]])
-    finally:
-        ds.close()
+    # NOAA AIGFS can briefly publish a GRIB index before a subset becomes
+    # reachable from every mirror. Retry the SAME cycle and SAME field only.
+    retries = 3 if model == "aigfs" else 1
+    for attempt in range(retries):
+        try:
+            h = Herbie(state["cycle"].replace(tzinfo=None), model=model,
+                       product=product, fxx=step, verbose=False)
+            ds = h.xarray(patt, remove_grib=True)
+            if ds is None or len(ds.data_vars) != 1:
+                raise ValueError("GFS field unavailable/ambiguous: " + key)
+            try:
+                return area(ds[list(ds.data_vars)[0]])
+            finally:
+                ds.close()
+        except (OSError, FileNotFoundError) as exc:
+            if attempt == retries - 1:
+                raise
+            print("NOAA mirror retry", model, step, key, attempt + 1,
+                  str(exc)[:140], flush=True)
+            time.sleep(2 + attempt * 2)
 
 
 def field(state, step, key, tmp):
