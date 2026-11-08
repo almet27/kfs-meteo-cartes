@@ -1,0 +1,91 @@
+name: KFS France - publication isolee des cartes WebP
+
+on:
+  workflow_run:
+    workflows:
+      - KFS France - cartes haute frequence 0-72 h (prototype)
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: Identifiant Actions du run France complet a publier
+        required: true
+        type: string
+  push:
+    paths:
+      - '.github/workflows/publier-france-releases.yml'
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: kfs-france-publication-releases
+  cancel-in-progress: false
+
+jobs:
+  publier:
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Installer outil WebP
+        run: python -m pip install 'Pillow>=10,<13'
+      - name: Choisir le run source (bootstrap pour ce push uniquement)
+        id: source
+        env:
+          TRIGGER: ${{ github.event_name }}
+          SOURCE_WORKFLOW_RUN: ${{ github.event.workflow_run.id }}
+          SOURCE_MANUAL: ${{ github.event.inputs.source_run_id }}
+        run: |
+          if [ "$TRIGGER" = 'workflow_run' ]; then ID="$SOURCE_WORKFLOW_RUN"
+          elif [ "$TRIGGER" = 'workflow_dispatch' ]; then ID="$SOURCE_MANUAL"
+          else ID=42532196796; fi
+          if ! [[ "$ID" =~ ^[0-9]+$ ]]; then echo 'Identifiant run invalide' >&2; exit 1; fi
+          echo "run_id=$ID" >> "$GITHUB_OUTPUT"
+          echo "Run France source : $ID"
+      - name: Telecharger uniquement le run France valide
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_RUN: ${{ steps.source.outputs.run_id }}
+        run: |
+          mkdir -p /tmp/kfs-france-source
+          gh run download "$SOURCE_RUN" --dir /tmp/kfs-france-source
+          find /tmp/kfs-france-source -name metadata.json -print
+      - name: Publier les modeles complets sans modifier les cartes Europe
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          python -m py_compile scripts/package_france_release.py
+          published=0
+          for model in ifs aifs-single gfs aigfs; do
+            model_dir="/tmp/kfs-france-source/$model"
+            if [ ! -f "$model_dir/metadata.json" ]; then
+              echo "SKIP $model : metadata manquante (artefact d'un autre run)"
+              continue
+            fi
+            staging="/tmp/kfs-france-release/$model"
+            if ! python scripts/package_france_release.py --source "$model_dir" --output "$staging"; then
+              echo "SKIP $model : modele incomplet, conserver la derniere publication valide"
+              continue
+            fi
+            tag="france-$model"
+            if ! gh release view "$tag" >/dev/null 2>&1; then
+              gh release create "$tag" --target main --latest=false \
+                --title "KFS METEO France | $model" \
+                --notes "Cartes France +3h/+6h a +72h, issues de donnees reelles. Release mise a jour sur les nouveaux runs. Europe non modifiee."
+            fi
+            echo "Publication France $model : $tag"
+            gh release upload "$tag" "$staging"/*.webp "$staging/metadata.json" --clobber
+            published=$((published+1))
+          done
+          echo "Modeles France publies : $published"
+          if [ "$published" -eq 0 ]; then
+            echo 'Aucun modele France complet : pas de changement des releases' >&2
+            exit 0
+          fi
