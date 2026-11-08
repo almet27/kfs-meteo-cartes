@@ -220,15 +220,14 @@ TEMPERATURE_METRICS = frozenset(("temperature", "tmax", "tmin"))
 
 
 def temperature_surface(zone, bounds, records, shapes):
-    """Interpolation spatiale des stations, limitée à la France et aux mesures proches.
+    """Interpolation spatiale IDW des stations, limitée à la France.
 
-    Ce champ est une ESTIMATION entre stations, et non un relevé sur chaque pixel.
-    Les mailles hors des polygones français, hors du réseau de mesure et
-    à plus de 110 km d'une station sont entièrement transparentes.
+    Ce champ est une ESTIMATION entre stations, non un relevé sur chaque pixel.
+    Les mailles maritimes et éloignées de plus de 160 km d'une station
+    restent transparentes.
     """
     import numpy as np
     from matplotlib.path import Path
-    from scipy.interpolate import LinearNDInterpolator
     from scipy.ndimage import gaussian_filter
     from scipy.spatial import cKDTree
 
@@ -269,17 +268,21 @@ def temperature_surface(zone, bounds, records, shapes):
     xy_grid = grid.copy()
     xy_grid[:, 0] *= lat_correction
 
-    try:
-        interpolator = LinearNDInterpolator(xy_obs, obs[:, 2],
-                                            fill_value=np.nan)
-        values = np.asarray(interpolator(xy_grid), dtype=float)
-    except (ValueError, RuntimeError):
-        return None
-
-    # Pas de couleur sans proximité réelle de stations et pas d'extrapolation
-    # au-delà du réseau observé (le convexe de la triangulation).
-    distances, _ = cKDTree(xy_obs).query(xy_grid, k=1)
-    valid = land & np.isfinite(values) & (distances * 111.2 <= 110)
+    # Interpolation IDW a 8 voisins : un fond continu, meme sur les franges
+    # littorales que la triangulation initiale laissait blanches.
+    # La couleur reste une estimation, jamais une mesure sur chaque pixel.
+    k = min(8, len(xy_obs))
+    distances, nearest = cKDTree(xy_obs).query(xy_grid, k=k)
+    distances = np.asarray(distances)
+    nearest = np.asarray(nearest)
+    if k == 1:
+        distances = distances[:, None]
+        nearest = nearest[:, None]
+    weights = 1.0 / np.maximum(distances, 0.004) ** 2.0
+    values = np.sum(obs[nearest, 2] * weights, axis=1) / weights.sum(axis=1)
+    # Aucune coloration au large ni dans les secteurs sans station proche.
+    # 160 km laissent un champ homogene sans extrapolation excessive.
+    valid = land & np.isfinite(values) & (distances[:, 0] * 111.2 <= 160)
     if not valid.any():
         return None
     data = np.where(valid, values, 0.0).reshape(ny, nx)
@@ -320,7 +323,12 @@ def render(metric, zone, records, shapes, timestamp, hours):
     # des etiquettes legerement reduites evitent la superposition.
     wide_zone = zone in ("fr", "no", "ne", "so", "se", "eur2")
     label_size = 11.0 if wide_zone else 13.5
-    grid_cols, grid_rows = (27, 18) if wide_zone else (19, 13)
+    if metric in TEMPERATURE_METRICS:
+        # Moins d'etiquettes : le fond bleu-jaune-rouge reste visible.
+        grid_cols, grid_rows = ((14, 10) if wide_zone else (13, 9))
+        label_size = 9.5 if wide_zone else 11.0
+    else:
+        grid_cols, grid_rows = (27, 18) if wide_zone else (19, 13)
     if points:
         xs, ys, nums = list(zip(*points))
         low, high = min(nums), max(nums)
@@ -355,9 +363,10 @@ def render(metric, zone, records, shapes, timestamp, hours):
             label = f"{val:.0f}" if metric != "pluie" else f"{val:.1f}"
             ax.text(lon, lat, label, color="white", fontsize=label_size, fontweight="bold",
                     ha="center", va="center", zorder=4,
-                    bbox={"boxstyle":"round,pad=0.20",
+                    bbox={"boxstyle":"round,pad=0.18",
                           "facecolor":"#0b1524","edgecolor":"#495b6c",
-                          "linewidth":.5,"alpha":.96})
+                          "linewidth":.4,
+                          "alpha":.72 if metric in TEMPERATURE_METRICS else .96})
         cb = fig.colorbar(plt.cm.ScalarMappable(norm=normalized, cmap=colors),
                           ax=ax, orientation="horizontal", fraction=.047, pad=.07,
                           aspect=35)
@@ -441,7 +450,8 @@ def test():
     field = temperature_surface("fr", ZONES["fr"][1], synthetic, fake_land)
     assert field is not None and field.count() > 1000
     assert 2 <= field.min() < field.max() <= 25
-    print("Self-test: 7 mesures + dégradé spatial limité aux stations OK")
+    assert field.count() / field.size > .65  # Dégradé visible sur les terres du test.
+    print("Self-test: 7 mesures + dégradé continu IDW limité aux terres OK")
 
 
 def main():
