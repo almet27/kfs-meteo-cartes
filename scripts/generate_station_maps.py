@@ -223,12 +223,19 @@ def render(metric, zone, records, shapes, timestamp, hours):
     area, bounds = ZONES[zone]
     x0, x1, y0, y1 = bounds
     points = [p for p in records if x0 <= p[0] <= x1 and y0 <= p[1] <= y1]
-    fig, ax = plt.subplots(figsize=(9.2, 6.1), dpi=115)
+    # Haute definition : les cartes restent nettes dans l'apercu Discord et au zoom.
+    # 12.8 x 8.5 pouces a 150 dpi = 1920 x 1275 pixels.
+    fig, ax = plt.subplots(figsize=(12.8, 8.5), dpi=150)
     fig.patch.set_facecolor("#101927")
     ax.set_facecolor("#172538")
     for ring in shapes:
         xs, ys = zip(*ring)
         ax.plot(xs, ys, color="#4a6073", lw=.65, alpha=.72, zorder=1)
+    # Les zones etroites profitent de valeurs plus lisibles ; sur la France entiere,
+    # des etiquettes legerement reduites evitent la superposition.
+    wide_zone = zone in ("fr", "no", "ne", "so", "se", "eur2")
+    label_size = 11.0 if wide_zone else 13.5
+    grid_cols, grid_rows = (27, 18) if wide_zone else (19, 13)
     if points:
         xs, ys, nums = list(zip(*points))
         low, high = min(nums), max(nums)
@@ -237,30 +244,30 @@ def render(metric, zone, records, shapes, timestamp, hours):
             high += 1
         colors = plt.get_cmap(palette)
         normalized = Normalize(vmin=low, vmax=high)
-        ax.scatter(xs, ys, c=nums, s=11, cmap=colors,
+        ax.scatter(xs, ys, c=nums, s=24, cmap=colors,
                    norm=normalized, alpha=.76, linewidths=0, zorder=2)
         occupied = set()
         for lon, lat, val in sorted(points, key=lambda x: abs(x[2]), reverse=True):
-            cell = (int((lon - x0) / (x1 - x0) * 22),
-                    int((lat - y0) / (y1 - y0) * 15))
+            cell = (int((lon - x0) / (x1 - x0) * grid_cols),
+                    int((lat - y0) / (y1 - y0) * grid_rows))
             if cell in occupied:
                 continue
             occupied.add(cell)
             label = f"{val:.0f}" if metric != "pluie" else f"{val:.1f}"
-            ax.text(lon, lat, label, color="white", fontsize=7.2, fontweight="bold",
+            ax.text(lon, lat, label, color="white", fontsize=label_size, fontweight="bold",
                     ha="center", va="center", zorder=4,
-                    bbox={"boxstyle":"round,pad=0.17",
+                    bbox={"boxstyle":"round,pad=0.20",
                           "facecolor":"#0b1524","edgecolor":"#495b6c",
-                          "linewidth":.35,"alpha":.94})
+                          "linewidth":.5,"alpha":.96})
         cb = fig.colorbar(plt.cm.ScalarMappable(norm=normalized, cmap=colors),
                           ax=ax, orientation="horizontal", fraction=.047, pad=.07,
                           aspect=35)
-        cb.set_label(unit, color="#dee7f5", fontsize=10)
-        cb.ax.tick_params(colors="#bfc8d9", labelsize=8)
+        cb.set_label(unit, color="#dee7f5", fontsize=13)
+        cb.ax.tick_params(colors="#bfc8d9", labelsize=11)
     else:
         ax.text(.5, .5, "Aucune mesure disponible sur cette zone",
                 transform=ax.transAxes, ha="center", va="center",
-                fontsize=12, color="white")
+                fontsize=16, color="white")
     ax.set_xlim(x0, x1)
     ax.set_ylim(y0, y1)
     ax.set_aspect(1 / max(.25, math.cos(math.radians((y0 + y1)/2))))
@@ -268,18 +275,18 @@ def render(metric, zone, records, shapes, timestamp, hours):
     for side in ax.spines.values():
         side.set_color("#405168")
     fig.text(.055, .94, "KFS MÉTÉO  /  OBSERVATIONS", color="#65d8f7",
-             weight="bold", fontsize=13)
+             weight="bold", fontsize=17)
     fig.text(.055, .89, title + " — " + area, color="white",
-             weight="bold", fontsize=12.5)
+             weight="bold", fontsize=17)
     footer = (f"Stations : {len(points)} · mesure {timestamp} UTC"
               + (f" · {hours} relevés horaires reçus" if metric in ("tmax","tmin","rafalesmax","pluie") else ""))
-    fig.text(.055, .04, footer, color="#cfdae9", fontsize=8)
+    fig.text(.055, .04, footer, color="#cfdae9", fontsize=10.5)
     fig.text(.055, .016, "Source : Météo-France · Contours : IGN / Admin Express (Licence Ouverte)",
-             color="#8da2b8", fontsize=7)
-    fig.subplots_adjust(left=.045, right=.96, top=.85, bottom=.13)
+             color="#8da2b8", fontsize=9.5)
+    fig.subplots_adjust(left=.035, right=.975, top=.85, bottom=.13)
     OUT.mkdir(exist_ok=True)
     dest = OUT / f"{zone}-{metric}.png"
-    fig.savefig(dest, facecolor=fig.get_facecolor(), dpi=115)
+    fig.savefig(dest, facecolor=fig.get_facecolor(), dpi=150)
     plt.close(fig)
     # Palette PNG : alléger l'actualisation sans dégrader les valeurs textuelles.
     with Image.open(dest) as img:
