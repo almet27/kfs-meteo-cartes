@@ -1,0 +1,21 @@
+name: KFS France - initialisation 4 modeles sur nouvelles cartes
+on:
+  push:
+    paths:
+      - .github/workflows/kfs-france-bootstrap.yml
+permissions:
+  actions: write
+  contents: read
+jobs:
+  initialisation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Demander les quatre editions France +72 h
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for modele in gfs ifs aifs-single aigfs; do
+            echo "Demande generation France du nouveau rendu: $modele"
+            gh workflow run france-h72.yml --ref main -f modele="$modele" -f horizon=72
+          done
