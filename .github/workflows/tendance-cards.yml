@@ -3,7 +3,7 @@ name: KFS - cartes synoptiques pour chaque periode Discord
 on:
   workflow_dispatch:
   schedule:
-    - cron: '15 18 * * 0' # dimanche 18:15 UTC : infographies prêtes avant le bulletin de 21h Europe/Paris
+    - cron: '30 17 * * 0' # dimanche 17:30 UTC : cartes prêtes avant la rédaction de 20h20 Europe/Paris
   push:
     paths:
       - 'scripts/generate_tendance_cards.py'
