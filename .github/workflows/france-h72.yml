@@ -48,11 +48,13 @@ jobs:
         run: |
           if [ "$EVENT_KIND" = "push" ]; then
             result=0
-            # Validation exceptionnelle des 4 modeles sur 72 h.
-            # Les PNG sont uniquement conserves en artefact temporaire.
+            # Test rapide sur les 4 modeles lors d'une modification du code.
+            # Les 72h complets sont generes seulement sur demande explicite
+            # ou via une detection nouvelle de source apres mise en production.
             for model in ifs aifs-single gfs aigfs; do
-              echo "KFS France validation complete +72 h : $model"
-              python scripts/generate_france_forecasts.py --model "$model" --max-hour 72 || result=1
+              steps='3,6'
+              if [ "$model" = 'aifs-single' ] || [ "$model" = 'aigfs' ]; then steps='6,12'; fi
+              python scripts/generate_france_forecasts.py --model "$model" --steps "$steps" || result=1
             done
             exit "$result"
           else
