@@ -253,12 +253,21 @@ def render(lon, lat, values, model, run, step, metric, folder, note=""):
     ax.set_extent(EXTENT, crs=ccrs.PlateCarree())
     ax.add_feature(cf.LAND, facecolor="#EDF0EC", zorder=0)
     ax.add_feature(cf.OCEAN, facecolor="#D7E8F3", zorder=0)
+    unknown_wet=(np.isnan(np.asarray(values,dtype=float))
+                 if metric in ("rain","snow") else None)
     if metric in ("rain", "snow", "precip_total"):
         values=np.ma.masked_invalid(values)
         values=np.ma.masked_less(values,0.1)
     kw = {"cmap": cmap, "extend": "both", "transform": ccrs.PlateCarree()}
     if norm is not None:
         kw["norm"] = norm
+    if unknown_wet is not None and np.any(unknown_wet):
+        # Dark grey is reserved for wet cells where NOAA does NOT identify
+        # a unique precipitation phase. Dry land remains unshaded.
+        unknown=np.ma.masked_where(~unknown_wet,np.ones_like(unknown_wet,dtype=float))
+        ax.contourf(lon,lat,unknown,levels=[0.5,1.5],
+                    colors=["#8F949C"],alpha=.72,
+                    transform=ccrs.PlateCarree(),zorder=1)
     shade = ax.contourf(lon, lat, values, levels=levels, **kw)
     if metric in ("t850", "t2m"):
         # Display the actual scalar field values at weather map anchor points.
@@ -444,9 +453,10 @@ def main():
                                           np.where(valid&onlysnow,0,np.nan)))
                             snow=np.where(~wet,0,np.where(valid&onlysnow,tp[2],
                                           np.where(valid&onlyrain,0,np.nan)))
-                            if quality>=.5 or not np.any(wet):
+                            if quality>0 or not np.any(wet):
                                 note=("PHASE ESTIMÉE: pluie/neige NOAA au temps de validité;"
-                                      " cellules mixtes/non déterminées grisées")
+                                      " mailles humides classées "+str(round(quality*100))+" %;"
+                                      " zones incertaines grisées")
                                 candidates["rain"]=(tp[0],tp[1],rain,note)
                                 candidates["snow"]=(tp[0],tp[1],snow,note)
                             else:
