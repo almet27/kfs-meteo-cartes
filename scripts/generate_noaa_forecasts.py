@@ -11,6 +11,7 @@ from matplotlib.colors import ListedColormap, BoundaryNorm
 from kfs_premium_palettes import (
     KFS_Z500_CMAP, KFS_Z500_NORM, KFS_Z500_LEVELS, KFS_Z500_TICKS,
     KFS_T850_CMAP, KFS_T850_NORM, KFS_T850_LEVELS, KFS_T850_TICKS,
+    KFS_T850_ISOTHERMS,
 )
 import numpy as np
 import cartopy.crs as ccrs
@@ -171,6 +172,20 @@ for model,title in [("gfs","GFS"),("aigfs","AIGFS")]:
             shade=ax.contourf(lon,lat,t850-273.15,levels=KFS_T850_LEVELS,
                               cmap=KFS_T850_CMAP,norm=KFS_T850_NORM,
                               extend="both",transform=ccrs.PlateCarree())
+            # Isothermes noires fines de 4 en 4 degres, contours derives
+            # exclusivement du meme champ GRIB que les couleurs.
+            isotherms=ax.contour(
+                lon,lat,t850-273.15,
+                levels=KFS_T850_ISOTHERMS,colors="#17202A",
+                linewidths=0.48,alpha=0.82,transform=ccrs.PlateCarree())
+            iso_labels=ax.clabel(
+                isotherms,inline=True,inline_spacing=4,
+                fmt="%d",fontsize=7,colors="#16212A")
+            for label in iso_labels:
+                label.set_path_effects([
+                    pe.Stroke(linewidth=1.5,foreground="#EAF3EC"),
+                    pe.Normal(),
+                ])
             fig.colorbar(shade,ax=ax,orientation="horizontal",pad=.04,shrink=.8,ticks=KFS_T850_TICKS,
                          label="Température à 850 hPa (°C) · Couleurs KFS météo")
             ax.set_title(f"KFS MÉTÉO | {title} | Atlantique Nord · Groenland · Europe | +{step} h\nTempérature 850 hPa · Run : {RUN.strftime('%d/%m %H:%M')} UTC · Validité : {(RUN+timedelta(hours=step)).strftime('%d/%m %H:%M')} UTC")
