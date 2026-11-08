@@ -61,7 +61,7 @@ def main():
               "max_hour":args.horizon,
               "early":args.horizon==12,
               "published_utc":datetime.now(timezone.utc).isoformat(),
-              "maps":{},"errors":raw.get("errors",{}),
+              "maps":{},"daily":{},"errors":raw.get("errors",{}),
               "notes":["Previsions generees depuis les champs GRIB reels.",
                        "Pas de donnees interpolees pour combler des echeances absentes.",
                        "Neige ECMWF en equivalent-eau, pas en centimetres au sol.",
@@ -81,6 +81,29 @@ def main():
             entry[field]={"file":target.name,"note":data.get("note","")}
             n+=1
         manifest["maps"][step]=entry
+    # Les cartes quotidiennes sont des assets optionnels : uniquement
+    # pour le run complet 72 h, jamais pour l'édition précoce +12 h.
+    if args.horizon==72:
+        for day,record in sorted(raw.get("daily",{}).items(),key=lambda kv:int(kv[0])):
+            output={"date":record.get("date"),
+                    "coverage":record.get("coverage"),
+                    "start_utc":record.get("start_utc"),
+                    "end_utc":record.get("end_utc"),"maps":{}}
+            for metric,data in sorted(record.get("maps",{}).items()):
+                if metric not in ("tmin","tmax","gust","precip","rain"):
+                    continue
+                origin=args.source/Path(data["path"]).name
+                if not origin.is_file():
+                    raise ValueError("Daily source image missing: "+str(origin))
+                target=args.output/f"daily-{metric}-d{int(day)}.webp"
+                with Image.open(origin) as im:
+                    if im.width<300 or im.height<200:
+                        raise ValueError("Daily map too small: "+str(origin))
+                    im.convert("RGB").save(target,format="WEBP",quality=85,method=6)
+                output["maps"][metric]={"file":target.name,"note":data.get("note","")}
+                n+=1
+            if output["maps"]:
+                manifest["daily"][day]=output
     (args.output/"metadata.json").write_text(
         json.dumps(manifest,ensure_ascii=False,indent=2)+"\n",encoding="utf-8"
     )
