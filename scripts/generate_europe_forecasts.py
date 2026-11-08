@@ -103,6 +103,73 @@ for model, title in MODELS.items():
         finally:
             for p in (temp_path,pres_path,height_path):
                 p.unlink(missing_ok=True)
+
+        # Vent moyen à 10 m : norme des composantes U/V, convertie de m/s en km/h.
+        wind_path=OUT/(key+"-wind10m.grib2")
+        try:
+            client.retrieve(stream="oper",type="fc",step=step,param=["10u","10v"],target=str(wind_path))
+            x,y,u,uu,run_u=read(wind_path,"u10")
+            x2,y2,v,uv,run_v=read(wind_path,"v10")
+            if not (np.array_equal(x,x2) and np.array_equal(y,y2) and run_u==run_v):
+                raise ValueError("Incoherence des champs de vent U/V")
+            if np.nanmax(np.abs(u))>180 or np.nanmax(np.abs(v))>180:
+                raise ValueError("Vent 10 m hors limites physiques")
+            kmh=np.hypot(u,v)*3.6
+            fig,ax=canvas()
+            shade=ax.contourf(x,y,kmh,levels=[0,10,20,30,40,50,60,75,90,110,130,160,200],
+                              cmap="turbo",extend="max",transform=ccrs.PlateCarree())
+            xx,yy=np.meshgrid(x,y)
+            skip=(slice(None,None,max(1,len(y)//22)),slice(None,None,max(1,len(x)//26)))
+            ax.quiver(xx[skip],yy[skip],u[skip],v[skip],color="#233245",alpha=.78,
+                      scale=680,width=.0016,transform=ccrs.PlateCarree())
+            fig.colorbar(shade,ax=ax,orientation="horizontal",pad=.04,shrink=.8,
+                         label="Vitesse du vent à 10 m (km/h) — flèches : direction")
+            ax.set_title(f"KFS MÉTÉO | {title} | Atlantique Nord · Groenland · Europe | +{step} h\nVent 10 m · Run : {run_u[:16].replace('T',' ')} UTC · Validité : {(datetime.fromisoformat(run_u.replace('Z','+00:00'))+timedelta(hours=step)).strftime('%d/%m %H:%M')} UTC")
+            save_map(fig,model,step,"wind10m")
+        except Exception as exc:
+            result["errors"][key+"-wind10m"]=str(exc)[:350]
+        finally:
+            wind_path.unlink(missing_ok=True)
+
+        # Cumuls EXACTS des 6 h precedentes : differences tp/sf au sein du meme run.
+        # L'unite ECMWF est le metre d'eau equivalent; 1 mm = 1 kg/m2.
+        wet_now=OUT/(key+"-wet6h-now.grib2")
+        wet_prev=OUT/(key+"-wet6h-prev.grib2")
+        try:
+            client.retrieve(stream="oper",type="fc",step=step,param=["tp","sf"],target=str(wet_now))
+            client.retrieve(stream="oper",type="fc",step=step-6,param=["tp","sf"],target=str(wet_prev))
+            x,y,tp_now,tp_units,run_now=read(wet_now,"tp")
+            x2,y2,sf_now,sf_units,run_sf=read(wet_now,"sf")
+            x3,y3,tp_prev,_,run_prev=read(wet_prev,"tp")
+            x4,y4,sf_prev,_,run_prev_sf=read(wet_prev,"sf")
+            if not (np.array_equal(x,x2) and np.array_equal(x,x3) and np.array_equal(x,x4)
+                    and np.array_equal(y,y2) and np.array_equal(y,y3) and np.array_equal(y,y4)
+                    and run_now==run_sf==run_prev==run_prev_sf):
+                raise ValueError("Runs / grilles differents : cumul 6 h impossible")
+            if not np.nanmedian(tp_now)<2 or not np.nanmedian(sf_now)<2:
+                raise ValueError("Unités des cumuls d'eau inattendues (m attendus)")
+            total=np.maximum(0,(tp_now-tp_prev)*1000)
+            neige=np.minimum(total,np.maximum(0,(sf_now-sf_prev)*1000))
+            pluie=np.maximum(0,total-neige)
+            fig,ax=canvas()
+            shade=ax.contourf(x,y,pluie,levels=[0,.1,.5,1,2,5,10,15,20,30,40,60,80],
+                              cmap="Blues",extend="max",transform=ccrs.PlateCarree())
+            # La neige superposee indique sa contribution en eau (pas l'epaisseur en cm).
+            snow=np.ma.masked_less(neige,.3)
+            if np.any(neige>=.3):
+                overlay=ax.contourf(x,y,snow,levels=[.3,1,2,5,10,20,40,80],
+                                    cmap="Purples",alpha=.86,extend="max",transform=ccrs.PlateCarree())
+                fig.colorbar(overlay,ax=ax,orientation="vertical",pad=.01,shrink=.55,
+                             label="Neige (mm équivalent-eau)")
+            fig.colorbar(shade,ax=ax,orientation="horizontal",pad=.04,shrink=.8,
+                         label="Pluie + autres précipitations liquides (mm / 6 h)")
+            ax.set_title(f"KFS MÉTÉO | {title} | Atlantique Nord · Groenland · Europe | +{step} h\nPrécipitations 6 h : pluie (bleu) et neige (violet, équiv.-eau)\nRun : {run_now[:16].replace('T',' ')} UTC · Période : +{step-6} à +{step} h")
+            save_map(fig,model,step,"precip6h")
+        except Exception as exc:
+            result["errors"][key+"-precip6h"]=str(exc)[:350]
+        finally:
+            for file in (wet_now,wet_prev):
+                file.unlink(missing_ok=True)
 (OUT/"metadata.json").write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding="utf-8")
 print("ECMWF summary",json.dumps({"maps":result["maps"],"errors":result["errors"]},ensure_ascii=False),flush=True)
 if not result["maps"]: raise RuntimeError("No real ECMWF fields; publication aborted")
