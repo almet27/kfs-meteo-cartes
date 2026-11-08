@@ -264,6 +264,9 @@ def main():
     now=datetime.now(timezone.utc)
     data=json.loads((OUT/"tendance-analyse-donnees.json").read_text(encoding="utf-8"))
     meta=json.loads((EU/"metadata.json").read_text(encoding="utf-8"))
+    atlas_stamp=data.get("europe_maps_generated_utc")
+    if atlas_stamp is not None and atlas_stamp!=meta.get("generated_utc"):
+        raise RuntimeError("Le catalogue des cartes a change depuis les diagnostics : relancer analyse+cartes ensemble")
     for source in (data,meta):
         moment=parsed(source["generated_utc"])
         if not timedelta(hours=-1)<now-moment<timedelta(hours=48):
