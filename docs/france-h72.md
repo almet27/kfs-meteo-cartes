@@ -25,22 +25,48 @@ Sur chaque `push` de modification du moteur, le workflow lance un test réduit s
 
 Le workflow [KFS France - détection des nouveaux cycles](../actions/workflows/watch-france-cycles.yml) contrôle ECMWF / NOAA toutes les 20 minutes. Les cartes Europe peuvent être regénérées plus tôt lorsqu'un nouveau run est détecté. Les mises à jour France automatiques restent suspendues tant que la publication du site complet et le bot Discord ne sont pas validés.
 
-## Hébergement GRATUIT prévu : GitHub Pages
+## Diffusion indépendante des cartes Europe : GitHub Releases
 
-Aucun abonnement Cloudflare R2 ni stockage o2switch ne sont nécessaires.
+Aucun abonnement R2 ni ressource o2switch n'est nécessaire. Les cartes Europe
+et leurs chemins `forecast-maps/europe` ne sont pas modifiés.
 
-Le script `scripts/build_france_pages.py` construit un site temporaire **sans ajouter les images dans l'historique Git**. Il récupère les dernières archives GitHub Actions par modèle, les convertit en WebP et prépare `forecast-maps/france/metadata.json`. Le site conserve également les cartes Europe et les ressources existantes afin d'éviter de casser le site.
+Le workflow [KFS France : publication des cartes](../actions/workflows/publier-france-releases.yml)
+récupère les archives réelles du générateur France, vérifie **toutes les échéances natives
+jusqu'à +72 h**, convertit les PNG en WebP et publie une release distincte par modèle :
 
-Sécurités de la publication finale :
-- les 4 modèles IFS, AIFS, GFS et AIGFS doivent avoir tous leurs pas natifs jusqu'à +72 h ;
-- aucun pas manquant n'est remplacé par une image artificielle ;
-- le run de chaque modèle doit correspondre au dernier cycle confirmé ;
-- la taille totale du site doit rester sous 450 Mo.
+- [IFS](../releases/tag/france-ifs) : +3 à +72 h, pas de 3 h ;
+- [GFS](../releases/tag/france-gfs) : +3 à +72 h, pas de 3 h ;
+- [AIFS](../releases/tag/france-aifs-single) : +6 à +72 h, pas de 6 h ;
+- [AIGFS](../releases/tag/france-aigfs) : +6 à +72 h quand tous les champs requis sont disponibles.
 
-Le workflow [Préparer GitHub Pages](../actions/workflows/pages-france-snapshot.yml) est en mode validation uniquement par défaut. `publish=false` produit un rapport sans déploiement ; `publish=true` exige que l'administrateur ait choisi **Settings → Pages → Source : GitHub Actions**. Attention : Pages ne contient qu'un site par dépôt, donc son déploiement peut remplacer un site Pages existant ; ne pas activer sans vérification.
+Les noms des fichiers et les liens restent stables. Les actifs anciens portant
+le même nom sont remplacés lors d'un nouveau run, sans enregistrer des PNG dans
+l'historique Git. Les données manquantes ne sont jamais inventées.
 
-## Discord
+La surveillance vérifie les nouvelles sorties toutes les 20 minutes
+et peut déclencher une génération France +72 h quand le dernier run est annoncé complet.
+L'exécution de GitHub Actions et la publication des sources peuvent subir des retards.
 
-La commande `/modele` de Cloudflare fonctionne actuellement avec les cartes Europe ; le choix `zone=france` ne sera activé qu'après validation des liens HTTPS publics du nouveau site Pages, pour éviter des liens cassés.
+## Discord : nouvelle commande indépendante `/france`
 
-Ne pas considérer `/modele` France comme déployé tant que la migration des cartes et la commande Discord n'ont pas été testées de bout en bout.
+Le Worker Cloudflare de KFS propose la commande `/france` en plus de `/modele`.
+La commande `/modele` continue de fonctionner pour l'Europe, sans modification
+de ses choix ni de ses fichiers.
+
+Pour enregistrer automatiquement `/france` auprès de Discord, appeler
+une fois la commande actuelle `/modele` après le déploiement du Worker. Elle
+déclenche l'enregistrement de `/france`, sans modifier sa propre réponse.
+
+`/france` offre les paramètres température 2 m, température 850 hPa
+(avec isothermes -5 et -10 degrés), vent 10 m, pression, précipitations totales
+et pluie/neige uniquement si les modèles fournissent des champs suffisants.
+Les paramètres et échéances non publiés renvoient un message explicite.
+
+**AIGFS :** certaines échéances de vent/pression ont échoué au dernier test
+complet, le modèle n'a donc pas été publié comme un jeu fiable. Le générateur
+a été renforcé avec des tentatives supplémentaires sur les fichiers NOAA
+temporaires. La disponibilité AIGFS reste à revalider.
+
+Le workflow [GitHub Pages expérimental](../actions/workflows/pages-france-snapshot.yml)
+est conservé uniquement pour des essais ; `publish=false` et aucune migration
+Pages n'a été faite. Les releases sont le moyen de diffusion retenu.
