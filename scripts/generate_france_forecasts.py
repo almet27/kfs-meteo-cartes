@@ -237,8 +237,9 @@ def render(lon, lat, values, model, run, step, metric, folder, note=""):
     ax.set_extent(EXTENT, crs=ccrs.PlateCarree())
     ax.add_feature(cf.LAND, facecolor="#EDF0EC", zorder=0)
     ax.add_feature(cf.OCEAN, facecolor="#D7E8F3", zorder=0)
-    if metric in ("rain", "snow"):
-        values = np.ma.masked_less(values, 0.1)
+    if metric in ("rain", "snow", "precip_total"):
+        values=np.ma.masked_invalid(values)
+        values=np.ma.masked_less(values,0.1)
     kw = {"cmap": cmap, "extend": "both", "transform": ccrs.PlateCarree()}
     if norm is not None:
         kw["norm"] = norm
@@ -367,24 +368,33 @@ def main():
                     if "cpofp" in fields:
                         phase=fields["cpofp"]
                         lon,lat=common_grid(tp,phase)
-                        if np.nanmin(phase[2])>=0 and np.nanmax(phase[2])<=100:
-                            # Fraction frozen is an INSTANTANEOUS estimate, not a native
-                            # 3-hour snow accumulation. Use precise warning on map.
-                            fraction=np.clip(phase[2]/100,0,1)
-                            candidates["rain"]=(lon,lat,np.maximum(0,tp[2])*(1-fraction),
+                        # NOAA CPOFP can contain missing/invalid grid cells.
+                        # Mask them explicitly: never treat unknown phase as dry.
+                        raw=np.asarray(phase[2],dtype=float)
+                        valid=np.isfinite(raw)&(raw>=0)&(raw<=100)
+                        print("GFS CPOFP",step,"valid",int(np.count_nonzero(valid)),
+                              "of",raw.size,"range",
+                              float(np.nanmin(raw)),float(np.nanmax(raw)),flush=True)
+                        if np.count_nonzero(valid)>=max(12,raw.size//5):
+                            # Phase fraction is INSTANTANEOUS, not a native snowfall total.
+                            fraction=np.where(valid,np.clip(raw/100,0,1),np.nan)
+                            amount=np.maximum(0,np.asarray(tp[2],dtype=float))
+                            candidates["rain"]=(lon,lat,amount*(1-fraction),
                                                   "pluie estimée, phase instantanée")
-                            candidates["snow"]=(lon,lat,np.maximum(0,tp[2])*fraction,
+                            candidates["snow"]=(lon,lat,amount*fraction,
                                                   "précipitations gelées estimées, pas neige native")
                         else:
-                            errors[f"{step}-phase"] = "CPOFP outside 0..100"
+                            errors[f"{step}-phase"]="CPOFP insufficient valid cells"
                     else:
                         errors[f"{step}-phase"] = "Phase inconnue; pluie/neige non cartographiées"
         for metric, (lon, lat, values, note) in candidates.items():
             if metric not in VARS:
                 continue
             try:
-                if not np.isfinite(values).all():
+                if metric not in ("rain","snow","precip_total") and not np.isfinite(values).all():
                     raise ValueError("Non-finite field")
+                if metric in ("rain","snow","precip_total") and np.isfinite(values).mean()<0.2:
+                    raise ValueError("Insufficient valid precipitation cells")
                 path = render(lon, lat, values, args.model, run, step, metric, folder, note)
                 maps[metric] = {"path":path, "note":note}
             except Exception as exc:
