@@ -149,7 +149,7 @@ for model, title in MODELS.items():
             # Selon le flux GRIB, cfgrib peut exposer m ou kg/m2 (equiv. mm).
             def to_mm(units):
                 u=units.lower().replace(" ","").replace("**","^").replace("−","-")
-                if u in ("m","metre","meter"): return 1000.0
+                if u in ("m","metre","meter","mofwaterequivalent","mofwaterequivalent(s)"): return 1000.0
                 if u in ("kgm^-2","kg/m^2","kgm-2","mm","kgm^(-2)"): return 1.0
                 raise ValueError("Unité GRIB non reconnue : "+repr(units))
             tp_factor=to_mm(tp_units)
