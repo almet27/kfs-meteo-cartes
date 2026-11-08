@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "generated_utc": "2026-11-08T22:28:34Z",
+  "models": {
+    "ifs": {
+      "source": "ECMWF IFS Open Data",
+      "native_step_h": 3,
+      "latest_first_step_utc": "2026-11-08T12:00:00Z",
+      "latest_72h_step_utc": "2026-11-08T12:00:00Z",
+      "fully_available_72h": true
+    },
+    "aifs-single": {
+      "source": "ECMWF AIFS Open Data",
+      "native_step_h": 6,
+      "latest_first_step_utc": "2026-11-08T12:00:00Z",
+      "latest_72h_step_utc": "2026-11-08T12:00:00Z",
+      "fully_available_72h": true
+    },
+    "gfs": {
+      "source": "NOAA NCEP GFS",
+      "native_step_h": 3,
+      "latest_first_step_utc": "2026-11-08T18:00:00Z",
+      "latest_72h_step_utc": "2026-11-08T18:00:00Z",
+      "fully_available_72h": true
+    },
+    "aigfs": {
+      "source": "NOAA NCEP AIGFS",
+      "native_step_h": 6,
+      "latest_first_step_utc": "2026-11-08T18:00:00Z",
+      "latest_72h_step_utc": "2026-11-08T18:00:00Z",
+      "fully_available_72h": true
+    }
+  },
+  "warnings": {},
+  "note": "Latest source availability, not a completed/posted forecast map. GitHub scheduled checks may be delayed."
+}
