@@ -329,6 +329,81 @@ def write_j15(stage, meta, data, now):
         "risk_status":"non_evalue", "model_comparison":"Champs cartographiés AIFS ; diagnostic sectoriel GFS"
     }
 
+
+def write_premium_stage(stage, meta, data, now):
+    """Infographie européenne 16:9 : champs météorologiques réels et risques non inventés."""
+    step=stage["step"]
+    if step=="360":
+        chart, details, flow, t850, pressure=select(meta,data,stage,"aifs-single")
+        model_a="AIFS"
+        other=data.get("models",{}).get("gfs",{}).get(step)
+        if not other or other.get("fields",{}).get("t850",{}).get("france",{}).get("mean") is None:
+            raise RuntimeError("J+15 indisponible : AIFS et GFS requis")
+        model_b="GFS"
+        other_t=float(other["fields"]["t850"]["france"]["mean"])
+        other_run=other["run_utc"]
+    else:
+        chart, details, flow, t850, pressure=select(meta,data,stage,"ifs")
+        _,other,_,other_t,_=select(meta,data,stage,"aifs-single")
+        other_run=other["run_utc"]
+        model_a="IFS"
+        model_b="AIFS"
+    date=parsed(details["valid_utc"])
+    W2,H2=1600,900
+    canvas=Image.new("RGBA",(W2,H2),(5,30,60,255))
+    bgd=ImageDraw.Draw(canvas)
+    for y in range(H2):
+        t=y/H2
+        bgd.line((0,y,W2,y),fill=(round(5+4*t),round(28+22*t),round(55+29*t),255),width=1)
+    # Real ECMWF synoptic chart with isobars and Z500, no synthetic fronts or centres.
+    hero=map_crop(chart,(1544,565)).convert("RGBA")
+    tint=Image.new("RGBA",hero.size,(5,28,69,23))
+    hero=Image.alpha_composite(hero,tint)
+    mask=Image.new("L",hero.size,0)
+    ImageDraw.Draw(mask).rounded_rectangle((0,0,1543,564),radius=22,fill=255)
+    canvas.paste(hero,(28,158),mask)
+    d=ImageDraw.Draw(canvas)
+    d.rounded_rectangle((26,156,1574,726),radius=26,outline=(83,190,245,255),width=3)
+    d.rectangle((0,0,12,H2),fill=(46,181,247,255))
+    cloud(d,39,23)
+    txt(d,(166,22),"KFS MÉTÉO",37,"white",True)
+    txt(d,(40,91),"TENDANCE GÉNÉRALE   •   "+stage["period"],43,"white",True)
+    d.rounded_rectangle((1005,25,1549,80),radius=25,fill=(208,233,251,245))
+    txt(d,(1023,36),"ECMWF "+model_a+"  •  "+model_b,25,(9,42,77),True)
+    d.rounded_rectangle((46,176,850,253),radius=19,fill=(6,27,53,235))
+    txt(d,(64,185),stage["period"]+"  •  "+date.strftime("%d/%m/%Y %H:%M")+" UTC",27,"white",True)
+    txt(d,(64,223),"Géopotentiel 500 hPa et pression réelle • "+model_a,17,"light")
+    d.rounded_rectangle((44,622,1165,707),radius=17,fill=(7,29,56,232),outline=(65,161,218,220),width=2)
+    txt(d,(62,633),"FLUX MOYEN SUR LA FRANCE : "+sector(flow.get("from_deg")),27,"white",True)
+    txt(d,(62,677),"Température 850 hPa : "+model_a+" %+0.1f°C  |  "%t850+model_b+" %+0.1f°C"%other_t,21,"light")
+    d.rounded_rectangle((1180,621,1550,705),radius=17,fill=(247,204,112,244))
+    txt(d,(1200,636),"Confiance : "+stage["confidence"],23,(21,40,62),True)
+    txt(d,(1200,676),"Tendance, pas vigilance",18,(21,40,62))
+    # The model diagnostics do not contain geolocated hazard verification.
+    # Display the seven requested legend icons neutrally, never fake their locations.
+    d.rounded_rectangle((25,737,1574,851),radius=23,fill=(6,29,58,245),
+                        outline=(87,182,240,255),width=2)
+    icons=[("❄","NEIGE"),("◆","VERGLAS"),("ϟ","ORAGE"),
+           ("≋","TEMPÊTE"),("°","GEL"),("☀","CANICULE"),("≈","INONDATION")]
+    width=220
+    for i,(ic,label) in enumerate(icons):
+        x=35+i*width
+        if i:
+            d.line((x,754,x,837),fill=(91,135,177,180),width=2)
+        txt(d,(x+20,763),label,21,"white",True)
+        txt(d,(x+20,802),"Non évalué",18,"muted")
+    txt(d,(37,859),"RISQUES : pas de pictogrammes localisés sans validation des champs vent, pluie, neige et température de surface.",16,"light")
+    out=OUT/("tendance-carte-"+stage["id"]+".png")
+    canvas.convert("RGB").save(out,"PNG",optimize=True)
+    runs={model_a.lower():details["run_utc"],model_b.lower():other_run}
+    return {"id":stage["id"],"step_h":int(step),"path":str(out),
+       "image_url":"https://almet27.github.io/kfs-meteo-cartes/"+str(out),
+       "size_bytes":out.stat().st_size, "run_utc":runs,
+       "valid_utc":details["valid_utc"], "title":stage["period"]+" — synthèse synoptique "+model_a+" / "+model_b,
+       "confidence_label":stage["confidence"]+" (indicative)",
+       "risk_status":"non_evalue", "style":"kfs-premium-16-9-v3",
+       "note":"Carte fondée sur des champs synoptiques ; risques ponctuels non géolocalisés."}
+
 def main():
     now=datetime.now(timezone.utc)
     data=json.loads((OUT/"tendance-analyse-donnees.json").read_text(encoding="utf-8"))
@@ -341,14 +416,14 @@ def main():
         if not timedelta(hours=-1)<now-moment<timedelta(hours=48):
             raise RuntimeError("Source météorologique trop ancienne ou future")
     if data.get("errors"):raise RuntimeError("Diagnostic numérique incomplet")
-    maps=[write_stage(s,meta,data,now) for s in STAGES]
+    maps=[write_premium_stage(s,meta,data,now) for s in STAGES]
     manifest={
       "schema_version":1,"status":"illustrative_model_maps",
       "generated_utc":now.isoformat(),"source_generated_utc":data["generated_utc"],
       "charts_generated_utc":meta["generated_utc"],
       "source":"ECMWF Open Data (CC BY 4.0)",
       "not_weekly_anomalies":True,"period_maps":maps,"public":True,
-      "graphic_style":"KFS ÉDITORIAL MODERNE v2 — actualisé automatiquement sur les modèles",
+      "graphic_style":"KFS PREMIUM 16:9 — 4 échéances, champs réels",
       "note":"Infographies tirées des vraies cartes IFS/AIFS, flux moyen 850 hPa calculé, sans fronts inventés ni prévisions à 4 semaines extrapolées."}
     (OUT/"tendance-cartes.json").write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
     print(json.dumps({"generated_utc":manifest["generated_utc"],
