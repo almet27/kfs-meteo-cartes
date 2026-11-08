@@ -1,6 +1,10 @@
 name: Cartes prévisions Europe IFS AIFS
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - 'scripts/generate_europe_forecasts.py'
+      - '.github/workflows/previsions-europe.yml'
   schedule:
     - cron: '45 5,11,17,23 * * *'
 permissions:
