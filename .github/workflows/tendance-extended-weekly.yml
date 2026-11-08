@@ -2,6 +2,10 @@ name: KFS - ECMWF Weekly officiel pour /tendance
 
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - 'scripts/generate_extended_weekly.py'
+      - '.github/workflows/tendance-extended-weekly.yml'
   schedule:
     - cron: '30 14 * * 0' # dimanche 14:30 UTC, avant IFS/AIFS/GFS et la redaction
 
