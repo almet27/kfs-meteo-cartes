@@ -92,6 +92,47 @@ for model,title in [("gfs","GFS"),("aigfs","AIGFS")]:
             save(fig,model,step,"z500_msl")
         except Exception as e:
             metadata["errors"][key+"-z500_msl"]=str(e)[:350]
+
+        # Vent a 10 m : U/V instantanes, vitesse en km/h.
+        try:
+            lon,lat,uw,_=field(model,step,pressure_product,":UGRD:10 m above ground:")
+            x,y,vw,_=field(model,step,pressure_product,":VGRD:10 m above ground:")
+            if not (np.array_equal(lon,x) and np.array_equal(lat,y)):
+                raise ValueError("Grilles U/V incompatibles")
+            if np.nanmax(np.abs(uw))>180 or np.nanmax(np.abs(vw))>180:
+                raise ValueError("Valeurs de vent hors limites")
+            speed=np.hypot(uw,vw)*3.6
+            fig,ax=canvas()
+            shade=ax.contourf(lon,lat,speed,levels=[0,10,20,30,40,50,60,75,90,110,130,160,200],
+                              cmap="turbo",extend="max",transform=ccrs.PlateCarree())
+            xx,yy=np.meshgrid(lon,lat)
+            skip=(slice(None,None,max(1,len(lat)//22)),slice(None,None,max(1,len(lon)//26)))
+            ax.quiver(xx[skip],yy[skip],uw[skip],vw[skip],color="#233245",alpha=.78,
+                      scale=680,width=.0016,transform=ccrs.PlateCarree())
+            fig.colorbar(shade,ax=ax,orientation="horizontal",pad=.04,shrink=.8,
+                         label="Vitesse du vent à 10 m (km/h) — flèches : direction")
+            ax.set_title(f"KFS MÉTÉO | {title} | Atlantique Nord · Groenland · Europe | +{step} h\nVent à 10 m · Run : {RUN.strftime('%d/%m %H:%M')} UTC · Validité : {(RUN+timedelta(hours=step)).strftime('%d/%m %H:%M')} UTC")
+            save(fig,model,step,"wind10m")
+        except Exception as e:
+            metadata["errors"][key+"-wind10m"]=str(e)[:350]
+
+        # Precipitations totales des 6 h precedentes en mm d'eau.
+        # Le produit AIGFS ne distingue pas la pluie et la neige ; ne pas inventer une partition.
+        try:
+            accumulation=f":APCP:surface:{step-6}-{step} hour acc:"
+            lon,lat,total,units=field(model,step,pressure_product,accumulation)
+            if np.nanmin(total)<-1 or np.nanmax(total)>1500:
+                raise ValueError("Cumuls de précipitation inattendus : "+units)
+            total=np.maximum(0,total)
+            fig,ax=canvas()
+            shade=ax.contourf(lon,lat,total,levels=[0,.1,.5,1,2,5,10,15,20,30,40,60,80],
+                              cmap="Blues",extend="max",transform=ccrs.PlateCarree())
+            fig.colorbar(shade,ax=ax,orientation="horizontal",pad=.04,shrink=.8,
+                         label="Précipitations totales (pluie + neige, mm équivalent-eau / 6 h)")
+            ax.set_title(f"KFS MÉTÉO | {title} | Atlantique Nord · Groenland · Europe | +{step} h\nPrécipitations totales 6 h (pluie/neige non séparables)\nRun : {RUN.strftime('%d/%m %H:%M')} UTC · Période : +{step-6} à +{step} h")
+            save(fig,model,step,"precip6h")
+        except Exception as e:
+            metadata["errors"][key+"-precip6h"]=str(e)[:350]
 (OUT/"noaa-metadata.json").write_text(json.dumps(metadata,ensure_ascii=False,indent=2),encoding="utf-8")
 print("NOAA summary",json.dumps({"maps":metadata["maps"],"errors":metadata["errors"]},ensure_ascii=False),flush=True)
 if not metadata["maps"]:raise RuntimeError("No genuine GFS/AIGFS fields, publication aborted")
