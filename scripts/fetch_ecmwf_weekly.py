@@ -57,7 +57,7 @@ def get_image(url):
     with urlopen(Request(url,headers={"User-Agent":USER_AGENT,"Accept":"image/png"}),
                  timeout=40) as response:
         content=response.read(8500000)
-    if len(content)<14000 or len(content)>=8500000 or not content.startswith(b"\\x89PNG\\r\\n\\x1a\\n"):
+    if len(content)<14000 or len(content)>=8500000 or not content.startswith(b"\x89PNG\r\n\x1a\n"):
         raise ValueError("Invalid or truncated PNG")
     return content
 
