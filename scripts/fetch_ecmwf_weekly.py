@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fetch real ECMWF OpenCharts sub-seasonal week-3/4 anomaly maps.
+"""Fetch ECMWF Weekly anomaly maps for the KFS Sunday bulletin.
 
 Do not invent numbers from images. On failure write an explicit blocked status,
 never a fabricated forecast. Run from repo root via GitHub Actions.
