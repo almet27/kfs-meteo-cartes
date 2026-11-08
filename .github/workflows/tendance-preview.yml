@@ -1,0 +1,46 @@
+name: KFS - apercu infographie tendance (sans diffusion Discord)
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'scripts/generate_tendance_preview.py'
+      - '.github/workflows/tendance-preview.yml'
+permissions:
+  contents: write
+concurrency:
+  group: kfs-tendance-preview
+  cancel-in-progress: false
+jobs:
+  apercu:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Installer Pillow
+        run: python -m pip install 'Pillow>=10,<13'
+      - name: Produire une maquette avec des cartes reelles
+        run: python scripts/generate_tendance_preview.py
+      - name: Sauvegarder l'apercu
+        uses: actions/upload-artifact@v4
+        with:
+          name: tendance-apercu
+          path: |
+            forecast-maps/tendance/tendance-apercu.png
+            forecast-maps/tendance/tendance-apercu.json
+      - name: Publier uniquement la maquette dans le depot
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add forecast-maps/tendance/tendance-apercu.png forecast-maps/tendance/tendance-apercu.json
+          if ! git diff --cached --quiet; then
+            git commit -m 'Mettre a jour maquette /tendance (pas de publication Discord)'
+            for attempt in 1 2 3 4; do
+              git pull --rebase
+              if git push; then exit 0; fi
+              sleep 5
+            done
+            exit 1
+          fi
