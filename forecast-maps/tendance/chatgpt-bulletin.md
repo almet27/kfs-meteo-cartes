@@ -1,7 +1,8 @@
-> **BULLETIN D'ESSAI — EN PRÉVISUALISATION PRIVÉE**
-> Horodatage de rédaction : 2026-11-08T18:53:28.884Z
-> Source numérique : forecast-maps/tendance/tendance-analyse-donnees.json (2026-11-08T18:52:03.597651+00:00)
-> Modèles : ECMWF IFS, ECMWF AIFS et NOAA GFS
+> **KFS MÉTÉO — Bulletin de tendance à 4 semaines**
+> Horodatage : 2026-11-08T19:42:12.078Z
+> Données IFS/AIFS/GFS : 2026-11-08T18:52:03.597651+00:00
+> Cartes ECMWF Weekly : 2026-11-08T19:36:20Z, run 2026-11-05T00:00:00Z
+> Les anomalies hebdomadaires ne sont pas des prévisions quotidiennes.
 
 # KFS MÉTÉO — Prévisions synoptiques : de l'influence océanique aux incertitudes de mi-novembre
 *Bulletin d'essai rédigé avec ChatGPT le 8 novembre 2026 — France et Europe occidentale*
@@ -46,7 +47,29 @@ Les pressions restent relativement basses sur le domaine nord-atlantique dans le
 
 ## Au-delà de J+10 : tendance encore incomplète
 
-**GFS apporte un premier signal isolé vers J+15**, autour du **23 novembre** : il prévoit une température moyenne à 850 hPa proche de **−0,6 °C** sur le domaine France, avec un flux moyen **de nord-est** à ce niveau et une pression moyenne voisine de **1017 hPa**. Un tel scénario pourrait correspondre à une évolution plus fraîche en altitude, **mais il n'est pas confirmé par des ensembles ni par une comparaison homogène avec IFS/AIFS à cette échéance**. Il ne doit donc pas être interprété comme l'annonce d'une vague de froid ou d'un temps sec généralisé. Les tendances des **semaines 3 et 4** restent **non disponibles** : les anomalies IFS Extended et leur dispersion ne sont pas encore validées dans le circuit KFS MÉTÉO.
+**GFS apporte un premier signal isolé vers J+15**, autour du **23 novembre** : il prévoit une température moyenne à 850 hPa proche de **−0,6 °C** sur le domaine France, avec un flux moyen **de nord-est** à ce niveau et une pression moyenne voisine de **1017 hPa**. Un tel scénario pourrait correspondre à une évolution plus fraîche en altitude, **mais il n'est pas confirmé par des ensembles ni par une comparaison homogène avec IFS/AIFS à cette échéance**. Il ne doit donc pas être interprété comme l'annonce d'une vague de froid ou d'un temps sec généralisé. Les **semaines 3 et 4** disposent désormais de vraies cartes ECMWF Weekly, issues de l'ensemble sub-saisonnier du 5 novembre. Elles sont présentées ci-dessous, indépendamment du scénario GFS à J+15. Leur lecture doit rester celle d'anomalies hebdomadaires et non d'une prévision quotidienne détaillée.
+
+## Semaine 3 — ECMWF Weekly (23 au 30 novembre 2026)
+
+Le run ENS Extended du **jeudi 5 novembre à 00 UTC** propose deux cartes officielles d'anomalies hebdomadaires pour cette période : **température à 2 m** et **précipitations**. Les couleurs correspondent aux écarts prévus par l'ensemble par rapport à son climat de modèle. Les zones sans signal significatif peuvent apparaître blanches. Sans lecture détaillée de ces images, il ne serait pas sérieux de prétendre connaître la localisation ou l'amplitude des anomalies en France.
+
+![ECMWF Weekly semaine 3 — anomalie température 2 m](https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/weekly-week3-t2m.png)
+
+![ECMWF Weekly semaine 3 — anomalie précipitations](https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/weekly-week3-precip.png)
+
+[Consulter les probabilités ECMWF — température](https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/weekly-week3-prob-t2m.png) · [Précipitations](https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/weekly-week3-prob-precip.png)
+
+## Semaine 4 — ECMWF Weekly (30 novembre au 7 décembre 2026)
+
+À cette échéance, la prévisibilité diminue et les régions affectées peuvent changer d'un run à l'autre. Les cartes ECMWF ci-dessous constituent les **signaux hebdomadaires officiels de l'ensemble** pour cette semaine : elles ne permettent pas, à elles seules, de prévoir jour par jour la pluie, la neige, le vent ou les températures de chaque département. Il faut examiner leur significativité et les probabilités avant toute conclusion tranchée.
+
+![ECMWF Weekly semaine 4 — anomalie température 2 m](https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/weekly-week4-t2m.png)
+
+![ECMWF Weekly semaine 4 — anomalie précipitations](https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/weekly-week4-precip.png)
+
+[Consulter les probabilités ECMWF — température](https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/weekly-week4-prob-t2m.png) · [Précipitations](https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/weekly-week4-prob-precip.png)
+
+*Cartes originales © ECMWF OpenCharts, run ENS Extended du 05/11/2026. Périodes hebdomadaires calendaires ; aucun chiffre ou signe d'anomalie n'a été déduit automatiquement de ces images.*
 
 ## Ce qui rend la prévision incertaine
 
@@ -54,7 +77,7 @@ Les pressions restent relativement basses sur le domaine nord-atlantique dans le
 
 Vers J+7, le débat oppose surtout une circulation plus méridienne dans IFS à une influence plus franchement océanique dans AIFS. Vers J+10, les deux modèles gardent une composante occidentale, mais divergent sur son orientation et la température de la masse d'air. Les cycles ne sont pas strictement synchronisés : **IFS utilise ici les runs 06 UTC puis 00 UTC, tandis qu'AIFS utilise le run 12 UTC**. Les champs comparés peuvent donc avoir des heures de validité décalées. Leur désaccord ne constitue pas, à lui seul, une mesure probabiliste de l'incertitude.
 
-**Confiance : modérée sur la nature sud-ouest du flux à J+3 ; plus limitée sur le régime exact vers J+7 ; faible sur les conséquences régionales vers J+10.** Ces appréciations sont qualitatives, sans calcul de dispersion d'ensemble.
+**Confiance : modérée sur la nature sud-ouest du flux à J+3 ; plus limitée vers J+7 ; faible sur les conséquences régionales vers J+10, et encore plus faible sur les détails des semaines 3 et 4.** Ces appréciations sont qualitatives, sans calcul de dispersion d'ensemble.
 
 ## Conclusion : la dynamique atlantique reste la clé
 
