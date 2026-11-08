@@ -7,6 +7,7 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.request import Request, urlopen
+from urllib.error import HTTPError, URLError
 
 API = "https://charts.ecmwf.int/opencharts-api/v1/"
 OUT = Path("forecast-maps/tendance/extended-access.json")
@@ -56,8 +57,19 @@ try:
                     status["schema_error"] = f"{type(exc).__name__}: {exc}"
         report["products"][variable] = status
     report["catalogue_count"] = len(index)
+except HTTPError as exc:
+    report["endpoint_status"] = int(exc.code)
+    report["access_state"] = "unavailable_http"
+    report["alerts"].append(
+        f"ECMWF OpenCharts API inaccessible depuis GitHub (HTTP {exc.code}). "
+        "Cela ne prouve pas l'absence du produit meteorologique."
+    )
+except URLError as exc:
+    report["access_state"] = "network_error"
+    report["alerts"].append(f"ECMWF OpenCharts API inaccessible: {exc.reason}")
 except Exception as exc:
-    report["alerts"].append(f"Catalogue unavailable: {type(exc).__name__}: {exc}")
+    report["access_state"] = "unexpected_response"
+    report["alerts"].append(f"Catalogue indisponible: {type(exc).__name__}: {exc}")
 
 report["catalogue_ready"] = all(p.get("listed") for p in report["products"].values()) if report["products"] else False
 if not report["catalogue_ready"]:
@@ -66,4 +78,4 @@ report["alerts"].append("No current forecast charts or ensemble fields retrieved
 OUT.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 print(json.dumps(report, ensure_ascii=False, indent=2))
 if not report["catalogue_ready"]:
-    raise SystemExit(1)
+    print("::warning::ECMWF Extended non disponible via API; aucune tendance a 4 semaines ne sera publiee.")
