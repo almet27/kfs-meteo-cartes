@@ -27,7 +27,7 @@ METRICS = {
     "tmax": ("Températures maximales / 24 h", "°C", "coolwarm"),
     "tmin": ("Températures minimales / 24 h", "°C", "coolwarm"),
     "vent": ("Vent moyen observé", "km/h", "YlGnBu"),
-    "rafales": ("Rafales sur 10 minutes", "km/h", "inferno"),
+    "rafales": ("Dernières rafales horaires", "km/h", "inferno"),
     "rafalesmax": ("Rafales maximales / 24 h", "km/h", "inferno"),
     "pluie": ("Cumul de pluie / 24 h", "mm", "turbo"),
 }
@@ -175,12 +175,17 @@ def aggregate_hourly(samples):
     return data
 
 
-def map_values(current, hourly):
+def map_values(current, hourly, latest_hourly=None):
     values = {k: [] for k in METRICS}
+    latest_hourly = latest_hourly or {}
     for sid, (lon, lat, p) in current.items():
         temp = kelvin(p.get("t"))
         wind = kmh(p.get("ff"))
+        recent_hour = latest_hourly.get(sid, (None, None, {}))[2]
+        # Le paquet 6 minutes n'offre pas toujours de rafale ; utilise la dernière heure mesurée.
         gust = kmh(p.get("fxi10"))
+        if gust is None:
+            gust = kmh(recent_hour.get("fxi", recent_hour.get("fxy")))
         day = hourly.get(sid, {})
         entries = {
             "temperature": temp, "vent": wind, "rafales": gust,
@@ -292,11 +297,12 @@ def test():
     s = stations(sample)
     assert len(s) == 1 and kelvin(282.15) == 9
     hourly = aggregate_hourly([sample] * 24)
-    values = map_values(s, hourly)
+    values = map_values(s, hourly, stations(sample))
     assert values["temperature"][0][2] == 9
     assert values["vent"][0][2] == 9
     assert values["pluie"][0][2] == 36
     assert values["tmax"][0][2] == 9
+    assert values["rafales"][0][2] == 25.2
     assert values["rafalesmax"][0][2] == 32.4
     print("Self-test: conversions, cumul 24 h, maximum et 7 mesures OK")
 
@@ -334,9 +340,12 @@ def main():
             print(f"INFO observation horaire indisponible {date}: {error}", file=sys.stderr)
         time.sleep(.12)
     aggregated = aggregate_hourly(hourly_samples)
-    values = map_values(current, aggregated)
+    last_hourly = stations(hourly_samples[0]) if hourly_samples else {}
+    values = map_values(current, aggregated, last_hourly)
     if not values["temperature"]:
         raise RuntimeError("Aucune température valide : ne pas publier.")
+    if not values["rafales"]:
+        raise RuntimeError("Aucune rafale récente : ne pas publier une carte vide.")
     boundaries = http_json(BOUNDARIES_URL)
     rings = list(polygons(boundaries))
     if not rings:
