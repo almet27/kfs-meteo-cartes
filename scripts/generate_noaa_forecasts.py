@@ -16,7 +16,7 @@ OUT.mkdir(parents=True,exist_ok=True)
 STEPS=[24,48,72,120,168,240,360]
 now=datetime.now(timezone.utc)-timedelta(hours=10)
 RUN=now.replace(hour=(now.hour//6)*6,minute=0,second=0,microsecond=0)
-metadata={"generated_utc":datetime.now(timezone.utc).isoformat(),"run_utc":RUN.isoformat(),
+metadata={"generated_utc":datetime.now(timezone.utc).isoformat(),"run_utc":RUN.isoformat(),"runs_utc":{"gfs":{},"aigfs":{}},
           "source":"NOAA NCEP NOMADS","maps":{},"errors":{}}
 
 def subset(dataset):
@@ -26,8 +26,8 @@ def subset(dataset):
     lat=np.asarray(da.latitude.values)
     lon=(np.asarray(da.longitude.values)+180)%360-180
     if lat.ndim!=1 or lon.ndim!=1: raise ValueError("Non regular latitude/longitude grid")
-    iy=np.where((lat>=32)&(lat<=74))[0]
-    ix=np.where((lon>=-15)&(lon<=36))[0]
+    iy=np.where((lat>=28)&(lat<=87))[0]
+    ix=np.where((lon>=-67)&(lon<=42))[0]
     ix=ix[np.argsort(lon[ix])]
     return lon[ix],lat[iy],da.values[np.ix_(iy,ix)],str(da.attrs.get("units",""))
 
@@ -38,9 +38,9 @@ def field(model,step,product,pattern):
     return subset(ds)
 
 def canvas():
-    fig=plt.figure(figsize=(11.5,9),dpi=155)
+    fig=plt.figure(figsize=(14,9),dpi=155)
     ax=fig.add_subplot(111,projection=ccrs.PlateCarree())
-    ax.set_extent([-13,34,34,72],crs=ccrs.PlateCarree())
+    ax.set_extent([-65,40,30,85],crs=ccrs.PlateCarree())
     ax.add_feature(cf.LAND,facecolor="#f0f0f0")
     ax.add_feature(cf.OCEAN,facecolor="#dceaf3")
     ax.coastlines("110m",linewidth=.7)
@@ -56,6 +56,7 @@ def save(fig,model,step,param):
 for model,title in [("gfs","GFS"),("aigfs","AIGFS")]:
     for step in STEPS:
         key=f"{model}-h{step:03}"
+        metadata["runs_utc"][model][str(step)]=RUN.isoformat()
         pressure_product="pgrb2.0p25" if model=="gfs" else "sfc"
         upper_product="pgrb2.0p25" if model=="gfs" else "pres"
         try:
@@ -65,7 +66,7 @@ for model,title in [("gfs","GFS"),("aigfs","AIGFS")]:
             shade=ax.contourf(lon,lat,t850-273.15,levels=np.arange(-36,38,2),
                               cmap="RdYlBu_r",extend="both",transform=ccrs.PlateCarree())
             fig.colorbar(shade,ax=ax,orientation="horizontal",pad=.04,shrink=.8,label="Température à 850 hPa (°C)")
-            ax.set_title(f"KFS MÉTÉO | {title} | Europe | +{step} h\nTempérature 850 hPa")
+            ax.set_title(f"KFS MÉTÉO | {title} | Atlantique Nord · Groenland · Europe | +{step} h\nTempérature 850 hPa · Run : {RUN.strftime('%d/%m %H:%M')} UTC · Validité : {(RUN+timedelta(hours=step)).strftime('%d/%m %H:%M')} UTC")
             save(fig,model,step,"t850")
         except Exception as e:
             metadata["errors"][key+"-t850"]=str(e)[:350]
@@ -86,7 +87,7 @@ for model,title in [("gfs","GFS"),("aigfs","AIGFS")]:
                              colors="#1b547b",linestyles="dashed",linewidths=.8,transform=ccrs.PlateCarree())
             ax.clabel(lines,inline=True,fmt="%d",fontsize=7)
             fig.colorbar(shade,ax=ax,orientation="horizontal",pad=.04,shrink=.8,label="Géopotentiel 500 hPa (dam)")
-            ax.set_title(f"KFS MÉTÉO | {title} | Europe | +{step} h\nZ500 (dam) et pression au niveau de la mer (hPa, pointillés)")
+            ax.set_title(f"KFS MÉTÉO | {title} | Atlantique Nord · Groenland · Europe | +{step} h\nZ500 (dam) et pression au sol (hPa) · Run : {RUN.strftime('%d/%m %H:%M')} UTC · Validité : {(RUN+timedelta(hours=step)).strftime('%d/%m %H:%M')} UTC")
             save(fig,model,step,"z500_msl")
         except Exception as e:
             metadata["errors"][key+"-z500_msl"]=str(e)[:350]
