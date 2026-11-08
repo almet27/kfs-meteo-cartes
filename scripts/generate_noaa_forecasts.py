@@ -14,7 +14,8 @@ from herbie import Herbie
 OUT=Path("forecast-maps/europe")
 OUT.mkdir(parents=True,exist_ok=True)
 STEPS=[24,48,72,120,168,240,360]
-now=datetime.now(timezone.utc)-timedelta(hours=10)
+# Attendre environ 5 h après le cycle pour disposer des champs longue échéance GFS/AIGFS.
+now=datetime.now(timezone.utc)-timedelta(hours=5)
 RUN=now.replace(hour=(now.hour//6)*6,minute=0,second=0,microsecond=0)
 metadata={"generated_utc":datetime.now(timezone.utc).isoformat(),"run_utc":RUN.isoformat(),"runs_utc":{"gfs":{},"aigfs":{}},
           "source":"NOAA NCEP NOMADS","maps":{},"errors":{}}
