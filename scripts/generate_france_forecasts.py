@@ -182,6 +182,57 @@ def field(state, step, key, tmp):
     return gfs_field(state, step, key)
 
 
+
+def gust_field(state, step, tmp):
+    """Rafales natives, sans convertir le vent moyen en rafale fictive."""
+    if state["kind"]=="ecmwf":
+        if state["model"]!="ifs":
+            raise ValueError("Champ de rafales non disponible en données ouvertes AIFS")
+        errors=[]
+        for param in ("10fg","10fg3"):
+            target=tmp/f"gust-{step:03}-{param}.grib2"
+            try:
+                state["client"].retrieve(stream="oper",type="fc",
+                    date=state["cycle"].strftime("%Y-%m-%d"),
+                    time=state["cycle"].hour,step=step,param=param,
+                    target=str(target))
+                ds=xr.open_dataset(target,engine="cfgrib",backend_kwargs={"indexpath":""})
+                try:
+                    if len(ds.data_vars)!=1:
+                        raise ValueError("Champ GRIB rafales ambigu")
+                    answer=area(ds[next(iter(ds.data_vars))])
+                finally:
+                    ds.close()
+                break
+            except Exception as exc:
+                errors.append(str(exc)[:70])
+            finally:
+                target.unlink(missing_ok=True)
+        else:
+            raise ValueError("ECMWF : 10fg indisponible: "+"; ".join(errors))
+    else:
+        if state["model"]!="gfs":
+            raise ValueError("Champ de rafales AIGFS non vérifié")
+        from herbie import Herbie
+        h=Herbie(state["cycle"].replace(tzinfo=None),
+                 model="gfs",product="pgrb2.0p25",
+                 fxx=step,verbose=False)
+        ds=h.xarray(r":GUST:surface:",remove_grib=True)
+        if ds is None or len(ds.data_vars)!=1:
+            raise ValueError("GFS: champ GUST indisponible")
+        try:
+            answer=area(ds[next(iter(ds.data_vars))])
+        finally:
+            ds.close()
+    units=answer[3].replace(" ","").lower()
+    if units in ("ms**-1","ms-1","m/s","ms^-1"):
+        factor=3.6
+    elif units in ("kmh-1","km/h","kmh**-1"):
+        factor=1
+    else:
+        raise ValueError("Unité rafales non reconnue: "+answer[3])
+    return answer[0],answer[1],np.asarray(answer[2],dtype=float)*factor,""
+
 def common_grid(*xs):
     ref = xs[0]
     for item in xs[1:]:
@@ -405,6 +456,7 @@ def main():
     manifests = {}
     errors = {}
     cache = {}
+    daily_samples = []
     for step in steps:
         print("KFS FRANCE", args.model, iso(run), step, flush=True)
         fields = {}
@@ -507,6 +559,14 @@ def main():
                                 errors[f"{step}-phase"]="Invalid NOAA categories: "+str(exc)[:150]
                         elif args.model=="gfs":
                             errors[f"{step}-phase"]="NOAA category fields missing; rain/snow not invented"
+        try:
+            candidates["gust"] = gust_field(state, step, tmp)
+        except Exception as exc:
+            errors[f"{step}-gust"] = str(exc)[:200]
+        daily_samples.append((step, {
+            key: val for key, val in candidates.items()
+            if key in ("t2m", "gust", "precip_total", "rain")
+        }))
         for metric, (lon, lat, values, note) in candidates.items():
             if metric not in VARS:
                 continue
@@ -520,6 +580,12 @@ def main():
             except Exception as exc:
                 errors[f"{step}-{metric}-draw"] = str(exc)[:200]
         manifests[str(step)] = maps
+    try:
+        from france_daily import make_daily
+        daily=make_daily(run,stride,steps,daily_samples,args.model,folder)
+    except Exception as exc:
+        errors["daily-generation"]=str(exc)[:300]
+        daily={}
     manifest = {
         "schema": 1,
         "generated_utc": iso(datetime.now(timezone.utc)),
@@ -527,7 +593,7 @@ def main():
         "model_name": MODEL_LABELS[args.model],
         "area": "France", "extent_lonlat": list(EXTENT),
         "native_step_h": stride, "requested_steps_h": steps,
-        "maps": manifests, "errors": errors,
+        "maps": manifests, "daily": daily, "errors": errors,
         "note": "No model field or missing forecast timestep is invented",
     }
     (folder/"metadata.json").write_text(
