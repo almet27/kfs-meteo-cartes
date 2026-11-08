@@ -55,6 +55,8 @@ KFS_T850_CMAP.set_under("#33323d")
 KFS_T850_CMAP.set_over("#8f263f")
 KFS_T850_NORM = BoundaryNorm(KFS_T850_LEVELS, KFS_T850_CMAP.N)
 KFS_T850_TICKS = (-32, -24, -16, -8, -4, 0, 4, 8, 12, 16, 20, 24, 28, 32)
-KFS_T850_ISOTHERMS = tuple(range(-32, 33, 4))
+# Isothermes de 5 en 5 degres : -10 C et -5 C sont prioritaires.
+KFS_T850_ISOTHERMS = tuple(range(-30, 31, 5))
+KFS_T850_COLD_ISOTHERMS = (-10, -5)
 
 assert len(KFS_T850_COLORS) == len(KFS_T850_LEVELS) - 1
