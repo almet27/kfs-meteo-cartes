@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """KFS Europe: separate 850 hPa temperature and 500 hPa heights / sea-level pressure."""
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 import matplotlib
 matplotlib.use("Agg")
@@ -16,9 +16,9 @@ OUT = Path("forecast-maps/europe")
 OUT.mkdir(parents=True, exist_ok=True)
 STEPS = [24, 48, 72, 120, 168, 240, 360]
 MODELS = {"ifs": "ECMWF IFS", "aifs-single": "ECMWF AIFS"}
-EXTENT = [-13, 34, 34, 72]
+EXTENT = [-65, 40, 30, 85]  # Atlantique Nord, Groenland et Europe
 result = {"generated_utc": datetime.now(timezone.utc).isoformat(),
-          "source": "ECMWF Open Data (CC BY 4.0)", "maps": {}, "errors": {}}
+          "source": "ECMWF Open Data (CC BY 4.0)", "maps": {}, "runs_utc": {}, "errors": {}}
 
 def read(path, name):
     ds = xr.open_dataset(path, engine="cfgrib", backend_kwargs={"indexpath": ""})
@@ -26,15 +26,15 @@ def read(path, name):
         a = ds[name].squeeze().load()
         lat = np.asarray(a.latitude.values)
         lon = ((np.asarray(a.longitude.values)+180)%360)-180
-        iy = np.where((lat>=32)&(lat<=74))[0]
-        ix = np.where((lon>=-15)&(lon<=36))[0]
+        iy = np.where((lat>=28)&(lat<=87))[0]
+        ix = np.where((lon>=-67)&(lon<=42))[0]
         ix = ix[np.argsort(lon[ix])]
-        return lon[ix], lat[iy], a.values[np.ix_(iy,ix)], str(a.attrs.get("units", ""))
+        return lon[ix], lat[iy], a.values[np.ix_(iy,ix)], str(a.attrs.get("units", "")), np.datetime_as_string(np.asarray(a.time.values),unit="m")+"Z"
     finally:
         ds.close()
 
 def canvas():
-    fig = plt.figure(figsize=(11.5,9), dpi=155)
+    fig = plt.figure(figsize=(14,9), dpi=155)
     ax = fig.add_subplot(111, projection=ccrs.PlateCarree())
     ax.set_extent(EXTENT, crs=ccrs.PlateCarree())
     ax.add_feature(cf.LAND, facecolor="#f0f0f0")
@@ -61,13 +61,14 @@ for model, title in MODELS.items():
         try:
             # Temperature at 850 hPa alone, no MSLP overlay.
             client.retrieve(stream="oper",type="fc",step=step,param="t",levelist=850,target=str(temp_path))
-            x,y,temp,units=read(temp_path,"t")
+            x,y,temp,units,run_utc=read(temp_path,"t")
+            result["runs_utc"].setdefault(model,{})[str(step)] = run_utc
             if np.nanmedian(temp)<150: raise ValueError("Unexpected 850 hPa temperature units: "+units)
             fig,ax=canvas()
             shade=ax.contourf(x,y,temp-273.15,levels=np.arange(-36,38,2),
                 cmap="RdYlBu_r",extend="both",transform=ccrs.PlateCarree())
             fig.colorbar(shade,ax=ax,orientation="horizontal",pad=.04,shrink=.8,label="Température à 850 hPa (°C)")
-            ax.set_title(f"KFS MÉTÉO | {title} | Europe | +{step} h\nTempérature 850 hPa")
+            ax.set_title(f"KFS MÉTÉO | {title} | Atlantique Nord · Groenland · Europe | +{step} h\nTempérature 850 hPa · Run : {run_utc[:16].replace('T', ' ')} UTC · Validité : {(datetime.fromisoformat(run_utc.replace('Z','+00:00'))+timedelta(hours=step)).strftime('%d/%m %H:%M')} UTC")
             save_map(fig,model,step,"t850")
         except Exception as exc:
             result["errors"][key+"-t850"]=str(exc)[:350]
@@ -75,8 +76,9 @@ for model, title in MODELS.items():
             # Real 500 hPa geopotential height (not 500 hPa temperature).
             client.retrieve(stream="oper",type="fc",step=step,param="msl",target=str(pres_path))
             client.retrieve(stream="oper",type="fc",step=step,param="gh",levelist=500,target=str(height_path))
-            x,y,msl,_=read(pres_path,"msl")
-            x2,y2,gh,units=read(height_path,"gh")
+            x,y,msl,_,run_utc=read(pres_path,"msl")
+            result["runs_utc"].setdefault(model,{})[str(step)] = run_utc
+            x2,y2,gh,units,_=read(height_path,"gh")
             if not (np.array_equal(x,x2) and np.array_equal(y,y2)):
                 raise ValueError("500 hPa and MSLP grids differ")
             # ECMWF 'gh' is geopotential height, in metres (convert to decametres).
@@ -94,7 +96,7 @@ for model, title in MODELS.items():
                 colors="#1b547b",linewidths=.8,linestyles="dashed",transform=ccrs.PlateCarree())
             ax.clabel(lines,inline=True,fontsize=7,fmt="%d")
             fig.colorbar(shade,ax=ax,orientation="horizontal",pad=.04,shrink=.8,label="Géopotentiel 500 hPa (dam)")
-            ax.set_title(f"KFS MÉTÉO | {title} | Europe | +{step} h\nZ500 (dam) et pression au niveau de la mer (hPa, pointillés)")
+            ax.set_title(f"KFS MÉTÉO | {title} | Atlantique Nord · Groenland · Europe | +{step} h\nZ500 (dam) et pression au sol (hPa) · Run : {run_utc[:16].replace('T', ' ')} UTC · Validité : {(datetime.fromisoformat(run_utc.replace('Z','+00:00'))+timedelta(hours=step)).strftime('%d/%m %H:%M')} UTC")
             save_map(fig,model,step,"z500_msl")
         except Exception as exc:
             result["errors"][key+"-z500_msl"]=str(exc)[:350]
