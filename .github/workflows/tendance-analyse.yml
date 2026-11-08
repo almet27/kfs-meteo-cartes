@@ -2,7 +2,7 @@ name: KFS - diagnostics et cartes synchronises pour /tendance
 on:
   workflow_dispatch:
   push:
-    branches: [main, feature/kfs-relief-design-premium]
+    branches: [main]
     paths:
       - 'scripts/generate_tendance_cards.py'
       - 'scripts/generate_tendance_risks.py'
