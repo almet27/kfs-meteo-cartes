@@ -1,6 +1,11 @@
 name: Comparaisons Europe 4 modèles
 on:
   workflow_dispatch:
+  workflow_run:
+    workflows:
+      - 'Cartes prévisions Europe IFS AIFS'
+      - 'Prévisions Europe GFS AIGFS'
+    types: [completed]
   push:
     paths:
       - 'scripts/compare_europe_forecasts.py'
@@ -16,6 +21,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   cartes:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
