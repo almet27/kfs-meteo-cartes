@@ -88,8 +88,9 @@ def main():
             models[model]={
                 "source":info["source"],"native_step_h":interval,
                 "latest_first_step_utc":initial,
-                "latest_72h_step_utc":complete,
-                "fully_available_72h":bool(initial and complete and initial==complete),
+                "latest_72h_temperature_step_utc":complete,
+                "temperature_72h_available_for_latest_run":bool(initial and complete and initial==complete),
+                "all_required_fields_verified":False,  # must be checked by GRIB atlas generation
             }
         except Exception as exc:
             previous=old.get("models",{}).get(model,{})
