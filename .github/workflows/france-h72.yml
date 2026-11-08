@@ -21,6 +21,7 @@ on:
       - .github/workflows/france-h72.yml
 permissions:
   contents: read
+  actions: write
 concurrency:
   group: kfs-france-${{ github.event_name }}-${{ github.event.inputs.modele || 'ifs' }}
   cancel-in-progress: false
@@ -70,3 +71,11 @@ jobs:
             forecast-maps/france/**/*.png
           retention-days: 3
           if-no-files-found: warn
+      - name: Publier l'edition France lorsque sa generation a reussi
+        if: ${{ github.event_name == 'workflow_dispatch' && success() }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_SOURCE: ${{ github.run_id }}
+        run: |
+          echo "Publier les cartes verifiees du run $RUN_SOURCE"
+          gh workflow run publier-france-releases.yml --ref main -f source_run_id="$RUN_SOURCE"
