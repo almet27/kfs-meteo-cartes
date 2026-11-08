@@ -11,6 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      - uses: actions/checkout@v4
       - name: Demander les quatre editions France +72 h
         env:
           GH_TOKEN: ${{ github.token }}
