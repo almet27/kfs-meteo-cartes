@@ -17,6 +17,8 @@ on:
   push:
     paths:
       - scripts/generate_france_forecasts.py
+      - scripts/france_daily.py
+      - scripts/package_france_release.py
       - scripts/kfs_premium_palettes.py
       - .github/workflows/france-h72.yml
 permissions:
@@ -40,7 +42,7 @@ jobs:
           sudo apt-get install -y libeccodes-dev
           python -m pip install 'numpy>=1.26,<3' 'xarray>=2024.1' 'matplotlib>=3.8' 'cartopy>=0.23' 'cfgrib>=0.9.10' 'eccodes>=1.7' 'ecmwf-opendata>=0.3' 'herbie-data>=2024.4'
       - name: Valider syntaxe avant telechargement
-        run: python -m py_compile scripts/generate_france_forecasts.py scripts/kfs_premium_palettes.py
+        run: python -m py_compile scripts/generate_france_forecasts.py scripts/france_daily.py scripts/package_france_release.py scripts/kfs_premium_palettes.py
       - name: Generer les cartes France
         env:
           EVENT_KIND: ${{ github.event_name }}
