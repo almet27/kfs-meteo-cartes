@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "status": "illustrative_model_maps",
-  "generated_utc": "2026-11-08T22:59:12.640883+00:00",
-  "source_generated_utc": "2026-11-08T22:58:49.176957+00:00",
+  "generated_utc": "2026-11-08T23:16:28.401788+00:00",
+  "source_generated_utc": "2026-11-08T23:15:18.349519+00:00",
   "charts_generated_utc": "2026-11-08T22:11:10.267811+00:00",
   "source": "ECMWF Open Data (CC BY 4.0)",
   "not_weekly_anomalies": true,
@@ -12,7 +12,7 @@
       "step_h": 72,
       "path": "forecast-maps/tendance/tendance-carte-j3.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j3.png",
-      "size_bytes": 464780,
+      "size_bytes": 287382,
       "run_utc": {
         "ifs": "2026-11-08T12:00Z",
         "aifs": "2026-11-08T12:00Z"
@@ -20,16 +20,82 @@
       "valid_utc": "2026-11-11T12:00:00+00:00",
       "title": "J+3 — synthèse synoptique IFS / AIFS",
       "confidence_label": "Modérée (indicative)",
-      "risk_status": "non_evalue",
-      "style": "kfs-premium-16-9-v3",
-      "note": "Carte fondée sur des champs synoptiques ; risques ponctuels non géolocalisés."
+      "risk_status": "partial_georeferenced",
+      "risks": {
+        "neige": {
+          "status": "absent",
+          "max": 0.5,
+          "unit": "mm équivalent-eau/6h",
+          "reason": "Neige modélisée : pas une hauteur de neige au sol"
+        },
+        "verglas": {
+          "status": "indisponible",
+          "reason": "Champs spécifiques non disponibles"
+        },
+        "orage": {
+          "status": "indisponible",
+          "reason": "Champs spécifiques non disponibles"
+        },
+        "tempete": {
+          "status": "absent",
+          "max": 51.8,
+          "unit": "km/h (vent moyen 10 m)",
+          "reason": "Signal de vent soutenu, pas une vigilance tempête"
+        },
+        "gel": {
+          "status": "indisponible",
+          "reason": "Champs spécifiques non disponibles"
+        },
+        "canicule": {
+          "status": "indisponible",
+          "reason": "Champs spécifiques non disponibles"
+        },
+        "inondation": {
+          "status": "indisponible",
+          "reason": "Crue non déductible d'un seul cumul de pluie de 6 h"
+        },
+        "pluie_forte": {
+          "status": "possible",
+          "max": 18.4,
+          "unit": "mm/6h",
+          "reason": "Cumul des 6 heures précédant l'échéance"
+        }
+      },
+      "risk_markers": [
+        {
+          "lon": 10.25,
+          "lat": 43.75,
+          "value": 18.4,
+          "kind": "pluie_forte"
+        },
+        {
+          "lon": 4.75,
+          "lat": 46.0,
+          "value": 16.8,
+          "kind": "pluie_forte"
+        },
+        {
+          "lon": 7.5,
+          "lat": 43.5,
+          "value": 16.0,
+          "kind": "pluie_forte"
+        },
+        {
+          "lon": -2.5,
+          "lat": 47.5,
+          "value": 15.3,
+          "kind": "pluie_forte"
+        }
+      ],
+      "style": "kfs-premium-16-9-v4",
+      "note": "Pictogrammes géoréférencés ECMWF. Seuils indicatifs, pas une vigilance."
     },
     {
       "id": "j7",
       "step_h": 168,
       "path": "forecast-maps/tendance/tendance-carte-j7.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j7.png",
-      "size_bytes": 504612,
+      "size_bytes": 327554,
       "run_utc": {
         "ifs": "2026-11-08T12:00Z",
         "aifs": "2026-11-08T12:00Z"
@@ -37,16 +103,88 @@
       "valid_utc": "2026-11-15T12:00:00+00:00",
       "title": "J+7 — synthèse synoptique IFS / AIFS",
       "confidence_label": "Limitée (indicative)",
-      "risk_status": "non_evalue",
-      "style": "kfs-premium-16-9-v3",
-      "note": "Carte fondée sur des champs synoptiques ; risques ponctuels non géolocalisés."
+      "risk_status": "partial_georeferenced",
+      "risks": {
+        "neige": {
+          "status": "marque",
+          "max": 4.4,
+          "unit": "mm équivalent-eau/6h",
+          "reason": "Neige modélisée : pas une hauteur de neige au sol"
+        },
+        "verglas": {
+          "status": "indisponible",
+          "reason": "Champs spécifiques non disponibles"
+        },
+        "orage": {
+          "status": "indisponible",
+          "reason": "Champs spécifiques non disponibles"
+        },
+        "tempete": {
+          "status": "absent",
+          "max": 63.8,
+          "unit": "km/h (vent moyen 10 m)",
+          "reason": "Signal de vent soutenu, pas une vigilance tempête"
+        },
+        "gel": {
+          "status": "indisponible",
+          "reason": "Champs spécifiques non disponibles"
+        },
+        "canicule": {
+          "status": "indisponible",
+          "reason": "Champs spécifiques non disponibles"
+        },
+        "inondation": {
+          "status": "indisponible",
+          "reason": "Crue non déductible d'un seul cumul de pluie de 6 h"
+        },
+        "pluie_forte": {
+          "status": "marque",
+          "max": 45.2,
+          "unit": "mm/6h",
+          "reason": "Cumul des 6 heures précédant l'échéance"
+        }
+      },
+      "risk_markers": [
+        {
+          "lon": 3.5,
+          "lat": 43.5,
+          "value": 45.2,
+          "kind": "pluie_forte"
+        },
+        {
+          "lon": 5.5,
+          "lat": 41.0,
+          "value": 31.2,
+          "kind": "pluie_forte"
+        },
+        {
+          "lon": 8.25,
+          "lat": 42.25,
+          "value": 13.8,
+          "kind": "pluie_forte"
+        },
+        {
+          "lon": -8.5,
+          "lat": 42.5,
+          "value": 12.2,
+          "kind": "pluie_forte"
+        },
+        {
+          "lon": 0.0,
+          "lat": 42.75,
+          "value": 4.4,
+          "kind": "neige"
+        }
+      ],
+      "style": "kfs-premium-16-9-v4",
+      "note": "Pictogrammes géoréférencés ECMWF. Seuils indicatifs, pas une vigilance."
     },
     {
       "id": "j10",
       "step_h": 240,
       "path": "forecast-maps/tendance/tendance-carte-j10.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j10.png",
-      "size_bytes": 503085,
+      "size_bytes": 319778,
       "run_utc": {
         "ifs": "2026-11-08T12:00Z",
         "aifs": "2026-11-08T12:00Z"
@@ -54,16 +192,94 @@
       "valid_utc": "2026-11-18T12:00:00+00:00",
       "title": "J+10 — synthèse synoptique IFS / AIFS",
       "confidence_label": "Faible (indicative)",
-      "risk_status": "non_evalue",
-      "style": "kfs-premium-16-9-v3",
-      "note": "Carte fondée sur des champs synoptiques ; risques ponctuels non géolocalisés."
+      "risk_status": "partial_georeferenced",
+      "risks": {
+        "neige": {
+          "status": "marque",
+          "max": 15.6,
+          "unit": "mm équivalent-eau/6h",
+          "reason": "Neige modélisée : pas une hauteur de neige au sol"
+        },
+        "verglas": {
+          "status": "indisponible",
+          "reason": "Champs spécifiques non disponibles"
+        },
+        "orage": {
+          "status": "indisponible",
+          "reason": "Champs spécifiques non disponibles"
+        },
+        "tempete": {
+          "status": "absent",
+          "max": 68.0,
+          "unit": "km/h (vent moyen 10 m)",
+          "reason": "Signal de vent soutenu, pas une vigilance tempête"
+        },
+        "gel": {
+          "status": "indisponible",
+          "reason": "Champs spécifiques non disponibles"
+        },
+        "canicule": {
+          "status": "indisponible",
+          "reason": "Champs spécifiques non disponibles"
+        },
+        "inondation": {
+          "status": "indisponible",
+          "reason": "Crue non déductible d'un seul cumul de pluie de 6 h"
+        },
+        "pluie_forte": {
+          "status": "marque",
+          "max": 29.5,
+          "unit": "mm/6h",
+          "reason": "Cumul des 6 heures précédant l'échéance"
+        }
+      },
+      "risk_markers": [
+        {
+          "lon": 10.5,
+          "lat": 44.0,
+          "value": 29.5,
+          "kind": "pluie_forte"
+        },
+        {
+          "lon": -1.25,
+          "lat": 50.0,
+          "value": 18.1,
+          "kind": "pluie_forte"
+        },
+        {
+          "lon": 6.25,
+          "lat": 45.75,
+          "value": 17.6,
+          "kind": "pluie_forte"
+        },
+        {
+          "lon": -7.0,
+          "lat": 42.5,
+          "value": 17.3,
+          "kind": "pluie_forte"
+        },
+        {
+          "lon": 8.75,
+          "lat": 46.5,
+          "value": 4.9,
+          "kind": "neige"
+        },
+        {
+          "lon": 0.0,
+          "lat": 42.75,
+          "value": 4.4,
+          "kind": "neige"
+        }
+      ],
+      "style": "kfs-premium-16-9-v4",
+      "note": "Pictogrammes géoréférencés ECMWF. Seuils indicatifs, pas une vigilance."
     },
     {
       "id": "j15",
       "step_h": 360,
       "path": "forecast-maps/tendance/tendance-carte-j15.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j15.png",
-      "size_bytes": 518873,
+      "size_bytes": 318132,
       "run_utc": {
         "aifs": "2026-11-08T12:00Z",
         "gfs": "2026-11-08T12:00:00+00:00"
@@ -71,9 +287,75 @@
       "valid_utc": "2026-11-23T12:00:00+00:00",
       "title": "J+15 — synthèse synoptique AIFS / GFS",
       "confidence_label": "Très limitée (indicative)",
-      "risk_status": "non_evalue",
-      "style": "kfs-premium-16-9-v3",
-      "note": "Carte fondée sur des champs synoptiques ; risques ponctuels non géolocalisés."
+      "risk_status": "partial_georeferenced",
+      "risks": {
+        "neige": {
+          "status": "marque",
+          "max": 3.2,
+          "unit": "mm équivalent-eau/6h",
+          "reason": "Neige modélisée : pas une hauteur de neige au sol"
+        },
+        "verglas": {
+          "status": "indisponible",
+          "reason": "Champs spécifiques non disponibles"
+        },
+        "orage": {
+          "status": "indisponible",
+          "reason": "Champs spécifiques non disponibles"
+        },
+        "tempete": {
+          "status": "absent",
+          "max": 58.6,
+          "unit": "km/h (vent moyen 10 m)",
+          "reason": "Signal de vent soutenu, pas une vigilance tempête"
+        },
+        "gel": {
+          "status": "indisponible",
+          "reason": "Champs spécifiques non disponibles"
+        },
+        "canicule": {
+          "status": "indisponible",
+          "reason": "Champs spécifiques non disponibles"
+        },
+        "inondation": {
+          "status": "indisponible",
+          "reason": "Crue non déductible d'un seul cumul de pluie de 6 h"
+        },
+        "pluie_forte": {
+          "status": "possible",
+          "max": 12.5,
+          "unit": "mm/6h",
+          "reason": "Cumul des 6 heures précédant l'échéance"
+        }
+      },
+      "risk_markers": [
+        {
+          "lon": 10.25,
+          "lat": 44.0,
+          "value": 12.5,
+          "kind": "pluie_forte"
+        },
+        {
+          "lon": 10.25,
+          "lat": 47.25,
+          "value": 3.2,
+          "kind": "neige"
+        },
+        {
+          "lon": 6.75,
+          "lat": 46.0,
+          "value": 2.5,
+          "kind": "neige"
+        },
+        {
+          "lon": 2.75,
+          "lat": 45.0,
+          "value": 1.0,
+          "kind": "neige"
+        }
+      ],
+      "style": "kfs-premium-16-9-v4",
+      "note": "Pictogrammes géoréférencés ECMWF. Seuils indicatifs, pas une vigilance."
     }
   ],
   "public": true,
