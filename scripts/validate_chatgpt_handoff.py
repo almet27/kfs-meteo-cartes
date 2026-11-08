@@ -58,7 +58,7 @@ def main():
     if is_ready:
         extended = json.loads((ROOT / "extended-weekly.json").read_text(encoding="utf-8"))
         gen_utc = parsed_date(extended["generated_utc"])
-        if extended.get("verified") is not True or not {3,4}.issubset(set(extended.get("weeks", []))):
+        if (extended.get("verified") is not True or extended.get("temperature_anomalies_verified") is not True or extended.get("precipitation_anomalies_verified") is not True or not {3,4}.issubset(set(extended.get("weeks", [])))):
             raise ValueError("Les semaines 3 et 4 ne sont pas validees")
         if gen_utc > now or now - gen_utc > timedelta(days=7):
             raise ValueError("Les donnees Extended sont obsoletes")
