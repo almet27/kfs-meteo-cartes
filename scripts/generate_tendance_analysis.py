@@ -72,7 +72,16 @@ def boxes(lon, lat, raw):
 
 def acquisition():
     now=datetime.now(timezone.utc)
+    # Use exactly the forecast cycles of the already published ECMWF Europe maps.
+    # Independent 'latest' requests can silently select newer cycles than those
+    # portrayed on the maps, which would invalidate /tendance.
+    atlas_path=pathlib.Path("forecast-maps/europe/metadata.json")
+    atlas=json.loads(atlas_path.read_text(encoding="utf-8"))
+    atlas_created=datetime.fromisoformat(atlas["generated_utc"].replace("Z","+00:00"))
+    if atlas_created.tzinfo is None or not timedelta(hours=-1)<=now-atlas_created<=timedelta(hours=48):
+        raise RuntimeError("Catalogue cartographique ECMWF perime ou non horodate")
     data={"status":"numerical_preview","generated_utc":now.isoformat(),
+          "europe_maps_generated_utc":atlas["generated_utc"],
           "models":{},"errors":{},"steps_h":list(STEPS),
           "variables":{"t850":"temperatures degC at 850 hPa",
                        "msl":"mean sea level pressure hPa",
@@ -84,12 +93,21 @@ def acquisition():
         data["models"][model]={}
         for step in STEPS:
             key=str(step)
+            expected=atlas.get("runs_utc",{}).get(model,{}).get(key)
+            if expected is None:
+                raise RuntimeError("Cycle ECMWF de la carte manquant : "+model+" +"+key+" h")
+            target_issue=datetime.fromisoformat(str(expected).replace("Z","+00:00"))
+            if target_issue.tzinfo is None or target_issue>now+timedelta(hours=1) or now-target_issue>timedelta(hours=48):
+                raise RuntimeError("Cycle de la carte ECMWF invalide ou perime")
+            # The IFS 06/18 UTC forecasts are served through stream=scda.
+            stream="scda" if model=="ifs" and target_issue.hour in (6,18) else "oper"
             fields={}
             runs=set()
             for variable,kwargs,name,conversion in PARAMS:
                 target=OUT / ("temporary-"+model+"-"+key+"-"+variable+".grib2")
                 try:
-                    client.retrieve(stream="oper",type="fc",step=step,target=str(target),**kwargs)
+                    client.retrieve(date=target_issue.strftime("%Y-%m-%d"),time=target_issue.hour,
+                                    stream=stream,type="fc",step=step,target=str(target),**kwargs)
                     lon,lat,field,run=read_grib(target,name)
                     if variable=="msl" and not 90000<np.nanmedian(field)<110000:
                         raise ValueError("MSLP source not in Pa")
@@ -110,7 +128,10 @@ def acquisition():
             if all(k in fields for k in ("t850", "msl", "z500")) and len(runs)==1:
                 issue=runs.pop()
                 issue_dt=datetime.fromisoformat(issue.replace("Z","+00:00"))
-                if now-issue_dt>timedelta(days=3) or issue_dt>now+timedelta(hours=1):
+                if issue_dt!=target_issue:
+                    data["errors"][model+"-"+key]="Cycle GRIB different de la carte ECMWF"
+                    continue
+                if now-issue_dt>timedelta(days=2) or issue_dt>now+timedelta(hours=1):
                     data["errors"][model+"-"+key]="Run trop ancien ou futur"
                     continue
                 flow_850={}
