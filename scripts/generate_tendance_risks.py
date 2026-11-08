@@ -19,6 +19,10 @@ import matplotlib.pyplot as plt
 import matplotlib.patheffects as pe
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
+from matplotlib.offsetbox import AnnotationBbox, DrawingArea
+from matplotlib.patches import Circle, FancyBboxPatch, PathPatch
+from matplotlib.lines import Line2D
+from matplotlib.path import Path as MplPath
 
 OUT=Path("forecast-maps/tendance")
 EU=Path("forecast-maps/europe")
@@ -28,7 +32,6 @@ GEOGRAPHY=(-45,35,31,75)
 FOCUS=(-10,12,41,53)
 CATEGORIES=("neige","verglas","orage","tempete","gel","canicule","inondation","pluie_forte")
 COLORS={"vent_fort":"#FFD06B","tempete":"#F46C55","pluie_forte":"#39CAFF","neige":"#E9F7FF"}
-SYMBOLS={"vent_fort":"V","tempete":"V","pluie_forte":"P","neige":"N"}
 
 def when(value):
     return datetime.fromisoformat(value.replace("Z","+00:00")).astimezone(timezone.utc)
@@ -102,6 +105,53 @@ def status(v,low,high):
     if v is None:return "indisponible"
     return "marque" if v>=high else "possible" if v>=low else "absent"
 
+
+def weather_pictogram(kind):
+    """Vector pictograms (no letter glyphs or system emoji fonts).
+
+    White pictogram on a risk-coloured circular pin:
+    wind swirls, rainy cloud and snowflake.
+    """
+    area=DrawingArea(46,46,0,0)
+    bg=COLORS[kind]
+    area.add_artist(Circle((23,23),21,facecolor=bg,edgecolor="white",linewidth=2.2))
+    ink="#092B49"
+    if kind in ("vent_fort","tempete"):
+        # Three curved air-stream lines, with trailing gust curls.
+        for y,delta in ((31,2),(23,0),(15,-2)):
+            verts=[(9,y),(16,y+3),(25,y+3),(30,y),
+                   (35,y-3),(38,y-1),(37,y+3)]
+            codes=[MplPath.MOVETO]+[MplPath.CURVE4]*6
+            area.add_artist(PathPatch(MplPath(verts,codes),fill=False,
+                        edgecolor=ink,linewidth=2.6,capstyle="round"))
+        area.add_artist(Circle((12,13),2.2,facecolor=ink,edgecolor="none"))
+    elif kind=="pluie_forte":
+        # Stylised cloud with three rain streaks.
+        area.add_artist(Circle((17,28),7.2,facecolor="white",edgecolor="none"))
+        area.add_artist(Circle((25,32),9,facecolor="white",edgecolor="none"))
+        area.add_artist(Circle((33,27),6.8,facecolor="white",edgecolor="none"))
+        area.add_artist(FancyBboxPatch((12,24),25,8,boxstyle="round,pad=0,rounding_size=4",
+                                       facecolor="white",edgecolor="none"))
+        for x in (17,24,31):
+            area.add_artist(Line2D([x+1,x-2],[19,12],linewidth=2.7,
+                          color=ink,solid_capstyle="round"))
+    elif kind=="neige":
+        for angle in (0,60,120):
+            a=math.radians(angle)
+            dx,dy=13*math.cos(a),13*math.sin(a)
+            area.add_artist(Line2D([23-dx,23+dx],[23-dy,23+dy],
+                         color="white",linewidth=2.7,solid_capstyle="round"))
+            # Two barbs at both ends of each snowflake arm.
+            for sign in (-1,1):
+                ex,ey=23+sign*dx,23+sign*dy
+                ax0,ay0=-sign*math.cos(a),-sign*math.sin(a)
+                px,py=-math.sin(a),math.cos(a)
+                for side in (-1,1):
+                    area.add_artist(Line2D([ex,ex+ax0*4+side*px*3],
+                              [ey,ey+ay0*4+side*py*3],color="white",linewidth=1.7,
+                              solid_capstyle="round"))
+    return area
+
 def render(id,run,fields,marks):
     lon,lat=fields["msl"][0],fields["msl"][1]
     msl=fields["msl"][2]/100.0
@@ -126,11 +176,11 @@ def render(id,run,fields,marks):
     ax.add_feature(cfeature.BORDERS,linewidth=.48,edgecolor="#122A43")
     for mark in marks:
         x,y=mark["lon"],mark["lat"]
-        color=COLORS[mark["kind"]]
-        ax.scatter([x],[y],s=900,c=[color],edgecolors="white",linewidths=2.5,
-                   zorder=17,transform=ccrs.PlateCarree())
-        ax.text(x,y,SYMBOLS[mark["kind"]],color="#09253E",fontsize=18,weight="bold",
-                ha="center",va="center",zorder=18,transform=ccrs.PlateCarree())
+        icon=weather_pictogram(mark["kind"])
+        pin=AnnotationBbox(icon,(x,y),
+                           xycoords=ccrs.PlateCarree()._as_mpl_transform(ax),
+                           box_alignment=(0.5,0.5),frameon=False,pad=0,zorder=18)
+        ax.add_artist(pin)
     fn=OUT/("tendance-risques-fond-"+id+".png")
     fig.savefig(fn,dpi=100,facecolor=fig.get_facecolor(),pad_inches=0)
     plt.close(fig)
