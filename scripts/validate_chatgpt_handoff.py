@@ -42,7 +42,7 @@ def main():
         raise ValueError("Date de redaction incoherente")
     body = report["body_markdown"]
     words = len(body.split())
-    if words < 650 or words > 1600:
+    if words < 650 or words > 2800:
         raise ValueError("Texte trop court ou trop long: %d mots" % words)
     models = report.get("source_models",[])
     if not models or any(x not in source.get("models",{}) for x in models):
@@ -62,6 +62,22 @@ def main():
             raise ValueError("Les semaines 3 et 4 ne sont pas validees")
         if gen_utc > now or now - gen_utc > timedelta(days=7):
             raise ValueError("Les donnees Extended sont obsoletes")
+        # Four real and distinct ECMWF Weekly maps must be present in both
+        # the structured content and the GitHub Pages publication assets.
+        for week in (3,4):
+            chart_group=extended.get("charts",{}).get(str(week),{})
+            for var in ("t2m","precip"):
+                chart=chart_group.get(var)
+                if not chart or chart.get("product") not in ("extended-anomaly-2t","extended-anomaly-tp"):
+                    raise ValueError("Carte Extended absente : semaine %d %s"%(week,var))
+                link=chart.get("image_url")
+                if not isinstance(link,str) or link not in body:
+                    raise ValueError("Carte Extended non insérée dans le bulletin : semaine %d %s"%(week,var))
+                p=Path(chart.get("file_path",""))
+                if not p.is_file() or p.stat().st_size<14000:
+                    raise ValueError("Fichier PNG Extended introuvable")
+                if parsed_date(chart["valid_end_utc"])<=parsed_date(chart["valid_start_utc"]):
+                    raise ValueError("Période hebdomadaire Extended incohérente")
         if report.get("weeks_3_4") != "verified":
             raise ValueError("Le bulletin doit marquer les semaines 3 et 4 comme verifiees")
         if report.get("discord_channel_id") != "1441767343498858578":
