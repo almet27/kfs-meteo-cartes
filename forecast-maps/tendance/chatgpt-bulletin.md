@@ -1,7 +1,7 @@
 > **KFS MÉTÉO — Bulletin de tendance à 4 semaines**
-> Horodatage : 2026-11-08T19:42:12.078Z
+> Horodatage : 2026-11-08T19:45:14.848Z
 > Données IFS/AIFS/GFS : 2026-11-08T18:52:03.597651+00:00
-> Cartes ECMWF Weekly : 2026-11-08T19:36:20Z, run 2026-11-05T00:00:00Z
+> Cartes ECMWF Weekly : 2026-11-08T19:42:06Z, run 2026-11-05T00:00:00Z
 > Les anomalies hebdomadaires ne sont pas des prévisions quotidiennes.
 
 # KFS MÉTÉO — Prévisions synoptiques : de l'influence océanique aux incertitudes de mi-novembre
@@ -59,6 +59,8 @@ Le run ENS Extended du **jeudi 5 novembre à 00 UTC** propose deux cartes offici
 
 [Consulter les probabilités ECMWF — température](https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/weekly-week3-prob-t2m.png) · [Précipitations](https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/weekly-week3-prob-precip.png)
 
+Pour examiner les **centres d’action et la circulation synoptique à grande échelle**, consulter les cartes officielles complémentaires : [Anomalies de pression au sol (MSLP)](https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/weekly-week3-mslp.png) · [Anomalies de géopotentiel à 500 hPa (Z500)](https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/weekly-week3-z500.png). Ces cartes représentent des anomalies moyennes d’ensemble, non les positions quotidiennes exactes des dépressions.
+
 ## Semaine 4 — ECMWF Weekly (30 novembre au 7 décembre 2026)
 
 À cette échéance, la prévisibilité diminue et les régions affectées peuvent changer d'un run à l'autre. Les cartes ECMWF ci-dessous constituent les **signaux hebdomadaires officiels de l'ensemble** pour cette semaine : elles ne permettent pas, à elles seules, de prévoir jour par jour la pluie, la neige, le vent ou les températures de chaque département. Il faut examiner leur significativité et les probabilités avant toute conclusion tranchée.
@@ -68,6 +70,8 @@ Le run ENS Extended du **jeudi 5 novembre à 00 UTC** propose deux cartes offici
 ![ECMWF Weekly semaine 4 — anomalie précipitations](https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/weekly-week4-precip.png)
 
 [Consulter les probabilités ECMWF — température](https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/weekly-week4-prob-t2m.png) · [Précipitations](https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/weekly-week4-prob-precip.png)
+
+Pour examiner les **centres d’action et la circulation synoptique à grande échelle**, consulter les cartes officielles complémentaires : [Anomalies de pression au sol (MSLP)](https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/weekly-week4-mslp.png) · [Anomalies de géopotentiel à 500 hPa (Z500)](https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/weekly-week4-z500.png). Ces cartes représentent des anomalies moyennes d’ensemble, non les positions quotidiennes exactes des dépressions.
 
 *Cartes originales © ECMWF OpenCharts, run ENS Extended du 05/11/2026. Périodes hebdomadaires calendaires ; aucun chiffre ou signe d'anomalie n'a été déduit automatiquement de ces images.*
 
