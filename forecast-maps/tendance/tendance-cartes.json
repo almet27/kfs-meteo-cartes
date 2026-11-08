@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "status": "illustrative_model_maps",
-  "generated_utc": "2026-11-08T23:16:28.401788+00:00",
-  "source_generated_utc": "2026-11-08T23:15:18.349519+00:00",
+  "generated_utc": "2026-11-08T23:19:42.666912+00:00",
+  "source_generated_utc": "2026-11-08T23:18:34.689613+00:00",
   "charts_generated_utc": "2026-11-08T22:11:10.267811+00:00",
   "source": "ECMWF Open Data (CC BY 4.0)",
   "not_weekly_anomalies": true,
@@ -12,7 +12,7 @@
       "step_h": 72,
       "path": "forecast-maps/tendance/tendance-carte-j3.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j3.png",
-      "size_bytes": 287382,
+      "size_bytes": 288924,
       "run_utc": {
         "ifs": "2026-11-08T12:00Z",
         "aifs": "2026-11-08T12:00Z"
@@ -37,7 +37,7 @@
           "reason": "Champs spécifiques non disponibles"
         },
         "tempete": {
-          "status": "absent",
+          "status": "possible",
           "max": 51.8,
           "unit": "km/h (vent moyen 10 m)",
           "reason": "Signal de vent soutenu, pas une vigilance tempête"
@@ -62,6 +62,12 @@
         }
       },
       "risk_markers": [
+        {
+          "lon": -9.5,
+          "lat": 51.25,
+          "value": 51.8,
+          "kind": "vent_fort"
+        },
         {
           "lon": 10.25,
           "lat": 43.75,
@@ -95,7 +101,7 @@
       "step_h": 168,
       "path": "forecast-maps/tendance/tendance-carte-j7.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j7.png",
-      "size_bytes": 327554,
+      "size_bytes": 328093,
       "run_utc": {
         "ifs": "2026-11-08T12:00Z",
         "aifs": "2026-11-08T12:00Z"
@@ -120,7 +126,7 @@
           "reason": "Champs spécifiques non disponibles"
         },
         "tempete": {
-          "status": "absent",
+          "status": "possible",
           "max": 63.8,
           "unit": "km/h (vent moyen 10 m)",
           "reason": "Signal de vent soutenu, pas une vigilance tempête"
@@ -146,10 +152,10 @@
       },
       "risk_markers": [
         {
-          "lon": 3.5,
-          "lat": 43.5,
-          "value": 45.2,
-          "kind": "pluie_forte"
+          "lon": 4.75,
+          "lat": 43.25,
+          "value": 63.8,
+          "kind": "vent_fort"
         },
         {
           "lon": 5.5,
@@ -174,6 +180,12 @@
           "lat": 42.75,
           "value": 4.4,
           "kind": "neige"
+        },
+        {
+          "lon": 3.75,
+          "lat": 44.25,
+          "value": 0.7,
+          "kind": "neige"
         }
       ],
       "style": "kfs-premium-16-9-v4",
@@ -184,7 +196,7 @@
       "step_h": 240,
       "path": "forecast-maps/tendance/tendance-carte-j10.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j10.png",
-      "size_bytes": 319778,
+      "size_bytes": 322598,
       "run_utc": {
         "ifs": "2026-11-08T12:00Z",
         "aifs": "2026-11-08T12:00Z"
@@ -209,7 +221,7 @@
           "reason": "Champs spécifiques non disponibles"
         },
         "tempete": {
-          "status": "absent",
+          "status": "possible",
           "max": 68.0,
           "unit": "km/h (vent moyen 10 m)",
           "reason": "Signal de vent soutenu, pas une vigilance tempête"
@@ -234,6 +246,24 @@
         }
       },
       "risk_markers": [
+        {
+          "lon": -2.75,
+          "lat": 44.75,
+          "value": 68.0,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": -5.75,
+          "lat": 44.0,
+          "value": 65.8,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": -10.0,
+          "lat": 47.0,
+          "value": 63.0,
+          "kind": "vent_fort"
+        },
         {
           "lon": 10.5,
           "lat": 44.0,
@@ -279,7 +309,7 @@
       "step_h": 360,
       "path": "forecast-maps/tendance/tendance-carte-j15.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j15.png",
-      "size_bytes": 318132,
+      "size_bytes": 318576,
       "run_utc": {
         "aifs": "2026-11-08T12:00Z",
         "gfs": "2026-11-08T12:00:00+00:00"
@@ -304,7 +334,7 @@
           "reason": "Champs spécifiques non disponibles"
         },
         "tempete": {
-          "status": "absent",
+          "status": "possible",
           "max": 58.6,
           "unit": "km/h (vent moyen 10 m)",
           "reason": "Signal de vent soutenu, pas une vigilance tempête"
@@ -329,6 +359,24 @@
         }
       },
       "risk_markers": [
+        {
+          "lon": -2.0,
+          "lat": 50.0,
+          "value": 58.6,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": -5.5,
+          "lat": 50.75,
+          "value": 56.7,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": 4.0,
+          "lat": 52.5,
+          "value": 56.5,
+          "kind": "vent_fort"
+        },
         {
           "lon": 10.25,
           "lat": 44.0,

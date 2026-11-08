@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_utc": "2026-11-08T23:15:52.048365+00:00",
+  "generated_utc": "2026-11-08T23:19:07.543062+00:00",
   "atlas_generated_utc": "2026-11-08T22:11:10.267811+00:00",
   "reference": "ECMWF Open Data — champs bruts géoréférencés",
   "stages": [
@@ -27,7 +27,7 @@
           "reason": "Champs spécifiques non disponibles"
         },
         "tempete": {
-          "status": "absent",
+          "status": "possible",
           "max": 51.8,
           "unit": "km/h (vent moyen 10 m)",
           "reason": "Signal de vent soutenu, pas une vigilance tempête"
@@ -52,6 +52,12 @@
         }
       },
       "markers": [
+        {
+          "lon": -9.5,
+          "lat": 51.25,
+          "value": 51.8,
+          "kind": "vent_fort"
+        },
         {
           "lon": 10.25,
           "lat": 43.75,
@@ -103,7 +109,7 @@
           "reason": "Champs spécifiques non disponibles"
         },
         "tempete": {
-          "status": "absent",
+          "status": "possible",
           "max": 63.8,
           "unit": "km/h (vent moyen 10 m)",
           "reason": "Signal de vent soutenu, pas une vigilance tempête"
@@ -129,10 +135,10 @@
       },
       "markers": [
         {
-          "lon": 3.5,
-          "lat": 43.5,
-          "value": 45.2,
-          "kind": "pluie_forte"
+          "lon": 4.75,
+          "lat": 43.25,
+          "value": 63.8,
+          "kind": "vent_fort"
         },
         {
           "lon": 5.5,
@@ -156,6 +162,12 @@
           "lon": 0.0,
           "lat": 42.75,
           "value": 4.4,
+          "kind": "neige"
+        },
+        {
+          "lon": 3.75,
+          "lat": 44.25,
+          "value": 0.7,
           "kind": "neige"
         }
       ],
@@ -185,7 +197,7 @@
           "reason": "Champs spécifiques non disponibles"
         },
         "tempete": {
-          "status": "absent",
+          "status": "possible",
           "max": 68.0,
           "unit": "km/h (vent moyen 10 m)",
           "reason": "Signal de vent soutenu, pas une vigilance tempête"
@@ -210,6 +222,24 @@
         }
       },
       "markers": [
+        {
+          "lon": -2.75,
+          "lat": 44.75,
+          "value": 68.0,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": -5.75,
+          "lat": 44.0,
+          "value": 65.8,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": -10.0,
+          "lat": 47.0,
+          "value": 63.0,
+          "kind": "vent_fort"
+        },
         {
           "lon": 10.5,
           "lat": 44.0,
@@ -273,7 +303,7 @@
           "reason": "Champs spécifiques non disponibles"
         },
         "tempete": {
-          "status": "absent",
+          "status": "possible",
           "max": 58.6,
           "unit": "km/h (vent moyen 10 m)",
           "reason": "Signal de vent soutenu, pas une vigilance tempête"
@@ -298,6 +328,24 @@
         }
       },
       "markers": [
+        {
+          "lon": -2.0,
+          "lat": 50.0,
+          "value": 58.6,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": -5.5,
+          "lat": 50.75,
+          "value": 56.7,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": 4.0,
+          "lat": 52.5,
+          "value": 56.5,
+          "kind": "vent_fort"
+        },
         {
           "lon": 10.25,
           "lat": 44.0,
