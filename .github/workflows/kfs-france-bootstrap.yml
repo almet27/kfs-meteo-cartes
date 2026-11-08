@@ -12,11 +12,9 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - name: Demander les quatre editions France +72 h
+      - name: Actualiser GFS France avec normalisation des cumuls 3 h
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          for modele in gfs ifs aifs-single aigfs; do
-            echo "Demande generation France du nouveau rendu: $modele"
-            gh workflow run france-h72.yml --ref main -f modele="$modele" -f horizon=72
-          done
+          # Recompilation du GFS apres verification des cumuls APCP 3 h.
+          gh workflow run france-h72.yml --ref main -f modele=gfs -f horizon=72
