@@ -1,0 +1,44 @@
+name: Comparaisons Europe 4 modèles
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'scripts/compare_europe_forecasts.py'
+      - '.github/workflows/comparaison-europe.yml'
+      - 'forecast-maps/europe/metadata.json'
+      - 'forecast-maps/europe/noaa-metadata.json'
+  schedule:
+    - cron: '35 0,6,12,18 * * *'
+permissions:
+  contents: write
+concurrency:
+  group: comparaisons-europe
+  cancel-in-progress: false
+jobs:
+  cartes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Installer Pillow
+        run: pip install Pillow
+      - name: Assembler les modèles
+        run: python scripts/compare_europe_forecasts.py
+      - name: Publier les comparaisons
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add forecast-maps/europe/compare-*.png forecast-maps/europe/compare-metadata.json
+          if ! git diff --cached --quiet; then
+            git commit -m 'Actualiser comparaisons modèles Europe'
+            for attempt in 1 2 3 4 5 6; do
+              git pull --rebase
+              if git push; then exit 0; fi
+              sleep 5
+            done
+            echo 'Échec de publication après 6 essais' >&2
+            exit 1
+          fi
