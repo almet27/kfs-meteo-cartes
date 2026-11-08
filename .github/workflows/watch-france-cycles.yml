@@ -59,12 +59,30 @@ jobs:
           MODELS: ${{ steps.poll.outputs.ready_models }}
         run: |
           IFS=',' read -ra MODEL_ARRAY <<< "$MODELS"
+          ecmwf_new=0
+          noaa_new=0
           for model in "${MODEL_ARRAY[@]}"; do
             case "$model" in
-              ifs|aifs-single|gfs|aigfs)
-                echo "Nouveau run $model : production native des cartes France jusqu'a 72 h"
+              ifs|aifs-single)
+                ecmwf_new=1
+                echo "Nouveau run ECMWF : atlas France $model jusqu'a 72 h"
+                gh workflow run france-h72.yml --ref main -f modele="$model" -f horizon=72
+                ;;
+              gfs|aigfs)
+                noaa_new=1
+                echo "Nouveau run NOAA : atlas France $model jusqu'a 72 h"
                 gh workflow run france-h72.yml --ref main -f modele="$model" -f horizon=72
                 ;;
               *) echo "Modele inconnu ignore : $model" ;;
             esac
           done
+          # Conserver /modele Europe au plus proche des sorties sources.
+          # Une seule regeneration par famille et par nouveau cycle.
+          if [ "$ecmwf_new" = 1 ]; then
+            echo "Actualiser IFS/AIFS Europe des la detection du nouveau run"
+            gh workflow run previsions-europe.yml --ref main
+          fi
+          if [ "$noaa_new" = 1 ]; then
+            echo "Actualiser GFS/AIGFS Europe des la detection du nouveau run"
+            gh workflow run previsions-noaa.yml --ref main
+          fi
