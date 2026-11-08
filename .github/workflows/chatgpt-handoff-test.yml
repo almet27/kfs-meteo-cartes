@@ -1,0 +1,28 @@
+name: KFS - valider bulletin ChatGPT sans publication
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'forecast-maps/tendance/chatgpt-bulletin.json'
+      - 'scripts/validate_chatgpt_handoff.py'
+      - '.github/workflows/chatgpt-handoff-test.yml'
+permissions:
+  contents: read
+jobs:
+  verifier-brouillon:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Valider les donnees, les sources et la securite
+        run: python scripts/validate_chatgpt_handoff.py
+      - name: Conserver le resultat du test
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bulletin-chatgpt-controle
+          path: forecast-maps/tendance/chatgpt-handoff-validation.json
+          if-no-files-found: warn
