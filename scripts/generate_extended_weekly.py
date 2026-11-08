@@ -83,7 +83,7 @@ def chart(base_time: datetime, start: datetime, end: datetime,
     query = urlencode({
         "base_time": utc_iso(base_time),
         "valid_time": utc_iso(end),
-        "projection": "opencharts_eurasia",
+        "projection": "opencharts_europe",
     })
     api_url = API + product + "/?" + query
     payload = fetch(api_url, expect_json=True)
@@ -101,6 +101,8 @@ def chart(base_time: datetime, start: datetime, end: datetime,
             image_url):
         raise ValueError("ECMWF did not provide a trusted PNG URL")
     description = str(attrs.get("description") or "")
+    if "Area: Europe" not in description:
+        raise ValueError("ECMWF returned the wrong map area (expected Europe): " + description[:150])
     # Validate both WEEK boundaries and the issuing cycle, not just a remote image.
     for label in (base_time.strftime("%d %b %Y"),
                   start.strftime("%d %b %Y"),
@@ -121,6 +123,8 @@ def chart(base_time: datetime, start: datetime, end: datetime,
         "size_bytes": len(image),
         "sha256": hashlib.sha256(image).hexdigest(),
         "chart_type": chart_type,
+        "projection": "opencharts_europe",
+        "map_area": "Europe",
         "valid_start_utc": utc_iso(start),
         "valid_end_utc": utc_iso(end),
     }
