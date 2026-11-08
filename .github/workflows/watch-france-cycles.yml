@@ -11,6 +11,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 concurrency:
   group: kfs-france-source-monitor
@@ -28,6 +29,7 @@ jobs:
       - name: Installer le client legere ECMWF
         run: python -m pip install 'ecmwf-opendata>=0.3'
       - name: Identifier les dernieres sorties disponibles
+        id: poll
         run: |
           python -m py_compile scripts/check_france_cycles.py
           python scripts/check_france_cycles.py
@@ -50,3 +52,19 @@ jobs:
             done
             exit 1
           fi
+      - name: Declencher les cartes France uniquement pour les nouveaux runs 72 h
+        if: ${{ steps.poll.outputs.ready_models != '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MODELS: ${{ steps.poll.outputs.ready_models }}
+        run: |
+          IFS=',' read -ra MODEL_ARRAY <<< "$MODELS"
+          for model in "${MODEL_ARRAY[@]}"; do
+            case "$model" in
+              ifs|aifs-single|gfs|aigfs)
+                echo "Nouveau run $model : production native des cartes France jusqu'a 72 h"
+                gh workflow run france-h72.yml --ref main -f modele="$model" -f horizon=72
+                ;;
+              *) echo "Modele inconnu ignore : $model" ;;
+            esac
+          done
