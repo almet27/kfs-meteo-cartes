@@ -1,59 +1,60 @@
-name: KFS - analyse synoptique argumentee (apercu sans Discord)
+name: KFS - diagnostics et cartes synchronises pour /tendance
 on:
   workflow_dispatch:
   schedule:
-    - cron: '00 16 * * 0' # dimanche 16:00 UTC : diagnostics IFS/AIFS/GFS avant les cartes et le bulletin
-  push:
-    paths:
-      - 'scripts/generate_tendance_analysis.py'
-      - 'forecast-maps/europe/noaa-diagnostics.json'
-      - '.github/workflows/tendance-analyse.yml'
+    - cron: '00 16 * * 0' # dimanche 16:00 UTC, sorties alignees sur les cartes disponibles
 permissions:
   contents: write
 concurrency:
   group: kfs-tendance-analyse
   cancel-in-progress: false
 jobs:
-  analyse:
+  analyse-et-cartes:
     runs-on: ubuntu-latest
-    timeout-minutes: 75
+    timeout-minutes: 95
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Installer les decodeurs des champs ECMWF
+      - name: Installer les decodeurs ECMWF et le moteur graphique
         run: |
           sudo apt-get update
           sudo apt-get install -y libeccodes-dev
-          pip install ecmwf-opendata cfgrib eccodes xarray numpy
-      - name: Extraire des diagnostics meteorologiques et rediger le rapport
+          pip install ecmwf-opendata cfgrib eccodes xarray numpy 'Pillow>=10,<13'
+      - name: Extraire les diagnostics aux memes cycles que les cartes Europe
         run: python scripts/generate_tendance_analysis.py
-      - name: Archiver le rapport et les donnees sources
+      - name: Generer les trois cartes avec les diagnostics de la MEME acquisition
+        run: python scripts/generate_tendance_cards.py
+      - name: Archiver le bulletin technique et les trois cartes
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: kfs-tendance-analyse
+          name: kfs-tendance-analyse-cartes
           path: |
             forecast-maps/tendance/tendance-analyse-donnees.json
             forecast-maps/tendance/tendance-analyse-apercu.md
+            forecast-maps/tendance/tendance-cartes.json
+            forecast-maps/tendance/tendance-carte-j3.png
+            forecast-maps/tendance/tendance-carte-j7.png
+            forecast-maps/tendance/tendance-carte-j10.png
           if-no-files-found: warn
-      - name: Publier seulement l'apercu technique sur GitHub
+      - name: Publier les donnees et cartes ensemble, jamais separement
         if: success()
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add forecast-maps/tendance/tendance-analyse-donnees.json forecast-maps/tendance/tendance-analyse-apercu.md
+          git add forecast-maps/tendance/tendance-cartes.json forecast-maps/tendance/tendance-carte-j3.png forecast-maps/tendance/tendance-carte-j7.png forecast-maps/tendance/tendance-carte-j10.png
           if ! git diff --cached --quiet; then
-            git commit -m 'Actualiser analyse synoptique technique sans publication Discord'
+            git commit -m 'Publier diagnostics et cartes IFS AIFS synchronises'
             for attempt in 1 2 3 4 5; do
               if ! git pull --rebase; then
                 git rebase --abort || true
-                echo 'Publication concurrente détectée : conservation des données déjà en ligne.'
-                exit 0
+                exit 1
               fi
               if git push; then exit 0; fi
-              sleep 5
+              sleep 6
             done
             exit 1
           fi
