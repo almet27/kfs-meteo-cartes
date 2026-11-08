@@ -40,7 +40,7 @@ def subset(dataset):
     return lon[ix],lat[iy],data
 
 def fetch_field(model, step, product, pattern):
-    h = Herbie(RUN, model=model, product=product, fxx=step, verbose=False)
+    h = Herbie(RUN.replace(tzinfo=None), model=model, product=product, fxx=step, verbose=False)
     ds = h.xarray(pattern, remove_grib=True)
     if ds is None:
         raise RuntimeError(f"No {pattern} in {model} +{step}h")
