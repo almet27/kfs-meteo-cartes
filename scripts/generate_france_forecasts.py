@@ -65,12 +65,13 @@ def iso(dt):
     return dt.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def native_model(model):
+def native_model(model, required_hour):
     if model in ("ifs", "aifs-single"):
         from ecmwf.opendata import Client
         client = Client(source="ecmwf", model=model, resol="0p25")
-        step = STEP_BY_MODEL[model]
-        current = parse_datetime(client.latest(stream="oper", type="fc", step=step, param="2t"))
+        # Require the farthest requested forecast step before selecting a cycle.
+        # This permits an early +12h edition without waiting for +72h.
+        current = parse_datetime(client.latest(stream="oper", type="fc", step=required_hour, param="2t"))
         return {"kind": "ecmwf", "client": client, "cycle": current}
     from herbie import Herbie
     now = datetime.now(timezone.utc)
@@ -81,12 +82,12 @@ def native_model(model):
         try:
             h = Herbie(candidate.replace(tzinfo=None), model=model,
                        product="pgrb2.0p25" if model == "gfs" else "sfc",
-                       fxx=72, verbose=False)
+                       fxx=required_hour, verbose=False)
             if h.grib is not None:
                 return {"kind": "noaa", "cycle": candidate}
         except Exception:
             continue
-    raise RuntimeError("GFS : aucun run +72 h disponible via NOAA")
+    raise RuntimeError("NOAA : aucun run complet jusqu\u0027a +%d h disponible" % required_hour)
 
 
 def area(da):
@@ -344,7 +345,7 @@ def main():
         if any(n not in steps for n in selected):
             raise ValueError("Requested step not available natively")
         steps = sorted(set(selected))
-    state = native_model(args.model)
+    state = native_model(args.model, max(steps))
     state["model"] = args.model
     run = state["cycle"]
     folder = Path(args.output) / args.model
