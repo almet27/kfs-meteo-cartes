@@ -3,14 +3,7 @@ name: KFS - cartes synoptiques pour chaque periode Discord
 # Important : les commits faits par GITHUB_TOKEN ne relancent pas les workflows sur push.
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '30 17 * * 0' # dimanche 17:30 UTC : cartes prêtes avant la rédaction de 20h20 Europe/Paris
-  push:
-    paths:
-      - 'scripts/generate_tendance_cards.py'
-      - 'forecast-maps/tendance/tendance-analyse-donnees.json'
-      - 'forecast-maps/europe/metadata.json'
-      - '.github/workflows/tendance-cards.yml'
+
 permissions:
   contents: write
 concurrency:
