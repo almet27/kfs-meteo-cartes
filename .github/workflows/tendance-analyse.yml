@@ -2,7 +2,7 @@ name: KFS - diagnostics et cartes synchronises pour /tendance
 on:
   workflow_dispatch:
   schedule:
-    - cron: '00 16 * * 0' # dimanche 16:00 UTC, sorties alignees sur les cartes disponibles
+    - cron: '07 16 * * 0' # dimanche 16:07 UTC, sorties alignees sur les cartes disponibles
 permissions:
   contents: write
 concurrency:
