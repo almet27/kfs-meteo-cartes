@@ -2,7 +2,7 @@ name: KFS - analyse synoptique argumentee (apercu sans Discord)
 on:
   workflow_dispatch:
   schedule:
-    - cron: '12 17 * * 0' # dimanche 17:12 UTC : préparer des données récentes avant 21h Europe/Paris
+    - cron: '00 16 * * 0' # dimanche 16:00 UTC : diagnostics IFS/AIFS/GFS avant les cartes et le bulletin
   push:
     paths:
       - 'scripts/generate_tendance_analysis.py'
