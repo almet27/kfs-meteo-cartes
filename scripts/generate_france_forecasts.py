@@ -148,7 +148,7 @@ def gfs_field(state, step, key):
     if key=="tp" and model=="gfs":
         # The source includes both run-to-date and short-window APCP.
         # Select EXACTLY the preceding native 3-hour interval.
-        begin=step-3
+        begin=step-(6 if step%6==0 else 3)
         patt=rf":APCP:surface:{begin}-{step} hour acc"
     if key=="tp" and model=="aigfs":
         # AIGFS native native interval; never silently use a run-to-date sum.
@@ -231,6 +231,38 @@ def ecmwf_precip_mm(curr, prev, step, earlier):
     if np.nanmin(diff) < -0.15:
         raise ValueError("Accumulation decreased unexpectedly")
     return np.maximum(0, diff), "cumulative_difference"
+
+
+
+def noaa_precip_window(tp, step, model, cache):
+    """Return NOAA-native increment in mm, never relabel a 6h APCP as 3h.
+
+    GFS: +3 is 0-3h; +6 is 0-6h, so 3-6 = (0-6)-(0-3).
+    +9 is 6-9h; +12 is 6-12h, so 9-12 = (6-12)-(6-9).
+    NOAA calls this accumulation normalization; negative roundoff is clipped.
+    """
+    raw=np.asarray(tp[2],dtype=float)
+    if not np.isfinite(raw).all() or np.nanmin(raw)<-0.15:
+        raise ValueError("Invalid NOAA accumulated precipitation")
+    if model!="gfs":
+        return np.maximum(0,raw), "Native NOAA 6h accumulation"
+    if step%6==0:
+        previous=cache.get("gfs_apcp")
+        prev_step=cache.get("gfs_apcp_step")
+        if previous is None or prev_step != step-3:
+            raise ValueError("GFS +%d h: missing preceding +%d h APCP" % (step,step-3))
+        common_grid(tp,previous)
+        diff=raw-np.asarray(previous[2],dtype=float)
+        if np.nanmin(diff)<-0.15:
+            raise ValueError("GFS accumulated precipitation unexpectedly decreases")
+        result=np.maximum(0,diff)
+        note="GFS APCP 3h = cumul 6h - cumul 3h precedent"
+    else:
+        result=np.maximum(0,raw)
+        note="GFS APCP natif sur 3h"
+    cache["gfs_apcp"]=tp
+    cache["gfs_apcp_step"]=step
+    return result,note
 
 
 def palette():
@@ -431,49 +463,50 @@ def main():
         else:
             if "tp" in fields:
                 tp=fields["tp"]
-                # NOAA APCP is normally already a window accumulation.
                 units=tp[3].strip()
-                if units not in ("kg m**-2", "kg m-2", "kg m^-2", "mm"):
-                    errors[f"{step}-tp-units"] = "Unité NOAA inconnue: " + units
+                if units not in ("kg m**-2","kg m-2","kg m^-2","mm"):
+                    errors[f"{step}-tp-units"]="Unité NOAA inconnue: "+units
                 else:
-                    candidates["precip_total"] = (tp[0], tp[1], np.maximum(0,tp[2]),
-                                                   "cumul total; ne distingue pas pluie et neige")
-                    # GFS: use NOAA native categorical precipitation *at the
-                    # valid instant*. This is a diagnostic phase classification,
-                    # not a native 3-hour rain/snow accumulation.
-                    # Do not classify mixed/freezing/ice-pellet cells as snow.
-                    required=("crain","csnow","cfrzr","cicep")
-                    if all(x in fields for x in required):
-                        try:
-                            masks=[fields[k] for k in required]
-                            common_grid(tp,*masks)
-                            raw=[np.asarray(m[2],dtype=float) for m in masks]
-                            valid=np.logical_and.reduce([
-                                np.isfinite(v)&(v>=0)&(v<=1) for v in raw])
-                            rainflag,snowflag,freeze,ice=raw
-                            wet=np.asarray(tp[2],dtype=float)>0.1
-                            onlyrain=(rainflag>.5)&(snowflag<.5)&(freeze<.5)&(ice<.5)
-                            onlysnow=(snowflag>.5)&(rainflag<.5)&(freeze<.5)&(ice<.5)
-                            known=(onlyrain|onlysnow)&valid
-                            # Even if rare, ambiguous precip cells stay unclassified.
-                            # Dry cells are zero, unknown *wet* cells are NaN.
-                            quality=float(np.count_nonzero(known&wet))/max(1,int(np.count_nonzero(wet)))
-                            rain=np.where(~wet,0,np.where(valid&onlyrain,tp[2],
-                                          np.where(valid&onlysnow,0,np.nan)))
-                            snow=np.where(~wet,0,np.where(valid&onlysnow,tp[2],
-                                          np.where(valid&onlyrain,0,np.nan)))
-                            if quality>0 or not np.any(wet):
-                                note=("PHASE ESTIMÉE: pluie/neige NOAA au temps de validité;"
-                                      " mailles humides classées "+str(round(quality*100))+" %;"
-                                      " zones incertaines grisées")
-                                candidates["rain"]=(tp[0],tp[1],rain,note)
-                                candidates["snow"]=(tp[0],tp[1],snow,note)
-                            else:
-                                errors[f"{step}-phase"]="Categorical GFS phase too ambiguous: "+str(round(quality*100))+" % classified wet cells"
-                        except Exception as exc:
-                            errors[f"{step}-phase"]="GFS phase fields invalid: "+str(exc)[:150]
+                    try:
+                        amount,apcp_note=noaa_precip_window(tp,step,args.model,cache)
+                    except Exception as exc:
+                        errors[f"{step}-tp-window"]=str(exc)[:190]
                     else:
-                        errors[f"{step}-phase"]="No four categorical NOAA fields; no artificial rain/snow classification"
+                        candidates["precip_total"]=(tp[0],tp[1],amount,apcp_note)
+                        # GFS: indicators describe the dominant category at the
+                        # valid instant, not a native rainfall/snowfall total.
+                        # Keep mixed, icing and unknown wet areas unclassified.
+                        required=("crain","csnow","cfrzr","cicep")
+                        if args.model=="gfs" and all(k in fields for k in required):
+                            try:
+                                masks=[fields[k] for k in required]
+                                common_grid(tp,*masks)
+                                raw=[np.asarray(x[2],dtype=float) for x in masks]
+                                valid=np.logical_and.reduce([
+                                    np.isfinite(x)&(x>=0)&(x<=1) for x in raw])
+                                rainflag,snowflag,freeze,ice=raw
+                                wet=amount>0.1
+                                onlyrain=(rainflag>.5)&(snowflag<.5)&(freeze<.5)&(ice<.5)
+                                onlysnow=(snowflag>.5)&(rainflag<.5)&(freeze<.5)&(ice<.5)
+                                known=(onlyrain|onlysnow)&valid
+                                quality=float(np.count_nonzero(known&wet))/max(1,int(np.count_nonzero(wet)))
+                                rain=np.where(~wet,0,np.where(valid&onlyrain,amount,
+                                              np.where(valid&onlysnow,0,np.nan)))
+                                snow=np.where(~wet,0,np.where(valid&onlysnow,amount,
+                                              np.where(valid&onlyrain,0,np.nan)))
+                                if quality>0 or not np.any(wet):
+                                    note=("PHASE ESTIMÉE NOAA: "+
+                                          str(round(quality*100))+" % de mailles humides classées;"
+                                          " zones mixtes/non déterminées grisées;"
+                                          " cumul normalisé sur 3 h")
+                                    candidates["rain"]=(tp[0],tp[1],rain,note)
+                                    candidates["snow"]=(tp[0],tp[1],snow,note)
+                                else:
+                                    errors[f"{step}-phase"]="GFS categories too ambiguous to attribute rain or snow"
+                            except Exception as exc:
+                                errors[f"{step}-phase"]="Invalid NOAA categories: "+str(exc)[:150]
+                        elif args.model=="gfs":
+                            errors[f"{step}-phase"]="NOAA category fields missing; rain/snow not invented"
         for metric, (lon, lat, values, note) in candidates.items():
             if metric not in VARS:
                 continue
