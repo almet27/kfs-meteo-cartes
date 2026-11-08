@@ -101,7 +101,7 @@ def chart(base_time: datetime, start: datetime, end: datetime,
             image_url):
         raise ValueError("ECMWF did not provide a trusted PNG URL")
     description = str(attrs.get("description") or "")
-    if "Area: Europe" not in description:
+    if not re.search(r"\bArea\s*:\s*Europe\b", description, re.IGNORECASE):
         raise ValueError("ECMWF returned the wrong map area (expected Europe): " + description[:150])
     # Validate both WEEK boundaries and the issuing cycle, not just a remote image.
     for label in (base_time.strftime("%d %b %Y"),
