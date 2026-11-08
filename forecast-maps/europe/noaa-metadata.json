@@ -1,5 +1,5 @@
 {
-  "generated_utc": "2026-11-08T18:08:41.194411+00:00",
+  "generated_utc": "2026-11-08T18:11:52.672406+00:00",
   "run_utc": "2026-11-08T12:00:00+00:00",
   "runs_utc": {
     "gfs": {
@@ -106,27 +106,24 @@
         "wind10m": "forecast-maps/europe/aigfs-h120-wind10m.png",
         "precip6h": "forecast-maps/europe/aigfs-h120-precip6h.png"
       },
-      "168": {
-        "t850": "forecast-maps/europe/aigfs-h168-t850.png",
-        "z500_msl": "forecast-maps/europe/aigfs-h168-z500_msl.png",
-        "wind10m": "forecast-maps/europe/aigfs-h168-wind10m.png",
-        "precip6h": "forecast-maps/europe/aigfs-h168-precip6h.png"
-      },
-      "240": {
-        "t850": "forecast-maps/europe/aigfs-h240-t850.png",
-        "z500_msl": "forecast-maps/europe/aigfs-h240-z500_msl.png",
-        "wind10m": "forecast-maps/europe/aigfs-h240-wind10m.png",
-        "precip6h": "forecast-maps/europe/aigfs-h240-precip6h.png"
-      },
       "360": {
-        "t850": "forecast-maps/europe/aigfs-h360-t850.png",
-        "z500_msl": "forecast-maps/europe/aigfs-h360-z500_msl.png",
         "wind10m": "forecast-maps/europe/aigfs-h360-wind10m.png",
         "precip6h": "forecast-maps/europe/aigfs-h360-precip6h.png"
       }
     }
   },
-  "errors": {},
+  "errors": {
+    "aigfs-h168-t850": "\nCant open index file https://nomads.ncep.noaa.gov/pub/data/nccf/com/aigfs/prod/aigfs.20261108/12/model/atmos/grib2/aigfs.t12z.pres.f168.grib2.idx\nDownload the full file first (with `H.download()`).\nYou will need to remake the Herbie object (H = `Herbie()`)\nor delete this cached property: `del H.index_as_dataframe()`",
+    "aigfs-h168-z500_msl": "Range request not honored: server returned HTTP 302 (Content-Length: 720). This can happen when a network proxy or VPN strips the Range header. Try downloading the full file first, then subset locally:\n  full_file = Herbie(...).download()\n  Herbie(...).download(search=...)",
+    "aigfs-h168-wind10m": "Range request not honored: server returned HTTP 302 (Content-Length: 720). This can happen when a network proxy or VPN strips the Range header. Try downloading the full file first, then subset locally:\n  full_file = Herbie(...).download()\n  Herbie(...).download(search=...)",
+    "aigfs-h168-precip6h": "Range request not honored: server returned HTTP 302 (Content-Length: 720). This can happen when a network proxy or VPN strips the Range header. Try downloading the full file first, then subset locally:\n  full_file = Herbie(...).download()\n  Herbie(...).download(search=...)",
+    "aigfs-h240-t850": "\nCant open index file https://nomads.ncep.noaa.gov/pub/data/nccf/com/aigfs/prod/aigfs.20261108/12/model/atmos/grib2/aigfs.t12z.pres.f240.grib2.idx\nDownload the full file first (with `H.download()`).\nYou will need to remake the Herbie object (H = `Herbie()`)\nor delete this cached property: `del H.index_as_dataframe()`",
+    "aigfs-h240-z500_msl": "Range request not honored: server returned HTTP 302 (Content-Length: 720). This can happen when a network proxy or VPN strips the Range header. Try downloading the full file first, then subset locally:\n  full_file = Herbie(...).download()\n  Herbie(...).download(search=...)",
+    "aigfs-h240-wind10m": "Range request not honored: server returned HTTP 302 (Content-Length: 720). This can happen when a network proxy or VPN strips the Range header. Try downloading the full file first, then subset locally:\n  full_file = Herbie(...).download()\n  Herbie(...).download(search=...)",
+    "aigfs-h240-precip6h": "Range request not honored: server returned HTTP 302 (Content-Length: 720). This can happen when a network proxy or VPN strips the Range header. Try downloading the full file first, then subset locally:\n  full_file = Herbie(...).download()\n  Herbie(...).download(search=...)",
+    "aigfs-h360-t850": "Range request not honored: server returned HTTP 302 (Content-Length: 720). This can happen when a network proxy or VPN strips the Range header. Try downloading the full file first, then subset locally:\n  full_file = Herbie(...).download()\n  Herbie(...).download(search=...)",
+    "aigfs-h360-z500_msl": "Range request not honored: server returned HTTP 302 (Content-Length: 720). This can happen when a network proxy or VPN strips the Range header. Try downloading the full file first, then subset locally:\n  full_file = Herbie(...).download()\n  Herbie(...).download(search=...)"
+  },
   "derived_estimates": {
     "gfs": {
       "24": {
