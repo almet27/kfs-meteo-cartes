@@ -10,6 +10,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import json
+import os
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
 
@@ -97,6 +98,15 @@ def main():
             models[model]={**previous,"source":info["source"],
                            "native_step_h":interval,"check_error":str(exc)[:200]}
             warnings[model]="Echec de la verification : pas de nouveau run annonce"
+    # Dispatch only genuinely new 72h source cycles, not unchanged polls.
+    ready_models=[model for model,record in models.items()
+                  if record.get("temperature_72h_available_for_latest_run")
+                  and record.get("latest_72h_temperature_step_utc")
+                  and record.get("latest_72h_temperature_step_utc") != old.get("models",{}).get(model,{}).get("latest_72h_temperature_step_utc")]
+    output_path=os.environ.get("GITHUB_OUTPUT")
+    if output_path:
+        with open(output_path,"a",encoding="utf-8") as output_file:
+            output_file.write("ready_models="+",".join(ready_models)+"\n")
     same=(models==old.get("models"))
     if same:
         print("No new verified source cycle; no repository commit")
