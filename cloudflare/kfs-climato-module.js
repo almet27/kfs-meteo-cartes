@@ -88,64 +88,72 @@ async function kfsClimStations(){
   return stations;
 }
 function kfsClimParse(txt,id){
-  const lines=txt.replace(/\r/g,"").split("\n");
-  const header=lines.find(l=>l.includes("Indicatif :"))||"";
-  if(!header.includes(id))throw Error("Fiche station incohérente");
-  const edit=(lines.join("\n").match(/Edité le\s*:\s*(\d{2})\/(\d{2})\/(\d{4})/)||[]);
+  const lines=String(txt).replace(/\r/g,"").split("\n");
+  const header=lines.find(x=>x.includes("Indicatif :"))||"";
+  if(!new RegExp("\\b"+id+"\\b").test(header))throw Error("Identifiant de station incorrect dans la fiche");
+  const edit=(txt.match(/Edité le\s*:\s*(\d{2})\/(\d{2})\/(\d{4})/)||[]);
   const meta={id,name:header.split("(")[0].trim(),date:edit.length?edit[3]+"-"+edit[2]+"-"+edit[1]:""};
-  const out=[];
-  let section="",group="",groupCategory="",period="1991–2020",last=null;
+  const rows=[];
+  let section="",group="",period="1991–2020",record=false,recordPeriod="",last=null;
+  const labels=[
+    [/^La température la plus élevée/i,"Record de chaleur","Températures","°C",true],
+    [/^Température maximale\b/i,"Tmax moyenne","Températures","°C",false],
+    [/^Température moyenne\b/i,"Température moyenne","Températures","°C",false],
+    [/^Température minimale\b/i,"Tmin moyenne","Températures","°C",false],
+    [/^La température la plus basse/i,"Record de froid","Températures","°C",true],
+    [/^(Précipitations : )?Hauteur quotidienne maximale/i,"Record de pluie sur 24 h","Précipitations","mm",true],
+    [/^(Précipitations : )?Hauteur moyenne mensuelle/i,"Cumul moyen de pluie","Précipitations","mm",false],
+    [/^Hauteur de précipitations/i,"Cumul moyen de pluie","Précipitations","mm",false],
+    [/^Degrés Jours Unifiés/i,"Degrés jours unifiés","Soleil et évapotranspiration","°C",false],
+    [/^Rayonnement global/i,"Rayonnement global","Soleil et évapotranspiration","J/cm²",false],
+    [/^Durée d.insolation/i,"Durée d'ensoleillement","Soleil et évapotranspiration","h",false],
+    [/^Evapotranspiration Potentielle/i,"Évapotranspiration potentielle","Soleil et évapotranspiration","mm",false],
+    [/^(La )?[Rr]afale maximale de vent/i,"Record de rafale","Vent","m/s",true],
+    [/^Vitesse du vent moyenné sur 10 mn/i,"Vent moyen sur 10 min","Vent","m/s",false]
+  ];
+  const identify= s=>labels.find(d=>d[0].test(s));
   for(const raw of lines){
     const line=raw.trim(),cells=raw.split(";");
-    if(cells.length>=14&&cells[1]!==undefined){
+    const pd=line.match(/^Statistiques établies sur la période (\d{4})-(\d{4})/);
+    if(pd){period=pd[1]+"–"+pd[2];continue;}
+    const rec=line.match(/Records établis sur la période du ([0-9-]+) au ([0-9-]+)/i);
+    if(rec){recordPeriod=rec[1]+" au "+rec[2];continue;}
+    if(cells.length>=14){
       const label=cells[0].trim();
       if(label==="Date"){
-        if(last)last.dates=cells.slice(1,14).map(x=>x.trim());
+        if(last&&last.record)last.dates=cells.slice(1,14).map(s=>s.trim());
         continue;
       }
-      let definition=null;
-      if(label && group){
-        let cat=groupCategory;
-        let unit="jours";
-        let title=label.replace(/\s+/g," ");
-        if(group==="occurrences")cat="Phénomènes";
-        if(group==="rafales")cat="Vent";
-        definition=[title,title,cat,unit,false];
-      } else if(!label){
-        definition=KFS_CLIM_DEFINITIONS.find(d=>section.startsWith(d[0]))||null;
-      }
-      if(definition){
-        last={label:definition[1],group:definition[2],unit:definition[3],record:!!definition[4],
-          period,values:cells.slice(1,14).map(kfsClimFloat),dates:[]};
-        out.push(last);
+      let d=null;
+      if(group){
+        if(!label)continue;
+        if(/^Tx\s*[<>]=|^Tn\s*[<>]=/i.test(label))d=[null,label,"Températures","jours",false];
+        else if(/^Rr\s*[<>]=/i.test(label))d=[null,label,"Précipitations","jours",false];
+        else if(group==="vent"&&/m\/s/.test(label))d=[null,"Rafales "+label,"Vent","jours",false];
+        else if(/^(Orage|Brouillard|Neige|Grêle)/i.test(label))d=[null,label,"Phénomènes","jours",false];
+      }else if(!label){d=identify(section);}
+      if(d){
+        const values=cells.slice(1,14).map(kfsClimFloat);
+        if(values.some(v=>v!==null)){
+          last={label:d[1],group:d[2],unit:d[3],record:!!d[4],
+            period,recordPeriod:d[4]?recordPeriod:"",values,dates:[]};
+          rows.push(last);
+        }
       }
       continue;
     }
-    const p=line.match(/^Statistiques établies sur la période (\d{4})-(\d{4})/);
-    if(p){period=p[1]+"–"+p[2];continue;}
-    if(!line||/^Date\b/.test(line)||/^FICHE CLIMATOLOGIQUE|^Edité le|^Statistiques\s+\d{4}-|^Janv|^Données non disponibles|^Ces statistiques|^Rr :|^\(Tn|^\(Rr|^[-−] :/.test(line))continue;
-    if(line==="Nombre moyen de jours avec"){
-      group="seuils";continue;
-    }
-    if(line==="Nombre moyen de jours avec rafales"){
-      group="rafales";groupCategory="Vent";continue;
-    }
-    if(line.startsWith("Nombre moyen de jours avec brouillard")){
-      group="occurrences";groupCategory="Phénomènes";continue;
-    }
-    if(KFS_CLIM_DEFINITIONS.some(d=>line.startsWith(d[0]))){
-      section=line;group="";period="1991–2020";
-      if(line.startsWith("Précipitations"))groupCategory="Précipitations";
-      else if(line.startsWith("Rafale")||line.startsWith("Vitesse du vent"))groupCategory="Vent";
-      else if(line.startsWith("Température")||line.startsWith("La température"))groupCategory="Températures";
+    if(!line||/^FICHE CLIMATOLOGIQUE|^Edité le|^Statistiques\s+\d{4}|^Janv|^Données non disponibles|^Ces statistiques|^Rr :|^Tn :|^\(Tn|^\(Rr|^[-−] :|^16 m\/s/.test(line))continue;
+    if(line.startsWith("Nombre moyen de jours avec")){
+      group=/rafales/i.test(line)?"vent":/brouillard|orage|grêle|neige/i.test(line)?"phenomenes":"seuils";
+      section="";period="1991–2020";recordPeriod="";last=null;
       continue;
     }
-    // Les groupes de seuils changent de contexte après la partie précipitations.
-    if(line.startsWith("Précipitations"))groupCategory="Précipitations";
+    if(identify(line)){
+      group="";section=line;period="1991–2020";recordPeriod="";last=null;
+    }
   }
-  // Les occurrences sans donnée restent absentes : on ne calcule ni ne devine une valeur.
-  if(!out.length)throw Error("Fiche reçue mais statistiques illisibles");
-  return {meta,rows:out};
+  if(!rows.length)throw Error("Statistiques non lisibles dans la fiche officielle");
+  return {meta,rows};
 }
 async function kfsClimStationForCity(city){
   const stations=(await kfsClimStations()).map(x=>({...x,km:kfsClimDistance(city.lat,city.lon,x.lat,x.lon)})).sort((a,b)=>a.km-b.km);
@@ -177,7 +185,7 @@ function kfsClimSelect(rows,rubrique){
   if(rubrique==="phenomenes")return rows.filter(r=>r.group==="Phénomènes");
   if(rubrique==="records")return rows.filter(r=>r.record);
   if(rubrique==="bilan"){
-    const named=["Température moyenne","Tmax moyenne","Tmin moyenne","Cumul moyen de pluie","Durée d’ensoleillement","Vent moyen sur 10 min"];
+    const named=["Température moyenne","Tmax moyenne","Tmin moyenne","Cumul moyen de pluie","Durée d\'ensoleillement","Vent moyen sur 10 min"];
     const main=rows.filter(r=>named.includes(r.label));
     const frost=rows.find(r=>r.group==="Températures"&&/^Tn\s*<=?\s*0\s*°?C/i.test(r.label));
     const heat=rows.find(r=>r.group==="Températures"&&/^Tx\s*>=?\s*30\s*°?C/i.test(r.label));
@@ -228,7 +236,7 @@ function kfsClimMessage(city,doc,rubrique,month){
     }
   }
   if(!embeds.length)throw Error("Aucune valeur publiée pour la rubrique et le mois demandés.");
-  return {embeds:embeds.slice(0,10),allowed_mentions:{parse:[]}};
+  return {embeds,allowed_mentions:{parse:[]}};
 }
 async function kfsClimatoHandle(interaction,appId){
   const options=interaction.data?.options||[];
@@ -243,8 +251,14 @@ async function kfsClimatoHandle(interaction,appId){
     payload={content:"⚠️ **KFS MÉTÉO — /climato** : "+String(e?.message||e).slice(0,300)
       +"\nLes données manquantes ne sont jamais remplacées par des estimations.",allowed_mentions:{parse:[]}};
   }
-  const r=await fetch(discordUrl,{method:"PATCH",headers:{"content-type":"application/json"},body:JSON.stringify(payload)});
-  if(!r.ok)console.error("KFS_CLIMATO_DISCORD_HTTP",r.status,(await r.text()).slice(0,300));
+  const pages=payload.embeds?Array.from({length:Math.ceil(payload.embeds.length/10)},(_,i)=>payload.embeds.slice(i*10,i*10+10)):[];
+  const first=pages.length?{...payload,embeds:pages[0]}:payload;
+  const r=await fetch(discordUrl,{method:"PATCH",headers:{"content-type":"application/json"},body:JSON.stringify(first)});
+  if(!r.ok){console.error("KFS_CLIMATO_DISCORD_HTTP",r.status,(await r.text()).slice(0,300));return;}
+  for(let i=1;i<pages.length;i++){
+    const follow=await fetch("https://discord.com/api/v10/webhooks/"+appId+"/"+interaction.token,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({embeds:pages[i],allowed_mentions:{parse:[]}})});
+    if(!follow.ok)console.error("KFS_CLIMATO_FOLLOWUP_HTTP",follow.status);
+  }
 }
 async function kfsClimatoRegister(botToken,appId,guildId){
   if(!botToken||!appId||!guildId)throw Error("Informations Discord de l'application absentes.");
