@@ -1,0 +1,23 @@
+name: TEST Discord /cartes Météociel (sans déploiement)
+
+on:
+  push:
+    paths:
+      - 'worker/kfs-meteo-worker-foudre-periodes-live-wu.js'
+      - 'tests/test-cartes-meteociel.cjs'
+      - '.github/workflows/test-discord-cartes-meteociel.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-command-cartes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Contrôler la syntaxe du Worker
+        run: node --check worker/kfs-meteo-worker-foudre-periodes-live-wu.js
+      - name: Vérifier zones, mesures et liens Météociel / Discord
+        run: node tests/test-cartes-meteociel.cjs
