@@ -1,6 +1,8 @@
 name: KFS - analyse synoptique argumentee (apercu sans Discord)
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '15 6 * * 0'  # dimanche 06:15 UTC, avant l'analyse ChatGPT de 09:00 Europe/Paris
   push:
     paths:
       - 'scripts/generate_tendance_analysis.py'
