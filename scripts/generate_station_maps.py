@@ -23,9 +23,9 @@ BOUNDARIES_URL = ("https://raw.githubusercontent.com/gregoiredavid/"
                   "france-geojson/master/regions-version-simplifiee.geojson")
 OUT = pathlib.Path("station-maps")
 METRICS = {
-    "temperature": ("Températures observées", "°C", "coolwarm"),
-    "tmax": ("Températures maximales / 24 h", "°C", "coolwarm"),
-    "tmin": ("Températures minimales / 24 h", "°C", "coolwarm"),
+    "temperature": ("Températures observées", "°C", "RdYlBu_r"),
+    "tmax": ("Températures maximales / 24 h", "°C", "RdYlBu_r"),
+    "tmin": ("Températures minimales / 24 h", "°C", "RdYlBu_r"),
     "vent": ("Vent moyen observé", "km/h", "YlGnBu"),
     "rafales": ("Dernières rafales horaires", "km/h", "inferno"),
     "rafalesmax": ("Rafales maximales / 24 h", "km/h", "inferno"),
@@ -213,6 +213,86 @@ def polygons(geojson):
                     yield ring
 
 
+# Cache des masques de terre : calcul une fois par zone, puis réutilisation pour
+# les trois cartes de température. Aucune interpolation ne colore la mer.
+LAND_MASK_CACHE = {}
+TEMPERATURE_METRICS = frozenset(("temperature", "tmax", "tmin"))
+
+
+def temperature_surface(zone, bounds, records, shapes):
+    """Interpolation spatiale des stations, limitée à la France et aux mesures proches.
+
+    Ce champ est une ESTIMATION entre stations, et non un relevé sur chaque pixel.
+    Les mailles hors des polygones français, hors du réseau de mesure et
+    à plus de 110 km d'une station sont entièrement transparentes.
+    """
+    import numpy as np
+    from matplotlib.path import Path
+    from scipy.interpolate import LinearNDInterpolator
+    from scipy.ndimage import gaussian_filter
+    from scipy.spatial import cKDTree
+
+    x0, x1, y0, y1 = bounds
+    nx, ny = 520, 400
+    xx, yy = np.meshgrid(np.linspace(x0, x1, nx),
+                         np.linspace(y0, y1, ny))
+    grid = np.column_stack((xx.ravel(), yy.ravel()))
+    land = LAND_MASK_CACHE.get(zone)
+    if land is None:
+        land = np.zeros(len(grid), dtype=bool)
+        for ring in shapes:
+            polygon = np.asarray(ring, dtype=float)
+            if polygon.ndim != 2 or polygon.shape[0] < 3:
+                continue
+            xmin, ymin = polygon.min(axis=0)
+            xmax, ymax = polygon.max(axis=0)
+            if xmax < x0 or xmin > x1 or ymax < y0 or ymin > y1:
+                continue
+            candidates = np.flatnonzero(
+                (grid[:, 0] >= xmin) & (grid[:, 0] <= xmax)
+                & (grid[:, 1] >= ymin) & (grid[:, 1] <= ymax))
+            if candidates.size:
+                land[candidates] |= Path(polygon).contains_points(
+                    grid[candidates])
+        LAND_MASK_CACHE[zone] = land
+
+    # Les stations voisines de la zone rendent le dégradé continu aux frontières.
+    neighbors = [p for p in records
+                 if x0 - 1.4 <= p[0] <= x1 + 1.4
+                 and y0 - 1.4 <= p[1] <= y1 + 1.4]
+    if len(neighbors) < 3 or not land.any():
+        return None
+    obs = np.asarray(neighbors, dtype=float)
+    lat_correction = math.cos(math.radians((y0 + y1) / 2))
+    xy_obs = obs[:, :2].copy()
+    xy_obs[:, 0] *= lat_correction
+    xy_grid = grid.copy()
+    xy_grid[:, 0] *= lat_correction
+
+    try:
+        interpolator = LinearNDInterpolator(xy_obs, obs[:, 2],
+                                            fill_value=np.nan)
+        values = np.asarray(interpolator(xy_grid), dtype=float)
+    except (ValueError, RuntimeError):
+        return None
+
+    # Pas de couleur sans proximité réelle de stations et pas d'extrapolation
+    # au-delà du réseau observé (le convexe de la triangulation).
+    distances, _ = cKDTree(xy_obs).query(xy_grid, k=1)
+    valid = land & np.isfinite(values) & (distances * 111.2 <= 110)
+    if not valid.any():
+        return None
+    data = np.where(valid, values, 0.0).reshape(ny, nx)
+    weight = valid.astype(float).reshape(ny, nx)
+    # Flou léger sans traverser les zones sans données ni la mer.
+    smooth_data = gaussian_filter(data, sigma=1.6, mode="nearest")
+    smooth_weight = gaussian_filter(weight, sigma=1.6, mode="nearest")
+    result = np.divide(smooth_data, smooth_weight,
+                       out=np.zeros_like(smooth_data),
+                       where=smooth_weight > 1e-6)
+    return np.ma.masked_where(~valid.reshape(ny, nx), result)
+
+
 def render(metric, zone, records, shapes, timestamp, hours):
     import matplotlib
     matplotlib.use("Agg")
@@ -247,10 +327,24 @@ def render(metric, zone, records, shapes, timestamp, hours):
         if low == high:
             low -= 1
             high += 1
-        colors = plt.get_cmap(palette)
+        colors = plt.get_cmap(palette).copy()
+        colors.set_bad((0, 0, 0, 0))
         normalized = Normalize(vmin=low, vmax=high)
-        ax.scatter(xs, ys, c=nums, s=24, cmap=colors,
-                   norm=normalized, alpha=.76, linewidths=0, zorder=2)
+        if metric in TEMPERATURE_METRICS:
+            surface = temperature_surface(zone, bounds, records, shapes)
+            if surface is not None:
+                ax.imshow(surface, extent=(x0, x1, y0, y1),
+                          origin="lower", interpolation="bicubic",
+                          cmap=colors, norm=normalized, zorder=0.5)
+            else:
+                # En cas de couverture insuffisante, préférer les vraies
+                # stations plutôt qu'une interpolation trompeuse.
+                ax.scatter(xs, ys, c=nums, s=24, cmap=colors,
+                           norm=normalized, alpha=.76, linewidths=0,
+                           zorder=2)
+        else:
+            ax.scatter(xs, ys, c=nums, s=24, cmap=colors,
+                       norm=normalized, alpha=.76, linewidths=0, zorder=2)
         occupied = set()
         for lon, lat, val in sorted(points, key=lambda x: abs(x[2]), reverse=True):
             cell = (int((lon - x0) / (x1 - x0) * grid_cols),
@@ -288,6 +382,10 @@ def render(metric, zone, records, shapes, timestamp, hours):
     fig.text(.055, .04, footer, color="#cfdae9", fontsize=10.5)
     fig.text(.055, .016, "Source : Météo-France · Contours : IGN / Admin Express (Licence Ouverte)",
              color="#8da2b8", fontsize=9.5)
+    if metric in TEMPERATURE_METRICS:
+        fig.text(.5, .073, "Bleu : plus froid   ·   Rouge : plus chaud   ·   "
+                 "Dégradé estimé par interpolation entre stations",
+                 ha="center", color="#c6d4e4", fontsize=9.5)
     if quadrant_zone or france_zone:
         # Maximiser la carte sans rogner le bandeau ni le pied.
         fig.subplots_adjust(left=.035, right=.975, top=.86, bottom=.105)
@@ -308,7 +406,13 @@ def render(metric, zone, records, shapes, timestamp, hours):
     plt.close(fig)
     # Palette PNG : alléger l'actualisation sans dégrader les valeurs textuelles.
     with Image.open(dest) as img:
-        img.convert("RGB").quantize(colors=128).save(dest, format="PNG", optimize=True)
+        if metric in TEMPERATURE_METRICS:
+            # Préserver la subtilité du dégradé : 128 couleurs créeraient
+            # des bandes visibles, surtout sur les cartes ouvertes dans Discord.
+            img.convert("RGB").save(dest, format="PNG", optimize=True)
+        else:
+            img.convert("RGB").quantize(colors=128).save(
+                dest, format="PNG", optimize=True)
     return len(points)
 
 
@@ -329,7 +433,15 @@ def test():
     assert values["tmax"][0][2] == 9
     assert values["rafales"][0][2] == 25.2
     assert values["rafalesmax"][0][2] == 32.4
-    print("Self-test: conversions, cumul 24 h, maximum et 7 mesures OK")
+    # Test local du dégradé, sans réseau ni données météo fictives publiées.
+    synthetic = [(-4, 48, 2), (0, 50, 8), (7, 48, 17),
+                 (6, 43, 25), (-1, 43, 21), (2, 46, 13)]
+    fake_land = [[(-5.7, 41.2), (9.8, 41.2),
+                  (9.8, 51.4), (-5.7, 51.4), (-5.7, 41.2)]]
+    field = temperature_surface("fr", ZONES["fr"][1], synthetic, fake_land)
+    assert field is not None and field.count() > 1000
+    assert 2 <= field.min() < field.max() <= 25
+    print("Self-test: 7 mesures + dégradé spatial limité aux stations OK")
 
 
 def main():
