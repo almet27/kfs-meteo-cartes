@@ -1,5 +1,6 @@
 name: KFS - cartes synoptiques pour chaque periode Discord
 # Actualisation finale des trois infographies après validation du run GFS et des diagnostics IFS/AIFS.
+# Important : les commits faits par GITHUB_TOKEN ne relancent pas les workflows sur push.
 on:
   workflow_dispatch:
   schedule:
