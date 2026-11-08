@@ -5,7 +5,7 @@ on:
       modele:
         description: Modele natif a cartographier
         type: choice
-        options: [ifs, aifs-single, gfs]
+        options: [ifs, aifs-single, gfs, aigfs]
         default: ifs
         required: true
       horizon:
@@ -47,7 +47,13 @@ jobs:
           SELECTED_HORIZON: ${{ github.event.inputs.horizon }}
         run: |
           if [ "$EVENT_KIND" = "push" ]; then
-            python scripts/generate_france_forecasts.py --model ifs --steps 3,6
+            result=0
+            for model in ifs aifs-single gfs aigfs; do
+              steps='3,6'
+              if [ "$model" = 'aifs-single' ] || [ "$model" = 'aigfs' ]; then steps='6,12'; fi
+              python scripts/generate_france_forecasts.py --model "$model" --steps "$steps" || result=1
+            done
+            exit "$result"
           else
             python scripts/generate_france_forecasts.py --model "${SELECTED_MODEL:-ifs}" --max-hour "${SELECTED_HORIZON:-12}"
           fi
