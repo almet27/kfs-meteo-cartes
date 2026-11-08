@@ -26,6 +26,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - name: Synchroniser avec l'etat le plus recent du depot
+        run: |
+          git fetch origin main
+          git checkout -B main origin/main
       - name: Installer le client legere ECMWF
         run: python -m pip install 'ecmwf-opendata>=0.3'
       - name: Identifier les dernieres sorties disponibles
@@ -43,12 +47,15 @@ jobs:
           if ! git diff --cached --quiet; then
             git commit -m 'Mettre a jour disponibilite des runs France'
             for attempt in 1 2 3 4; do
-              if ! git pull --rebase; then
-                git rebase --abort || true
-                exit 1
-              fi
-              if git push; then exit 0; fi
-              sleep 5
+              if git push origin HEAD:main; then exit 0; fi
+              echo "La branche a change depuis le controle; recalculer plutot que fusionner le JSON."
+              git fetch origin main
+              git reset --hard origin/main
+              python scripts/check_france_cycles.py
+              git add forecast-maps/france/latest-cycles.json
+              if git diff --cached --quiet; then exit 0; fi
+              git commit -m 'Synchroniser disponibilite des derniers runs France'
+              sleep 4
             done
             exit 1
           fi
