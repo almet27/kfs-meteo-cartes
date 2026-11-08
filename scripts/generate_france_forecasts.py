@@ -6,12 +6,12 @@ Models:
  - ECMWF AIFS Single, native 6-hour steps (never interpolate fake steps);
  - NOAA GFS, native 3-hour steps.
 Data is taken from actual GRIB fields. In particular snowfall is *water
-equivalent*, not centimetres of snow on the ground. For NOAA, GFS frozen
-precipitation may only be shown as a labelled phase ESTIMATE when CPOFP
-exists. Missing fields stay missing.
+equivalent*, not centimetres of snow on the ground. For NOAA, GFS rain and snow are shown only as labelled, diagnostic
+phase ESTIMATES derived from categorical NOAA rain/snow fields; mixed phase
+is never silently classified as snow. Missing fields stay missing.
 
-Writes an Actions artifact, NOT images to repository history. Publication
-must use a bounded-size cache (e.g. R2) before enabling full-cycle auto sync.
+Writes temporary Actions artifacts for independent GitHub Releases. No Europe
+forecast output is modified.
 """
 from __future__ import annotations
 import argparse
@@ -139,7 +139,10 @@ def gfs_field(state, step, key):
         "10v": r":VGRD:10 m above ground:",
         "msl": r":PRMSL:mean sea level:",
         "tp": r":APCP:surface:",
-        "cpofp": r":CPOFP:surface:",
+        "crain": r":CRAIN:surface:[0-9]+ hour fcst:",
+        "csnow": r":CSNOW:surface:[0-9]+ hour fcst:",
+        "cicep": r":CICEP:surface:[0-9]+ hour fcst:",
+        "cfrzr": r":CFRZR:surface:[0-9]+ hour fcst:",
     }[key]
     # NOAA AIGFS can briefly publish a GRIB index before a subset becomes
     # reachable from every mirror. Retry the SAME cycle and SAME field only.
@@ -256,16 +259,53 @@ def render(lon, lat, values, model, run, step, metric, folder, note=""):
     if norm is not None:
         kw["norm"] = norm
     shade = ax.contourf(lon, lat, values, levels=levels, **kw)
+    if metric in ("t850", "t2m"):
+        # Display the actual scalar field values at weather map anchor points.
+        # Values come from the nearest native GRIB cell: no made-up interpolation.
+        locations = [
+            (-4.49,48.38,"Brest"),(-1.55,47.22,"Nantes"),
+            (-0.58,44.84,"Bordeaux"),(1.44,43.60,"Toulouse"),
+            (2.35,48.86,"Paris"),(3.06,50.63,"Lille"),
+            (1.10,49.44,"Rouen"),(1.26,45.83,"Limoges"),
+            (3.09,45.78,"Clermont"),(4.84,45.76,"Lyon"),
+            (5.37,43.30,"Marseille"),(3.88,43.61,"Montpellier"),
+            (5.39,43.94,"Avignon"),(7.75,48.58,"Strasbourg"),
+            (5.04,47.32,"Dijon"),(7.26,43.71,"Nice"),
+        ]
+        a=np.asarray(values,dtype=float)
+        ix=np.asarray(lon,dtype=float);iy=np.asarray(lat,dtype=float)
+        for xpoint,ypoint,city in locations:
+            col=int(np.abs(ix-xpoint).argmin())
+            row=int(np.abs(iy-ypoint).argmin())
+            measured=a[row,col]
+            if not np.isfinite(measured):
+                continue
+            txt=ax.text(xpoint,ypoint,f"{measured:+.0f}°",fontsize=8.3,
+                        ha="center",va="center",weight="bold",color="#1D2431",
+                        transform=ccrs.PlateCarree(),zorder=8)
+            txt.set_path_effects([pe.Stroke(linewidth=2.35,foreground="white"),
+                                  pe.Normal()])
+    if metric == "t2m":
+        lines=tuple(range(-25,41,5))
+        cc=ax.contour(lon,lat,values,levels=lines,
+                      colors="#263442",linewidths=[1.1 if v in (-10,-5,0) else .48 for v in lines],
+                      alpha=.72,transform=ccrs.PlateCarree(),zorder=4)
+        ll=ax.clabel(cc,inline=True,fontsize=7,fmt="%d",colors="#192636")
+        for label in ll:
+            label.set_path_effects([pe.Stroke(linewidth=1.8,foreground="white"),pe.Normal()])
     if metric == "t850":
         isotherm_contours = ax.contour(lon, lat, values, levels=KFS_T850_ISOTHERMS,
                          colors="#17202A",
                          linewidths=[1.18 if n in KFS_T850_COLD_ISOTHERMS else .45
                                      for n in KFS_T850_ISOTHERMS],
                          transform=ccrs.PlateCarree(), zorder=4)
-        labels = ax.clabel(isotherm_contours, levels=KFS_T850_COLD_ISOTHERMS,
-                          inline=True, fontsize=10, fmt="%d", colors="#17202A")
-        for l in labels:
-            l.set_path_effects([pe.Stroke(linewidth=2, foreground="white"), pe.Normal()])
+        labels = ax.clabel(isotherm_contours, levels=KFS_T850_ISOTHERMS,
+                          inline=True, inline_spacing=3, fontsize=8,
+                          fmt="%d", colors="#17202A")
+        boldlabels = ax.clabel(isotherm_contours, levels=KFS_T850_COLD_ISOTHERMS,
+                          inline=True, fontsize=10.5, fmt="%d", colors="#17202A")
+        for l in labels + boldlabels:
+            l.set_path_effects([pe.Stroke(linewidth=2.1, foreground="white"), pe.Normal()])
     if metric == "mslp":
         contour = ax.contour(lon, lat, values,
                              levels=np.arange(960, 1056, 5), colors="white",
