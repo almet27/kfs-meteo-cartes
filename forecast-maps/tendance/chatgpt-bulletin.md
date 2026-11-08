@@ -15,6 +15,8 @@ Autour de **J+3**, IFS et AIFS font apparaître sur le domaine France un **coura
 
 Pour la France, **une ambiance relativement douce et potentiellement changeante** paraît donc plus cohérente qu'une arrivée généralisée d'air continental froid à cette première échéance. Si des fronts atlantiques accompagnent cette circulation, la façade ouest et les régions proches de la Manche pourraient être les premières concernées par des passages nuageux et pluvieux. Les secteurs plus à l'est pourraient connaître une évolution décalée. **Il s'agit de conséquences possibles du flux, pas d'une prévision établie de précipitations** : les champs de pluie et les trajectoires frontales n'ont pas été vérifiés dans ce diagnostic.
 
+![Carte synoptique européenne J+3 : IFS et AIFS](https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j3.png)
+
 ## Autour du 15 novembre : hausse des pressions, mais désaccord sur le courant
 
 Vers **J+7**, un changement apparaît : les deux modèles prévoient une **hausse de la pression moyenne sur la France**, autour de 1017 hPa pour IFS et 1014 hPa pour AIFS. Cette évolution pourrait traduire une influence plus anticyclonique sur une partie de l'Europe occidentale, avec des périodes possiblement plus calmes si la structure des hautes pressions se confirme. Il serait néanmoins prématuré de parler d'un véritable blocage : une moyenne de pression ne fournit ni l'axe précis d'une dorsale, ni sa durée de vie.
@@ -23,6 +25,8 @@ C'est surtout **l'orientation des courants en altitude** qui distingue les solut
 
 Deux lectures météorologiques deviennent alors possibles. **Si l'influence des hautes pressions domine**, le temps pourrait devenir plus stable sur plusieurs régions, même sans redoux marqué en altitude. **Si le courant océanique plus dynamique d'AIFS se maintient**, l'ouest et le nord-ouest de la France resteraient davantage exposés à de nouvelles perturbations, selon leur trajectoire réelle. La présence d'un flux de sud dans IFS ne suffit pas à conclure à un réchauffement : l'évolution thermique dépend aussi du déplacement des structures d'altitude et du champ de température en amont.
 
+![Carte synoptique européenne J+7 : IFS et AIFS](https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j7.png)
+
 ## Aux environs du 18 novembre : le retour d'un courant d'ouest, mais quelle masse d'air ?
 
 À **J+10**, les deux sorties retrouvent une composante maritime occidentale sur la France, mais avec des nuances importantes. IFS fait apparaître un courant moyen **d'ouest-nord-ouest** à 850 hPa, tandis qu'AIFS conserve un flux **plus franchement d'ouest** et presque deux fois plus soutenu en vitesse vectorielle moyenne. Les températures à 850 hPa diffèrent également : **environ 1,3 °C avec IFS et 3,4 °C avec AIFS**.
@@ -30,6 +34,8 @@ Deux lectures météorologiques deviennent alors possibles. **Si l'influence des
 Dans la solution IFS, cette orientation plus nord-ouest associée à une masse d'air plus fraîche en altitude pourrait faciliter un rafraîchissement sensible si le brassage vertical et le passage de perturbations se confirment. Un courant maritime plus vigoureux dans AIFS pourrait, de son côté, entretenir davantage de nébulosité et d'instabilité sur certains secteurs. **Il est impossible, avec les seuls champs examinés, de prévoir où tomberait la pluie, de parler de coup de vent ou de quantifier les températures au sol.**
 
 Les pressions restent relativement basses sur le domaine nord-atlantique dans les deux simulations, ce qui invite à suivre les systèmes dépressionnaires circulant entre l'océan et le nord de l'Europe. Leur position exacte par rapport à la France reste à préciser avec les cartes détaillées et les ensembles. Pour les régions françaises, le contraste à surveiller serait celui entre **une influence maritime plus fraîche** et **une circulation d'ouest relativement plus douce**, dont les conséquences locales dépendraient des trajectoires des fronts et de l'orographie.
+
+![Carte synoptique européenne J+10 : IFS et AIFS](https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j10.png)
 
 ## Au-delà de J+10 : tendance encore incomplète
 
