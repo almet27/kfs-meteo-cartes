@@ -34,6 +34,10 @@ jobs:
         run: python -m pip install --disable-pip-version-check "matplotlib>=3.9,<4" "Pillow>=11,<13"
       - name: Validate conversions and aggregations
         run: python scripts/generate_station_maps.py --self-test
+      - name: Diagnose Météo-France API subscriptions (status codes only)
+        env:
+          METEOFRANCE_BASIC_AUTH: ${{ secrets.METEOFRANCE_BASIC_AUTH }}
+        run: python scripts/check_station_api.py
       - name: Generate maps from real stations
         env:
           METEOFRANCE_BASIC_AUTH: ${{ secrets.METEOFRANCE_BASIC_AUTH }}
