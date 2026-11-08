@@ -77,6 +77,29 @@ def render_precip_total(lon,lat,total,model,title,step):
                  f"Run : {RUN.strftime('%d/%m %H:%M')} UTC · zones sèches (<0,1 mm) en blanc")
     save(fig,model,step,"precip6h")
 
+
+SNOW_COLORS=["#a7f0ff","#6fdcff","#3db7fb","#1e81ed","#2659cc","#5338bd",
+             "#7744cd","#9950e1","#b44ede","#c73bb5","#d21a84","#a60c77",
+             "#7b0c71","#500557"]
+
+def render_gfs_phase(lon,lat,quantity,step,kind):
+    # Quantité ESTIMÉE ; CPOFP décrit seulement la phase A L'ÉCHÉANCE.
+    # Ce n'est pas le cumul distinct natif de pluie ou de neige du GFS.
+    fig,ax=canvas()
+    cmap=ListedColormap(RAIN_COLORS if kind=="rain" else SNOW_COLORS)
+    norm=BoundaryNorm(PRECIP_LEVELS,cmap.N,extend="max")
+    shown=np.ma.masked_where(~np.isfinite(quantity)|(quantity<.1),quantity)
+    shade=ax.pcolormesh(lon,lat,shown,cmap=cmap,norm=norm,shading="auto",
+                        transform=ccrs.PlateCarree(),rasterized=True)
+    name="Pluie estimée" if kind=="rain" else "Précipitations gelées estimées (dont neige)"
+    fig.colorbar(shade,ax=ax,orientation="horizontal",pad=.04,shrink=.8,
+                 extend="max",ticks=[.1,.5,1,2,5,12,30,65],
+                 label=name+" (mm équivalent-eau sur 6 h)")
+    ax.set_title(f"KFS MÉTÉO | GFS | Atlantique Nord · Groenland · Europe | +{step} h\n"
+                 f"{name} · ESTIMATION indicative, période +{step-6} à +{step} h\n"
+                 f"APCP 6 h × fraction CPOFP instantanée à +{step} h · Run {RUN.strftime('%d/%m %H:%M')} UTC")
+    save(fig,"gfs",step,kind+"6h")
+
 for model,title in [("gfs","GFS"),("aigfs","AIGFS")]:
     for step in STEPS:
         key=f"{model}-h{step:03}"
@@ -148,6 +171,35 @@ for model,title in [("gfs","GFS"),("aigfs","AIGFS")]:
                 raise ValueError("Cumuls de précipitation inattendus : "+units)
             total=np.maximum(0,total)
             render_precip_total(lon,lat,total,model,title,step)
+            if model=="gfs":
+                # GFS met à disposition CPOFP (% précipitations gelées, instantané).
+                # La fraction de précipitations sur 6 h est INDICATIVE et non un champ
+                # de cumul natif. Valeurs -50 = absence de precipitations : ne pas
+                # les interpréter comme 0 % de neige.
+                try:
+                    px,py,phase,phase_units=field("gfs",step,pressure_product,":CPOFP:surface:")
+                    if not (np.array_equal(lon,px) and np.array_equal(lat,py)):
+                        raise ValueError("Grille CPOFP incompatible avec APCP")
+                    valid=np.isfinite(phase)&(phase>=0)&(phase<=100)
+                    wet=np.isfinite(total)&(total>=.1)
+                    if not np.any(wet&valid):
+                        raise ValueError("CPOFP n'est pas renseigné dans les zones de précipitations")
+                    fraction=np.where(valid,phase/100,np.nan)
+                    rain=np.where(valid,total*(1-fraction),np.nan)
+                    frozen=np.where(valid,total*fraction,np.nan)
+                    render_gfs_phase(lon,lat,rain,step,"rain")
+                    render_gfs_phase(lon,lat,frozen,step,"snow")
+                    metadata.setdefault("derived_estimates",{}).setdefault(model,{})[str(step)]={
+                        "rain6h":"APCP_6h*(1-CPOFP_at_valid_time/100)",
+                        "snow6h":"APCP_6h*CPOFP_at_valid_time/100",
+                        "warning":"ESTIMATION. CPOFP est instantané en fin d'intervalle. "
+                                  "Le champ snow6h contient les précipitations gelées "
+                                  "(dont neige, potentiellement grésil), et non un cumul neige natif.",
+                        "wet_cells_with_valid_phase":int(np.count_nonzero(wet&valid)),
+                        "wet_cells_total":int(np.count_nonzero(wet))}
+                except Exception as error:
+                    metadata["errors"][key+"-rain6h-snow6h"]=str(error)[:350]
+
         except Exception as e:
             metadata["errors"][key+"-precip6h"]=str(e)[:350]
 (OUT/"noaa-metadata.json").write_text(json.dumps(metadata,ensure_ascii=False,indent=2),encoding="utf-8")
