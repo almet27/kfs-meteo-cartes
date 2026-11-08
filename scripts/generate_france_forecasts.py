@@ -185,9 +185,12 @@ def ecmwf_precip_mm(curr, prev, step, earlier):
             return np.clip(value, 0, None), "native_interval"
         if begin != 0:
             raise ValueError("Unsupported GRIB accumulation interval: " + range_text)
-    # Single end step often represents accumulation since the run started.
+    # First native step begins at +0; accumulated precipitation is already the
+    # 0..step total. At later steps, cumulative fields need differencing.
     if prev is None:
-        raise ValueError("Accumulation at run start missing, refusing to invent interval")
+        if earlier == 0:
+            return np.maximum(0, value), "first_interval_since_run"
+        raise ValueError("Previous accumulation missing; refusing to invent interval")
     common_grid(curr, prev)
     old = np.asarray(prev[2], dtype=float)
     old_units = prev[3].strip()
