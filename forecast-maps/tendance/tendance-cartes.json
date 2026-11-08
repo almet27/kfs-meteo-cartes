@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "status": "illustrative_model_maps",
-  "generated_utc": "2026-11-08T23:31:57.830400+00:00",
-  "source_generated_utc": "2026-11-08T23:30:32.408876+00:00",
+  "generated_utc": "2026-11-08T23:48:07.013865+00:00",
+  "source_generated_utc": "2026-11-08T23:46:33.003295+00:00",
   "charts_generated_utc": "2026-11-08T22:11:10.267811+00:00",
   "source": "ECMWF Open Data (CC BY 4.0)",
   "not_weekly_anomalies": true,
@@ -12,7 +12,7 @@
       "step_h": 72,
       "path": "forecast-maps/tendance/tendance-carte-j3.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j3.png",
-      "size_bytes": 293820,
+      "size_bytes": 318244,
       "run_utc": {
         "ifs": "2026-11-08T12:00Z",
         "aifs": "2026-11-08T12:00Z"
@@ -20,13 +20,13 @@
       "valid_utc": "2026-11-11T12:00:00+00:00",
       "title": "J+3 — synthèse synoptique IFS / AIFS",
       "confidence_label": "Modérée (indicative)",
-      "risk_status": "partial_georeferenced",
+      "risk_status": "altitude_filtered_georeferenced",
       "risks": {
         "neige": {
           "status": "absent",
-          "max": 0.5,
-          "unit": "mm équivalent-eau/6h",
-          "reason": "Neige modélisée : pas une hauteur de neige au sol"
+          "max": 0.0,
+          "unit": "mm équiv. eau/6h",
+          "reason": "Pas de neige ≥ 0,5 mm/6h sur le domaine terrestre"
         },
         "verglas": {
           "status": "indisponible",
@@ -93,15 +93,15 @@
           "kind": "pluie_forte"
         }
       ],
-      "style": "kfs-premium-16-9-v4",
-      "note": "Pictogrammes géoréférencés ECMWF. Seuils indicatifs, pas une vigilance."
+      "style": "kfs-editorial-premium-16-9-v5",
+      "note": "Pictogrammes géoréférencés ECMWF, neige hors relief Copernicus GLO-90, pas une vigilance."
     },
     {
       "id": "j7",
       "step_h": 168,
       "path": "forecast-maps/tendance/tendance-carte-j7.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j7.png",
-      "size_bytes": 331278,
+      "size_bytes": 349201,
       "run_utc": {
         "ifs": "2026-11-08T12:00Z",
         "aifs": "2026-11-08T12:00Z"
@@ -109,13 +109,18 @@
       "valid_utc": "2026-11-15T12:00:00+00:00",
       "title": "J+7 — synthèse synoptique IFS / AIFS",
       "confidence_label": "Limitée (indicative)",
-      "risk_status": "partial_georeferenced",
+      "risk_status": "altitude_filtered_georeferenced",
       "risks": {
         "neige": {
-          "status": "marque",
-          "max": 4.4,
-          "unit": "mm équivalent-eau/6h",
-          "reason": "Neige modélisée : pas une hauteur de neige au sol"
+          "status": "relief_uniquement",
+          "max": 0,
+          "unit": "mm équiv. eau/6h",
+          "reason": "Neige hors relief ≤ 800 m (Copernicus GLO-90) ; relief : 5 zones échantillonnées",
+          "mountain_signal": true,
+          "mountain_max": 4.4,
+          "lowland_sample_count": 0,
+          "highland_sample_count": 5,
+          "terrain_source": "Copernicus DEM GLO-90 via Open-Meteo"
         },
         "verglas": {
           "status": "indisponible",
@@ -174,29 +179,17 @@
           "lat": 42.5,
           "value": 12.2,
           "kind": "pluie_forte"
-        },
-        {
-          "lon": 0.0,
-          "lat": 42.75,
-          "value": 4.4,
-          "kind": "neige"
-        },
-        {
-          "lon": 3.75,
-          "lat": 44.25,
-          "value": 0.7,
-          "kind": "neige"
         }
       ],
-      "style": "kfs-premium-16-9-v4",
-      "note": "Pictogrammes géoréférencés ECMWF. Seuils indicatifs, pas une vigilance."
+      "style": "kfs-editorial-premium-16-9-v5",
+      "note": "Pictogrammes géoréférencés ECMWF, neige hors relief Copernicus GLO-90, pas une vigilance."
     },
     {
       "id": "j10",
       "step_h": 240,
       "path": "forecast-maps/tendance/tendance-carte-j10.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j10.png",
-      "size_bytes": 326983,
+      "size_bytes": 348502,
       "run_utc": {
         "ifs": "2026-11-08T12:00Z",
         "aifs": "2026-11-08T12:00Z"
@@ -204,13 +197,18 @@
       "valid_utc": "2026-11-18T12:00:00+00:00",
       "title": "J+10 — synthèse synoptique IFS / AIFS",
       "confidence_label": "Faible (indicative)",
-      "risk_status": "partial_georeferenced",
+      "risk_status": "altitude_filtered_georeferenced",
       "risks": {
         "neige": {
           "status": "marque",
-          "max": 15.6,
-          "unit": "mm équivalent-eau/6h",
-          "reason": "Neige modélisée : pas une hauteur de neige au sol"
+          "max": 2.0,
+          "unit": "mm équiv. eau/6h",
+          "reason": "Neige hors relief ≤ 800 m (Copernicus GLO-90) ; relief : 36 zones échantillonnées",
+          "mountain_signal": true,
+          "mountain_max": 15.6,
+          "lowland_sample_count": 2,
+          "highland_sample_count": 36,
+          "terrain_source": "Copernicus DEM GLO-90 via Open-Meteo"
         },
         "verglas": {
           "status": "indisponible",
@@ -289,27 +287,22 @@
           "kind": "pluie_forte"
         },
         {
-          "lon": 8.75,
-          "lat": 46.5,
-          "value": 4.9,
-          "kind": "neige"
-        },
-        {
-          "lon": 0.0,
-          "lat": 42.75,
-          "value": 4.4,
-          "kind": "neige"
+          "lon": 9.0,
+          "lat": 46.25,
+          "value": 1.7,
+          "kind": "neige",
+          "altitude_m": 524
         }
       ],
-      "style": "kfs-premium-16-9-v4",
-      "note": "Pictogrammes géoréférencés ECMWF. Seuils indicatifs, pas une vigilance."
+      "style": "kfs-editorial-premium-16-9-v5",
+      "note": "Pictogrammes géoréférencés ECMWF, neige hors relief Copernicus GLO-90, pas une vigilance."
     },
     {
       "id": "j15",
       "step_h": 360,
       "path": "forecast-maps/tendance/tendance-carte-j15.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j15.png",
-      "size_bytes": 321419,
+      "size_bytes": 336546,
       "run_utc": {
         "aifs": "2026-11-08T12:00Z",
         "gfs": "2026-11-08T12:00:00+00:00"
@@ -317,13 +310,18 @@
       "valid_utc": "2026-11-23T12:00:00+00:00",
       "title": "J+15 — synthèse synoptique AIFS / GFS",
       "confidence_label": "Très limitée (indicative)",
-      "risk_status": "partial_georeferenced",
+      "risk_status": "altitude_filtered_georeferenced",
       "risks": {
         "neige": {
           "status": "marque",
-          "max": 3.2,
-          "unit": "mm équivalent-eau/6h",
-          "reason": "Neige modélisée : pas une hauteur de neige au sol"
+          "max": 2.2,
+          "unit": "mm équiv. eau/6h",
+          "reason": "Neige hors relief ≤ 800 m (Copernicus GLO-90) ; relief : 43 zones échantillonnées",
+          "mountain_signal": true,
+          "mountain_max": 3.2,
+          "lowland_sample_count": 8,
+          "highland_sample_count": 43,
+          "terrain_source": "Copernicus DEM GLO-90 via Open-Meteo"
         },
         "verglas": {
           "status": "indisponible",
@@ -384,26 +382,29 @@
           "kind": "pluie_forte"
         },
         {
-          "lon": 10.25,
-          "lat": 47.25,
-          "value": 3.2,
-          "kind": "neige"
+          "lon": 9.5,
+          "lat": 47.0,
+          "value": 2.2,
+          "kind": "neige",
+          "altitude_m": 522
         },
         {
-          "lon": 6.75,
-          "lat": 46.0,
-          "value": 2.5,
-          "kind": "neige"
+          "lon": 7.0,
+          "lat": 46.25,
+          "value": 1.8,
+          "kind": "neige",
+          "altitude_m": 410
         },
         {
-          "lon": 2.75,
-          "lat": 45.0,
+          "lon": 12.0,
+          "lat": 47.5,
           "value": 1.0,
-          "kind": "neige"
+          "kind": "neige",
+          "altitude_m": 635
         }
       ],
-      "style": "kfs-premium-16-9-v4",
-      "note": "Pictogrammes géoréférencés ECMWF. Seuils indicatifs, pas une vigilance."
+      "style": "kfs-editorial-premium-16-9-v5",
+      "note": "Pictogrammes géoréférencés ECMWF, neige hors relief Copernicus GLO-90, pas une vigilance."
     }
   ],
   "public": true,
