@@ -6,6 +6,7 @@ from pathlib import Path
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+from matplotlib.colors import ListedColormap, BoundaryNorm
 import numpy as np
 import cartopy.crs as ccrs
 import cartopy.feature as cf
@@ -53,6 +54,28 @@ def save(fig,model,step,param):
     fig.savefig(OUT/filename,bbox_inches="tight",facecolor="white")
     plt.close(fig)
     metadata["maps"].setdefault(model,{}).setdefault(str(step),{})[param]="forecast-maps/europe/"+filename
+
+
+# Couleurs lisibles dès 0.1 mm ; les zones sèches restent non coloriées.
+PRECIP_LEVELS=[.1,.25,.5,1,2,3,5,8,12,20,30,45,65,90]
+RAIN_COLORS=["#91e0ff","#55c5ff","#1b95ed","#1164cb","#143ba6","#167e91",
+             "#23b85a","#85d232","#e0df23","#f6b12e","#ef772a","#da3740",
+             "#a72564","#6e155b"]
+
+def render_precip_total(lon,lat,total,model,title,step):
+    fig,ax=canvas()
+    cmap=ListedColormap(RAIN_COLORS)
+    norm=BoundaryNorm(PRECIP_LEVELS,cmap.N,extend="max")
+    display=np.ma.masked_where(~np.isfinite(total)|(total<.1),total)
+    shade=ax.pcolormesh(lon,lat,display,cmap=cmap,norm=norm,shading="auto",
+                        transform=ccrs.PlateCarree(),rasterized=True)
+    fig.colorbar(shade,ax=ax,orientation="horizontal",pad=.04,shrink=.8,
+                 extend="max",ticks=[.1,.5,1,2,5,12,30,65],
+                 label="Pluie + neige (cumul TOTAL, mm équivalent-eau / 6 h)")
+    ax.set_title(f"KFS MÉTÉO | {title} | Atlantique Nord · Groenland · Europe | +{step} h\n"
+                 f"Précipitations TOTALES (pluie et neige non séparables) | période +{step-6} à +{step} h\n"
+                 f"Run : {RUN.strftime('%d/%m %H:%M')} UTC · zones sèches (<0,1 mm) en blanc")
+    save(fig,model,step,"precip6h")
 
 for model,title in [("gfs","GFS"),("aigfs","AIGFS")]:
     for step in STEPS:
@@ -124,13 +147,7 @@ for model,title in [("gfs","GFS"),("aigfs","AIGFS")]:
             if np.nanmin(total)<-1 or np.nanmax(total)>1500:
                 raise ValueError("Cumuls de précipitation inattendus : "+units)
             total=np.maximum(0,total)
-            fig,ax=canvas()
-            shade=ax.contourf(lon,lat,total,levels=[0,.1,.5,1,2,5,10,15,20,30,40,60,80],
-                              cmap="Blues",extend="max",transform=ccrs.PlateCarree())
-            fig.colorbar(shade,ax=ax,orientation="horizontal",pad=.04,shrink=.8,
-                         label="Précipitations totales (pluie + neige, mm équivalent-eau / 6 h)")
-            ax.set_title(f"KFS MÉTÉO | {title} | Atlantique Nord · Groenland · Europe | +{step} h\nPrécipitations totales 6 h (pluie/neige non séparables)\nRun : {RUN.strftime('%d/%m %H:%M')} UTC · Période : +{step-6} à +{step} h")
-            save(fig,model,step,"precip6h")
+            render_precip_total(lon,lat,total,model,title,step)
         except Exception as e:
             metadata["errors"][key+"-precip6h"]=str(e)[:350]
 (OUT/"noaa-metadata.json").write_text(json.dumps(metadata,ensure_ascii=False,indent=2),encoding="utf-8")
