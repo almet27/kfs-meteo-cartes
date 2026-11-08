@@ -1,5 +1,5 @@
 {
-  "generated_utc": "2026-11-08T17:03:43.734196+00:00",
+  "generated_utc": "2026-11-08T17:37:53.024211+00:00",
   "run_utc": "2026-11-08T12:00:00+00:00",
   "runs_utc": {
     "gfs": {
@@ -26,62 +26,90 @@
     "gfs": {
       "24": {
         "t850": "forecast-maps/europe/gfs-h024-t850.png",
-        "z500_msl": "forecast-maps/europe/gfs-h024-z500_msl.png"
+        "z500_msl": "forecast-maps/europe/gfs-h024-z500_msl.png",
+        "wind10m": "forecast-maps/europe/gfs-h024-wind10m.png"
       },
       "48": {
         "t850": "forecast-maps/europe/gfs-h048-t850.png",
-        "z500_msl": "forecast-maps/europe/gfs-h048-z500_msl.png"
+        "z500_msl": "forecast-maps/europe/gfs-h048-z500_msl.png",
+        "wind10m": "forecast-maps/europe/gfs-h048-wind10m.png"
       },
       "72": {
         "t850": "forecast-maps/europe/gfs-h072-t850.png",
-        "z500_msl": "forecast-maps/europe/gfs-h072-z500_msl.png"
+        "z500_msl": "forecast-maps/europe/gfs-h072-z500_msl.png",
+        "wind10m": "forecast-maps/europe/gfs-h072-wind10m.png"
       },
       "120": {
         "t850": "forecast-maps/europe/gfs-h120-t850.png",
-        "z500_msl": "forecast-maps/europe/gfs-h120-z500_msl.png"
+        "z500_msl": "forecast-maps/europe/gfs-h120-z500_msl.png",
+        "wind10m": "forecast-maps/europe/gfs-h120-wind10m.png"
       },
       "168": {
         "t850": "forecast-maps/europe/gfs-h168-t850.png",
-        "z500_msl": "forecast-maps/europe/gfs-h168-z500_msl.png"
+        "z500_msl": "forecast-maps/europe/gfs-h168-z500_msl.png",
+        "wind10m": "forecast-maps/europe/gfs-h168-wind10m.png"
       },
       "240": {
         "t850": "forecast-maps/europe/gfs-h240-t850.png",
-        "z500_msl": "forecast-maps/europe/gfs-h240-z500_msl.png"
+        "z500_msl": "forecast-maps/europe/gfs-h240-z500_msl.png",
+        "wind10m": "forecast-maps/europe/gfs-h240-wind10m.png"
+      },
+      "360": {
+        "t850": "forecast-maps/europe/gfs-h360-t850.png",
+        "z500_msl": "forecast-maps/europe/gfs-h360-z500_msl.png",
+        "wind10m": "forecast-maps/europe/gfs-h360-wind10m.png"
       }
     },
     "aigfs": {
       "24": {
         "t850": "forecast-maps/europe/aigfs-h024-t850.png",
-        "z500_msl": "forecast-maps/europe/aigfs-h024-z500_msl.png"
+        "z500_msl": "forecast-maps/europe/aigfs-h024-z500_msl.png",
+        "wind10m": "forecast-maps/europe/aigfs-h024-wind10m.png"
       },
       "48": {
         "t850": "forecast-maps/europe/aigfs-h048-t850.png",
-        "z500_msl": "forecast-maps/europe/aigfs-h048-z500_msl.png"
+        "z500_msl": "forecast-maps/europe/aigfs-h048-z500_msl.png",
+        "wind10m": "forecast-maps/europe/aigfs-h048-wind10m.png"
       },
       "72": {
         "t850": "forecast-maps/europe/aigfs-h072-t850.png",
-        "z500_msl": "forecast-maps/europe/aigfs-h072-z500_msl.png"
+        "z500_msl": "forecast-maps/europe/aigfs-h072-z500_msl.png",
+        "wind10m": "forecast-maps/europe/aigfs-h072-wind10m.png"
       },
       "120": {
         "t850": "forecast-maps/europe/aigfs-h120-t850.png",
-        "z500_msl": "forecast-maps/europe/aigfs-h120-z500_msl.png"
+        "z500_msl": "forecast-maps/europe/aigfs-h120-z500_msl.png",
+        "wind10m": "forecast-maps/europe/aigfs-h120-wind10m.png"
       },
       "168": {
         "t850": "forecast-maps/europe/aigfs-h168-t850.png",
-        "z500_msl": "forecast-maps/europe/aigfs-h168-z500_msl.png"
+        "z500_msl": "forecast-maps/europe/aigfs-h168-z500_msl.png",
+        "wind10m": "forecast-maps/europe/aigfs-h168-wind10m.png"
       },
       "240": {
         "t850": "forecast-maps/europe/aigfs-h240-t850.png",
-        "z500_msl": "forecast-maps/europe/aigfs-h240-z500_msl.png"
-      },
-      "360": {
-        "t850": "forecast-maps/europe/aigfs-h360-t850.png",
-        "z500_msl": "forecast-maps/europe/aigfs-h360-z500_msl.png"
+        "wind10m": "forecast-maps/europe/aigfs-h240-wind10m.png"
       }
     }
   },
   "errors": {
-    "gfs-h360-t850": "\nNo index file was found for None\nDownload the full file first (with `H.download()`).\nYou will need to remake the Herbie object (H = `Herbie()`)\nor delete this cached property: `del H.index_as_dataframe()`",
-    "gfs-h360-z500_msl": "\nNo index file was found for None\nDownload the full file first (with `H.download()`).\nYou will need to remake the Herbie object (H = `Herbie()`)\nor delete this cached property: `del H.index_as_dataframe()`"
+    "gfs-h024-precip6h": "[Errno 2] No such file or directory: '/home/runner/data/gfs/20261108/subset_190eb1fe__gfs.t12z.pgrb2.0p25.f024'",
+    "gfs-h048-precip6h": "[Errno 2] No such file or directory: '/home/runner/data/gfs/20261108/subset_191cb1fe__gfs.t12z.pgrb2.0p25.f048'",
+    "gfs-h072-precip6h": "[Errno 2] No such file or directory: '/home/runner/data/gfs/20261108/subset_19f1b1fe__gfs.t12z.pgrb2.0p25.f072'",
+    "gfs-h120-precip6h": "[Errno 2] No such file or directory: '/home/runner/data/gfs/20261108/subset_1918b1fe__gfs.t12z.pgrb2.0p25.f120'",
+    "gfs-h168-precip6h": "[Errno 2] No such file or directory: '/home/runner/data/gfs/20261108/subset_19feb1fe__gfs.t12z.pgrb2.0p25.f168'",
+    "gfs-h240-precip6h": "[Errno 2] No such file or directory: '/home/runner/data/gfs/20261108/subset_1935b1fe__gfs.t12z.pgrb2.0p25.f240'",
+    "gfs-h360-precip6h": "[Errno 2] No such file or directory: '/home/runner/data/gfs/20261108/subset_1911b1fe__gfs.t12z.pgrb2.0p25.f360'",
+    "aigfs-h024-precip6h": "[Errno 2] No such file or directory: '/home/runner/data/aigfs/20261108/subset_190eb1fe__aigfs.t12z.sfc.f024.grib2'",
+    "aigfs-h048-precip6h": "[Errno 2] No such file or directory: '/home/runner/data/aigfs/20261108/subset_191cb1fe__aigfs.t12z.sfc.f048.grib2'",
+    "aigfs-h072-precip6h": "[Errno 2] No such file or directory: '/home/runner/data/aigfs/20261108/subset_19f1b1fe__aigfs.t12z.sfc.f072.grib2'",
+    "aigfs-h120-precip6h": "[Errno 2] No such file or directory: '/home/runner/data/aigfs/20261108/subset_1918b1fe__aigfs.t12z.sfc.f120.grib2'",
+    "aigfs-h168-precip6h": "[Errno 2] No such file or directory: '/home/runner/data/aigfs/20261108/subset_19feb1fe__aigfs.t12z.sfc.f168.grib2'",
+    "aigfs-h240-z500_msl": "Range request not honored: server returned HTTP 302 (Content-Length: 720). This can happen when a network proxy or VPN strips the Range header. Try downloading the full file first, then subset locally:\n  full_file = Herbie(...).download()\n  Herbie(...).download(search=...)",
+    "aigfs-h240-precip6h": "[Errno 2] No such file or directory: '/home/runner/data/aigfs/20261108/subset_1935b1fe__aigfs.t12z.sfc.f240.grib2'",
+    "aigfs-h360-t850": "\nCant open index file https://nomads.ncep.noaa.gov/pub/data/nccf/com/aigfs/prod/aigfs.20261108/12/model/atmos/grib2/aigfs.t12z.pres.f360.grib2.idx\nDownload the full file first (with `H.download()`).\nYou will need to remake the Herbie object (H = `Herbie()`)\nor delete this cached property: `del H.index_as_dataframe()`",
+    "aigfs-h360-z500_msl": "Range request not honored: server returned HTTP 302 (Content-Length: 720). This can happen when a network proxy or VPN strips the Range header. Try downloading the full file first, then subset locally:\n  full_file = Herbie(...).download()\n  Herbie(...).download(search=...)",
+    "aigfs-h360-wind10m": "Range request not honored: server returned HTTP 302 (Content-Length: 720). This can happen when a network proxy or VPN strips the Range header. Try downloading the full file first, then subset locally:\n  full_file = Herbie(...).download()\n  Herbie(...).download(search=...)",
+    "aigfs-h360-precip6h": "[Errno 2] No such file or directory: '/home/runner/data/aigfs/20261108/subset_1911b1fe__aigfs.t12z.sfc.f360.grib2'"
   }
 }
