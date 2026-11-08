@@ -9,7 +9,8 @@ ROOT=Path("forecast-maps/europe")
 STEPS=[24,48,72,120,168,240,360]
 FIELDS={"t850":"Température à 850 hPa","z500_msl":"Géopotentiel 500 hPa + pression au sol",
         "wind10m":"Vent à 10 m (km/h)","precip6h":"Précipitations totales sur 6 h (pluie + neige)",
-        "rain6h":"Pluie 6 h (ECMWF IFS / AIFS)","snow6h":"Neige 6 h (mm équivalent-eau, ECMWF IFS / AIFS)"}
+        "rain6h":"Pluie 6 h (GFS estimation, ECMWF données séparées)",
+        "snow6h":"Neige / précipitations gelées 6 h (GFS estimation, ECMWF données séparées)"}
 MODELS=[("gfs","GFS"),("aigfs","AIGFS"),("ifs","ECMWF IFS"),("aifs-single","ECMWF AIFS")]
 SOURCES={"gfs":"noaa-metadata.json","aigfs":"noaa-metadata.json","ifs":"metadata.json","aifs-single":"metadata.json"}
 manifest={f:json.loads((ROOT/f).read_text(encoding="utf-8")) for f in set(SOURCES.values())}
@@ -46,7 +47,7 @@ for step in STEPS:
                 except Exception as e:
                     d.text((34,110),"Image non exploitable : "+str(e)[:70],font=font,fill="#a32323")
             else:
-                d.text((35,105),("Séparation pluie / neige non disponible" if field in ("rain6h","snow6h") and model in ("gfs","aigfs") else "Carte indisponible pour cette échéance"),font=font,fill="#a32323")
+                d.text((35,105),("Séparation pluie / neige non disponible pour AIGFS" if field in ("rain6h","snow6h") and model=="aigfs" else "Carte indisponible pour cette échéance"),font=font,fill="#a32323")
                 if model=="ifs" and step==360:d.text((35,145),"IFS ouvert : pas de +360 h",font=font,fill="#6b6b6b")
             panels.append(tile)
         if not successes:continue
@@ -54,7 +55,7 @@ for step in STEPS:
         d=ImageDraw.Draw(comparison)
         d.rectangle((0,0,TILE_W*2,84),fill="#f4f7fa")
         d.text((25,12),f"KFS MÉTÉO | Atlantique Nord · Groenland · Europe | +{step} h | {label}",font=header,fill="#182f4b")
-        d.text((25,47),("GFS/AIGFS : cumuls pluie + neige indifférenciés. Choisir Pluie ou Neige pour IFS/AIFS." if field=="precip6h" else "Pluie/neige séparées : IFS et AIFS uniquement (mm équivalent-eau / 6 h)." if field in ("rain6h","snow6h") else "Run modèle (UTC) indiqué séparément pour chaque panneau — et non heure de fabrication de l’image."),font=font,fill="#37506c")
+        d.text((25,47),("GFS/AIGFS : cumuls pluie + neige indifférenciés. Choisir Pluie ou Neige pour IFS/AIFS." if field=="precip6h" else "GFS : répartition indicative via CPOFP instantané. IFS/AIFS : cumuls séparés. AIGFS : non disponible." if field in ("rain6h","snow6h") else "Run modèle (UTC) indiqué séparément pour chaque panneau — et non heure de fabrication de l’image."),font=font,fill="#37506c")
         for i,tile in enumerate(panels):
             comparison.paste(tile,((i%2)*TILE_W,84+(i//2)*TILE_H))
         filename=f"compare-h{step:03}-{field}.png"
