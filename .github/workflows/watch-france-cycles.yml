@@ -52,7 +52,7 @@ jobs:
             done
             exit 1
           fi
-      - name: Actualiser /modele Europe ; preparer l'hebergement gratuit des cartes France
+      - name: Lancer atlas France sur nouveaux cycles ; maintenir les autres routines existantes
         if: ${{ steps.poll.outputs.ready_models != '' }}
         env:
           GH_TOKEN: ${{ github.token }}
@@ -65,11 +65,13 @@ jobs:
             case "$model" in
               ifs|aifs-single)
                 ecmwf_new=1
-                echo "Nouveau run ECMWF $model : données disponibles, génération France automatique suspendue jusqu’à installation d’un hébergement gratuit"
+                echo "Nouveau run ECMWF $model : generation France native jusqu'a 72 h"
+                gh workflow run france-h72.yml --ref main -f modele="$model" -f horizon=72
                 ;;
               gfs|aigfs)
                 noaa_new=1
-                echo "Nouveau run NOAA $model : données disponibles, génération France automatique suspendue jusqu’à installation d’un hébergement gratuit"
+                echo "Nouveau run NOAA $model : generation France native jusqu'a 72 h"
+                gh workflow run france-h72.yml --ref main -f modele="$model" -f horizon=72
                 ;;
               *) echo "Modele inconnu ignore : $model" ;;
             esac
