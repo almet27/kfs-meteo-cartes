@@ -64,11 +64,13 @@ jobs:
           python -m py_compile scripts/package_france_release.py
           published=0
           for model in ifs aifs-single gfs aigfs; do
-            model_dir="/tmp/kfs-france-source/$model"
-            if [ ! -f "$model_dir/metadata.json" ]; then
-              echo "SKIP $model : metadata manquante (artefact d'un autre run)"
+            # gh run download inclut le nom de l'artefact (kfs-france-N).
+            metadata_file="$(find /tmp/kfs-france-source -path "*/$model/metadata.json" -print -quit)"
+            if [ -z "$metadata_file" ]; then
+              echo "SKIP $model : metadata introuvable dans l'archive"
               continue
             fi
+            model_dir="$(dirname "$metadata_file")"
             staging="/tmp/kfs-france-release/$model"
             if ! python scripts/package_france_release.py --source "$model_dir" --output "$staging"; then
               echo "SKIP $model : modele incomplet, conserver la derniere publication valide"
