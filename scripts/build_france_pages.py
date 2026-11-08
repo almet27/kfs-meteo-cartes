@@ -53,6 +53,8 @@ def main():
     parser.add_argument("--include-existing", action="store_true")
     parser.add_argument("--allow-partial", action="store_true")
     parser.add_argument("--max-megabytes", type=int, default=450)
+    parser.add_argument("--require-all-models", action="store_true")
+    parser.add_argument("--require-latest", action="store_true")
     args = parser.parse_args()
     if args.output.exists():
         shutil.rmtree(args.output)
@@ -78,6 +80,14 @@ def main():
             continue
     if not candidates:
         raise SystemExit("No valid France atlas; refusing to deploy incomplete Pages site")
+    if args.require_all_models and set(candidates) != set(MODELS):
+        raise SystemExit("Incomplete model set, refusing deployment: " + repr(sorted(candidates)))
+    if args.require_latest:
+        latest = json.loads(Path("forecast-maps/france/latest-cycles.json").read_text(encoding="utf-8"))["models"]
+        for model, (_, _, source) in candidates.items():
+            expected = latest.get(model, {}).get("latest_72h_temperature_step_utc")
+            if not expected or parse_time(source["run_utc"]) != parse_time(expected):
+                raise SystemExit("Stale atlas for " + model + ", expected: " + str(expected))
     models = {}
     for model, (_, metadata_path, source) in sorted(candidates.items()):
         out = args.output / "forecast-maps/france" / model
