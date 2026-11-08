@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
   "status": "illustrative_model_maps",
-  "generated_utc": "2026-11-08T18:02:12.226796+00:00",
+  "generated_utc": "2026-11-08T18:30:11.773148+00:00",
   "source_generated_utc": "2026-11-08T17:44:32.276635+00:00",
-  "charts_generated_utc": "2026-11-08T17:45:15.195531+00:00",
+  "charts_generated_utc": "2026-11-08T17:58:59.766797+00:00",
   "source": "ECMWF Open Data (CC BY 4.0)",
   "not_weekly_anomalies": true,
   "period_maps": [
@@ -12,7 +12,7 @@
       "step_h": 72,
       "path": "forecast-maps/tendance/tendance-carte-j3.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j3.png",
-      "size_bytes": 724075,
+      "size_bytes": 862826,
       "run_utc": {
         "ifs": "2026-11-08T06:00Z",
         "aifs-single": "2026-11-08T12:00Z"
@@ -21,15 +21,25 @@
         "ifs": "2026-11-11T06:00:00+00:00",
         "aifs-single": "2026-11-11T12:00:00+00:00"
       },
-      "title": "Circulation de debut de periode",
-      "model_comparison": "IFS / AIFS · champs synoptiques de meme echeance, mais horaires de validite parfois differents"
+      "title": "J+3 — Flux de sud-ouest",
+      "style": "illustration-europe-moderne-kfs-v2",
+      "wind_850_france_ifs": {
+        "u_mean_ms": 6.77,
+        "v_mean_ms": 4.8,
+        "vector_speed_ms": 8.3,
+        "from_deg": 235,
+        "note": "Vent vectoriel moyen à 850 hPa sur un domaine. Pas un vent de surface, ni une mesure directe d’advection."
+      },
+      "temperature_850_france_ifs": 9.03,
+      "confidence_label": "Modérée (qualitative)",
+      "model_comparison": "IFS et AIFS : champs ponctuels 500 hPa / MSL, horaires de validité éventuellement différents"
     },
     {
       "id": "j7",
       "step_h": 168,
       "path": "forecast-maps/tendance/tendance-carte-j7.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j7.png",
-      "size_bytes": 793414,
+      "size_bytes": 938335,
       "run_utc": {
         "ifs": "2026-11-08T00:00Z",
         "aifs-single": "2026-11-08T12:00Z"
@@ -38,15 +48,25 @@
         "ifs": "2026-11-15T00:00:00+00:00",
         "aifs-single": "2026-11-15T12:00:00+00:00"
       },
-      "title": "Evolution a moyen terme",
-      "model_comparison": "IFS / AIFS · champs synoptiques de meme echeance, mais horaires de validite parfois differents"
+      "title": "J+7 — Flux contrastés : sud / ouest-sud-ouest",
+      "style": "illustration-europe-moderne-kfs-v2",
+      "wind_850_france_ifs": {
+        "u_mean_ms": 0.23,
+        "v_mean_ms": 6.63,
+        "vector_speed_ms": 6.6,
+        "from_deg": 182,
+        "note": "Vent vectoriel moyen à 850 hPa sur un domaine. Pas un vent de surface, ni une mesure directe d’advection."
+      },
+      "temperature_850_france_ifs": 6.26,
+      "confidence_label": "Limitée (qualitative)",
+      "model_comparison": "IFS et AIFS : champs ponctuels 500 hPa / MSL, horaires de validité éventuellement différents"
     },
     {
       "id": "j10",
       "step_h": 240,
       "path": "forecast-maps/tendance/tendance-carte-j10.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j10.png",
-      "size_bytes": 809254,
+      "size_bytes": 993864,
       "run_utc": {
         "ifs": "2026-11-08T00:00Z",
         "aifs-single": "2026-11-08T12:00Z"
@@ -55,10 +75,21 @@
         "ifs": "2026-11-18T00:00:00+00:00",
         "aifs-single": "2026-11-18T12:00:00+00:00"
       },
-      "title": "Scenario de fin de periode",
-      "model_comparison": "IFS / AIFS · champs synoptiques de meme echeance, mais horaires de validite parfois differents"
+      "title": "J+10 — Flux de ouest-nord-ouest",
+      "style": "illustration-europe-moderne-kfs-v2",
+      "wind_850_france_ifs": {
+        "u_mean_ms": 6.16,
+        "v_mean_ms": -2.23,
+        "vector_speed_ms": 6.6,
+        "from_deg": 290,
+        "note": "Vent vectoriel moyen à 850 hPa sur un domaine. Pas un vent de surface, ni une mesure directe d’advection."
+      },
+      "temperature_850_france_ifs": 1.33,
+      "confidence_label": "Faible (qualitative)",
+      "model_comparison": "IFS et AIFS : champs ponctuels 500 hPa / MSL, horaires de validité éventuellement différents"
     }
   ],
   "public": true,
-  "note": "Cartes de modeles pour trois echeances precises. Ne pas extrapoler aux semaines 3 et 4."
+  "graphic_style": "KFS ÉDITORIAL MODERNE v2 — actualisé automatiquement sur les modèles",
+  "note": "Infographies tirées des vraies cartes IFS/AIFS, flux moyen 850 hPa calculé, sans fronts inventés ni prévisions à 4 semaines extrapolées."
 }
