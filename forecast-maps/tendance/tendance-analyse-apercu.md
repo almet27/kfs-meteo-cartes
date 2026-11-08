@@ -2,7 +2,7 @@
 
 > **Non diffusée sur Discord.** Analyse de sorties déterministes ponctuelles IFS et AIFS. Ce document n'est pas une prévision probabiliste à quatre semaines.
 
-Génération : 08/11/2026 16:16 UTC. Source : ECMWF Open Data. Champs utilisés : température à 850 hPa, pression au niveau de la mer et géopotentiel à 500 hPa. Toutes les heures citées sont en UTC.
+Génération : 08/11/2026 16:38 UTC. Source : ECMWF Open Data. Champs utilisés : température à 850 hPa, pression au niveau de la mer et géopotentiel à 500 hPa. Toutes les heures citées sont en UTC.
 
 ## 1. Méthode et limites de lecture
 
