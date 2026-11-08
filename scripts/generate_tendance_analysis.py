@@ -28,6 +28,9 @@ PARAMS = (
     ("t850", {"param":"t","levelist":850}, "t", lambda a: a-273.15),
     ("msl", {"param":"msl"}, "msl", lambda a: a/100.0),
     ("z500", {"param":"gh","levelist":500}, "gh", lambda a: a/10.0),
+    # Composantes du flux à 850 hPa en m/s (données facultatives).
+    ("u850", {"param":"u","levelist":850}, "u", lambda a: a),
+    ("v850", {"param":"v","levelist":850}, "v", lambda a: a),
 )
 
 def read_grib(path, name):
@@ -73,7 +76,9 @@ def acquisition():
           "models":{},"errors":{},"steps_h":list(STEPS),
           "variables":{"t850":"temperatures degC at 850 hPa",
                        "msl":"mean sea level pressure hPa",
-                       "z500":"geopotential height 500 hPa dam"}}
+                       "z500":"geopotential height 500 hPa dam",
+                       "u850":"eastward wind component at 850 hPa (m/s)",
+                       "v850":"northward wind component at 850 hPa (m/s)"}}
     for model in MODELS:
         client=Client(source="ecmwf",model=model,resol="0p25")
         data["models"][model]={}
@@ -92,22 +97,41 @@ def acquisition():
                         raise ValueError("T850 source not in Kelvin")
                     if variable=="z500" and not 4000<np.nanmedian(field)<6500:
                         raise ValueError("Z500 source not in metres")
+                    if variable in ("u850", "v850") and not np.isfinite(field).all():
+                        raise ValueError("Flux à 850 hPa non fini")
+                    if variable in ("u850", "v850") and np.nanmedian(np.abs(field))>120:
+                        raise ValueError("Unité de vent incohérente, attendu m/s")
                     fields[variable]=boxes(lon,lat,conversion(field))
                     runs.add(run)
                 except Exception as e:
                     data["errors"][model+"-"+key+"-"+variable]=str(e)[:250]
                 finally:
                     target.unlink(missing_ok=True)
-            if len(fields)==len(PARAMS) and len(runs)==1:
+            if all(k in fields for k in ("t850", "msl", "z500")) and len(runs)==1:
                 issue=runs.pop()
                 issue_dt=datetime.fromisoformat(issue.replace("Z","+00:00"))
                 if now-issue_dt>timedelta(days=3) or issue_dt>now+timedelta(hours=1):
                     data["errors"][model+"-"+key]="Run trop ancien ou futur"
                     continue
+                flow_850={}
+                if "u850" in fields and "v850" in fields:
+                    for region in set(fields["u850"]) & set(fields["v850"]):
+                        u=fields["u850"][region]["mean"]
+                        v=fields["v850"][region]["mean"]
+                        vector_speed=math.hypot(u,v)
+                        # Direction MÉTÉOROLOGIQUE de provenance : N=0°, E=90°.
+                        direction=(math.degrees(math.atan2(-u,-v))+360)%360 if vector_speed>0.2 else None
+                        flow_850[region]={
+                            "u_mean_ms":u,
+                            "v_mean_ms":v,
+                            "vector_speed_ms":round(vector_speed,1),
+                            "from_deg":round(direction) if direction is not None else None,
+                            "note":"Vent vectoriel moyen à 850 hPa sur un domaine. Pas un vent de surface, ni une mesure directe d’advection."}
                 data["models"][model][key]={
                     "run_utc":issue,
                     "valid_utc":(issue_dt+timedelta(hours=step)).isoformat(),
-                    "fields":fields}
+                    "fields":fields,
+                    "flow_850":flow_850}
             else:
                 data["errors"][model+"-"+key]="Champs ou cycles incomplets."
     return data
@@ -143,7 +167,7 @@ def report(data):
         "",
         "Génération : "+created.strftime("%d/%m/%Y %H:%M UTC")+". "
         "Source : ECMWF Open Data. Champs utilisés : température à 850 hPa, "
-        "pression au niveau de la mer et géopotentiel à 500 hPa. "
+        "pression au niveau de la mer, géopotentiel à 500 hPa et, lorsque accessibles, vents à 850 hPa. "
         "Toutes les heures citées sont en UTC.",
         "",
         "## 1. Méthode et limites de lecture",
