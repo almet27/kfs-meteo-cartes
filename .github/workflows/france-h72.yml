@@ -1,0 +1,63 @@
+name: KFS France - cartes haute frequence 0-72 h (prototype)
+on:
+  workflow_dispatch:
+    inputs:
+      modele:
+        description: Modele natif a cartographier
+        type: choice
+        options: [ifs, aifs-single, gfs]
+        default: ifs
+        required: true
+      horizon:
+        description: Horizon en heures
+        type: choice
+        options: ['12', '24', '72']
+        default: '12'
+        required: true
+  push:
+    paths:
+      - scripts/generate_france_forecasts.py
+      - scripts/kfs_premium_palettes.py
+      - .github/workflows/france-h72.yml
+permissions:
+  contents: read
+concurrency:
+  group: kfs-france-${{ github.event_name }}-${{ github.event.inputs.modele || 'ifs' }}
+  cancel-in-progress: false
+jobs:
+  generation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Installer les bibliotheques
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y libeccodes-dev
+          python -m pip install 'numpy>=1.26,<3' 'xarray>=2024.1' 'matplotlib>=3.8' 'cartopy>=0.23' 'cfgrib>=0.9.10' 'eccodes>=1.7' 'ecmwf-opendata>=0.3' 'herbie-data>=2024.4'
+      - name: Valider syntaxe avant telechargement
+        run: python -m py_compile scripts/generate_france_forecasts.py scripts/kfs_premium_palettes.py
+      - name: Generer les cartes France
+        env:
+          EVENT_KIND: ${{ github.event_name }}
+          SELECTED_MODEL: ${{ github.event.inputs.modele }}
+          SELECTED_HORIZON: ${{ github.event.inputs.horizon }}
+        run: |
+          if [ "$EVENT_KIND" = "push" ]; then
+            python scripts/generate_france_forecasts.py --model ifs --steps 3,6
+          else
+            python scripts/generate_france_forecasts.py --model "${SELECTED_MODEL:-ifs}" --max-hour "${SELECTED_HORIZON:-12}"
+          fi
+      - name: Garder les PNG temporaires (3 jours, sans historique git)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kfs-france-${{ github.run_number }}
+          path: |
+            forecast-maps/france/**/metadata.json
+            forecast-maps/france/**/*.png
+          retention-days: 3
+          if-no-files-found: warn
