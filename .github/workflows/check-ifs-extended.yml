@@ -1,6 +1,10 @@
 name: KFS - verifier acces IFS Extended
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - 'scripts/check_extended_charts.py'
+      - '.github/workflows/check-ifs-extended.yml'
   schedule:
     - cron: '20 7 * * 0'
 permissions:
