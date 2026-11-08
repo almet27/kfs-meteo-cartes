@@ -82,7 +82,7 @@ SNOW_COLORS=["#a7f0ff","#6fdcff","#3db7fb","#1e81ed","#2659cc","#5338bd",
              "#7744cd","#9950e1","#b44ede","#c73bb5","#d21a84","#a60c77",
              "#7b0c71","#500557"]
 
-def render_gfs_phase(lon,lat,quantity,step,kind):
+def render_gfs_phase(lon,lat,quantity,uncertain,step,kind):
     # Quantité ESTIMÉE ; CPOFP décrit seulement la phase A L'ÉCHÉANCE.
     # Ce n'est pas le cumul distinct natif de pluie ou de neige du GFS.
     fig,ax=canvas()
@@ -91,13 +91,19 @@ def render_gfs_phase(lon,lat,quantity,step,kind):
     shown=np.ma.masked_where(~np.isfinite(quantity)|(quantity<.1),quantity)
     shade=ax.pcolormesh(lon,lat,shown,cmap=cmap,norm=norm,shading="auto",
                         transform=ccrs.PlateCarree(),rasterized=True)
+    # Gris clair : pluie/neige presente mais fraction gelee inconnue.
+    # Ne pas faire passer ces zones pour du temps sec.
+    unknown=np.ma.masked_where(~uncertain,np.ones_like(quantity))
+    ax.pcolormesh(lon,lat,unknown,cmap=ListedColormap(["#c4cbd3"]),
+                  vmin=0,vmax=1,shading="auto",transform=ccrs.PlateCarree(),rasterized=True)
     name="Pluie estimée" if kind=="rain" else "Précipitations gelées estimées (dont neige)"
     fig.colorbar(shade,ax=ax,orientation="horizontal",pad=.04,shrink=.8,
                  extend="max",ticks=[.1,.5,1,2,5,12,30,65],
                  label=name+" (mm équivalent-eau sur 6 h)")
     ax.set_title(f"KFS MÉTÉO | GFS | Atlantique Nord · Groenland · Europe | +{step} h\n"
                  f"{name} · ESTIMATION indicative, période +{step-6} à +{step} h\n"
-                 f"APCP 6 h × fraction CPOFP instantanée à +{step} h · Run {RUN.strftime('%d/%m %H:%M')} UTC")
+                 f"APCP 6 h × fraction CPOFP instantanée à +{step} h · Run {RUN.strftime('%d/%m %H:%M')} UTC\n"
+                 "Gris : précipitations présentes, mais phase non déterminée ; blanc : temps sec")
     save(fig,"gfs",step,kind+"6h")
 
 for model,title in [("gfs","GFS"),("aigfs","AIGFS")]:
@@ -187,8 +193,9 @@ for model,title in [("gfs","GFS"),("aigfs","AIGFS")]:
                     fraction=np.where(valid,phase/100,np.nan)
                     rain=np.where(valid,total*(1-fraction),np.nan)
                     frozen=np.where(valid,total*fraction,np.nan)
-                    render_gfs_phase(lon,lat,rain,step,"rain")
-                    render_gfs_phase(lon,lat,frozen,step,"snow")
+                    uncertain=wet&(~valid)
+                    render_gfs_phase(lon,lat,rain,uncertain,step,"rain")
+                    render_gfs_phase(lon,lat,frozen,uncertain,step,"snow")
                     metadata.setdefault("derived_estimates",{}).setdefault(model,{})[str(step)]={
                         "rain6h":"APCP_6h*(1-CPOFP_at_valid_time/100)",
                         "snow6h":"APCP_6h*CPOFP_at_valid_time/100",
