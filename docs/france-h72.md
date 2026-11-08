@@ -70,3 +70,41 @@ temporaires. La disponibilité AIGFS reste à revalider.
 Le workflow [GitHub Pages expérimental](../actions/workflows/pages-france-snapshot.yml)
 est conservé uniquement pour des essais ; `publish=false` et aucune migration
 Pages n'a été faite. Les releases sont le moyen de diffusion retenu.
+
+## Evolution du 9 novembre : cartes chiffrees et diffusion progressive
+
+Les cartes France `t2m` et `t850` affichent maintenant les valeurs en degrés Celsius
+à des points repères de la France, calculées depuis les vraies mailles natives GRIB,
+ainsi que des isothermes étiquetées. Les lignes **-5 °C et -10 °C à 850 hPa**
+sont renforcées lorsqu'elles sont présentes.
+
+Sur GFS, la séparation `rain`/`snow` repose dorénavant sur les quatre indicateurs
+NOAA instantanés CRAIN/CSNOW/CFRZR/CICEP : seuls les secteurs clairement
+identifiés comme pluie ou neige reçoivent un cumul ESTIMÉ sur l'intervalle.
+Les mailles humides à phase mixte, verglaçante, grésil ou inconnue sont
+**grisées**, sans attribution artificielle à la neige.
+Pour IFS/AIFS, les cartes de pluie et de neige utilisent les champs ECMWF
+et la neige est donnée en **mm équivalent-eau** (pas en cm au sol).
+Pour AIGFS, seule la précipitation totale est publiée si le type est absent.
+
+Le moniteur source `watch-france-cycles.yml` fonctionne nominalement toutes
+les **10 minutes** (sous réserve du retard possible des tâches planifiées GitHub).
+Il distingue : l'arrivée des champs disponibles jusqu'à **+12 h**, qui déclenche
+la publication rapide dans les releases `france-{modele}-early`, et la sortie
+jusqu'à **+72 h**, qui déclenche l'édition complète dans
+`france-{modele}`. Une release plus ancienne ne peut écraser un run plus récent.
+
+La commande Discord indépendante `/france` compare les horodatages des releases
+rapides et complètes pour les échéances jusqu'à +12 h et affiche le run le plus
+récent réellement disponible. Elle garde l'édition complète pour les échéances
+supérieures à +12 h. Si un champ de pluie/neige n'est pas vérifiable, son
+absence est expliquée au lieu de fournir une carte erronée.
+
+**Important :** une échéance publiée par la source pour la seule température
+ne garantit pas encore la disponibilité de toutes les variables ; le générateur
+vérifie individuellement les données avant publication. La détection toutes les
+10 minutes ne garantit pas une livraison immédiate (retards NOAA/ECMWF,
+GitHub Actions, conversions et mise en ligne).
+
+**Périmètre :** aucune modification des cartes Europe ni de leurs workflows
+n'est requise.
