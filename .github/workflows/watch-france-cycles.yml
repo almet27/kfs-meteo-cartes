@@ -52,7 +52,7 @@ jobs:
             done
             exit 1
           fi
-      - name: Declencher les cartes France uniquement pour les nouveaux runs 72 h
+      - name: Actualiser /modele Europe ; preparer l'hebergement gratuit des cartes France
         if: ${{ steps.poll.outputs.ready_models != '' }}
         env:
           GH_TOKEN: ${{ github.token }}
@@ -65,13 +65,11 @@ jobs:
             case "$model" in
               ifs|aifs-single)
                 ecmwf_new=1
-                echo "Nouveau run ECMWF : atlas France $model jusqu'a 72 h"
-                gh workflow run france-h72.yml --ref main -f modele="$model" -f horizon=72
+                echo "Nouveau run ECMWF $model : données disponibles, génération France automatique suspendue jusqu’à installation d’un hébergement gratuit"
                 ;;
               gfs|aigfs)
                 noaa_new=1
-                echo "Nouveau run NOAA : atlas France $model jusqu'a 72 h"
-                gh workflow run france-h72.yml --ref main -f modele="$model" -f horizon=72
+                echo "Nouveau run NOAA $model : données disponibles, génération France automatique suspendue jusqu’à installation d’un hébergement gratuit"
                 ;;
               *) echo "Modele inconnu ignore : $model" ;;
             esac
