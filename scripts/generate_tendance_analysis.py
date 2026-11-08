@@ -99,8 +99,9 @@ def acquisition():
             target_issue=datetime.fromisoformat(str(expected).replace("Z","+00:00"))
             if target_issue.tzinfo is None or target_issue>now+timedelta(hours=1) or now-target_issue>timedelta(hours=48):
                 raise RuntimeError("Cycle de la carte ECMWF invalide ou perime")
-            # The IFS 06/18 UTC forecasts are served through stream=scda.
-            stream="scda" if model=="ifs" and target_issue.hour in (6,18) else "oper"
+            # ECMWF IFS Cycle 50r1 (mai 2026) : les runs 06/18Z utilisent oper.
+            # scda est obsolete; utiliser le meme flux pour les quatre cycles.
+            stream="oper"
             fields={}
             runs=set()
             for variable,kwargs,name,conversion in PARAMS:
