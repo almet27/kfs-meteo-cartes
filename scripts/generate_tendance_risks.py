@@ -197,6 +197,30 @@ def snow_off_mountain(lon,lat,snow):
             low.append(record)
         else:
             high.append(record)
+    # A valley below 800 m can still lie in the Alps/Pyrenees.
+    # Exclude snowfall on the mountainous surroundings, not only high peaks.
+    if low:
+        neighbours=[]
+        around={}
+        for p in low:
+            key=(p["lon"],p["lat"])
+            offsets=((0.25,0),(-0.25,0),(0,0.20),(0,-0.20),
+                     (0.18,0.15),(-0.18,0.15),(0.18,-0.15),(-0.18,-0.15))
+            pts=[(round(p["lon"]+dx,3),round(p["lat"]+dy,3)) for dx,dy in offsets]
+            around[key]=pts
+            neighbours.extend(pts)
+        # Elevations must be verifiable; don't count an unknown mountain valley as plain.
+        adjacent=fetch_elevations(list(dict.fromkeys(neighbours)))
+        plains=[]
+        for p in low:
+            nearby=max(adjacent[c] for c in around[(p["lon"],p["lat"])])
+            if nearby>=1200 and nearby-p["altitude_m"]>=400:
+                p["terrain_context"]="zone montagneuse (relief voisin élevé)"
+                high.append(p)
+            else:
+                p["terrain_context"]="hors relief marqué"
+                plains.append(p)
+        low=plains
     highest=max((p["value"] for p in low),default=0)
     if highest>=2:st="marque"
     elif highest>=0.5:st="possible"
@@ -208,7 +232,7 @@ def snow_off_mountain(lon,lat,snow):
             markers.append(p)
         if len(markers)>=3:break
     return markers,{"status":st,"max":round(highest,1),"unit":"mm équiv. eau/6h",
-        "reason":f"Neige hors relief ≤ {SNOW_ALT_MAX_M} m (Copernicus GLO-90) ; relief : "+str(len(high))+" zones échantillonnées",
+        "reason":f"Neige hors relief ≤ {SNOW_ALT_MAX_M} m, hors vallée de montagne (Copernicus GLO-90) ; relief : "+str(len(high))+" zones échantillonnées",
         "mountain_signal":bool(high), "mountain_max":round(max((p["value"] for p in high),default=0),1),
         "lowland_sample_count":len(low),"highland_sample_count":len(high),
         "terrain_source":"Copernicus DEM GLO-90 via Open-Meteo"}
