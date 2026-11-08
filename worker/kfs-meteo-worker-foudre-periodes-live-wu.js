@@ -1571,6 +1571,89 @@ async function completeLive(interaction,ville,env){
       "\nAucune valeur fictive n'a été affichée.");
   }
 }
+// === /cartes : accès direct aux pages de relevés Météociel, sans redistribution d'images ===
+// Les pages sont des observations et NON des cartes de prévisions.
+// Les cartes originales ne sont pas copiées, aspirées ou relayées par notre Worker.
+// Les liens de régions et les paramètres (prov/mode) proviennent de la navigation Météociel.
+const CARTES_METEOCIEL_ZONES=Object.freeze([
+  ["fr","France entière"],
+  ["no","Nord-Ouest"],
+  ["ne","Nord-Est"],
+  ["so","Sud-Ouest"],
+  ["se","Sud-Est"],
+  ["rp","Région parisienne"],
+  ["r14","Normandie"],
+  ["r4","Bretagne"],
+  ["r1","Hauts-de-France"],
+  ["r3","Île-de-France"],
+  ["r5","Pays de la Loire"],
+  ["r12","Centre-Val de Loire"],
+  ["r2","Grand Est"],
+  ["r13","Bourgogne-Franche-Comté"],
+  ["r11","Auvergne-Rhône-Alpes"],
+  ["r6","Nouvelle-Aquitaine Nord"],
+  ["r7","Nouvelle-Aquitaine Sud"],
+  ["r8","Occitanie"],
+  ["r9","Provence-Alpes-Côte d'Azur"],
+  ["r10","Corse"],
+  ["eur2","Europe"]
+]);
+const CARTES_METEOCIEL_TYPES=Object.freeze([
+  {id:"temperature",name:"Températures actuelles",page:"temperatures.php",query:[]},
+  {id:"tmax",name:"Températures maximales provisoires",page:"tmaxi.php",query:[["prov","1"]]},
+  {id:"tmin",name:"Températures minimales provisoires",page:"tmini.php",query:[["prov","1"]]},
+  {id:"vent",name:"Vent moyen observé",page:"vent.php",query:[]},
+  {id:"rafales",name:"Dernières rafales",page:"vent-rafales.php",query:[["mode","0"]]},
+  {id:"rafalesmax",name:"Rafales maximales sur 24 h glissantes",page:"vent-rafales.php",query:[["mode","2"]]},
+  {id:"pluie",name:"Cumul des précipitations sur 24 h (mm)",page:"rr.php",query:[]}
+]);
+function cartesMeteocielPage(zone,mesure){
+  const region=CARTES_METEOCIEL_ZONES.find(x=>x[0]===zone);
+  const type=CARTES_METEOCIEL_TYPES.find(x=>x.id===mesure);
+  if(!region||!type)return null;
+  const url=new URL("https://www.meteociel.fr/observations-meteo/"+type.page);
+  for(const [name,value] of type.query)url.searchParams.set(name,value);
+  url.searchParams.set("region",region[0]);
+  return {url:url.href,zone:region[1],mesure:type.name};
+}
+function cartesMeteocielResponse(zone,mesure){
+  const selection=cartesMeteocielPage(zone,mesure);
+  if(!selection)return {type:4,data:{content:"Sélection de carte invalide. Recommence avec /cartes."}};
+  return {type:4,data:{
+    content:"🗺️ **KFS MÉTÉO — Cartes d'observations**\n"+
+      "📍 Zone : **"+selection.zone+"**\n"+
+      "🌡️ Mesure : **"+selection.mesure+"**\n\n"+
+      "🔗 "+selection.url+"\n\n"+
+      "_Source : Météociel. Relevés de stations, actualisés selon leur disponibilité. "+
+      "Les températures mini/maxi sont provisoires ; aucune prévision n'est présentée._",
+    allowed_mentions:{parse:[]},
+    components:[{type:1,components:[{
+      type:2,style:5,label:"Voir la carte sur Météociel",url:selection.url
+    }]}]
+  }};
+}
+async function registerCartesCommand(env){
+  if(!env.DISCORD_BOT_TOKEN)throw Error("DISCORD_BOT_TOKEN manquant");
+  const command={
+    name:"cartes",type:1,description:"Relevés météo observés sur les cartes Météociel",
+    options:[
+      {type:3,name:"zone",description:"Zone de la carte",required:true,
+       choices:CARTES_METEOCIEL_ZONES.map(x=>({name:x[1],value:x[0]}))},
+      {type:3,name:"mesure",description:"Mesure météo à afficher",required:true,
+       choices:CARTES_METEOCIEL_TYPES.map(x=>({name:x.name,value:x.id}))}
+    ]
+  };
+  const response=await fetch("https://discord.com/api/v10/applications/"+
+      APPLICATION_ID+"/commands",{
+    method:"POST",headers:{
+      "Authorization":"Bot "+env.DISCORD_BOT_TOKEN,
+      "Content-Type":"application/json"
+    },body:JSON.stringify(command)
+  });
+  if(!response.ok)throw Error("Enregistrement Discord /cartes HTTP "+
+      response.status+" "+(await response.text()).slice(0,280));
+}
+
 async function registerLiveCommand(env){
   if(!env.DISCORD_BOT_TOKEN)throw Error("Missing DISCORD_BOT_TOKEN");
   const command={name:"live",type:1,
@@ -1664,7 +1747,7 @@ export default {
   async scheduled(event,env,ctx) {
 // Conserver /meteo et enregistrer /radar sans modifier les previsions.*
 
-    ctx.waitUntil(Promise.all([registerCommand(env),registerRadarCommand(env),registerFoudreCommand(env),registerLiveCommand(env)]));
+    ctx.waitUntil(Promise.all([registerCommand(env),registerRadarCommand(env),registerFoudreCommand(env),registerLiveCommand(env),registerCartesCommand(env)]));
 
   },
 
@@ -1700,6 +1783,14 @@ export default {
 
       }
 
+    }
+
+    if (url.pathname==="/register-cartes") {
+      if(request.method!=="POST")return new Response("Method Not Allowed",{status:405});
+      if(!env.SETUP_KEY||request.headers.get("Authorization")!=="Bearer "+env.SETUP_KEY)
+        return new Response("Unauthorized",{status:401});
+      try{await registerCartesCommand(env);return json({ok:true,command:"cartes"});}
+      catch(error){return json({ok:false,error:String(error)},502);}
     }
 
     if (url.pathname==="/register-live") {
@@ -1771,6 +1862,13 @@ export default {
     try {interaction=JSON.parse(raw);} catch {return new Response("Invalid JSON",{status:400});}
 
     if (interaction.type===1) return json({type:1});
+
+    if(interaction.type===2 && interaction.data?.name==="cartes"){
+      const options=interaction.data.options||[];
+      const zone=String(options.find(x=>x.name==="zone")?.value||"");
+      const mesure=String(options.find(x=>x.name==="mesure")?.value||"");
+      return json(cartesMeteocielResponse(zone,mesure));
+    }
 
     if(interaction.type===2 && interaction.data?.name==="live"){
       const ville=String(interaction.data.options?.find(x=>x.name==="ville")?.value||"").trim();
