@@ -6,6 +6,7 @@ from pathlib import Path
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+from matplotlib.colors import ListedColormap, BoundaryNorm
 import numpy as np
 import cartopy.crs as ccrs
 import cartopy.feature as cf
@@ -48,6 +49,41 @@ def save_map(fig, model, step, field):
     fig.savefig(OUT/filename, bbox_inches="tight", facecolor="white")
     plt.close(fig)
     result["maps"].setdefault(model, {}).setdefault(str(step), {})[field] = "forecast-maps/europe/"+filename
+
+
+# Palette contraste : pas de couleur sur les cellules seches (<0.1 mm).
+# Seuils communs rain/snow ; couleurs specifiques a chaque hydrometeore.
+PRECIP_LEVELS = [0.1,0.25,0.5,1,2,3,5,8,12,20,30,45,65,90]
+RAIN_COLORS = ["#91e0ff","#55c5ff","#1b95ed","#1164cb","#143ba6","#167e91",
+               "#23b85a","#85d232","#e0df23","#f6b12e","#ef772a","#da3740",
+               "#a72564","#6e155b"]
+SNOW_COLORS = ["#a7f0ff","#6fdcff","#3db7fb","#1e81ed","#2659cc","#5338bd",
+               "#7744cd","#9950e1","#b44ede","#c73bb5","#d21a84","#a60c77",
+               "#7b0c71","#500557"]
+
+def render_precip(x,y,data,model,title,step,run_utc,kind,filename):
+    cmap=ListedColormap(RAIN_COLORS if kind in ("rain","total") else SNOW_COLORS)
+    norm=BoundaryNorm(PRECIP_LEVELS,cmap.N,extend="max")
+    fig,ax=canvas()
+    display=np.ma.masked_where(~np.isfinite(data)|(data<0.1),data)
+    shade=ax.pcolormesh(x,y,display,cmap=cmap,norm=norm,shading="auto",
+                        transform=ccrs.PlateCarree(),rasterized=True)
+    labels={"rain":"Pluie (neige déduite du cumul total)",
+            "snow":"Neige (équivalent-eau, PAS une épaisseur au sol)",
+            "total":"Pluie + neige (cumul total)"}
+    fig.colorbar(shade,ax=ax,orientation="horizontal",pad=.04,shrink=.8,
+                 extend="max",ticks=[.1,.5,1,2,5,12,30,65],
+                 label=labels[kind]+" — mm / 6 h")
+    if kind=="snow":
+        note="La carte indique les mm d'équivalent-eau, pas des cm de neige."
+    elif kind=="rain":
+        note="Cumul liquide estimé = précipitations totales - équivalent-eau neige."
+    else:
+        note="Cumul total, incluant pluie et neige."
+    ax.set_title(f"KFS MÉTÉO | {title} | Atlantique Nord · Groenland · Europe | +{step} h\n"
+                 f"{labels[kind]} | période +{step-6} à +{step} h\n"
+                 f"Run : {run_utc[:16].replace('T',' ')} UTC · {note}")
+    save_map(fig,model,step,filename)
 
 for model, title in MODELS.items():
     client=Client(source="ecmwf",model=model,resol="0p25")
@@ -158,20 +194,10 @@ for model, title in MODELS.items():
             total=np.maximum(0,(tp_now-tp_prev)*tp_factor)
             neige=np.minimum(total,np.maximum(0,(sf_now-sf_prev)*sf_factor))
             pluie=np.maximum(0,total-neige)
-            fig,ax=canvas()
-            shade=ax.contourf(x,y,pluie,levels=[0,.1,.5,1,2,5,10,15,20,30,40,60,80],
-                              cmap="Blues",extend="max",transform=ccrs.PlateCarree())
-            # La neige superposee indique sa contribution en eau (pas l'epaisseur en cm).
-            snow=np.ma.masked_less(neige,.3)
-            if np.any(neige>=.3):
-                overlay=ax.contourf(x,y,snow,levels=[.3,1,2,5,10,20,40,80],
-                                    cmap="Purples",alpha=.86,extend="max",transform=ccrs.PlateCarree())
-                fig.colorbar(overlay,ax=ax,orientation="vertical",pad=.01,shrink=.55,
-                             label="Neige (mm équivalent-eau)")
-            fig.colorbar(shade,ax=ax,orientation="horizontal",pad=.04,shrink=.8,
-                         label="Pluie + autres précipitations liquides (mm / 6 h)")
-            ax.set_title(f"KFS MÉTÉO | {title} | Atlantique Nord · Groenland · Europe | +{step} h\nPrécipitations 6 h : pluie (bleu) et neige (violet, équiv.-eau)\nRun : {run_now[:16].replace('T',' ')} UTC · Période : +{step-6} à +{step} h")
-            save_map(fig,model,step,"precip6h")
+            # Trois sorties. Rain/snow sont DISTINCTES, seule la carte total conserve tout.
+            render_precip(x,y,pluie,model,title,step,run_now,"rain","rain6h")
+            render_precip(x,y,neige,model,title,step,run_now,"snow","snow6h")
+            render_precip(x,y,total,model,title,step,run_now,"total","precip6h")
         except Exception as exc:
             result["errors"][key+"-precip6h"]=str(exc)[:350]
         finally:
