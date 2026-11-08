@@ -17,11 +17,11 @@ STEPS={"ifs":3,"gfs":3,"aifs-single":6,"aigfs":6}
 FIELDS={"t2m","t850","wind10m","mslp","precip_total"}
 ECMWF_FIELDS=FIELDS|{"rain","snow"}
 
-def validate(raw:dict,source:Path):
+def validate(raw:dict,source:Path,horizon:int):
     model=raw.get("model")
     if model not in STEPS or raw.get("area")!="France":
         raise ValueError("Not a supported France model atlas")
-    expected=list(range(STEPS[model],73,STEPS[model]))
+    expected=list(range(STEPS[model],horizon+1,STEPS[model]))
     if raw.get("requested_steps_h") != expected:
         raise ValueError("Source does not cover every native step through +72h")
     maps=raw.get("maps")
@@ -50,13 +50,16 @@ def main():
     p.add_argument("--output",type=Path,required=True,
                    help="Temporary output directory for WebP release assets")
     p.add_argument("--max-mb",type=int,default=40)
+    p.add_argument("--horizon",type=int,choices=(12,72),default=72)
     args=p.parse_args()
     raw=json.loads((args.source/"metadata.json").read_text(encoding="utf-8"))
-    model=validate(raw,args.source)
+    model=validate(raw,args.source,args.horizon)
     args.output.mkdir(parents=True,exist_ok=True)
     manifest={"schema":2,"model":model,"run_utc":raw["run_utc"],
               "native_step_h":STEPS[model],"area":"France",
               "source_generated_utc":raw["generated_utc"],
+              "max_hour":args.horizon,
+              "early":args.horizon==12,
               "published_utc":datetime.now(timezone.utc).isoformat(),
               "maps":{},"errors":raw.get("errors",{}),
               "notes":["Previsions generees depuis les champs GRIB reels.",
@@ -86,7 +89,7 @@ def main():
         raise ValueError("Release too large (%s MB), aborting" % round(size/1e6,1))
     print(json.dumps({"model":model,"run":raw["run_utc"],
                       "assets":n,"megabytes":round(size/1e6,2),
-                      "release_tag":"france-"+model},ensure_ascii=False))
+                      "release_tag":"france-"+model+("-early" if args.horizon==12 else "")},ensure_ascii=False))
     return 0
 
 if __name__=="__main__":
