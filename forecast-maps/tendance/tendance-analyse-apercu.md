@@ -2,7 +2,7 @@
 
 > **Non diffusée sur Discord.** Analyse de sorties déterministes ponctuelles IFS et AIFS. Ce document n'est pas une prévision probabiliste à quatre semaines.
 
-Génération : 08/11/2026 16:38 UTC. Source : ECMWF Open Data. Champs utilisés : température à 850 hPa, pression au niveau de la mer et géopotentiel à 500 hPa. Toutes les heures citées sont en UTC.
+Génération : 08/11/2026 17:44 UTC. Source : ECMWF Open Data. Champs utilisés : température à 850 hPa, pression au niveau de la mer, géopotentiel à 500 hPa et, lorsque accessibles, vents à 850 hPa. Toutes les heures citées sont en UTC.
 
 ## 1. Méthode et limites de lecture
 
@@ -10,31 +10,31 @@ Nous confrontons les prévisions numériques à +72, +168 et +240 heures. Les va
 
 ## 2. Première partie — évolution à court terme
 
-A +72 h, la moyenne calculée sur le domaine France et alentours atteint 9.0 °C dans IFS et 8.7 °C dans AIFS (AIFS moins IFS : -0,3 °C). C'est un écart entre deux sorties de modèles et non une incertitude probabiliste mesurée.
+A +72 h, la moyenne calculée sur le domaine France et alentours atteint 9.0 °C dans IFS et 8.5 °C dans AIFS (AIFS moins IFS : -0,6 °C). C'est un écart entre deux sorties de modèles et non une incertitude probabiliste mesurée.
 
-A +72 h, la moyenne calculée sur le domaine Atlantique nord-est atteint 1008.4 hPa dans IFS et 1008.6 hPa dans AIFS (AIFS moins IFS : +0,3 hPa). C'est un écart entre deux sorties de modèles et non une incertitude probabiliste mesurée.
+A +72 h, la moyenne calculée sur le domaine Atlantique nord-est atteint 1008.4 hPa dans IFS et 1008.9 hPa dans AIFS (AIFS moins IFS : +0,6 hPa). C'est un écart entre deux sorties de modèles et non une incertitude probabiliste mesurée.
 
-A +72 h, la moyenne calculée sur le domaine Europe occidentale atteint 553.6 dam dans IFS et 552.7 dam dans AIFS (AIFS moins IFS : -0,9 dam). C'est un écart entre deux sorties de modèles et non une incertitude probabiliste mesurée.
+A +72 h, la moyenne calculée sur le domaine Europe occidentale atteint 553.6 dam dans IFS et 552.4 dam dans AIFS (AIFS moins IFS : -1,2 dam). C'est un écart entre deux sorties de modèles et non une incertitude probabiliste mesurée.
 
 La lecture croisée des trois champs sert à examiner la cohérence du scénario synoptique à une échéance donnée. Elle ne démontre pas à elle seule un régime de NAO, un blocage anticyclonique ni une trajectoire des perturbations. Pour identifier ces structures, il faudrait examiner les gradients, les anomalies par rapport à une référence climatique et, idéalement, un ensemble de prévisions.
 
 ## 3. Deuxième partie — évolution à moyen terme
 
-A +168 h, la moyenne calculée sur le domaine France et alentours atteint 6.3 °C dans IFS et 3.3 °C dans AIFS (AIFS moins IFS : -3,0 °C). C'est un écart entre deux sorties de modèles et non une incertitude probabiliste mesurée.
+A +168 h, la moyenne calculée sur le domaine France et alentours atteint 6.3 °C dans IFS et 4.1 °C dans AIFS (AIFS moins IFS : -2,2 °C). C'est un écart entre deux sorties de modèles et non une incertitude probabiliste mesurée.
 
-A +168 h, la moyenne calculée sur le domaine Atlantique nord-est atteint 1004.1 hPa dans IFS et 1001.6 hPa dans AIFS (AIFS moins IFS : -2,5 hPa). C'est un écart entre deux sorties de modèles et non une incertitude probabiliste mesurée.
+A +168 h, la moyenne calculée sur le domaine Atlantique nord-est atteint 1004.1 hPa dans IFS et 996.6 hPa dans AIFS (AIFS moins IFS : -7,4 hPa). C'est un écart entre deux sorties de modèles et non une incertitude probabiliste mesurée.
 
-A +168 h, la moyenne calculée sur le domaine Groenland et environs atteint 527.6 dam dans IFS et 523.4 dam dans AIFS (AIFS moins IFS : -4,2 dam). C'est un écart entre deux sorties de modèles et non une incertitude probabiliste mesurée.
+A +168 h, la moyenne calculée sur le domaine Groenland et environs atteint 527.6 dam dans IFS et 520.1 dam dans AIFS (AIFS moins IFS : -7,5 dam). C'est un écart entre deux sorties de modèles et non une incertitude probabiliste mesurée.
 
 À ce délai, les écarts entre deux modèles peuvent augmenter. Un accord ponctuel entre IFS et AIFS est intéressant, mais ne fournit pas à lui seul un niveau de confiance élevé. Il est nécessaire de comparer plusieurs cycles et d'examiner la dispersion des membres d'ensemble pour apprécier la robustesse d'une tendance.
 
 ## 4. Troisième partie — fin de la période déterministe
 
-A +240 h, la moyenne calculée sur le domaine France et alentours atteint 1.3 °C dans IFS et 3.0 °C dans AIFS (AIFS moins IFS : +1,7 °C). C'est un écart entre deux sorties de modèles et non une incertitude probabiliste mesurée.
+A +240 h, la moyenne calculée sur le domaine France et alentours atteint 1.3 °C dans IFS et 3.4 °C dans AIFS (AIFS moins IFS : +2,1 °C). C'est un écart entre deux sorties de modèles et non une incertitude probabiliste mesurée.
 
-A +240 h, la moyenne calculée sur le domaine Atlantique nord-est atteint 995.6 hPa dans IFS et 1005.6 hPa dans AIFS (AIFS moins IFS : +10,0 hPa). C'est un écart entre deux sorties de modèles et non une incertitude probabiliste mesurée.
+A +240 h, la moyenne calculée sur le domaine Atlantique nord-est atteint 995.6 hPa dans IFS et 994.7 hPa dans AIFS (AIFS moins IFS : -0,9 hPa). C'est un écart entre deux sorties de modèles et non une incertitude probabiliste mesurée.
 
-A +240 h, la moyenne calculée sur le domaine Europe occidentale atteint 544.9 dam dans IFS et 531.6 dam dans AIFS (AIFS moins IFS : -13,3 dam). C'est un écart entre deux sorties de modèles et non une incertitude probabiliste mesurée.
+A +240 h, la moyenne calculée sur le domaine Europe occidentale atteint 544.9 dam dans IFS et 544.2 dam dans AIFS (AIFS moins IFS : -0,8 dam). C'est un écart entre deux sorties de modèles et non une incertitude probabiliste mesurée.
 
 L'échéance de +240 heures représente un état de l'atmosphère prévu à environ dix jours, pas la moyenne de la deuxième semaine. Les détails géographiques sont à interpréter comme une possibilité de scénario, et non comme une prévision stabilisée de chaque région. Cette prudence s'applique encore davantage au-delà de J+10.
 
