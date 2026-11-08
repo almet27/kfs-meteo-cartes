@@ -357,10 +357,12 @@ def main():
     for step in steps:
         print("KFS FRANCE", args.model, iso(run), step, flush=True)
         fields = {}
-        for param in ("2t", "t850", "10u", "10v", "msl", "tp",
-                      "sf" if state["kind"] == "ecmwf" else "cpofp"):
-            if args.model == "aigfs" and param == "cpofp":
-                continue
+        requested = (("2t", "t850", "10u", "10v", "msl", "tp", "sf")
+                     if state["kind"] == "ecmwf" else
+                     ("2t","t850","10u","10v","msl","tp",
+                      "crain","csnow","cfrzr","cicep") if args.model=="gfs" else
+                     ("2t","t850","10u","10v","msl","tp"))
+        for param in requested:
             try:
                 fields[param] = field(state, step, param, tmp)
             except Exception as exc:
@@ -417,28 +419,41 @@ def main():
                 else:
                     candidates["precip_total"] = (tp[0], tp[1], np.maximum(0,tp[2]),
                                                    "cumul total; ne distingue pas pluie et neige")
-                    if "cpofp" in fields:
-                        phase=fields["cpofp"]
-                        lon,lat=common_grid(tp,phase)
-                        # NOAA CPOFP can contain missing/invalid grid cells.
-                        # Mask them explicitly: never treat unknown phase as dry.
-                        raw=np.asarray(phase[2],dtype=float)
-                        valid=np.isfinite(raw)&(raw>=0)&(raw<=100)
-                        print("GFS CPOFP",step,"valid",int(np.count_nonzero(valid)),
-                              "of",raw.size,"range",
-                              float(np.nanmin(raw)),float(np.nanmax(raw)),flush=True)
-                        if np.count_nonzero(valid)>=max(12,raw.size//5):
-                            # Phase fraction is INSTANTANEOUS, not a native snowfall total.
-                            fraction=np.where(valid,np.clip(raw/100,0,1),np.nan)
-                            amount=np.maximum(0,np.asarray(tp[2],dtype=float))
-                            candidates["rain"]=(lon,lat,amount*(1-fraction),
-                                                  "pluie estimée, phase instantanée")
-                            candidates["snow"]=(lon,lat,amount*fraction,
-                                                  "précipitations gelées estimées, pas neige native")
-                        else:
-                            errors[f"{step}-phase"]="CPOFP insufficient valid cells"
+                    # GFS: use NOAA native categorical precipitation *at the
+                    # valid instant*. This is a diagnostic phase classification,
+                    # not a native 3-hour rain/snow accumulation.
+                    # Do not classify mixed/freezing/ice-pellet cells as snow.
+                    required=("crain","csnow","cfrzr","cicep")
+                    if all(x in fields for x in required):
+                        try:
+                            masks=[fields[k] for k in required]
+                            common_grid(tp,*masks)
+                            raw=[np.asarray(m[2],dtype=float) for m in masks]
+                            valid=np.logical_and.reduce([
+                                np.isfinite(v)&(v>=0)&(v<=1) for v in raw])
+                            rainflag,snowflag,freeze,ice=raw
+                            wet=np.asarray(tp[2],dtype=float)>0.1
+                            onlyrain=(rainflag>.5)&(snowflag<.5)&(freeze<.5)&(ice<.5)
+                            onlysnow=(snowflag>.5)&(rainflag<.5)&(freeze<.5)&(ice<.5)
+                            known=(onlyrain|onlysnow)&valid
+                            # Even if rare, ambiguous precip cells stay unclassified.
+                            # Dry cells are zero, unknown *wet* cells are NaN.
+                            quality=float(np.count_nonzero(known&wet))/max(1,int(np.count_nonzero(wet)))
+                            rain=np.where(~wet,0,np.where(valid&onlyrain,tp[2],
+                                          np.where(valid&onlysnow,0,np.nan)))
+                            snow=np.where(~wet,0,np.where(valid&onlysnow,tp[2],
+                                          np.where(valid&onlyrain,0,np.nan)))
+                            if quality>=.5 or not np.any(wet):
+                                note=("PHASE ESTIMÉE: pluie/neige NOAA au temps de validité;"
+                                      " cellules mixtes/non déterminées grisées")
+                                candidates["rain"]=(tp[0],tp[1],rain,note)
+                                candidates["snow"]=(tp[0],tp[1],snow,note)
+                            else:
+                                errors[f"{step}-phase"]="Categorical GFS phase too ambiguous: "+str(round(quality*100))+" % classified wet cells"
+                        except Exception as exc:
+                            errors[f"{step}-phase"]="GFS phase fields invalid: "+str(exc)[:150]
                     else:
-                        errors[f"{step}-phase"] = "Phase inconnue; pluie/neige non cartographiées"
+                        errors[f"{step}-phase"]="No four categorical NOAA fields; no artificial rain/snow classification"
         for metric, (lon, lat, values, note) in candidates.items():
             if metric not in VARS:
                 continue
