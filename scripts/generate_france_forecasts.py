@@ -35,9 +35,9 @@ from kfs_premium_palettes import (
 )
 
 EXTENT = (-6.6, 10.3, 41.0, 51.7)
-STEP_BY_MODEL = {"ifs": 3, "aifs-single": 6, "gfs": 3}
-MODEL_LABELS = {"ifs": "ECMWF IFS", "aifs-single": "ECMWF AIFS", "gfs": "NOAA GFS"}
-VARS = ("t2m", "t850", "wind10m", "mslp", "rain", "snow")
+STEP_BY_MODEL = {"ifs": 3, "aifs-single": 6, "gfs": 3, "aigfs": 6}
+MODEL_LABELS = {"ifs": "ECMWF IFS", "aifs-single": "ECMWF AIFS", "gfs": "NOAA GFS", "aigfs": "NOAA AIGFS"}
+VARS = ("t2m", "t850", "wind10m", "mslp", "precip_total", "rain", "snow")
 RAIN_LEVELS = (0.1, .3, .6, 1, 2, 3, 5, 8, 12, 18, 25, 40, 60)
 RAIN_COLORS = (
     "#C0EAF9", "#79CFFF", "#339DE8", "#276CCA",
@@ -78,8 +78,9 @@ def native_model(model):
             hour=((now - timedelta(hours=lag)).hour // 6) * 6,
             minute=0, second=0, microsecond=0)
         try:
-            h = Herbie(candidate.replace(tzinfo=None), model="gfs",
-                       product="pgrb2.0p25", fxx=72, verbose=False)
+            h = Herbie(candidate.replace(tzinfo=None), model=model,
+                       product="pgrb2.0p25" if model == "gfs" else "sfc",
+                       fxx=72, verbose=False)
             if h.grib is not None:
                 return {"kind": "noaa", "cycle": candidate}
         except Exception:
@@ -127,8 +128,11 @@ def ecmwf_field(state, step, key, out):
 
 def gfs_field(state, step, key):
     from herbie import Herbie
-    h = Herbie(state["cycle"].replace(tzinfo=None), model="gfs",
-               product="pgrb2.0p25", fxx=step, verbose=False)
+    model=state["model"]
+    product=("pgrb2.0p25" if model=="gfs" else
+             ("pres" if key=="t850" else "sfc"))
+    h = Herbie(state["cycle"].replace(tzinfo=None), model=model,
+               product=product, fxx=step, verbose=False)
     patt = {
         "2t": r":TMP:2 m above ground:",
         "t850": r":TMP:850 mb:",
@@ -216,6 +220,8 @@ def palette():
                     "Vent à 10 m (km/h)"),
         "mslp": (colormaps["GnBu"], None, np.arange(960, 1061, 4),
                  "Pression réduite à la mer (hPa)"),
+        "precip_total": (rain, BoundaryNorm(RAIN_LEVELS, rain.N),
+                 RAIN_LEVELS, "Précipitations totales (mm sur la période)"),
         "rain": (rain, BoundaryNorm(RAIN_LEVELS, rain.N),
                  RAIN_LEVELS, "Pluie estimée (mm sur la période)"),
         "snow": (snow, BoundaryNorm(RAIN_LEVELS, snow.N),
@@ -286,6 +292,7 @@ def main():
             raise ValueError("Requested step not available natively")
         steps = sorted(set(selected))
     state = native_model(args.model)
+    state["model"] = args.model
     run = state["cycle"]
     folder = Path(args.output) / args.model
     folder.mkdir(parents=True, exist_ok=True)
@@ -299,6 +306,8 @@ def main():
         fields = {}
         for param in ("2t", "t850", "10u", "10v", "msl", "tp",
                       "sf" if state["kind"] == "ecmwf" else "cpofp"):
+            if args.model == "aigfs" and param == "cpofp":
+                continue
             try:
                 fields[param] = field(state, step, param, tmp)
             except Exception as exc:
@@ -338,6 +347,8 @@ def main():
                     except Exception as exc:
                         errors[f"{step}-{param}-window"] = str(exc)[:180]
                     cache[param] = curr
+            if "total_precip" in candidates:
+                candidates["precip_total"] = candidates["total_precip"]
             if "total_precip" in candidates and "snow" in candidates:
                 a, b = candidates["total_precip"], candidates["snow"]
                 lon, lat = common_grid((a[0],a[1]), (b[0],b[1]))
@@ -351,6 +362,8 @@ def main():
                 if units not in ("kg m**-2", "kg m-2", "kg m^-2", "mm"):
                     errors[f"{step}-tp-units"] = "Unité NOAA inconnue: " + units
                 else:
+                    candidates["precip_total"] = (tp[0], tp[1], np.maximum(0,tp[2]),
+                                                   "cumul total; ne distingue pas pluie et neige")
                     if "cpofp" in fields:
                         phase=fields["cpofp"]
                         lon,lat=common_grid(tp,phase)
