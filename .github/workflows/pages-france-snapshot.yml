@@ -1,0 +1,87 @@
+name: KFS France - preparer GitHub Pages sans abonnement
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publier le site Pages (necessite Source = GitHub Actions dans Settings / Pages)
+        required: true
+        type: boolean
+        default: false
+  push:
+    paths:
+      - 'scripts/build_france_pages.py'
+      - '.github/workflows/pages-france-snapshot.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: kfs-france-pages-snapshot
+  cancel-in-progress: false
+
+jobs:
+  preparer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Installer Pillow
+        run: python -m pip install 'Pillow>=10,<13'
+      - name: Recuperer les archives recentes des cartes France
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p /tmp/kfs-france-artifacts
+          echo 'Telecharger uniquement les archives de runs reussis, sans modifier le depot.'
+          gh run list --workflow france-h72.yml --status success --limit 24 --json databaseId --jq '.[].databaseId' | while read -r run_id; do
+            if [ -z "$run_id" ]; then continue; fi
+            mkdir -p "/tmp/kfs-france-artifacts/$run_id"
+            if ! gh run download "$run_id" --dir "/tmp/kfs-france-artifacts/$run_id"; then
+              echo "Archive non accessible pour run $run_id, ignoree"
+            fi
+          done
+      - name: Construire le site sans changer les pages existantes
+        env:
+          PUBLISH: ${{ github.event.inputs.publish }}
+        run: |
+          python -m py_compile scripts/build_france_pages.py
+          if [ "$PUBLISH" = 'true' ]; then
+            python scripts/build_france_pages.py --artifacts /tmp/kfs-france-artifacts \
+              --output /tmp/kfs-pages-site --include-existing \
+              --require-all-models --require-latest --max-megabytes 450
+          else
+            python scripts/build_france_pages.py --artifacts /tmp/kfs-france-artifacts \
+              --output /tmp/kfs-pages-site --allow-partial \
+              --max-megabytes 450
+          fi
+      - name: Conserver seulement les metadonnees du test de publication
+        if: ${{ github.event.inputs.publish != 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: kfs-france-pages-validation
+          path: /tmp/kfs-pages-site/forecast-maps/france/metadata.json
+          retention-days: 3
+      - name: Preparer le site GitHub Pages
+        if: ${{ github.event.inputs.publish == 'true' }}
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: /tmp/kfs-pages-site
+  deployer:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish }}
+    needs: preparer
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - name: Deployer les cartes sans les commiter dans Git
+        id: deploy
+        uses: actions/deploy-pages@v4
