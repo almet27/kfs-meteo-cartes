@@ -1,23 +1,62 @@
 {
-  "generated_utc": "2026-11-08T14:43:30.948966+00:00",
+  "generated_utc": "2026-11-08T15:06:27.464919+00:00",
   "source": "ECMWF Open Data (CC BY 4.0)",
   "maps": {
     "ifs": {
-      "24": "forecast-maps/europe/ifs-h024.png",
-      "48": "forecast-maps/europe/ifs-h048.png",
-      "72": "forecast-maps/europe/ifs-h072.png",
-      "120": "forecast-maps/europe/ifs-h120.png",
-      "168": "forecast-maps/europe/ifs-h168.png",
-      "240": "forecast-maps/europe/ifs-h240.png"
+      "24": {
+        "t850": "forecast-maps/europe/ifs-h024-t850.png",
+        "z500_msl": "forecast-maps/europe/ifs-h024-z500_msl.png"
+      },
+      "48": {
+        "t850": "forecast-maps/europe/ifs-h048-t850.png",
+        "z500_msl": "forecast-maps/europe/ifs-h048-z500_msl.png"
+      },
+      "72": {
+        "t850": "forecast-maps/europe/ifs-h072-t850.png",
+        "z500_msl": "forecast-maps/europe/ifs-h072-z500_msl.png"
+      },
+      "120": {
+        "t850": "forecast-maps/europe/ifs-h120-t850.png",
+        "z500_msl": "forecast-maps/europe/ifs-h120-z500_msl.png"
+      },
+      "168": {
+        "t850": "forecast-maps/europe/ifs-h168-t850.png",
+        "z500_msl": "forecast-maps/europe/ifs-h168-z500_msl.png"
+      },
+      "240": {
+        "t850": "forecast-maps/europe/ifs-h240-t850.png",
+        "z500_msl": "forecast-maps/europe/ifs-h240-z500_msl.png"
+      }
     },
     "aifs-single": {
-      "24": "forecast-maps/europe/aifs-single-h024.png",
-      "48": "forecast-maps/europe/aifs-single-h048.png",
-      "72": "forecast-maps/europe/aifs-single-h072.png",
-      "120": "forecast-maps/europe/aifs-single-h120.png",
-      "168": "forecast-maps/europe/aifs-single-h168.png",
-      "240": "forecast-maps/europe/aifs-single-h240.png",
-      "360": "forecast-maps/europe/aifs-single-h360.png"
+      "24": {
+        "t850": "forecast-maps/europe/aifs-single-h024-t850.png",
+        "z500_msl": "forecast-maps/europe/aifs-single-h024-z500_msl.png"
+      },
+      "48": {
+        "t850": "forecast-maps/europe/aifs-single-h048-t850.png",
+        "z500_msl": "forecast-maps/europe/aifs-single-h048-z500_msl.png"
+      },
+      "72": {
+        "t850": "forecast-maps/europe/aifs-single-h072-t850.png",
+        "z500_msl": "forecast-maps/europe/aifs-single-h072-z500_msl.png"
+      },
+      "120": {
+        "t850": "forecast-maps/europe/aifs-single-h120-t850.png",
+        "z500_msl": "forecast-maps/europe/aifs-single-h120-z500_msl.png"
+      },
+      "168": {
+        "t850": "forecast-maps/europe/aifs-single-h168-t850.png",
+        "z500_msl": "forecast-maps/europe/aifs-single-h168-z500_msl.png"
+      },
+      "240": {
+        "t850": "forecast-maps/europe/aifs-single-h240-t850.png",
+        "z500_msl": "forecast-maps/europe/aifs-single-h240-z500_msl.png"
+      },
+      "360": {
+        "t850": "forecast-maps/europe/aifs-single-h360-t850.png",
+        "z500_msl": "forecast-maps/europe/aifs-single-h360-z500_msl.png"
+      }
     }
   },
   "errors": {}
