@@ -2,7 +2,7 @@
 """Validate ChatGPT meteorological handoff; never publish to Discord.
 
 Accept only structured, clearly sourced documents with explicit availability
-disclosures. For the first test, the 'draft' state is mandatory.
+disclosures. Mark a document ready only after extended-range ensemble verification.
 """
 import json
 import re
@@ -47,18 +47,31 @@ def main():
     models = report.get("source_models",[])
     if not models or any(x not in source.get("models",{}) for x in models):
         raise ValueError("Modeles non traces dans les donnees")
-    if report.get("weeks_3_4") != "unverified":
-        raise ValueError("Statut Extended ne peut pas etre declare valide sans donnees")
     if re.search(r"(?i)(mot.de.passe|token secret|authorization: bearer|sk-[A-Za-z0-9]{15,})", body):
-        raise ValueError("Possibles secrets detects dans le bulletin")
-    if report.get("ready_for_discord") is not False or report.get("status") != "draft":
-        raise ValueError("Premier test : publication volontairement desactivee")
-    if report.get("discord_channel_id") not in (None,""):
-        raise ValueError("Aucun salon de production ne doit etre dans le brouillon")
+        raise ValueError("Possibles secrets detectes dans le bulletin")
+    if report.get("discord_channel_id") not in (None, "", "1441767343498858578"):
+        raise ValueError("Identifiant de salon Discord inconnu")
+    readable = ROOT / "chatgpt-bulletin.md"
+    if not readable.exists() or report["created_utc"] not in readable.read_text(encoding="utf-8"):
+        raise ValueError("La version Markdown est absente ou ne correspond pas au bulletin JSON")
+    is_ready = report.get("status") == "ready" and report.get("ready_for_discord") is True
+    if is_ready:
+        extended = json.loads((ROOT / "extended-weekly.json").read_text(encoding="utf-8"))
+        gen_utc = parsed_date(extended["generated_utc"])
+        if extended.get("verified") is not True or not {3,4}.issubset(set(extended.get("weeks", []))):
+            raise ValueError("Les semaines 3 et 4 ne sont pas validees")
+        if gen_utc > now or now - gen_utc > timedelta(days=7):
+            raise ValueError("Les donnees Extended sont obsoletes")
+        if report.get("weeks_3_4") != "verified":
+            raise ValueError("Le bulletin doit marquer les semaines 3 et 4 comme verifiees")
+        if report.get("discord_channel_id") != "1441767343498858578":
+            raise ValueError("Salon de publication absent")
+    elif report.get("status") != "draft" or report.get("ready_for_discord") is not False or report.get("weeks_3_4") != "unverified":
+        raise ValueError("Statut invalide : pas de diffusion sans donnees Extended")
     out = {
         "validated_utc":now.isoformat(),
-        "status":"passed_draft_validation",
-        "ready_for_discord":False,
+        "status":"passed_ready_validation" if is_ready else "passed_draft_validation",
+        "ready_for_discord":is_ready,
         "word_count":words,
         "data_source":report["source_path"],
         "models":models,
