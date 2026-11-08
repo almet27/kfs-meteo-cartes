@@ -223,9 +223,12 @@ def render(metric, zone, records, shapes, timestamp, hours):
     area, bounds = ZONES[zone]
     x0, x1, y0, y1 = bounds
     points = [p for p in records if x0 <= p[0] <= x1 and y0 <= p[1] <= y1]
-    # Haute definition : les cartes restent nettes dans l'apercu Discord et au zoom.
-    # 12.8 x 8.5 pouces a 150 dpi = 1920 x 1275 pixels.
-    fig, ax = plt.subplots(figsize=(12.8, 8.5), dpi=150)
+    # Les 4 grands secteurs etaient trop petits dans une image horizontale :
+    # une carte aux proportions geographiques correctes devient naturellement
+    # plus lisible dans un canevas vertical. Les autres zones ne changent pas.
+    quadrant_zone = zone in ("no", "ne", "so", "se")
+    figure_size = (9.2, 12.8) if quadrant_zone else (12.8, 8.5)
+    fig, ax = plt.subplots(figsize=figure_size, dpi=150)
     fig.patch.set_facecolor("#101927")
     ax.set_facecolor("#172538")
     for ring in shapes:
@@ -283,7 +286,20 @@ def render(metric, zone, records, shapes, timestamp, hours):
     fig.text(.055, .04, footer, color="#cfdae9", fontsize=10.5)
     fig.text(.055, .016, "Source : Météo-France · Contours : IGN / Admin Express (Licence Ouverte)",
              color="#8da2b8", fontsize=9.5)
-    fig.subplots_adjust(left=.035, right=.975, top=.85, bottom=.13)
+    if quadrant_zone:
+        # Liberer de la hauteur pour la carte sans rogner le bandeau ni le pied.
+        fig.subplots_adjust(left=.035, right=.975, top=.86, bottom=.105)
+        if points:
+            # La legende doit avoir la MEME largeur que la carte visible.
+            # Par defaut Matplotlib lui laisse toute la largeur du canevas.
+            fig.canvas.draw()
+            map_box = ax.get_position()
+            scale_box = cb.ax.get_position()
+            cb.ax.set_axes_locator(None)
+            cb.ax.set_position((map_box.x0, scale_box.y0,
+                                map_box.width, scale_box.height))
+    else:
+        fig.subplots_adjust(left=.035, right=.975, top=.85, bottom=.13)
     OUT.mkdir(exist_ok=True)
     dest = OUT / f"{zone}-{metric}.png"
     fig.savefig(dest, facecolor=fig.get_facecolor(), dpi=150)
