@@ -171,7 +171,7 @@ def calculate(id,step,model,atlas,now):
     vs=float(np.max(snow[region]))
     # 10m average speed != gust. Do not claim official storm warning from it.
     risks={k:{"status":"indisponible","reason":"Champs spécifiques non disponibles"} for k in CATEGORIES}
-    risks["tempete"]={"status":status(vw,70,90),"max":round(vw,1),"unit":"km/h (vent moyen 10 m)",
+    risks["tempete"]={"status":status(vw,50,70),"max":round(vw,1),"unit":"km/h (vent moyen 10 m)",
                       "reason":"Signal de vent soutenu, pas une vigilance tempête"}
     risks["pluie_forte"]={"status":status(vr,10,20),"max":round(vr,1),"unit":"mm/6h",
                           "reason":"Cumul des 6 heures précédant l'échéance"}
@@ -179,7 +179,7 @@ def calculate(id,step,model,atlas,now):
                     "reason":"Neige modélisée : pas une hauteur de neige au sol"}
     risks["inondation"]={"status":"indisponible",
                          "reason":"Crue non déductible d'un seul cumul de pluie de 6 h"}
-    markers=(peaks(x,y,wind,70,"tempete",3) +
+    markers=(peaks(x,y,wind,50,"vent_fort",3) +
              peaks(x,y,rain,10,"pluie_forte",4) +
              peaks(x,y,snow,0.5,"neige",3))
     # Adjacent pin collision is undesirable even across different phenomena.
