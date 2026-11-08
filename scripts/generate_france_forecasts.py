@@ -54,9 +54,10 @@ SNOW_COLORS = (
 def parse_datetime(v):
     if isinstance(v, datetime):
         return v.replace(tzinfo=timezone.utc) if v.tzinfo is None else v.astimezone(timezone.utc)
-    return datetime.fromisoformat(str(v).replace("Z", "+00:00")).replace(
-        tzinfo=timezone.utc) if "UTC" in str(v) else datetime.fromisoformat(
-        str(v).replace("Z", "+00:00")).astimezone(timezone.utc)
+    parsed = datetime.fromisoformat(str(v).replace("Z", "+00:00"))
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
 
 
 def iso(dt):
@@ -234,12 +235,12 @@ def render(lon, lat, values, model, run, step, metric, folder, note=""):
         kw["norm"] = norm
     shade = ax.contourf(lon, lat, values, levels=levels, **kw)
     if metric == "t850":
-        iso = ax.contour(lon, lat, values, levels=KFS_T850_ISOTHERMS,
+        isotherm_contours = ax.contour(lon, lat, values, levels=KFS_T850_ISOTHERMS,
                          colors="#17202A",
                          linewidths=[1.18 if n in KFS_T850_COLD_ISOTHERMS else .45
                                      for n in KFS_T850_ISOTHERMS],
                          transform=ccrs.PlateCarree(), zorder=4)
-        labels = ax.clabel(iso, levels=KFS_T850_COLD_ISOTHERMS,
+        labels = ax.clabel(isotherm_contours, levels=KFS_T850_COLD_ISOTHERMS,
                           inline=True, fontsize=10, fmt="%d", colors="#17202A")
         for l in labels:
             l.set_path_effects([pe.Stroke(linewidth=2, foreground="white"), pe.Normal()])
