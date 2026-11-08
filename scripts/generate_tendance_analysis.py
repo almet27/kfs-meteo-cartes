@@ -134,7 +134,70 @@ def acquisition():
                     "flow_850":flow_850}
             else:
                 data["errors"][model+"-"+key]="Champs ou cycles incomplets."
+    import_gfs(data)
     return data
+
+
+def import_gfs(data):
+    """Only use fresh, run-matched NOAA numerical diagnostics."""
+    source=pathlib.Path("forecast-maps/europe/noaa-diagnostics.json")
+    reference_path=pathlib.Path("forecast-maps/europe/noaa-metadata.json")
+    warnings=data.setdefault("warnings",[])
+    if not source.is_file() or not reference_path.is_file():
+        warnings.append("GFS : export numérique NOAA absent")
+        return
+    try:
+        snapshot=json.loads(source.read_text(encoding="utf-8"))
+        reference=json.loads(reference_path.read_text(encoding="utf-8"))
+        now=datetime.now(timezone.utc)
+        created=datetime.fromisoformat(snapshot["generated_utc"].replace("Z","+00:00"))
+        published=datetime.fromisoformat(reference["generated_utc"].replace("Z","+00:00"))
+        source_run=datetime.fromisoformat(snapshot["source_run_utc"].replace("Z","+00:00"))
+        if not all(dt.utcoffset() is not None for dt in (created,published,source_run)):
+            raise ValueError("horodatage NOAA sans fuseau")
+        if not timedelta(hours=-1)<=now-created<=timedelta(hours=48):
+            raise ValueError("diagnostic GFS périmé")
+        if abs((created-published).total_seconds())>3600:
+            raise ValueError("métadonnées et champs GFS désynchronisés")
+        if snapshot["source_run_utc"]!=reference["run_utc"]:
+            raise ValueError("cycle GFS différent du catalogue NOAA")
+        if not timedelta(hours=0)<=created-source_run<=timedelta(hours=48):
+            raise ValueError("run NOAA invalide")
+        candidates=snapshot.get("models",{}).get("gfs",{})
+        accepted={}
+        for step in (72,168,240,360):
+            key=str(step)
+            record=candidates.get(key)
+            chart=reference.get("maps",{}).get("gfs",{}).get(key,{})
+            if not record or not all(name in chart for name in ("t850","z500_msl")):
+                continue
+            issue=datetime.fromisoformat(record["run_utc"].replace("Z","+00:00"))
+            listed=datetime.fromisoformat(reference["runs_utc"]["gfs"][key].replace("Z","+00:00"))
+            valid=datetime.fromisoformat(record["valid_utc"].replace("Z","+00:00"))
+            if issue!=source_run or issue!=listed or abs((valid-issue-timedelta(hours=step)).total_seconds())>60:
+                warnings.append("GFS +%s h : cycle ou validité incohérents"%key)
+                continue
+            fields=record.get("fields",{})
+            if any(name not in fields or "france" not in fields[name] for name in ("t850","msl","z500")):
+                continue
+            if not (-80<fields["t850"]["france"]["mean"]<50 and
+                    850<fields["msl"]["france"]["mean"]<1100 and
+                    400<fields["z500"]["france"]["mean"]<650):
+                warnings.append("GFS +%s h : unités suspectes"%key)
+                continue
+            accepted[key]=record
+        if not accepted:
+            warnings.append("GFS : aucune échéance chiffrée validée")
+            return
+        data["models"]["gfs"]=accepted
+        data["gfs_source"]={"name":"NOAA NCEP GFS", "run_utc":snapshot["source_run_utc"],
+                            "generated_utc":snapshot["generated_utc"],
+                            "source_path":"forecast-maps/europe/noaa-diagnostics.json",
+                            "steps_available_h":sorted(int(k) for k in accepted),
+                            "note":"Sorties déterministes : heures de validité pouvant différer de celles d'IFS et d'AIFS."}
+        print("GFS intégré :",sorted(accepted),flush=True)
+    except (KeyError,ValueError,TypeError) as error:
+        warnings.append("GFS non intégré : "+str(error)[:220])
 
 def fmt(x,dec=1):
     return (("%+."+str(dec)+"f")%x).replace(".",",")
@@ -149,10 +212,15 @@ def compare(data,step,variable,region,unit):
         return ("Pour +%s h, il manque au moins un champ valide de %s sur %s : "
                 "aucune conclusion comparative n'est possible."%(step,variable,region))
     diff=round(b-a,1)
-    return ("A +%s h, la moyenne calculée sur le domaine %s atteint %.1f %s dans "
-            "IFS et %.1f %s dans AIFS (AIFS moins IFS : %s %s). "
-            "C'est un écart entre deux sorties de modèles et non une incertitude "
-            "probabiliste mesurée."%(step,REGIONS[region][0],a,unit,b,unit,fmt(diff),unit))
+    g=get(data,"gfs",step,variable,region)
+    gfs=((" GFS : %.1f %s sur le même domaine à +%s h, depuis un run NOAA dont "
+          "l'heure de validité peut différer."%(g,unit,step))
+         if g is not None else " GFS : champ non disponible à cette échéance.")
+    return ("À +%s h sur %s, IFS prévoit %.1f %s et AIFS %.1f %s "
+            "(AIFS moins IFS : %s %s).%s "
+            "La dispersion de trois sorties déterministes n'est pas une probabilité "
+            "et ne remplace pas les ensembles."
+            %(step,REGIONS[region][0],a,unit,b,unit,fmt(diff),unit,gfs))
 
 def report(data):
     created=datetime.fromisoformat(data["generated_utc"])
@@ -163,16 +231,16 @@ def report(data):
         "# KFS MÉTÉO — Analyse synoptique approfondie (maquette technique)",
         "",
         "> **Non diffusée sur Discord.** Analyse de sorties déterministes ponctuelles "
-        "IFS et AIFS. Ce document n'est pas une prévision probabiliste à quatre semaines.",
+        "IFS, AIFS, et GFS si les données sont vérifiées. Ce document n'est pas une prévision probabiliste à quatre semaines.",
         "",
         "Génération : "+created.strftime("%d/%m/%Y %H:%M UTC")+". "
-        "Source : ECMWF Open Data. Champs utilisés : température à 850 hPa, "
+        "Sources : ECMWF Open Data et NOAA GFS vérifié le cas échéant. Champs : température à 850 hPa, "
         "pression au niveau de la mer, géopotentiel à 500 hPa et, lorsque accessibles, vents à 850 hPa. "
         "Toutes les heures citées sont en UTC.",
         "",
         "## 1. Méthode et limites de lecture",
         "",
-        "Nous confrontons les prévisions numériques à +72, +168 et +240 heures. "
+        "Nous confrontons les prévisions numériques à +72, +168 et +240 heures ; GFS peut aussi fournir +360 h. "
         "Les valeurs fournies sont des moyennes spatiales calculées sur des boîtes "
         "géographiques fixes, non des observations au sol ni des anomalies par "
         "rapport à la climatologie. Une boîte peut comprendre la mer et la terre. "
@@ -225,7 +293,18 @@ def report(data):
         "de scénario, et non comme une prévision stabilisée de chaque région. "
         "Cette prudence s'applique encore davantage au-delà de J+10.",
         "",
-        "## 5. Semaines 3 et 4 : état de disponibilité",
+        "## 5. Extension possible à J+15 via GFS",
+        "",
+        ("À +360 h, GFS indique sur la France une température moyenne à 850 hPa "
+         "de %.1f °C et une pression moyenne de %.1f hPa. Il s'agit d'une seule "
+         "sortie déterministe isolée et non d'une tendance probabiliste validée à J+15."
+         %(get(data,"gfs",360,"t850","france"),get(data,"gfs",360,"msl","france"))
+         if get(data,"gfs",360,"t850","france") is not None and
+            get(data,"gfs",360,"msl","france") is not None
+         else "Aucun champ GFS authentifié à +360 h disponible pour cette édition ; "
+              "nous n'extrapolons pas J+10 jusqu'à J+15."),
+        "",
+        "## 6. Semaines 3 et 4 : état de disponibilité",
         "",
         "**Aucun signal de température, précipitation, NAO ou géopotentiel pour "
         "les semaines 3 et 4 n'est publié ici.** L'accès automatisé aux "
@@ -235,7 +314,7 @@ def report(data):
         "arbitraire des champs à J+10. Toute estimation mensuelle précise "
         "sans ces données serait trompeuse.",
         "",
-        "## 6. Signaux à surveiller",
+        "## 7. Signaux à surveiller",
         "",
         "Les prochaines actualisations devront notamment contrôler les "
         "tendances de pression entre les Açores, l'Atlantique nord et le "
@@ -245,7 +324,7 @@ def report(data):
         "documentés et actualisés sont disponibles : ce sont des moteurs "
         "possibles de la circulation, pas des explications automatiques.",
         "",
-        "## 7. Conclusion et confiance",
+        "## 8. Conclusion et confiance",
         "",
         "**Confiance qualitative : non évaluée.** Les sorties numériques "
         "ponctuelles seules ne justifient pas une probabilité ou une mention "
