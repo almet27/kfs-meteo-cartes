@@ -80,15 +80,19 @@ def main():
         try:
             if model in ("ifs","aifs-single"):
                 initial=ecmwf_latest(model,interval)
+                early=ecmwf_latest(model,12)
                 complete=ecmwf_latest(model,72)
             else:
                 initial=noaa_latest(model,interval)
+                early=noaa_latest(model,12)
                 complete=noaa_latest(model,72)
             if initial is None:
                 warnings[model]="Le nouveau run n'a pas ete confirme par la source NOAA"
             models[model]={
                 "source":info["source"],"native_step_h":interval,
                 "latest_first_step_utc":initial,
+                "latest_12h_temperature_step_utc":early,
+                "early_12h_available_for_latest_run":bool(initial and early and initial==early),
                 "latest_72h_temperature_step_utc":complete,
                 "temperature_72h_available_for_latest_run":bool(initial and complete and initial==complete),
                 "all_required_fields_verified":False,  # must be checked by GRIB atlas generation
@@ -103,10 +107,16 @@ def main():
                   if record.get("temperature_72h_available_for_latest_run")
                   and record.get("latest_72h_temperature_step_utc")
                   and record.get("latest_72h_temperature_step_utc") != old.get("models",{}).get(model,{}).get("latest_72h_temperature_step_utc")]
+    early_models=[model for model,record in models.items()
+                  if record.get("early_12h_available_for_latest_run")
+                  and record.get("latest_12h_temperature_step_utc")
+                  and record.get("latest_12h_temperature_step_utc") != old.get("models",{}).get(model,{}).get("latest_12h_temperature_step_utc")
+                  and model not in ready_models]
     output_path=os.environ.get("GITHUB_OUTPUT")
     if output_path:
         with open(output_path,"a",encoding="utf-8") as output_file:
             output_file.write("ready_models="+",".join(ready_models)+"\n")
+            output_file.write("early_models="+",".join(early_models)+"\n")
     same=(models==old.get("models"))
     if same:
         print("No new verified source cycle; no repository commit")
