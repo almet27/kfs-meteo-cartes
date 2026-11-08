@@ -11,7 +11,7 @@ from matplotlib.colors import ListedColormap, BoundaryNorm
 from kfs_premium_palettes import (
     KFS_Z500_CMAP, KFS_Z500_NORM, KFS_Z500_LEVELS, KFS_Z500_TICKS,
     KFS_T850_CMAP, KFS_T850_NORM, KFS_T850_LEVELS, KFS_T850_TICKS,
-    KFS_T850_ISOTHERMS,
+    KFS_T850_ISOTHERMS, KFS_T850_COLD_ISOTHERMS,
 )
 import numpy as np
 import cartopy.crs as ccrs
@@ -115,9 +115,21 @@ for model, title in MODELS.items():
             isotherms=ax.contour(
                 x,y,temp-273.15,
                 levels=KFS_T850_ISOTHERMS,colors="#17202A",
-                linewidths=0.48,alpha=0.82,transform=ccrs.PlateCarree())
+                linewidths=[1.15 if t in KFS_T850_COLD_ISOTHERMS else 0.48
+                            for t in KFS_T850_ISOTHERMS],
+                alpha=0.90,transform=ccrs.PlateCarree())
+            # Priorite aux etiquettes -10 C et -5 C, plus grosses et contrastees.
             iso_labels=ax.clabel(
-                isotherms,inline=True,inline_spacing=4,
+                isotherms,levels=KFS_T850_COLD_ISOTHERMS,
+                inline=True,inline_spacing=3,
+                fmt="%d",fontsize=9,colors="#16212A")
+            # Les autres isothermes sont plus discrètes.
+            other_levels=tuple(
+                t for t in KFS_T850_ISOTHERMS
+                if t not in KFS_T850_COLD_ISOTHERMS)
+            iso_labels+=ax.clabel(
+                isotherms,levels=other_levels,
+                inline=True,inline_spacing=4,
                 fmt="%d",fontsize=7,colors="#16212A")
             for label in iso_labels:
                 label.set_path_effects([
