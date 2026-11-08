@@ -1,26 +1,63 @@
 {
-  "generated_utc": "2026-11-08T14:53:08.708427+00:00",
+  "generated_utc": "2026-11-08T15:04:10.799784+00:00",
   "run_utc": "2026-11-08T00:00:00+00:00",
   "source": "NOAA NCEP NOMADS",
   "maps": {
     "gfs": {
-      "24": "forecast-maps/europe/gfs-h024.png",
-      "48": "forecast-maps/europe/gfs-h048.png",
-      "72": "forecast-maps/europe/gfs-h072.png",
-      "120": "forecast-maps/europe/gfs-h120.png",
-      "168": "forecast-maps/europe/gfs-h168.png",
-      "240": "forecast-maps/europe/gfs-h240.png",
-      "360": "forecast-maps/europe/gfs-h360.png"
+      "24": {
+        "t850": "forecast-maps/europe/gfs-h024-t850.png",
+        "z500_msl": "forecast-maps/europe/gfs-h024-z500_msl.png"
+      },
+      "48": {
+        "t850": "forecast-maps/europe/gfs-h048-t850.png",
+        "z500_msl": "forecast-maps/europe/gfs-h048-z500_msl.png"
+      },
+      "72": {
+        "t850": "forecast-maps/europe/gfs-h072-t850.png",
+        "z500_msl": "forecast-maps/europe/gfs-h072-z500_msl.png"
+      },
+      "120": {
+        "t850": "forecast-maps/europe/gfs-h120-t850.png",
+        "z500_msl": "forecast-maps/europe/gfs-h120-z500_msl.png"
+      },
+      "168": {
+        "t850": "forecast-maps/europe/gfs-h168-t850.png",
+        "z500_msl": "forecast-maps/europe/gfs-h168-z500_msl.png"
+      },
+      "240": {
+        "t850": "forecast-maps/europe/gfs-h240-t850.png",
+        "z500_msl": "forecast-maps/europe/gfs-h240-z500_msl.png"
+      },
+      "360": {
+        "t850": "forecast-maps/europe/gfs-h360-t850.png",
+        "z500_msl": "forecast-maps/europe/gfs-h360-z500_msl.png"
+      }
     },
     "aigfs": {
-      "24": "forecast-maps/europe/aigfs-h024.png",
-      "48": "forecast-maps/europe/aigfs-h048.png",
-      "72": "forecast-maps/europe/aigfs-h072.png",
-      "120": "forecast-maps/europe/aigfs-h120.png",
-      "168": "forecast-maps/europe/aigfs-h168.png",
-      "240": "forecast-maps/europe/aigfs-h240.png",
-      "360": "forecast-maps/europe/aigfs-h360.png"
+      "24": {
+        "t850": "forecast-maps/europe/aigfs-h024-t850.png",
+        "z500_msl": "forecast-maps/europe/aigfs-h024-z500_msl.png"
+      },
+      "48": {
+        "t850": "forecast-maps/europe/aigfs-h048-t850.png",
+        "z500_msl": "forecast-maps/europe/aigfs-h048-z500_msl.png"
+      },
+      "72": {
+        "t850": "forecast-maps/europe/aigfs-h072-t850.png",
+        "z500_msl": "forecast-maps/europe/aigfs-h072-z500_msl.png"
+      },
+      "120": {
+        "t850": "forecast-maps/europe/aigfs-h120-t850.png",
+        "z500_msl": "forecast-maps/europe/aigfs-h120-z500_msl.png"
+      }
     }
   },
-  "errors": {}
+  "errors": {
+    "aigfs-h168-t850": "\nCant open index file https://nomads.ncep.noaa.gov/pub/data/nccf/com/aigfs/prod/aigfs.20261108/00/model/atmos/grib2/aigfs.t00z.pres.f168.grib2.idx\nDownload the full file first (with `H.download()`).\nYou will need to remake the Herbie object (H = `Herbie()`)\nor delete this cached property: `del H.index_as_dataframe()`",
+    "aigfs-h168-z500_msl": "\nCant open index file https://nomads.ncep.noaa.gov/pub/data/nccf/com/aigfs/prod/aigfs.20261108/00/model/atmos/grib2/aigfs.t00z.pres.f168.grib2.idx\nDownload the full file first (with `H.download()`).\nYou will need to remake the Herbie object (H = `Herbie()`)\nor delete this cached property: `del H.index_as_dataframe()`",
+    "aigfs-h240-t850": "Range request not honored: server returned HTTP 302 (Content-Length: 719). This can happen when a network proxy or VPN strips the Range header. Try downloading the full file first, then subset locally:\n  full_file = Herbie(...).download()\n  Herbie(...).download(search=...)",
+    "aigfs-h240-z500_msl": "Range request not honored: server returned HTTP 302 (Content-Length: 719). This can happen when a network proxy or VPN strips the Range header. Try downloading the full file first, then subset locally:\n  full_file = Herbie(...).download()\n  Herbie(...).download(search=...)",
+    "aigfs-h360-t850": "\nCant open index file https://nomads.ncep.noaa.gov/pub/data/nccf/com/aigfs/prod/aigfs.20261108/00/model/atmos/grib2/aigfs.t00z.pres.f360.grib2.idx\nDownload the full file first (with `H.download()`).\nYou will need to remake the Herbie object (H = `Herbie()`)\nor delete this cached property: `del H.index_as_dataframe()`",
+    "aigfs-h360-z500_msl": "\nCant open index file https://nomads.ncep.noaa.gov/pub/data/nccf/com/aigfs/prod/aigfs.20261108/00/model/atmos/grib2/aigfs.t00z.sfc.f360.grib2.idx\nDownload the full file first (with `H.download()`).\nYou will need to remake the Herbie object (H = `Herbie()`)\nor delete this cached property: `del H.index_as_dataframe()`"
+  }
 }
