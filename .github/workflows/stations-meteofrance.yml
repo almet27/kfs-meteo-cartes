@@ -67,3 +67,5 @@ jobs:
               --prerelease
           fi
           gh release upload stations-live station-maps/*.png station-maps/manifest.json --clobber
+
+# Relance ponctuelle demandée le 2026-11-08 pour publier les dégradés de température.
