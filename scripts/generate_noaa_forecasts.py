@@ -7,6 +7,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap, BoundaryNorm
+from kfs_premium_palettes import KFS_Z500_CMAP, KFS_Z500_NORM, KFS_T850_CMAP, KFS_T850_NORM
 import numpy as np
 import cartopy.crs as ccrs
 import cartopy.feature as cf
@@ -164,8 +165,10 @@ for model,title in [("gfs","GFS"),("aigfs","AIGFS")]:
                 diag_fields["t850"]=regional_means(lon,lat,t850-273.15)
             fig,ax=canvas()
             shade=ax.contourf(lon,lat,t850-273.15,levels=np.arange(-36,38,2),
-                              cmap="RdYlBu_r",extend="both",transform=ccrs.PlateCarree())
-            fig.colorbar(shade,ax=ax,orientation="horizontal",pad=.04,shrink=.8,label="Température à 850 hPa (°C)")
+                              cmap=KFS_T850_CMAP,norm=KFS_T850_NORM,
+                              extend="both",transform=ccrs.PlateCarree())
+            fig.colorbar(shade,ax=ax,orientation="horizontal",pad=.04,shrink=.8,ticks=[-24,-16,-8,0,8,16,24],
+                         label="Température à 850 hPa (°C) · Palette KFS premium")
             ax.set_title(f"KFS MÉTÉO | {title} | Atlantique Nord · Groenland · Europe | +{step} h\nTempérature 850 hPa · Run : {RUN.strftime('%d/%m %H:%M')} UTC · Validité : {(RUN+timedelta(hours=step)).strftime('%d/%m %H:%M')} UTC")
             save(fig,model,step,"t850")
         except Exception as e:
@@ -182,14 +185,16 @@ for model,title in [("gfs","GFS"),("aigfs","AIGFS")]:
                 diag_fields["z500"]=regional_means(lon,lat,z500/10)
             fig,ax=canvas()
             shade=ax.contourf(lon,lat,z500/10,levels=np.arange(460,625,4),
-                              cmap="Spectral_r",extend="both",transform=ccrs.PlateCarree())
+                              cmap=KFS_Z500_CMAP,norm=KFS_Z500_NORM,
+                              extend="both",transform=ccrs.PlateCarree())
             heights=ax.contour(lon,lat,z500/10,levels=np.arange(460,625,8),
                                colors="#322f41",linewidths=.8,transform=ccrs.PlateCarree())
             ax.clabel(heights,inline=True,fmt="%d",fontsize=7)
             lines=ax.contour(lon,lat,msl/100,levels=np.arange(940,1061,4),
                              colors="#1b547b",linestyles="dashed",linewidths=.8,transform=ccrs.PlateCarree())
             ax.clabel(lines,inline=True,fmt="%d",fontsize=7)
-            fig.colorbar(shade,ax=ax,orientation="horizontal",pad=.04,shrink=.8,label="Géopotentiel 500 hPa (dam)")
+            fig.colorbar(shade,ax=ax,orientation="horizontal",pad=.04,shrink=.8,ticks=[500,520,540,560,580,600],
+                         label="Hauteur géopotentielle Z500 (dam) · Palette KFS premium")
             ax.set_title(f"KFS MÉTÉO | {title} | Atlantique Nord · Groenland · Europe | +{step} h\nZ500 (dam) et pression au sol (hPa) · Run : {RUN.strftime('%d/%m %H:%M')} UTC · Validité : {(RUN+timedelta(hours=step)).strftime('%d/%m %H:%M')} UTC")
             save(fig,model,step,"z500_msl")
         except Exception as e:
