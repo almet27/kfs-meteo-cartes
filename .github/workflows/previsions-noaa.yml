@@ -35,6 +35,11 @@ jobs:
           git add forecast-maps/europe/
           if ! git diff --cached --quiet; then
             git commit -m 'Actualiser GFS AIGFS Europe'
-            git pull --rebase
-            git push
+            for attempt in 1 2 3 4 5 6; do
+              git pull --rebase
+              if git push; then exit 0; fi
+              sleep 5
+            done
+            echo 'Publication impossible après 6 tentatives' >&2
+            exit 1
           fi
