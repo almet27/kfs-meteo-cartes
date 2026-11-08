@@ -8,7 +8,7 @@ on:
       - 'forecast-maps/europe/metadata.json'
       - 'forecast-maps/europe/noaa-metadata.json'
   schedule:
-    - cron: '35 0,6,12,18 * * *'
+    - cron: '35 1,7,13,19 * * *'
 permissions:
   contents: write
 concurrency:
