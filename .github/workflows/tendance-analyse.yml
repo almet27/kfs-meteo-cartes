@@ -1,6 +1,12 @@
 name: KFS - diagnostics et cartes synchronises pour /tendance
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/generate_tendance_cards.py'
+      - 'scripts/generate_tendance_analysis.py'
+      - '.github/workflows/tendance-analyse.yml'
   schedule:
     - cron: '07 16 * * 0' # dimanche 16:07 UTC, sorties alignees sur les cartes disponibles
 permissions:
@@ -24,9 +30,9 @@ jobs:
           pip install ecmwf-opendata cfgrib eccodes xarray numpy 'Pillow>=10,<13'
       - name: Extraire les diagnostics aux memes cycles que les cartes Europe
         run: python scripts/generate_tendance_analysis.py
-      - name: Generer les trois cartes avec les diagnostics de la MEME acquisition
+      - name: Generer les quatre cartes avec les diagnostics de la MEME acquisition
         run: python scripts/generate_tendance_cards.py
-      - name: Archiver le bulletin technique et les trois cartes
+      - name: Archiver le bulletin technique et les quatre cartes
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -38,6 +44,7 @@ jobs:
             forecast-maps/tendance/tendance-carte-j3.png
             forecast-maps/tendance/tendance-carte-j7.png
             forecast-maps/tendance/tendance-carte-j10.png
+            forecast-maps/tendance/tendance-carte-j15.png
           if-no-files-found: warn
       - name: Publier les donnees et cartes ensemble, jamais separement
         if: success()
@@ -45,7 +52,7 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add forecast-maps/tendance/tendance-analyse-donnees.json forecast-maps/tendance/tendance-analyse-apercu.md
-          git add forecast-maps/tendance/tendance-cartes.json forecast-maps/tendance/tendance-carte-j3.png forecast-maps/tendance/tendance-carte-j7.png forecast-maps/tendance/tendance-carte-j10.png
+          git add forecast-maps/tendance/tendance-cartes.json forecast-maps/tendance/tendance-carte-j3.png forecast-maps/tendance/tendance-carte-j7.png forecast-maps/tendance/tendance-carte-j10.png forecast-maps/tendance/tendance-carte-j15.png
           if ! git diff --cached --quiet; then
             git commit -m 'Publier diagnostics et cartes IFS AIFS synchronises'
             for attempt in 1 2 3 4 5; do

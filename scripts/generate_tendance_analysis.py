@@ -16,7 +16,7 @@ from ecmwf.opendata import Client
 
 OUT = pathlib.Path("forecast-maps/tendance")
 OUT.mkdir(parents=True, exist_ok=True)
-STEPS = (72, 168, 240)
+STEPS = (72, 168, 240, 360)
 MODELS = {"ifs": "ECMWF IFS", "aifs-single": "ECMWF AIFS"}
 REGIONS = {
     "france": ("France et alentours", (-5.5, 8.5, 42, 51.5)),
@@ -92,6 +92,8 @@ def acquisition():
         client=Client(source="ecmwf",model=model,resol="0p25")
         data["models"][model]={}
         for step in STEPS:
+            if model == "ifs" and step == 360:
+                continue  # IFS oper n'offre pas ce pas ; AIFS et GFS restent exploitables.
             key=str(step)
             expected=atlas.get("runs_utc",{}).get(model,{}).get(key)
             if expected is None:

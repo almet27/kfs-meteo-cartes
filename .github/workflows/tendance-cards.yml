@@ -1,5 +1,5 @@
 name: KFS - cartes synoptiques pour chaque periode Discord
-# Actualisation finale des trois infographies après validation du run GFS et des diagnostics IFS/AIFS.
+# Actualisation finale des quatre infographies après validation du run GFS et des diagnostics IFS/AIFS.
 # Important : les commits faits par GITHUB_TOKEN ne relancent pas les workflows sur push.
 on:
   workflow_dispatch:
@@ -22,7 +22,7 @@ jobs:
         run: python -m pip install 'Pillow>=10,<13'
       - name: Generer des cartes de modeles synchronisees
         run: python scripts/generate_tendance_cards.py
-      - name: Archiver les trois cartes et leurs sources
+      - name: Archiver les quatre cartes et leurs sources
         if: success()
         uses: actions/upload-artifact@v4
         with:
@@ -31,6 +31,7 @@ jobs:
             forecast-maps/tendance/tendance-carte-j3.png
             forecast-maps/tendance/tendance-carte-j7.png
             forecast-maps/tendance/tendance-carte-j10.png
+            forecast-maps/tendance/tendance-carte-j15.png
             forecast-maps/tendance/tendance-cartes.json
           if-no-files-found: error
       - name: Enregistrer les cartes dans le depot pour Discord
@@ -38,9 +39,9 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add forecast-maps/tendance/tendance-carte-j3.png forecast-maps/tendance/tendance-carte-j7.png forecast-maps/tendance/tendance-carte-j10.png forecast-maps/tendance/tendance-cartes.json
+          git add forecast-maps/tendance/tendance-carte-j3.png forecast-maps/tendance/tendance-carte-j7.png forecast-maps/tendance/tendance-carte-j10.png forecast-maps/tendance/tendance-carte-j15.png forecast-maps/tendance/tendance-cartes.json
           if ! git diff --cached --quiet; then
-            git commit -m 'Actualiser les trois cartes /tendance avec donnees IFS AIFS'
+            git commit -m 'Actualiser les quatre cartes /tendance avec donnees IFS AIFS'
             for attempt in 1 2 3 4 5; do
               git pull --rebase
               if git push; then exit 0; fi
