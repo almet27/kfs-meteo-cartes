@@ -10,6 +10,7 @@ on:
       - feature/cartes-stations-meteofrance-20261108
     paths:
       - scripts/generate_station_maps.py
+      - scripts/check_station_api.py
       - .github/workflows/stations-meteofrance.yml
 
 permissions:
