@@ -78,7 +78,8 @@ def combine_title(fl1,fl2):
     a,b=fl1["from_deg"],fl2["from_deg"]
     delta=abs((a-b+180)%360-180)
     if delta<=35:
-        return "Flux de "+sector(a)
+        direction=sector(a)
+        return "Flux d'"+direction if direction.startswith(("est","ouest")) else "Flux de "+direction
     if delta<=85:
         return "Flux contrastés : "+sector(a)+" / "+sector(b)
     return "Scénarios de flux divergents"
