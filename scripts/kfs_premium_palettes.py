@@ -7,7 +7,7 @@ la T850 est une temperature a 850 hPa, non une temperature au sol.
 Les couleurs seules changent, jamais les donnees des modeles.
 """
 
-from matplotlib.colors import BoundaryNorm, LinearSegmentedColormap
+from matplotlib.colors import BoundaryNorm, LinearSegmentedColormap, ListedColormap
 
 # Hauteur 500 hPa (dam) : conforme a l'esprit des cartes meteorologiques
 # classiques, du violet/bleu profond au cyan, vert, jaune, orange et rouge.
@@ -35,25 +35,26 @@ KFS_Z500_CMAP = LinearSegmentedColormap.from_list(
 KFS_Z500_NORM = BoundaryNorm(KFS_Z500_LEVELS, KFS_Z500_CMAP.N)
 KFS_Z500_TICKS = (460, 480, 500, 520, 540, 560, 580, 600)
 
-# Masse d'air T850 : froid bleu/violet, proche de zero cyan/vert clair,
-# doux jaune/orange et chaud rouge. Zero degre represente une valeur
-# a 850 hPa, jamais un seuil automatique de gel en surface.
-KFS_T850_LEVELS = tuple(range(-30, 31, 2))
-KFS_T850_CMAP = LinearSegmentedColormap.from_list(
-    "kfs_t850_meteo_contraste",
-    [
-        (0.00, "#4C006F"),  # tres froid
-        (0.16, "#2244BD"),
-        (0.30, "#078BEA"),
-        (0.42, "#65D9FF"),
-        (0.50, "#6FE1B1"),  # proche de 0 degre a 850 hPa
-        (0.60, "#8EE642"),
-        (0.70, "#F4E948"),
-        (0.81, "#FFB137"),
-        (0.90, "#FB7528"),
-        (1.00, "#CB2F3D"),
-    ],
-    N=256,
-)
+# Temperature a 850 hPa : palette fixe proche des cartes meteorologiques
+# classiques fournies en reference par KFS METEO.
+# -34/-24 : prune et violet ; -22/-10 : bleu profond ; -8/-2 : cyan ;
+# 0/+4 : vert ; +6/+12 : jaune et creme ; +14/+34 : orange et rouge.
+# Les 34 couleurs correspondent exactement aux 34 intervalles de 2 degres.
+KFS_T850_LEVELS = tuple(range(-34, 35, 2))
+KFS_T850_COLORS = [
+    "#4c003f", "#6a1766", "#7f3b8c", "#9a63b0", "#b99ad0",
+    "#5a4f87", "#2e3f8f", "#1d33c7", "#0b2fff", "#173dff",
+    "#1558ff", "#0e73ff", "#1c97ff", "#46bfff", "#78dbff",
+    "#a8ecff", "#7ff2d8", "#66ee88", "#7eed39", "#b9f41d",
+    "#f0f51f", "#fff34d", "#fff799", "#fff3cf", "#f6e4a6",
+    "#f1cd66", "#efb033", "#eb9220", "#e67a15", "#dd6314",
+    "#d4511b", "#c44528", "#b73d36", "#a83a45",
+]
+KFS_T850_CMAP = ListedColormap(KFS_T850_COLORS, name="kfs_t850_classique")
+KFS_T850_CMAP.set_under("#33323d")
+KFS_T850_CMAP.set_over("#8f263f")
 KFS_T850_NORM = BoundaryNorm(KFS_T850_LEVELS, KFS_T850_CMAP.N)
-KFS_T850_TICKS = (-24, -16, -8, 0, 8, 16, 24)
+KFS_T850_TICKS = (-32, -24, -16, -8, -4, 0, 4, 8, 12, 16, 20, 24, 28, 32)
+KFS_T850_ISOTHERMS = tuple(range(-32, 33, 4))
+
+assert len(KFS_T850_COLORS) == len(KFS_T850_LEVELS) - 1
