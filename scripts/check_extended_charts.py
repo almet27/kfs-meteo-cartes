@@ -71,6 +71,51 @@ except Exception as exc:
     report["access_state"] = "unexpected_response"
     report["alerts"].append(f"Catalogue indisponible: {type(exc).__name__}: {exc}")
 
+# Autre vérification indépendante : tentatives ciblées des produits
+# hebdomadaires sur le dernier cycle sub-saisonnier disponible (jeudi 00 UTC).
+# Ne déclare jamais "verified" sans graphique réellement obtenu, licence
+# et horodatages validés. Les HTTP 404/403 restent un diagnostic d'accès.
+from datetime import timedelta
+from urllib.parse import urlencode
+now=datetime.now(timezone.utc)
+days_since_thu=(now.weekday()-3)%7
+recent_thu=(now-timedelta(days=days_since_thu)).replace(hour=0,minute=0,second=0,microsecond=0)
+next_monday=recent_thu+timedelta(days=4)
+dates={
+    3:(next_monday+timedelta(days=21)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    4:(next_monday+timedelta(days=28)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+}
+base_time=recent_thu.strftime("%Y-%m-%dT%H:%M:%SZ")
+report["weekly_probe"]={"base_time":base_time,
+                        "valid_time_by_week":dates,
+                        "responses":{}}
+for week in (3,4):
+    for var,product in (("t2m","extended-anomaly-2t"),("precip","extended-anomaly-tp")):
+        qs=urlencode({"base_time":base_time,
+                      "valid_time":dates[week],
+                      "projection":"opencharts_eurasia"})
+        endpoint=API+"products/"+product+"/?"+qs
+        entry={"product":product,"base_time":base_time,"valid_time":dates[week],
+               "url":endpoint,"image_verified":False}
+        try:
+            response=json_get(endpoint)
+            meta=response.get("meta",{})
+            link=response.get("data",{}).get("link",{})
+            attributes=response.get("data",{}).get("attributes",{})
+            entry.update({"license":meta.get("license"),
+                          "chart_url":link.get("href"),
+                          "description":attributes.get("description","")[:350],
+                          "returned_type":link.get("type")})
+            if (link.get("type")=="image/png" and
+                link.get("href","").startswith("https://charts.ecmwf.int/content/") and
+                meta.get("license") in ("CC-BY-4.0","CC BY 4.0")):
+                entry["metadata_validated"]=True
+        except HTTPError as exc:
+            entry["http_status"]=int(exc.code)
+        except Exception as exc:
+            entry["error"]=f"{type(exc).__name__}: {str(exc)[:200]}"
+        report["weekly_probe"]["responses"][f"week{week}_{var}"]=entry
+
 report["catalogue_ready"] = all(p.get("listed") for p in report["products"].values()) if report["products"] else False
 if not report["catalogue_ready"]:
     report["alerts"].append("Temperature / precipitation product discovery incomplete.")
