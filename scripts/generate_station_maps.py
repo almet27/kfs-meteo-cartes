@@ -223,11 +223,13 @@ def render(metric, zone, records, shapes, timestamp, hours):
     area, bounds = ZONES[zone]
     x0, x1, y0, y1 = bounds
     points = [p for p in records if x0 <= p[0] <= x1 and y0 <= p[1] <= y1]
-    # Les 4 grands secteurs etaient trop petits dans une image horizontale :
-    # une carte aux proportions geographiques correctes devient naturellement
-    # plus lisible dans un canevas vertical. Les autres zones ne changent pas.
+    # France entiere : un format quasi carre exploite beaucoup mieux l'espace.
+    # Les quatre secteurs conservent leur cadrage vertical specifique.
+    # Les autres zones conservent leur format horizontal.
+    france_zone = zone == "fr"
     quadrant_zone = zone in ("no", "ne", "so", "se")
-    figure_size = (9.2, 12.8) if quadrant_zone else (12.8, 8.5)
+    figure_size = ((11.5, 11.5) if france_zone else
+                   (9.2, 12.8) if quadrant_zone else (12.8, 8.5))
     fig, ax = plt.subplots(figsize=figure_size, dpi=150)
     fig.patch.set_facecolor("#101927")
     ax.set_facecolor("#172538")
@@ -286,8 +288,8 @@ def render(metric, zone, records, shapes, timestamp, hours):
     fig.text(.055, .04, footer, color="#cfdae9", fontsize=10.5)
     fig.text(.055, .016, "Source : Météo-France · Contours : IGN / Admin Express (Licence Ouverte)",
              color="#8da2b8", fontsize=9.5)
-    if quadrant_zone:
-        # Liberer de la hauteur pour la carte sans rogner le bandeau ni le pied.
+    if quadrant_zone or france_zone:
+        # Maximiser la carte sans rogner le bandeau ni le pied.
         fig.subplots_adjust(left=.035, right=.975, top=.86, bottom=.105)
         if points:
             # La legende doit avoir la MEME largeur que la carte visible.
