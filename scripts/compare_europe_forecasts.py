@@ -11,7 +11,7 @@ FIELDS={"t850":"Température à 850 hPa","z500_msl":"Géopotentiel 500 hPa + pre
 MODELS=[("gfs","GFS"),("aigfs","AIGFS"),("ifs","ECMWF IFS"),("aifs-single","ECMWF AIFS")]
 SOURCES={"gfs":"noaa-metadata.json","aigfs":"noaa-metadata.json","ifs":"metadata.json","aifs-single":"metadata.json"}
 manifest={f:json.loads((ROOT/f).read_text(encoding="utf-8")) for f in set(SOURCES.values())}
-result={"generated_utc":datetime.now(timezone.utc).isoformat(),"maps":{},"models":[key for key,_ in MODELS],"errors":{}}
+result={"generated_utc":datetime.now(timezone.utc).isoformat(),"maps":{},"models":[key for key,_ in MODELS],"runs_by_map":{},"errors":{}}
 TILE_W,TILE_H=875,660
 TITLE_H=54
 fontfile="/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
@@ -21,6 +21,7 @@ for step in STEPS:
     for field,label in FIELDS.items():
         panels=[]
         successes=0
+        used_runs={}
         for model,name in MODELS:
             source=manifest[SOURCES[model]]
             path=source.get("maps",{}).get(model,{}).get(str(step),{})
@@ -39,6 +40,7 @@ for step in STEPS:
                         fit=ImageOps.contain(im,(TILE_W-12,TILE_H-TITLE_H-12),Image.Resampling.LANCZOS)
                         tile.paste(fit,((TILE_W-fit.width)//2,TITLE_H+6+(TILE_H-TITLE_H-fit.height-12)//2))
                         successes+=1
+                        if run: used_runs[model]=run
                 except Exception as e:
                     d.text((34,110),"Image non exploitable : "+str(e)[:70],font=font,fill="#a32323")
             else:
@@ -56,5 +58,6 @@ for step in STEPS:
         filename=f"compare-h{step:03}-{field}.png"
         comparison.save(ROOT/filename,optimize=True)
         result["maps"].setdefault(str(step),{})[field]={"path":"forecast-maps/europe/"+filename,"available":successes,"total":4}
+        result["runs_by_map"].setdefault(str(step),{})[field]=used_runs
 (ROOT/"compare-metadata.json").write_text(json.dumps(result,indent=2,ensure_ascii=False),encoding="utf-8")
 print(json.dumps({"maps":len(result["maps"]),"available_models_per_step":{k:{a:v["available"] for a,v in x.items()} for k,x in result["maps"].items()}},ensure_ascii=False))
