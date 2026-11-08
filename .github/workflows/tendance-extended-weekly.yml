@@ -1,0 +1,55 @@
+name: KFS - ECMWF Weekly officiel pour /tendance
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '30 14 * * 0' # dimanche 14:30 UTC, avant IFS/AIFS/GFS et la redaction
+
+permissions:
+  contents: write
+
+concurrency:
+  group: kfs-tendance-weekly-extended
+  cancel-in-progress: false
+
+jobs:
+  extended:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Installer le validateur d'images PNG
+        run: python -m pip install 'Pillow>=10,<13'
+      - name: Telecharger et verifier les vraies cartes ECMWF Extended
+        run: python scripts/generate_extended_weekly.py
+      - name: Archiver les cartes et le manifeste
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kfs-ecmwf-weekly
+          path: |
+            forecast-maps/tendance/extended-weekly.json
+            forecast-maps/tendance/weekly-week*.png
+          if-no-files-found: warn
+      - name: Publier l'etat verifie ou l'indisponibilite
+        if: always()
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add forecast-maps/tendance/extended-weekly.json
+          git add forecast-maps/tendance/weekly-week*.png
+          if ! git diff --cached --quiet; then
+            git commit -m 'Actualiser les produits ECMWF Weekly verifiés pour /tendance'
+            for attempt in 1 2 3 4 5; do
+              if ! git pull --rebase; then
+                git rebase --abort || true
+                exit 1
+              fi
+              if git push; then exit 0; fi
+              sleep 6
+            done
+            exit 1
+          fi
