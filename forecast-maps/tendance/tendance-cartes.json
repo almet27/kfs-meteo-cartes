@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
   "status": "illustrative_model_maps",
-  "generated_utc": "2026-11-08T20:09:55.846837+00:00",
-  "source_generated_utc": "2026-11-08T18:52:03.597651+00:00",
-  "charts_generated_utc": "2026-11-08T17:58:59.766797+00:00",
+  "generated_utc": "2026-11-08T22:59:12.640883+00:00",
+  "source_generated_utc": "2026-11-08T22:58:49.176957+00:00",
+  "charts_generated_utc": "2026-11-08T22:11:10.267811+00:00",
   "source": "ECMWF Open Data (CC BY 4.0)",
   "not_weekly_anomalies": true,
   "period_maps": [
@@ -12,84 +12,71 @@
       "step_h": 72,
       "path": "forecast-maps/tendance/tendance-carte-j3.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j3.png",
-      "size_bytes": 862826,
+      "size_bytes": 464780,
       "run_utc": {
-        "ifs": "2026-11-08T06:00Z",
-        "aifs-single": "2026-11-08T12:00Z"
+        "ifs": "2026-11-08T12:00Z",
+        "aifs": "2026-11-08T12:00Z"
       },
-      "valid_utc": {
-        "ifs": "2026-11-11T06:00:00+00:00",
-        "aifs-single": "2026-11-11T12:00:00+00:00"
-      },
-      "title": "J+3 — Flux de sud-ouest",
-      "style": "illustration-europe-moderne-kfs-v2",
-      "wind_850_france_ifs": {
-        "u_mean_ms": 6.77,
-        "v_mean_ms": 4.8,
-        "vector_speed_ms": 8.3,
-        "from_deg": 235,
-        "note": "Vent vectoriel moyen à 850 hPa sur un domaine. Pas un vent de surface, ni une mesure directe d’advection."
-      },
-      "temperature_850_france_ifs": 9.03,
-      "confidence_label": "Modérée (qualitative)",
-      "model_comparison": "IFS et AIFS : champs ponctuels 500 hPa / MSL, horaires de validité éventuellement différents"
+      "valid_utc": "2026-11-11T12:00:00+00:00",
+      "title": "J+3 — synthèse synoptique IFS / AIFS",
+      "confidence_label": "Modérée (indicative)",
+      "risk_status": "non_evalue",
+      "style": "kfs-premium-16-9-v3",
+      "note": "Carte fondée sur des champs synoptiques ; risques ponctuels non géolocalisés."
     },
     {
       "id": "j7",
       "step_h": 168,
       "path": "forecast-maps/tendance/tendance-carte-j7.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j7.png",
-      "size_bytes": 938335,
+      "size_bytes": 504612,
       "run_utc": {
-        "ifs": "2026-11-08T00:00Z",
-        "aifs-single": "2026-11-08T12:00Z"
+        "ifs": "2026-11-08T12:00Z",
+        "aifs": "2026-11-08T12:00Z"
       },
-      "valid_utc": {
-        "ifs": "2026-11-15T00:00:00+00:00",
-        "aifs-single": "2026-11-15T12:00:00+00:00"
-      },
-      "title": "J+7 — Flux contrastés : sud / ouest-sud-ouest",
-      "style": "illustration-europe-moderne-kfs-v2",
-      "wind_850_france_ifs": {
-        "u_mean_ms": 0.23,
-        "v_mean_ms": 6.63,
-        "vector_speed_ms": 6.6,
-        "from_deg": 182,
-        "note": "Vent vectoriel moyen à 850 hPa sur un domaine. Pas un vent de surface, ni une mesure directe d’advection."
-      },
-      "temperature_850_france_ifs": 6.26,
-      "confidence_label": "Limitée (qualitative)",
-      "model_comparison": "IFS et AIFS : champs ponctuels 500 hPa / MSL, horaires de validité éventuellement différents"
+      "valid_utc": "2026-11-15T12:00:00+00:00",
+      "title": "J+7 — synthèse synoptique IFS / AIFS",
+      "confidence_label": "Limitée (indicative)",
+      "risk_status": "non_evalue",
+      "style": "kfs-premium-16-9-v3",
+      "note": "Carte fondée sur des champs synoptiques ; risques ponctuels non géolocalisés."
     },
     {
       "id": "j10",
       "step_h": 240,
       "path": "forecast-maps/tendance/tendance-carte-j10.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j10.png",
-      "size_bytes": 993620,
+      "size_bytes": 503085,
       "run_utc": {
-        "ifs": "2026-11-08T00:00Z",
-        "aifs-single": "2026-11-08T12:00Z"
+        "ifs": "2026-11-08T12:00Z",
+        "aifs": "2026-11-08T12:00Z"
       },
-      "valid_utc": {
-        "ifs": "2026-11-18T00:00:00+00:00",
-        "aifs-single": "2026-11-18T12:00:00+00:00"
+      "valid_utc": "2026-11-18T12:00:00+00:00",
+      "title": "J+10 — synthèse synoptique IFS / AIFS",
+      "confidence_label": "Faible (indicative)",
+      "risk_status": "non_evalue",
+      "style": "kfs-premium-16-9-v3",
+      "note": "Carte fondée sur des champs synoptiques ; risques ponctuels non géolocalisés."
+    },
+    {
+      "id": "j15",
+      "step_h": 360,
+      "path": "forecast-maps/tendance/tendance-carte-j15.png",
+      "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j15.png",
+      "size_bytes": 518873,
+      "run_utc": {
+        "aifs": "2026-11-08T12:00Z",
+        "gfs": "2026-11-08T12:00:00+00:00"
       },
-      "title": "J+10 — Flux d'ouest-nord-ouest",
-      "style": "illustration-europe-moderne-kfs-v2",
-      "wind_850_france_ifs": {
-        "u_mean_ms": 6.16,
-        "v_mean_ms": -2.23,
-        "vector_speed_ms": 6.6,
-        "from_deg": 290,
-        "note": "Vent vectoriel moyen à 850 hPa sur un domaine. Pas un vent de surface, ni une mesure directe d’advection."
-      },
-      "temperature_850_france_ifs": 1.33,
-      "confidence_label": "Faible (qualitative)",
-      "model_comparison": "IFS et AIFS : champs ponctuels 500 hPa / MSL, horaires de validité éventuellement différents"
+      "valid_utc": "2026-11-23T12:00:00+00:00",
+      "title": "J+15 — synthèse synoptique AIFS / GFS",
+      "confidence_label": "Très limitée (indicative)",
+      "risk_status": "non_evalue",
+      "style": "kfs-premium-16-9-v3",
+      "note": "Carte fondée sur des champs synoptiques ; risques ponctuels non géolocalisés."
     }
   ],
   "public": true,
-  "graphic_style": "KFS ÉDITORIAL MODERNE v2 — actualisé automatiquement sur les modèles",
+  "graphic_style": "KFS PREMIUM 16:9 — 4 échéances, champs réels",
   "note": "Infographies tirées des vraies cartes IFS/AIFS, flux moyen 850 hPa calculé, sans fronts inventés ni prévisions à 4 semaines extrapolées."
 }
