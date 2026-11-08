@@ -1,0 +1,52 @@
+name: KFS - analyse synoptique argumentee (apercu sans Discord)
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'scripts/generate_tendance_analysis.py'
+      - '.github/workflows/tendance-analyse.yml'
+permissions:
+  contents: write
+concurrency:
+  group: kfs-tendance-analyse
+  cancel-in-progress: false
+jobs:
+  analyse:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Installer les decodeurs des champs ECMWF
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libeccodes-dev
+          pip install ecmwf-opendata cfgrib eccodes xarray numpy
+      - name: Extraire des diagnostics meteorologiques et rediger le rapport
+        run: python scripts/generate_tendance_analysis.py
+      - name: Archiver le rapport et les donnees sources
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kfs-tendance-analyse
+          path: |
+            forecast-maps/tendance/tendance-analyse-donnees.json
+            forecast-maps/tendance/tendance-analyse-apercu.md
+          if-no-files-found: warn
+      - name: Publier seulement l'apercu technique sur GitHub
+        if: success()
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add forecast-maps/tendance/tendance-analyse-donnees.json forecast-maps/tendance/tendance-analyse-apercu.md
+          if ! git diff --cached --quiet; then
+            git commit -m 'Actualiser analyse synoptique technique sans publication Discord'
+            for attempt in 1 2 3 4 5; do
+              git pull --rebase
+              if git push; then exit 0; fi
+              sleep 5
+            done
+            exit 1
+          fi
