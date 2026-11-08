@@ -1,49 +1,59 @@
 #!/usr/bin/env python3
-"""Palettes KFS METEO premium pour les cartes /modeles.
+"""Palette operationnelle KFS METEO pour les cartes /modeles.
 
-Deux echelles fixes : IFS, AIFS, GFS et AIGFS restent comparables.
-Z500 represente une HAUTEUR absolue en dam, et non une anomalie.
-T850 represente la temperature en °C a 850 hPa, non la temperature au sol.
+Les quatre modeles IFS, AIFS, GFS et AIGFS utilisent la MEME echelle.
+Le Z500 est une hauteur geometrique en dam, non une anomalie ;
+la T850 est une temperature a 850 hPa, non une temperature au sol.
+Les couleurs seules changent, jamais les donnees des modeles.
 """
-from matplotlib.colors import LinearSegmentedColormap, TwoSlopeNorm
 
-# Geopotentiel : basses hauteurs bleu marine / azur, hautes hauteurs
-# ambre / orange cuivre. Centre doux mais non delave.
+from matplotlib.colors import BoundaryNorm, LinearSegmentedColormap
+
+# Hauteur 500 hPa (dam) : conforme a l'esprit des cartes meteorologiques
+# classiques, du violet/bleu profond au cyan, vert, jaune, orange et rouge.
+# Pas de plage automatique selon les echeances, pour une comparaison objective.
+KFS_Z500_LEVELS = tuple(range(452, 617, 4))
 KFS_Z500_CMAP = LinearSegmentedColormap.from_list(
-    "kfs_premium_z500",
+    "kfs_z500_meteo_contraste",
     [
-        (0.00, "#0B2C59"),
-        (0.15, "#17558F"),
-        (0.31, "#3189BD"),
-        (0.43, "#99CBE2"),
-        (0.50, "#E5E9E9"),
-        (0.62, "#F6C788"),
-        (0.75, "#F09A43"),
-        (0.88, "#D66B29"),
-        (1.00, "#93331E"),
+        (0.00, "#5C005B"),  # violet, creux tres prononces
+        (0.11, "#22206C"),  # indigo
+        (0.22, "#0633CE"),  # bleu franc
+        (0.32, "#007DF4"),  # bleu azur
+        (0.43, "#25C9FF"),  # cyan
+        (0.50, "#65ECDB"),  # turquoise
+        (0.59, "#4CE845"),  # vert vif
+        (0.67, "#B0F21C"),  # vert jaune
+        (0.75, "#FFF136"),  # jaune
+        (0.83, "#FFAA16"),  # orange dore
+        (0.90, "#FF6A1A"),  # orange soutenu
+        (0.96, "#F23B38"),  # rouge
+        (1.00, "#A70B4B"),  # magenta
     ],
     N=256,
 )
-KFS_Z500_NORM = TwoSlopeNorm(vmin=488, vcenter=558, vmax=610)
+KFS_Z500_NORM = BoundaryNorm(KFS_Z500_LEVELS, KFS_Z500_CMAP.N)
+KFS_Z500_TICKS = (460, 480, 500, 520, 540, 560, 580, 600)
 
-# Masse d'air a 850 hPa : bleu nuit -> cyan glacial -> ivoire proche
-# de 0 °C -> or / orange / rouge brique. Evite le jaune fade.
+# Masse d'air T850 : froid bleu/violet, proche de zero cyan/vert clair,
+# doux jaune/orange et chaud rouge. Zero degre represente une valeur
+# a 850 hPa, jamais un seuil automatique de gel en surface.
+KFS_T850_LEVELS = tuple(range(-30, 31, 2))
 KFS_T850_CMAP = LinearSegmentedColormap.from_list(
-    "kfs_premium_t850",
+    "kfs_t850_meteo_contraste",
     [
-        (0.00, "#102C63"),
-        (0.16, "#1C5EA4"),
-        (0.32, "#46A5DD"),
-        (0.44, "#B0E2F3"),
-        (0.50, "#E7E9E5"),
-        (0.62, "#F5D48D"),
-        (0.75, "#F4A34D"),
-        (0.88, "#E06C32"),
-        (1.00, "#A93025"),
+        (0.00, "#4C006F"),  # tres froid
+        (0.16, "#2244BD"),
+        (0.30, "#078BEA"),
+        (0.42, "#65D9FF"),
+        (0.50, "#6FE1B1"),  # proche de 0 degre a 850 hPa
+        (0.60, "#8EE642"),
+        (0.70, "#F4E948"),
+        (0.81, "#FFB137"),
+        (0.90, "#FB7528"),
+        (1.00, "#CB2F3D"),
     ],
     N=256,
 )
-KFS_T850_NORM = TwoSlopeNorm(vmin=-26, vcenter=0, vmax=24)
-
-# Uniquement la presentation change : champs GRIB, niveaux et cycles
-# continuent d'etre lus sans transformation.
+KFS_T850_NORM = BoundaryNorm(KFS_T850_LEVELS, KFS_T850_CMAP.N)
+KFS_T850_TICKS = (-24, -16, -8, 0, 8, 16, 24)
