@@ -11,9 +11,6 @@ on:
         description: Identifiant Actions du run France complet a publier
         required: true
         type: string
-  push:
-    paths:
-      - '.github/workflows/publier-france-releases.yml'
 
 permissions:
   contents: write
@@ -25,7 +22,7 @@ concurrency:
 
 jobs:
   publier:
-    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'workflow_dispatch') }}
     runs-on: ubuntu-latest
     timeout-minutes: 65
     steps:
@@ -35,7 +32,7 @@ jobs:
           python-version: '3.11'
       - name: Installer outil WebP
         run: python -m pip install 'Pillow>=10,<13'
-      - name: Choisir le run source (bootstrap pour ce push uniquement)
+      - name: Choisir le run France d'une generation demandee par la surveillance
         id: source
         env:
           TRIGGER: ${{ github.event_name }}
@@ -44,7 +41,7 @@ jobs:
         run: |
           if [ "$TRIGGER" = 'workflow_run' ]; then ID="$SOURCE_WORKFLOW_RUN"
           elif [ "$TRIGGER" = 'workflow_dispatch' ]; then ID="$SOURCE_MANUAL"
-          else ID=42532196796; fi
+          else exit 1; fi
           if ! [[ "$ID" =~ ^[0-9]+$ ]]; then echo 'Identifiant run invalide' >&2; exit 1; fi
           echo "run_id=$ID" >> "$GITHUB_OUTPUT"
           echo "Run France source : $ID"
@@ -72,11 +69,28 @@ jobs:
             fi
             model_dir="$(dirname "$metadata_file")"
             staging="/tmp/kfs-france-release/$model"
-            if ! python scripts/package_france_release.py --source "$model_dir" --output "$staging"; then
+            horizon="$(jq -r '.requested_steps_h[-1]' "$metadata_file")"
+            case "$horizon" in 12|72) ;; *) echo "SKIP $model : horizon incomplet ($horizon)"; continue ;; esac
+            if ! python scripts/package_france_release.py --source "$model_dir" --output "$staging" --horizon "$horizon"; then
               echo "SKIP $model : modele incomplet, conserver la derniere publication valide"
               continue
             fi
             tag="france-$model"
+            if [ "$horizon" = 12 ]; then tag="$tag-early"; fi
+            # Jamais ecraser un run plus recent avec une archive plus ancienne.
+            previous="/tmp/kfs-previous-$model-$horizon"
+            mkdir -p "$previous"
+            if gh release view "$tag" >/dev/null 2>&1; then
+              gh release download "$tag" --pattern metadata.json --dir "$previous" --clobber || true
+              if [ -f "$previous/metadata.json" ]; then
+                old_cycle="$(jq -r '.run_utc // ""' "$previous/metadata.json")"
+                new_cycle="$(jq -r '.run_utc // ""' "$staging/metadata.json")"
+                if [ -n "$old_cycle" ] && [[ "$new_cycle" < "$old_cycle" ]]; then
+                  echo "SKIP $model : run $new_cycle plus ancien que $old_cycle"
+                  continue
+                fi
+              fi
+            fi
             if ! gh release view "$tag" >/dev/null 2>&1; then
               gh release create "$tag" --target main --latest=false \
                 --title "KFS METEO France | $model" \
