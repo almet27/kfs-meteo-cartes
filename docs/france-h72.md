@@ -62,10 +62,10 @@ déclenche l'enregistrement de `/france`, sans modifier sa propre réponse.
 et pluie/neige uniquement si les modèles fournissent des champs suffisants.
 Les paramètres et échéances non publiés renvoient un message explicite.
 
-**AIGFS :** certaines échéances de vent/pression ont échoué au dernier test
-complet, le modèle n'a donc pas été publié comme un jeu fiable. Le générateur
-a été renforcé avec des tentatives supplémentaires sur les fichiers NOAA
-temporaires. La disponibilité AIGFS reste à revalider.
+**AIGFS :** les cartes France de température, vent, pression et
+précipitations totales jusqu'à +72 h sont publiées lorsque les champs
+indispensables passent les contrôles de qualité. La séparation pluie/neige
+n'est pas proposée sans catégories NOAA fiables.
 
 Le workflow [GitHub Pages expérimental](../actions/workflows/pages-france-snapshot.yml)
 est conservé uniquement pour des essais ; `publish=false` et aucune migration
