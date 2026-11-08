@@ -146,10 +146,17 @@ for model, title in MODELS.items():
                     and np.array_equal(y,y2) and np.array_equal(y,y3) and np.array_equal(y,y4)
                     and run_now==run_sf==run_prev==run_prev_sf):
                 raise ValueError("Runs / grilles differents : cumul 6 h impossible")
-            if not np.nanmedian(tp_now)<2 or not np.nanmedian(sf_now)<2:
-                raise ValueError("Unités des cumuls d'eau inattendues (m attendus)")
-            total=np.maximum(0,(tp_now-tp_prev)*1000)
-            neige=np.minimum(total,np.maximum(0,(sf_now-sf_prev)*1000))
+            # Selon le flux GRIB, cfgrib peut exposer m ou kg/m2 (equiv. mm).
+            def to_mm(units):
+                u=units.lower().replace(" ","").replace("**","^").replace("−","-")
+                if u in ("m","metre","meter"): return 1000.0
+                if u in ("kgm^-2","kg/m^2","kgm-2","mm","kgm^(-2)"): return 1.0
+                raise ValueError("Unité GRIB non reconnue : "+repr(units))
+            tp_factor=to_mm(tp_units)
+            sf_factor=to_mm(sf_units)
+            result.setdefault("precip_units",{}).setdefault(model,{})[str(step)]={"tp":tp_units,"sf":sf_units}
+            total=np.maximum(0,(tp_now-tp_prev)*tp_factor)
+            neige=np.minimum(total,np.maximum(0,(sf_now-sf_prev)*sf_factor))
             pluie=np.maximum(0,total-neige)
             fig,ax=canvas()
             shade=ax.contourf(x,y,pluie,levels=[0,.1,.5,1,2,5,10,15,20,30,40,60,80],
