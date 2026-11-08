@@ -23,6 +23,7 @@ API="https://charts.ecmwf.int/opencharts-api/v1/products/"
 VARIABLES={"t2m":"extended-anomaly-2t", "precip":"extended-anomaly-tp"}
 # Optional ensemble-probability maps for responsible expression of uncertainty.
 PROBABILITY={"t2m":"extended-prob-anom-2t", "precip":"extended-prob-anom-tp"}
+SYNOPTIC={"mslp":"extended-anomaly-mslp", "z500":"extended-anomaly-z500"}
 AREA="opencharts_eurasia"
 USER_AGENT="KFS-Meteo/1.0 (ECMWF OpenCharts citation and forecast validation)"
 now=datetime.now(timezone.utc)
@@ -98,7 +99,7 @@ def main():
       "source":"ECMWF OpenCharts — Sub-seasonal ensemble weekly anomalies",
       "base_time_utc":iso(base),"weeks":[],
       "temperature_anomalies_verified":False,"precipitation_anomalies_verified":False,
-      "charts":{},"probability_charts":{},
+      "charts":{},"probability_charts":{},"synoptic_charts":{},
       "note":"No extension of deterministic forecasts; use official anomaly charts only.",
       "copyright":"© ECMWF — original product URLs and provenance provided.",
       "alerts":[]}
@@ -122,6 +123,18 @@ def main():
                 except Exception as error:
                     status["alerts"].append("Optional probability week%d %s: %s"%(week,kind,str(error)[:160]))
             status["probability_charts"][str(week)]=prob
+        # Complementary anomaly maps of pressure and geopotential: true
+        # weekly ensemble signals, helpful for synoptic interpretation.
+        for week in (3,4):
+            start=next_week_monday+timedelta(days=7*(week-1))
+            end=start+timedelta(days=7)
+            syn={}
+            for kind,product in SYNOPTIC.items():
+                try:
+                    syn[kind]=fetch_chart(week,kind,product,start,end)
+                except Exception as error:
+                    status["alerts"].append("Optional synoptic week%d %s: %s"%(week,kind,str(error)[:160]))
+            status["synoptic_charts"][str(week)]=syn
         status["temperature_anomalies_verified"]=True
         status["precipitation_anomalies_verified"]=True
         status["verified"]=True
