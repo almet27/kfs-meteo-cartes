@@ -32,7 +32,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install drawing libraries
-        run: python -m pip install --disable-pip-version-check "matplotlib>=3.9,<4" "Pillow>=11,<13"
+        run: python -m pip install --disable-pip-version-check "matplotlib>=3.9,<4" "Pillow>=11,<13" "scipy>=1.14,<2"
       - name: Validate conversions and aggregations
         run: python scripts/generate_station_maps.py --self-test
       - name: Diagnose Météo-France API subscriptions (status codes only)
