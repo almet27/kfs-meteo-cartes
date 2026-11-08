@@ -17,7 +17,7 @@ import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta, timezone
 
-API = "https://public-api.meteofrance.fr/public/DPPaquetObs/paquet/stations"
+API = "https://public-api.meteofrance.fr/public/DPPaquetObs/v2/paquet/stations"
 TOKEN_URL = "https://portail-api.meteofrance.fr/token"
 BOUNDARIES_URL = ("https://raw.githubusercontent.com/gregoiredavid/"
                   "france-geojson/master/regions-version-simplifiee.geojson")
@@ -89,8 +89,13 @@ def token():
 
 def obs(token_value, period="infrahoraire-6m", date=None):
     query = {"format": "geojson"}
-    if date:
-        query["date"] = date
+    if not date:
+        # Version 2 : paramètre date obligatoire, pas de date future, pas de minute arbitraire.
+        snapshot = datetime.now(timezone.utc) - timedelta(minutes=18)
+        snapshot = snapshot.replace(minute=(snapshot.minute // 6) * 6,
+                                    second=0, microsecond=0)
+        date = snapshot.strftime("%Y-%m-%dT%H:%M:%SZ")
+    query["date"] = date
     url = API + "/" + period + "?" + urllib.parse.urlencode(query)
     response = http_json(url, {"Authorization": "Bearer " + token_value,
                                "Accept": "application/json"})
