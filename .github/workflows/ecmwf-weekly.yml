@@ -1,0 +1,71 @@
+name: KFS - recuperer ECMWF Weekly semaines 3 et 4
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'scripts/fetch_ecmwf_weekly.py'
+      - '.github/workflows/ecmwf-weekly.yml'
+  schedule:
+    - cron: '25 18 * * *' # 18:25 UTC, après les runs sub-saisonniers, avant le bulletin du dimanche
+permissions:
+  contents: write
+concurrency:
+  group: kfs-ecmwf-weekly
+  cancel-in-progress: false
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Installer Pillow pour valider les PNG
+        run: python -m pip install 'Pillow>=10,<13'
+      - name: Collecter les cartes ECMWF Weekly réelles
+        run: python scripts/fetch_ecmwf_weekly.py
+      - name: Vérifier la cohérence du manifeste
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('forecast-maps/tendance/extended-weekly.json')
+          x=json.loads(p.read_text(encoding='utf8'))
+          if x['verified']:
+              assert x['weeks']==[3,4]
+              for week in ('3','4'):
+                  for var in ('t2m','precip'):
+                      path=Path(x['charts'][week][var]['file_path'])
+                      assert path.exists() and path.stat().st_size>14000
+              print('ECMWF Weekly : données réelles et cartes vérifiées')
+          else:
+              print('::warning::ECMWF Weekly indisponible, pas de publication des semaines 3/4')
+          PY
+      - name: Archiver le diagnostic et les cartes
+        uses: actions/upload-artifact@v4
+        with:
+          name: kfs-ecmwf-weekly
+          path: |
+            forecast-maps/tendance/extended-weekly.json
+            forecast-maps/tendance/weekly-week*.png
+          if-no-files-found: warn
+      - name: Publier les données vérifiées dans le dépôt KFS
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add forecast-maps/tendance/extended-weekly.json
+          git add -f forecast-maps/tendance/weekly-week*.png 2>/dev/null || true
+          if ! git diff --cached --quiet; then
+            git commit -m 'Mettre à jour les cartes réelles ECMWF Weekly semaines 3 et 4'
+            for attempt in 1 2 3 4 5; do
+              if ! git pull --rebase; then
+                git rebase --abort || true
+                sleep 6
+                continue
+              fi
+              if git push; then exit 0; fi
+              sleep 6
+            done
+            exit 1
+          fi
