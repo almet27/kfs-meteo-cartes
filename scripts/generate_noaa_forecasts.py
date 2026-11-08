@@ -106,15 +106,62 @@ def render_gfs_phase(lon,lat,quantity,uncertain,step,kind):
                  "Gris : précipitations présentes, mais phase non déterminée ; blanc : temps sec")
     save(fig,"gfs",step,kind+"6h")
 
+
+# Données numériques supplémentaires pour l'analyse ChatGPT /tendance.
+# Les images NOAA existantes restent indépendantes de cet export.
+DIAG_STEPS={72,168,240,360}
+REGIONS={
+    "france":("France et alentours",(-5.5,8.5,42,51.5)),
+    "atlantique":("Atlantique nord-est",(-42,-12,40,62)),
+    "europe":("Europe occidentale",(-11,16,42,59)),
+    "groenland":("Groenland et environs",(-59,-18,59,81)),
+}
+diagnostics={"schema_version":1,"generated_utc":metadata["generated_utc"],
+             "source_run_utc":RUN.isoformat(),"source":"NOAA GFS / NCEP NOMADS",
+             "models":{"gfs":{}},"errors":{},"steps_h":sorted(DIAG_STEPS)}
+def regional_means(lon,lat,data):
+    results={}
+    for key,(name,(west,east,south,north)) in REGIONS.items():
+        xx=np.where((lon>=west)&(lon<=east))[0]
+        yy=np.where((lat>=south)&(lat<=north))[0]
+        if len(xx)<2 or len(yy)<2:continue
+        area=np.asarray(data[np.ix_(yy,xx)],dtype=float)
+        finite=np.isfinite(area)
+        if np.mean(finite)<.90:continue
+        weights=np.broadcast_to(np.cos(np.radians(lat[yy]))[:,None],area.shape)
+        mean=float(np.average(area[finite],weights=weights[finite]))
+        results[key]={"region":name,"mean":round(mean,2),
+                      "min":round(float(np.min(area[finite])),2),
+                      "max":round(float(np.max(area[finite])),2),
+                      "grid_points":int(np.count_nonzero(finite)),
+                      "note":"Moyenne spatiale sur une boîte géographique incluant potentiellement la mer."}
+    return results
+def regional_flow(fields):
+    flows={}
+    if not all(n in fields for n in ("u850","v850")):return flows
+    for region in set(fields["u850"])&set(fields["v850"]):
+        u=fields["u850"][region]["mean"]
+        v=fields["v850"][region]["mean"]
+        speed=float(np.hypot(u,v))
+        direction=float((np.degrees(np.arctan2(-u,-v))+360)%360) if speed>.2 else None
+        flows[region]={"u_mean_ms":u,"v_mean_ms":v,
+                       "vector_speed_ms":round(speed,1),
+                       "from_deg":round(direction) if direction is not None else None,
+                       "note":"Vecteur moyen vent 850 hPa, pas un vent au sol ni une trajectoire réelle d'advection."}
+    return flows
+
 for model,title in [("gfs","GFS"),("aigfs","AIGFS")]:
     for step in STEPS:
         key=f"{model}-h{step:03}"
         metadata["runs_utc"][model][str(step)]=RUN.isoformat()
+        diag_fields={}
         pressure_product="pgrb2.0p25" if model=="gfs" else "sfc"
         upper_product="pgrb2.0p25" if model=="gfs" else "pres"
         try:
             lon,lat,t850,u=field(model,step,upper_product,":TMP:850 mb:")
             if not 150<np.nanmedian(t850)<330:raise ValueError("T850 values not Kelvin: "+u)
+            if model=="gfs" and step in DIAG_STEPS:
+                diag_fields["t850"]=regional_means(lon,lat,t850-273.15)
             fig,ax=canvas()
             shade=ax.contourf(lon,lat,t850-273.15,levels=np.arange(-36,38,2),
                               cmap="RdYlBu_r",extend="both",transform=ccrs.PlateCarree())
@@ -130,6 +177,9 @@ for model,title in [("gfs","GFS"),("aigfs","AIGFS")]:
                 raise ValueError("Z500 and MSLP grids differ")
             if not 90000<np.nanmedian(msl)<110000: raise ValueError("MSLP invalid: "+u)
             if not 4000<np.nanmedian(z500)<6500: raise ValueError("Z500 invalid: "+zunits)
+            if model=="gfs" and step in DIAG_STEPS:
+                diag_fields["msl"]=regional_means(lon,lat,msl/100)
+                diag_fields["z500"]=regional_means(lon,lat,z500/10)
             fig,ax=canvas()
             shade=ax.contourf(lon,lat,z500/10,levels=np.arange(460,625,4),
                               cmap="Spectral_r",extend="both",transform=ccrs.PlateCarree())
@@ -144,6 +194,30 @@ for model,title in [("gfs","GFS"),("aigfs","AIGFS")]:
             save(fig,model,step,"z500_msl")
         except Exception as e:
             metadata["errors"][key+"-z500_msl"]=str(e)[:350]
+
+        # Champs de vent GFS à 850 hPa. Erreur non bloquante pour les cartes existantes.
+        if model=="gfs" and step in DIAG_STEPS:
+            try:
+                ux,uy,u850,u_unit=field("gfs",step,upper_product,":UGRD:850 mb:")
+                vx,vy,v850,v_unit=field("gfs",step,upper_product,":VGRD:850 mb:")
+                if not (np.array_equal(ux,vx) and np.array_equal(uy,vy)):
+                    raise ValueError("Grilles GFS U850/V850 distinctes")
+                if not (np.isfinite(u850).all() and np.isfinite(v850).all()):
+                    raise ValueError("Vent GFS à 850 hPa incomplet")
+                if np.nanmedian(np.abs(u850))>120 or np.nanmedian(np.abs(v850))>120:
+                    raise ValueError("Vent GFS 850 hPa hors plage m/s")
+                diag_fields["u850"]=regional_means(ux,uy,u850)
+                diag_fields["v850"]=regional_means(vx,vy,v850)
+            except Exception as e:
+                diagnostics["errors"][key+"-wind850"]=str(e)[:260]
+            if all(n in diag_fields for n in ("t850","msl","z500")):
+                diagnostics["models"]["gfs"][str(step)]={
+                    "run_utc":RUN.isoformat(),
+                    "valid_utc":(RUN+timedelta(hours=step)).isoformat(),
+                    "fields":diag_fields,
+                    "flow_850":regional_flow(diag_fields)}
+            else:
+                diagnostics["errors"][key+"-required"]="T850, pression ou Z500 absent : scénario exclu de l'analyse"
 
         # Vent a 10 m : U/V instantanes, vitesse en km/h.
         try:
@@ -209,6 +283,10 @@ for model,title in [("gfs","GFS"),("aigfs","AIGFS")]:
 
         except Exception as e:
             metadata["errors"][key+"-precip6h"]=str(e)[:350]
+(OUT/"noaa-diagnostics.json").write_text(
+    json.dumps(diagnostics,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
+print("GFS numerical diagnostics",json.dumps({"steps":list(diagnostics["models"]["gfs"]),
+                                              "errors":diagnostics["errors"]},ensure_ascii=False),flush=True)
 (OUT/"noaa-metadata.json").write_text(json.dumps(metadata,ensure_ascii=False,indent=2),encoding="utf-8")
 print("NOAA summary",json.dumps({"maps":metadata["maps"],"errors":metadata["errors"]},ensure_ascii=False),flush=True)
 if not metadata["maps"]:raise RuntimeError("No genuine GFS/AIGFS fields, publication aborted")
