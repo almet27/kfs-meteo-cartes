@@ -452,7 +452,7 @@ def write_premium_stage(stage, meta, data, now, risk_document):
     d.rounded_rectangle((1216,794,1548,852),radius=26,fill=(251,209,110,255))
     txt(d,(1232,812),stage["confidence"],23,(20,40,62),True)
     txt(d,(37,875),
-        "Masses d'air qualifiées par T850 • fronts potentiels auto (J+3/J+7) • neige hors relief ≤800 m • non officiel.",13,"light")
+        "Plages de couleur : bleu = air froid, jaune/orange = air doux à 850 hPa (pas au sol) • fronts indicatifs • non officiel.",12,"light")
     out=OUT/("tendance-carte-"+stage["id"]+".png")
     canvas.convert("RGB").save(out,"PNG",optimize=True)
     runs={model_a.lower():details["run_utc"]}
@@ -467,8 +467,9 @@ def write_premium_stage(stage, meta, data, now, risk_document):
        "air_masses":hazards.get("air_masses",[]),
        "frontal_zones":hazards.get("frontal_zones",[]),
        "frontal_method":hazards.get("frontal_method",""),
-       "style":"kfs-editorial-premium-fronts-v6",
-       "note":"Icônes sans rond; masses d'air T850; fronts possibles automatisés J+3/J+7 seulement, non officiels."}
+       "t850_shading":hazards.get("t850_shading",{}),
+       "style":"kfs-editorial-masses-air-v7",
+       "note":"Masses d’air colorées à 850 hPa et échelle °C fixe ; ne représente ni la température au sol ni une vigilance. Fronts potentiels uniquement J+3/J+7."}
 
 def main():
     now=datetime.now(timezone.utc)
