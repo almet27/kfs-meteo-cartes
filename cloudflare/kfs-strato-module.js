@@ -82,6 +82,81 @@ async function kfsStratoMetadata(requireWindCharts=false) {
   return fresh;
 }
 
+// Guide d'analyse synoptique : reformulation automatique des indices IFS,
+// jamais de texte fixé à une date ou de conclusion SSW non démontrée.
+function kfsStratoInterpretation(data) {
+  const diagnostic = data?.diagnostic || {};
+  const values = data?.wind_10hpa_60n || {};
+  const run = Date.parse(data?.run_utc || "");
+  if (!Number.isFinite(run)) return "";
+  const date = new Date(run);
+  const dateFr = new Intl.DateTimeFormat("fr-FR", {
+    timeZone: "UTC", day: "numeric", month: "long", year: "numeric"
+  }).format(date).toLocaleUpperCase("fr-FR");
+  const hh = String(date.getUTCHours()).padStart(2, "0");
+  const inverted = Object.entries(values)
+    .map(([h, value]) => ({h: Number(h), value: Number(value)}))
+    .filter(x => Number.isInteger(x.h) && x.h >= 24 &&
+      x.h <= 360 && Number.isFinite(x.value) && x.value < 0)
+    .map(x => x.h).sort((a,b) => a-b);
+  const spans = [];
+  for (const h of inverted) {
+    const last = spans[spans.length - 1];
+    if (last && last[1] + 24 === h) last[1] = h;
+    else spans.push([h, h]);
+  }
+  const period = spans.slice(0, 2).map(([a,b]) =>
+    a === b ? "J+" + (a/24) : "J+" + (a/24) + " à J+" + (b/24)
+  ).join(" et ");
+  const numeric = (v) => v !== null && v !== undefined &&
+    Number.isFinite(Number(v)) ? Number(v) : null;
+  const warming = numeric(diagnostic.warming_max_5d_k);
+  const slowing = numeric(diagnostic.deceleration_max_5d_ms);
+  const fmt = v => (v > 0 ? "+" : v < 0 ? "−" : "") +
+    Math.abs(v).toFixed(1).replace(".", ",");
+  let label, prose;
+  if (inverted.length) {
+    const shortEvent = inverted.length <= 3 && (warming === null || warming < 10);
+    label = shortEvent ?
+      "Inversion temporaire prévue, sans réchauffement polaire rapide" :
+      "Inversion des vents zonaux prévue à 10 hPa";
+    prose = "Le modèle prévoit une inversion des vents zonaux à 10 hPa " +
+      "et 60°N " + (spans.length === 1 ? "entre " : "vers ") + period + ". ";
+    if (warming !== null && warming <= 0) {
+      prose += "En parallèle, la température du cap polaire ne se réchauffe " +
+        "pas sur cinq jours (variation maximale : " + fmt(warming) + " °C). ";
+    } else if (warming !== null && warming < 10) {
+      prose += "Le réchauffement polaire reste limité (hausse maximale : " +
+        fmt(warming) + " °C sur cinq jours). ";
+    } else if (warming !== null) {
+      prose += "La température polaire progresse de " + fmt(warming) +
+        " °C au maximum sur cinq jours, un signal supplémentaire à surveiller. ";
+    }
+    prose += "Cette inversion prévue ne suffit pas à confirmer un SSW majeur.";
+  } else if (warming !== null && warming >= 10 &&
+             slowing !== null && slowing <= -10) {
+    label = "Réchauffement polaire et net ralentissement du vortex prévus";
+    prose = "Le modèle prévoit une hausse de température polaire jusqu'à " +
+      fmt(warming) + " °C sur cinq jours et une diminution des vents zonaux " +
+      "de " + fmt(slowing) + " m/s. Les signaux convergent, mais aucune " +
+      "inversion à 10 hPa/60°N n'est prévue aux échéances examinées : " +
+      "un SSW majeur n'est pas confirmé.";
+  } else if ((warming !== null && warming >= 10) ||
+             (slowing !== null && slowing <= -10)) {
+    label = "Signal précurseur partiel à surveiller";
+    prose = "Un indicateur montre une évolution sensible de la stratosphère, " +
+      "mais les vents zonaux restent d'ouest à 10 hPa et 60°N. " +
+      "Il faut confirmer la persistance du signal et comparer les nouveaux runs.";
+  } else {
+    label = "Pas de signal marqué de stratwarm dans cette prévision";
+    prose = "Le modèle ne prévoit pas d'inversion des vents zonaux à 10 hPa " +
+      "et 60°N. Aucun réchauffement polaire rapide n'apparaît simultanément " +
+      "sur les échéances disponibles. La situation reste à suivre.";
+  }
+  return "**RUN DU " + dateFr + " · " + hh + "Z**\n" +
+    "**" + label + "**\n" + prose;
+}
+
 const KFS_STRATO_LEVELS = [10, 50, 100];
 const KFS_STRATO_HOURS = [24, 72, 120, 168, 240, 360];
 let KFS_STRATO_SYNCED = false;
@@ -217,7 +292,6 @@ async function kfsStratoComplete(interaction, level, kind, hours) {
         "📡 **ECMWF IFS** · hémisphère Nord · **J+1 à J+15**\n" +
         "🔄 Run **" + new Date(stamp).toISOString().slice(0,16).replace("T"," ") +
         " UTC**\n" +
-        "🔎 **" + String(diagnosis.label).slice(0,100) + "**\n" +
         "🌬️ Vent zonal 10 hPa / 60°N : inversion prévue **" + firstInverse + "**\n" +
         (Number(decel) < 0 ? "📉 Décélération maximale" : "📉 Variation U la plus faible") +
         " sur 5 j : **" + fmt(decel) + " m/s**" +
@@ -233,6 +307,10 @@ async function kfsStratoComplete(interaction, level, kind, hours) {
         "Le refroidissement de l'Europe n'en découle pas automatiquement.\n" +
         "*Repères d'affichage : +10 °C/5 j ou −10 m/s/5 j ; " +
         "non homologués comme critères de SSW. Source : ECMWF Open Data.*";
+      content += "\n\n🧭 **GUIDE D'ANALYSE — INTERPRÉTATION**\n" +
+        kfsStratoInterpretation(data);
+      if (content.length > 1980)
+        throw Error("Analyse stratwarm trop longue pour Discord");
       await kfsStratoEdit(interaction, {
         content, allowed_mentions:{parse:[]}
       }, {
@@ -283,6 +361,18 @@ async function kfsStratoComplete(interaction, level, kind, hours) {
       else
         content += "\n🔎 **Signal stratwarm :** surveiller tout ralentissement rapide " +
           "du 10 hPa, puis le réchauffement polaire.";
+      // Le guide interprétatif est également affiché sous les diagrammes zonaux.
+      // Une indisponibilité de signals.json ne doit jamais bloquer les courbes.
+      try {
+        const signals = await kfsStratoRead("strato/signals.json",
+          Math.floor(Date.now()/300000), "signals");
+        if (signals.run_utc === m.run_utc) {
+          content += "\n\n🧭 **GUIDE D'ANALYSE**\n" +
+            kfsStratoInterpretation(signals);
+        }
+      } catch (e) {
+        console.warn("KFS_STRATO_GUIDE_OPTIONNEL", String(e).slice(0,150));
+      }
       content += "\n⚠️ Une inversion prévue isolée ne confirme pas " +
         "à elle seule un réchauffement stratosphérique majeur (SSW)." +
         "\n*ECMWF Open Data · CC BY 4.0 · courbes issues des champs réels du modèle.*";
