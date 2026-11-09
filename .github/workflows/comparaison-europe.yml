@@ -13,15 +13,17 @@ on:
       - 'forecast-maps/europe/metadata.json'
       - 'forecast-maps/europe/noaa-metadata.json'
   schedule:
-    - cron: '04,09,14,19,24,29,34,39,44,49,54,59 * * *' # rattrapage toutes les 5 min après sorties
+    - cron: '7,22,37,52 * * * *'
+
 permissions:
   contents: write
+
 concurrency:
   group: comparaisons-europe
   cancel-in-progress: false
+
 jobs:
   cartes:
-    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -29,90 +31,50 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Repartir de la dernière version publiée sur main
+      - name: Lire les dernières cartes publiées
         run: |
           git fetch origin main
           git checkout -B main origin/main
-      - name: Vérifier la fraîcheur de la comparaison
-        id: freshness
-        env:
-          KFS_EVENT: ${{ github.event_name }}
+      - name: Vérifier si la comparaison est périmée
+        id: check
         run: |
-          python - <<'PY'
-          import json,os
-          from datetime import datetime, timezone
-          from pathlib import Path
-          root=Path("forecast-maps/europe")
-          def load(name):
-              try: return json.loads((root/name).read_text(encoding="utf-8"))
-              except (OSError,ValueError): return {}
-          def dt(raw):
-              try:
-                  value=datetime.fromisoformat(str(raw).replace("Z","+00:00"))
-                  return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
-              except (TypeError,ValueError):
-                  return datetime(1970,1,1,tzinfo=timezone.utc)
-          compare=load("compare-metadata.json")
-          manifests={"ifs":load("metadata.json"),"aifs-single":load("metadata.json"),
-                     "gfs":load("noaa-metadata.json"),"aigfs":load("noaa-metadata.json")}
-          stale=not compare.get("runs_by_map")
-          if not stale:
-              last=dt(compare.get("generated_utc"))
-              if any(dt(m.get("generated_utc"))>last for m in manifests.values()):
-                  stale=True
-          if not stale:
-              for model,source in manifests.items():
-                  for step,fields in source.get("maps",{}).get(model,{}).items():
-                      for field in fields:
-                          expected=source.get("runs_utc",{}).get(model,{}).get(step)
-                          published=compare.get("runs_by_map",{}).get(step,{}).get(field,{}).get(model)
-                          if expected and dt(expected)!=dt(published):
-                              stale=True
-                              break
-                      if stale: break
-                  if stale: break
-          force=os.getenv("KFS_EVENT")=="push"
-          rebuild=stale or force
-          print("KFS_COMPARE_FRESHNESS",{"stale":stale,"force":force,"rebuild":rebuild,
-                "comparison":compare.get("generated_utc"),
-                "ecmwf":manifests["ifs"].get("generated_utc"),
-                "noaa":manifests["gfs"].get("generated_utc")})
-          with open(os.environ["GITHUB_OUTPUT"],"a") as output:
-              output.write("rebuild="+str(rebuild).lower()+"\n")
-          PY
+          outdated=false
+          previous="$(jq -r '.generated_utc // empty' forecast-maps/europe/compare-metadata.json 2>/dev/null || true)"
+          if [ -z "$previous" ]; then
+            outdated=true
+          else
+            previous_epoch="$(date -u -d "$previous" +%s)"
+            for f in metadata.json noaa-metadata.json; do
+              generated="$(jq -r '.generated_utc // empty' "forecast-maps/europe/$f")"
+              if [ -n "$generated" ] && [ "$(date -u -d "$generated" +%s)" -gt "$previous_epoch" ]; then
+                outdated=true
+              fi
+            done
+          fi
+          echo "outdated=$outdated" >> "$GITHUB_OUTPUT"
+          echo "Recalcul nécessaire : $outdated"
       - name: Installer Pillow
-        if: steps.freshness.outputs.rebuild == 'true'
-        run: pip install Pillow
-      - name: Assembler les modèles
-        if: steps.freshness.outputs.rebuild == 'true'
+        if: steps.check.outputs.outdated == 'true'
+        run: python -m pip install pillow
+      - name: Assembler les quatre modèles
+        if: steps.check.outputs.outdated == 'true'
         run: python scripts/compare_europe_forecasts.py
-      - name: Publier les comparaisons
-        if: steps.freshness.outputs.rebuild == 'true'
+      - name: Publier la comparaison
+        if: steps.check.outputs.outdated == 'true'
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add forecast-maps/europe/compare-*.png forecast-maps/europe/compare-metadata.json
-          if git diff --cached --quiet; then
-            echo "Aucune modification à publier."
-            exit 0
-          fi
-          git commit -m 'Actualiser comparaisons modèles Europe'
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Actualiser comparaisons Europe'
           for attempt in 1 2 3 4 5 6; do
-            if git push origin HEAD:main; then
-              echo "Comparaisons Europe publiées."
-              exit 0
-            fi
-            echo "Nouvelle version main pendant la génération : refaire les cartes depuis le dernier état"
+            if git push origin HEAD:main; then exit 0; fi
             git fetch origin main
             git reset --hard origin/main
             python scripts/compare_europe_forecasts.py
             git add forecast-maps/europe/compare-*.png forecast-maps/europe/compare-metadata.json
-            if git diff --cached --quiet; then
-              echo "Comparaison identique à la dernière publication."
-              exit 0
-            fi
-            git commit -m 'Synchroniser les comparaisons Europe récentes'
+            if git diff --cached --quiet; then exit 0; fi
+            git commit -m 'Synchroniser comparaisons Europe'
             sleep 3
           done
-          echo 'Échec de publication après 6 reconstructions' >&2
           exit 1
