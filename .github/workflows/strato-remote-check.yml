@@ -57,6 +57,30 @@ jobs:
               print(key, 'PNG', len(b), 'octets OK')
           print('KFS ZONAL OK : 4 graphiques, 15 jours par niveau')
           PY
+      - name: Vérifier les indicateurs stratwarm déterministes
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          base=json.loads(Path("strato/metadata.json").read_text())
+          p=Path("strato/signals.json")
+          assert p.is_file(), "diagnostic SSW pas encore publié"
+          data=json.loads(p.read_text())
+          assert data["run_utc"]==base["run_utc"], "run IFS mélangé"
+          assert data["model"]=="ifs" and data["chart"]=="strato/ifs-ssw-signals.png"
+          keys=["temperature_cap_10hpa_60_90n_c",
+                "temperature_pole_10hpa_80_90n_c",
+                "gradient_pole_minus_60n_10hpa_k",
+                "eddy_heat_flux_100hpa_60n_kms"]
+          for key in keys:
+              assert len(data["series"][key])>=12, (key,len(data["series"][key]))
+          assert data["diagnostic"]["status"] in (
+              "inversion_prevue","signaux_convergents","surveillance","pas_de_signal_marque")
+          img=Path(data["chart"])
+          assert img.exists() and img.stat().st_size>4000
+          assert img.read_bytes()[:8]==bytes.fromhex("89504e470d0a1a0a")
+          print("KFS STRATO SSW OK",data["diagnostic"]["label"])
+          PY
       - name: Vérifier le miroir jsDelivr
         run: |
           curl --fail --location --silent --show-error --retry 2 --max-time 25 \
