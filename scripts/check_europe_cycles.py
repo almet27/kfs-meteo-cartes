@@ -37,7 +37,11 @@ def main():
     for model,(provider,limit) in SPECS.items():
         info={"source":provider,"earliest_step_h":24,"maximum_step_h":limit}
         update=False
-        for step in (24,limit):
+        # Chaque échéance est publiée au plus tôt : ne pas attendre +360 h
+        # pour mettre à jour +48, +72, +120 ou +168 h.
+        for step in [24,48,72,120,168,240,360]:
+            if step>limit:
+                continue
             try:
                 available=latest(model,step)
             except Exception as error:
