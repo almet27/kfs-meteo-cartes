@@ -162,9 +162,12 @@ def decode(raw, run, member, step, grid_index, precip_only=False):
                 elif field == "neige_cm":
                     if str(codes_get(h, "units")) != "m" or                        str(codes_get(h, "stepType")) != "instant":
                         raise RuntimeError("Unexpected NOAA snow depth units or interval")
-                    if np.min(values) < -0.00001 or np.max(values) > 10:
-                        raise RuntimeError(f"GEFS invalid snow depth min={np.min(values)} max={np.max(values)} at +{step} p{member:02d}")
-                    values = np.maximum(values, 0) * 100.0
+                    # GRIB returns 9999.0 for some grid cells where SNOD is missing.
+                    # Keep these positions missing, never mislabel missing as zero snow.
+                    known = np.isfinite(values) & (values >= -0.00001) & (values <= 10)
+                    if not np.any(known):
+                        print(f"WARN GEFS SNOD has no valid cells +{step} p{member:02d}", flush=True)
+                    values = np.where(known, np.maximum(values, 0) * 100.0, np.nan)
                 result[field] = values
             finally:
                 codes_release(h)
@@ -224,12 +227,21 @@ def main():
             merged = np.stack([q[0],q[1],q[2],np.mean(matrix,axis=0)],axis=1)
             series[name].append([[round(float(v),1) for v in x] for x in merged])
         snow = np.vstack([values[(m,step)]["neige_cm"] for m in MEMBERS])
-        # Probability of actual GEFS-modelled snow cover at this valid time.
-        # Not a probability of fresh snowfall in the preceding 12h.
-        snow_probs = np.stack([np.mean(snow >= level, axis=0) * 100
-                               for level in SNOW_THRESHOLDS_CM],axis=1)
-        series["neige"].append([[round(float(p),1) for p in row]
-                               for row in snow_probs])
+        valid_members = np.sum(np.isfinite(snow), axis=0)
+        # Strictly require all 8 valid ensemble members at each cell.
+        # NOAA snow missing values (9999 m) must never turn into 0 cm.
+        snow_probs = np.stack([
+            np.where(valid_members == len(MEMBERS),
+                     np.sum(snow >= level, axis=0) / len(MEMBERS) * 100,
+                     np.nan)
+            for level in SNOW_THRESHOLDS_CM
+        ], axis=1)
+        series["neige"].append([
+            [round(float(p), 1) if np.isfinite(p) else None for p in row]
+            for row in snow_probs
+        ])
+        print(f"GEFS snow +{step}: valid all-member cells "
+              f"{int(np.sum(valid_members == len(MEMBERS)))}/{len(POINTS)}", flush=True)
     payload = {
         "schema":1, "provider":"NOAA NCEP GEFS, 8 genuine perturbed members",
         "source":"https://nomads.ncep.noaa.gov/", "run_utc":run.isoformat().replace("+00:00","Z"),
