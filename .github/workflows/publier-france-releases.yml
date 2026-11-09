@@ -79,7 +79,39 @@ jobs:
                 old_cycle="$(jq -r '.run_utc // ""' "$previous/metadata.json")"
                 new_cycle="$(jq -r '.run_utc // ""' "$staging/metadata.json")"
                 if [ -n "$old_cycle" ] && [[ "$new_cycle" < "$old_cycle" ]]; then
-                  echo "SKIP $model : run $new_cycle plus ancien que $old_cycle"
+                  echo "KEEP $model : run $old_cycle plus récent que $new_cycle"
+                  # Garder les cartes horaires récentes intactes. Les bilans
+                  # quotidiens de l'autre cycle vont dans une release séparée.
+                  daily_tag="france-$model-daily"
+                  mkdir -p "$staging/fallback"
+                  jq '{schema,model,area,run_utc,source_generated_utc,published_utc,daily,notes}' \
+                    "$staging/metadata.json" > "$staging/fallback/metadata.json"
+                  shopt -s nullglob
+                  daily_assets=("$staging"/daily-*.webp)
+                  shopt -u nullglob
+                  if [ "${#daily_assets[@]}" -eq 0 ]; then
+                    echo "Pas de cartes quotidiennes dans le run précédent : rien à publier"
+                    continue
+                  fi
+                  if gh release view "$daily_tag" >/dev/null 2>&1; then
+                    daily_prev="/tmp/kfs-previous-daily-$model"
+                    mkdir -p "$daily_prev"
+                    gh release download "$daily_tag" --pattern metadata.json --dir "$daily_prev" --clobber || true
+                    if [ -f "$daily_prev/metadata.json" ]; then
+                      daily_cycle="$(jq -r '.run_utc // ""' "$daily_prev/metadata.json")"
+                      if [ -n "$daily_cycle" ] && [[ "$new_cycle" < "$daily_cycle" ]]; then
+                        echo "KEEP DAILY $model : bilan alternatif plus récent déjà publié"
+                        continue
+                      fi
+                    fi
+                  else
+                    gh release create "$daily_tag" --target main --latest=false \
+                      --title "KFS METEO France | $model | Quotidien alternatif" \
+                      --notes "Bilans quotidiens réels d'un cycle antérieur ; les cartes horaires principales conservent leur run plus récent."
+                  fi
+                  gh release upload "$daily_tag" "${daily_assets[@]}" "$staging/fallback/metadata.json" --clobber
+                  echo "Publication quotidienne alternative $model : $daily_tag"
+                  published=$((published+1))
                   continue
                 fi
               fi
