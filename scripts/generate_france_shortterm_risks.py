@@ -333,7 +333,11 @@ def short_plot_daily(model,metric,day,coords,values,coverage,start,end,run,weath
         txt.set_path_effects([pe.Stroke(linewidth=2.5,foreground="white"),pe.Normal()])
     if weather_codes:
         try:
-            added=draw_wmo_icons(ax,coords,weather_codes,max_icons=8)
+            marked_cities=[(x,y) for x,y,name in SHORT_CITIES
+                if np.isfinite(values[min(range(len(coords)),key=lambda j:
+                    (coords[j][0]-y)**2+(coords[j][1]-x)**2)])]
+            added=draw_wmo_icons(ax,coords,weather_codes,max_icons=8,
+                                 protected=marked_cities)
             if added:print("KFS_WMO_ICONS_DAILY",model,metric,day,added,flush=True)
         except Exception as exc:
             print("KFS_WMO_ICON_SKIPPED",str(exc)[:110],flush=True)
