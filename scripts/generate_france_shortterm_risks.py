@@ -89,8 +89,8 @@ def snow_ground_potential(h,i,model,previous_depth):
     if not isnum(depth) or not isnum(soil):
         return 0
     increment=depth-previous_depth if isnum(previous_depth) else 0.0
-    if depth>=0.015 and soil<=1.5 and twb<=0.8 and
-       increment>=0.005:
+    if (depth>=0.015 and soil<=1.5 and twb<=0.8 and
+        increment>=0.005):
         return 3
     if depth>=0.005 and soil<=2.5 and twb<=1.5:
         return 2
