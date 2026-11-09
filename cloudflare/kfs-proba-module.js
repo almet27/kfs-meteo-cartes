@@ -114,7 +114,7 @@ function kfsProbaSamples(features,regional){
    if(kfsProbaInFeature(lon,lat,f)){
     samples.push({lon:+lon.toFixed(3),lat:+lat.toFixed(3),value:null,models:[]});
     picked++;
-    if(!regional&&picked>=3)break;
+    if((!regional&&picked>=2)||(regional&&picked>=12))break;
    }
   }
   if(!picked){
@@ -239,6 +239,86 @@ function kfsProbaStormMembers(hourly,day,minimum){
  }
  return valid>=2?{pct:100*meet/valid,amount:sum/valid,stormPct:100*active/valid,members:valid}:null;
 }
+// Un lot géographique = plusieurs appels facturés par Open-Meteo.
+// Cache de données brutes (indépendant des seuils) et disjoncteur HTTP 429.
+// Le cache partagé utilise Cache API ; en développement, mémoire par isolate.
+const KFS_PROBA_CACHE_MEMORY=new Map();
+const KFS_PROBA_INFLIGHT=new Map();
+function kfsProbaCacheHash(str){
+ let h=2166136261;
+ for(let i=0;i<str.length;i++)h=Math.imul(h^str.charCodeAt(i),16777619)>>>0;
+ return h.toString(36)+"-"+str.length;
+}
+function kfsProbaCacheRequest(key){
+ return new Request("https://kfs-meteo-ia.alain-leprevost.workers.dev/__proba_internal_cache__/"+key);
+}
+async function kfsProbaCacheRead(key){
+ const item=KFS_PROBA_CACHE_MEMORY.get(key);
+ if(item&&Date.now()<item.expires)return item.payload;
+ if(item)KFS_PROBA_CACHE_MEMORY.delete(key);
+ try{
+  if(typeof caches==="undefined"||!caches.default)return null;
+  const r=await caches.default.match(kfsProbaCacheRequest(key));
+  if(!r||!r.ok)return null;
+  const payload=await r.json();
+  if(!payload||Date.now()>=payload.expires)return null;
+  if(KFS_PROBA_CACHE_MEMORY.size>40)KFS_PROBA_CACHE_MEMORY.clear();
+  KFS_PROBA_CACHE_MEMORY.set(key,{payload,expires:payload.expires});
+  return payload;
+ }catch(e){console.error("KFS_PROBA_CACHE_READ",String(e));return null;}
+}
+async function kfsProbaCacheWrite(key,payload,ttl){
+ const expires=Date.now()+ttl*1000,data={...payload,expires};
+ if(KFS_PROBA_CACHE_MEMORY.size>40)KFS_PROBA_CACHE_MEMORY.clear();
+ KFS_PROBA_CACHE_MEMORY.set(key,{payload:data,expires});
+ try{
+  if(typeof caches==="undefined"||!caches.default)return;
+  await caches.default.put(kfsProbaCacheRequest(key),
+   new Response(JSON.stringify(data),{headers:{"cache-control":"public, max-age="+ttl,"content-type":"application/json"}}));
+ }catch(e){console.error("KFS_PROBA_CACHE_WRITE",String(e));}
+}
+function kfsProbaDailyFuseKey(){
+ return "open-meteo-day-limit-"+new Date().toISOString().slice(0,10);
+}
+async function kfsProbaReadEnsemble(params){
+ const text=params.toString();
+ const key="ensemble-"+kfsProbaCacheHash(text);
+ const cached=await kfsProbaCacheRead(key);
+ if(cached?.data)return cached.data;
+ const fuse=await kfsProbaCacheRead(kfsProbaDailyFuseKey());
+ if(fuse?.dailyLimit)throw Error("HTTP 429 - quota quotidien Open-Meteo atteint. Les nouvelles données sont indisponibles ; des résultats en cache restent possibles.");
+ if(KFS_PROBA_INFLIGHT.has(key))return KFS_PROBA_INFLIGHT.get(key);
+ const action=(async()=>{
+  const again=await kfsProbaCacheRead(key);
+  if(again?.data)return again.data;
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),10500);
+  try{
+   const r=await fetch("https://ensemble-api.open-meteo.com/v1/ensemble?"+text,{
+    signal:controller.signal,headers:{accept:"application/json"},
+    cf:{cacheTtl:1800,cacheEverything:true}
+   });
+   if(!r.ok){
+    const msg=(await r.text()).slice(0,220);
+    if(r.status===429&&/Daily API request limit exceeded/i.test(msg)){
+     const next=new Date(),now=Date.now();
+     const tomorrow=Date.UTC(next.getUTCFullYear(),next.getUTCMonth(),next.getUTCDate()+1,0,20);
+     const ttl=Math.max(900,Math.ceil((tomorrow-now)/1000));
+     await kfsProbaCacheWrite(kfsProbaDailyFuseKey(),{dailyLimit:true,noticedAt:new Date().toISOString()},ttl);
+    }
+    throw Error("HTTP "+r.status+": "+msg.replace(/\s+/g," ").slice(0,100));
+   }
+   const data=await r.json();
+   // Une valeur obtenue ne doit plus être refetchée pour un autre seuil ou
+   // un autre membre Discord de la même région.
+   await kfsProbaCacheWrite(key,{data,retrievedAt:new Date().toISOString()},8*3600);
+   return data;
+  }finally{clearTimeout(timer);}
+ })();
+ KFS_PROBA_INFLIGHT.set(key,action);
+ try{return await action;}finally{KFS_PROBA_INFLIGHT.delete(key);}
+}
+
 async function kfsProbaStormModel(model,samples,day,minimum){
  const base={latitude:samples.map(p=>p.lat).join(","),
   longitude:samples.map(p=>p.lon).join(","),models:model[1],
@@ -253,23 +333,16 @@ async function kfsProbaStormModel(model,samples,day,minimum){
   const left=Math.min(8000,deadline-Date.now());
   if(left<1500)break;
   const params=new URLSearchParams({...base,hourly:fields.join(",")});
-  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),left);
   try{
-   const r=await fetch("https://ensemble-api.open-meteo.com/v1/ensemble?"+params,{
-    signal:controller.signal,headers:{accept:"application/json"},cf:{cacheTtl:1800,cacheEverything:true}
-   });
-   if(!r.ok){
-    error="HTTP "+r.status;
-    if(r.status===429||r.status>=500)break;
-    continue;
-   }
-   const data0=await r.json(),data=Array.isArray(data0)?data0:[data0];
+   const data0=await kfsProbaReadEnsemble(params),data=Array.isArray(data0)?data0:[data0];
    if(data.length!==samples.length){error="Nombre de points inattendu";continue;}
    const values=data.map(x=>kfsProbaStormMembers(x.hourly,day,minimum));
    if(values.some(Boolean))return {name:model[0],values,fields};
    error="Aucun membre valide";
-  }catch(e){error=String(e.message||e).slice(0,120);}
-  finally{clearTimeout(timer);}
+  }catch(e){
+   error=String(e.message||e).slice(0,120);
+   if(/HTTP 429|HTTP 5\d\d/i.test(error))break;
+  }
  }
  throw Error("Orage "+model[0]+": "+error);
 }
@@ -281,16 +354,7 @@ async function kfsProbaModel(model,samples,day,type,threshold){
   models:model[1],hourly:varName,start_date:day,end_date:day,
   timezone:"Europe/Paris",temporal_resolution:"hourly_1"
  });
- const controller=new AbortController();
- const timer=setTimeout(()=>controller.abort(),10500);
- let result;
- try{
-  const r=await fetch("https://ensemble-api.open-meteo.com/v1/ensemble?"+params,{
-   signal:controller.signal,headers:{accept:"application/json"},cf:{cacheTtl:1800,cacheEverything:true}
-  });
-  if(!r.ok)throw Error("HTTP "+r.status+": "+(await r.text()).slice(0,100));
-  result=await r.json();
- }finally{clearTimeout(timer);}
+ const result=await kfsProbaReadEnsemble(params);
  const arr=Array.isArray(result)?result:[result];
  if(arr.length!==samples.length)throw Error("Nombre de points inattendu");
  const values=arr.map(p=>{
@@ -592,12 +656,18 @@ async function kfsProbaComplete(interaction,phenom,zone,jour,seuil){
   const points=kfsProbaSamples(features,zone!=="FR");
   if(points.length<2)throw Error("Échantillonnage spatial insuffisant.");
   const day=kfsProbaDay(jour),available=[],failures=[];
-  // Les 7 ensembles sont interrogés en parallèle pour respecter le délai
-  // de réponse différée de Discord (max 30 s côté Worker après l'ACK).
-  const settled=await Promise.allSettled(KFS_PROBA_MODELS.map(m=>phenom==="orage"?
-   kfsProbaStormModel(m,points,day,seuil):kfsProbaModel(m,points,day,phenom,seuil)));
-  for(let j=0;j<settled.length;j++){
-   const outcome=settled[j],model=KFS_PROBA_MODELS[j];
+  // Quatre familles variées maximum par carte, deux appels simultanés
+  // (Open-Meteo limite la concurrence et facture les coordonnées).
+  const selected=[KFS_PROBA_MODELS[0],KFS_PROBA_MODELS[2],
+    KFS_PROBA_MODELS[1],KFS_PROBA_MODELS[4]];
+  const requestDeadline=Date.now()+24000;
+  for(let offset=0;offset<selected.length;offset+=2){
+   if(Date.now()>requestDeadline-2500)break;
+   const batch=selected.slice(offset,offset+2);
+   const settled=await Promise.allSettled(batch.map(m=>phenom==="orage"?
+    kfsProbaStormModel(m,points,day,seuil):kfsProbaModel(m,points,day,phenom,seuil)));
+   for(let j=0;j<settled.length;j++){
+    const outcome=settled[j],model=batch[j];
    if(outcome.status==="rejected"){
     failures.push(model[0]+" : "+String(outcome.reason).slice(0,80));
     continue;
@@ -613,13 +683,15 @@ async function kfsProbaComplete(interaction,phenom,zone,jour,seuil){
    }
    if(count)available.push(r.name);
    else failures.push(r.name+" : variable indisponible");
+   }
+   if(failures.some(x=>/Daily API request limit exceeded|quota quotidien Open-Meteo/i.test(x)))break;
   }
   for(const p of points){if(p.models.length)p.value=p.models.reduce((a,b)=>a+b,0)/p.models.length;if(p.amountModels?.length)p.amount=p.amountModels.reduce((a,b)=>a+b,0)/p.amountModels.length;if(p.wetModels?.length)p.wetValue=p.wetModels.reduce((a,b)=>a+b,0)/p.wetModels.length;
    if(p.stormModels?.length)p.stormValue=p.stormModels.reduce((a,b)=>a+b,0)/p.stormModels.length;}
   const counted=points.filter(p=>Number.isFinite(p.value));
   if(!counted.length)throw Error("Aucun ensemble disponible pour cette prévision. "+
    (failures.some(x=>x.includes("429"))?"Le fournisseur renvoie HTTP 429 (quota temporaire).":"Modèles sans données ou trop lents.")+
-   " Détail : "+failures.slice(0,3).join(" ; ").slice(0,350));
+   " Détail : "+failures.slice(0,2).join(" ; ").slice(0,250));
   const departments=await departmentsPromise;
   const frame=kfsProbaRender(features,points,zone,phenom,departments),png=await kfsProbaPng(frame);
   const name=zone==="FR"?"France métropolitaine":KFS_PROBA_REGIONS.find(r=>r[0]===zone)?.[1]||zone;
