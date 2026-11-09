@@ -6,8 +6,9 @@ on:
       - scripts/build_diagramme_gefs_backup.py
       - .github/workflows/kfs-diagramme-gefs-backup.yml
   schedule:
-    # Run 00Z and 12Z, after final lead times are normally available
-    - cron: '45 11,23 * * *'
+    # Probe each NOAA GEFS 00/06/12/18Z after +360 h is normally published.
+    # The code verifies +12 h and +360 h before publishing a run.
+    - cron: '55 0,6,12,18 * * *'
 permissions:
   contents: write
 concurrency:

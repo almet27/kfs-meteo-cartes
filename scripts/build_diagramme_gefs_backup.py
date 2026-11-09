@@ -38,9 +38,10 @@ def cycle_candidates():
     now = datetime.now(timezone.utc)
     candidates = []
     for days in range(3):
-        for hour in (0, 12):
+        for hour in (0, 6, 12, 18):
             dt = (now - timedelta(days=days)).replace(hour=hour, minute=0, second=0, microsecond=0)
-            if dt <= now - timedelta(hours=9) and now - dt < timedelta(hours=45):
+            # No fixed 9-hour delay: verify the actual +360 h GRIB product instead.
+            if dt <= now - timedelta(hours=3) and now - dt < timedelta(hours=45):
                 candidates.append(dt)
     return sorted(set(candidates), reverse=True)
 
