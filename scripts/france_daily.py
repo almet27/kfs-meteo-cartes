@@ -90,11 +90,14 @@ def render_daily(lon,lat,values,metric,model,run,day,folder,note,peaks=None):
     ax.coastlines("10m",linewidth=.7,color="#182A3E",zorder=5)
     ax.add_feature(cf.BORDERS,linewidth=.6,edgecolor="#172A3B",zorder=5)
     ax.set_title("KFS MÉTÉO · FRANCE · "+model+
+        " · RUN "+run.strftime("%HZ du %d/%m/%Y")+" (UTC)"+
         "\n"+LABELS[metric]+" · "+day.strftime("%A %d/%m/%Y").capitalize(),
         fontsize=12,weight="bold",pad=11)
     cb=fig.colorbar(shade,ax=ax,orientation="horizontal",shrink=.82,pad=.04)
     cb.set_label(LABELS[metric],fontsize=9)
-    fig.text(.04,.025,"Run "+iso(run)+" · "+note,fontsize=7.1)
+    fig.text(.04,.025,"RUN "+run.strftime("%HZ du %d/%m/%Y")+
+             " · cycle à "+run.astimezone(PARIS).strftime("%Hh%M")+" en France · "+
+             note,fontsize=7.1)
     path=Path(folder)/f"daily-{metric}-d{(day-run.astimezone(PARIS).date()).days}.png"
     fig.savefig(path,dpi=115,bbox_inches="tight",facecolor="white")
     plt.close(fig)
