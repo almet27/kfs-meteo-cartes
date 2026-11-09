@@ -1,3 +1,21 @@
+# /climato — option « record » (novembre 2026)
+
+La commande Discord `/climato` dispose maintenant d'un champ optionnel **record**. Les choix sont :
+- Rafale maximale (`rafale_max`)
+- Température maximale absolue (`chaleur_max`)
+- Température minimale absolue (`froid_min`)
+- Pluie maximale en 24 h (`pluie_max`)
+
+**Exemple** : `/climato ville: Lesquin mois: novembre rubrique: Vent et rafales record: Rafale maximale`
+
+Lorsque `record` est renseigné, le bot recherche un **record historique toutes années confondues**, et non le maximum de la dernière année disponible. Le résultat donne la valeur, la date, la station Météo-France retenue et un lien vers la fiche officielle. Si le champ `annee` est renseigné également, il est ignoré dans ce mode, avec un avertissement. Sans `record`, les bilans annuels et mensuels précédents restent inchangés.
+
+Cas test vérifié avec les valeurs de la fiche officielle Météo-France Lille–Lesquin (n° 59343001) : **novembre = rafale maximale 34 m/s, soit 122,4 km/h, le 27 novembre 1983**. Les calculs du module ont été testés sur une fiche représentative de cette structure. Cette validation ne remplace pas un essai en conditions réelles dans Discord.
+
+**Dépendance Discord** : le Worker KFS doit actualiser sa commande auprès de l'API Discord après déploiement. L'actualisation automatique existante se produit lors d'une requête HTTP. Il reste à confirmer la mise à jour de l'interface sur le serveur Discord.
+
+---
+
 # /climato — version 2 déployée (9 novembre 2026)
 
 Le Worker Cloudflare `kfs-meteo-ia` a été mis à jour, avec conservation des bindings. La **disponibilité effective dans le menu Discord reste à confirmer** ; le Worker enregistre la commande lors d'une requête entrante. Une GitHub Action `.github/workflows/kfs-climato-sync.yml` déclenche une requête publique après son ajout au dépôt.
