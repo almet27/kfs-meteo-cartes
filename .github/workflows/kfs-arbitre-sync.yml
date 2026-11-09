@@ -1,0 +1,27 @@
+name: Activer la commande Discord KFS arbitre
+on:
+  push:
+    paths:
+      - .github/workflows/kfs-arbitre-sync.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Demander au Worker d'enregistrer la commande
+        shell: bash
+        run: |
+          set -euo pipefail
+          endpoint="https://kfs-meteo-ia.alain-leprevost.workers.dev/"
+          http_code=$(curl --max-time 25 --retry 2 -sSL -o /tmp/kfs-arbitre-response.txt -w "%{http_code}" "$endpoint")
+          echo "Worker KFS HTTP: $http_code"
+          head -c 300 /tmp/kfs-arbitre-response.txt || true
+          echo
+          if [ "$http_code" -lt 200 ] || [ "$http_code" -ge 400 ]; then
+            echo "Le Worker ne répond pas correctement."
+            exit 1
+          fi
+          echo "Enregistrement demandé au Worker ; la présence dans Discord doit être vérifiée séparément."
