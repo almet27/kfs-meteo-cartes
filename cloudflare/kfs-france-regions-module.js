@@ -30,6 +30,22 @@ const KFS_FRANCE_REGION_SCALES={
  neige_sol:[[0,1,2,3],[83,174,153],[190,215,91],[240,158,79],[220,73,115]]
 };
 const KFS_FRANCE_REGION_CACHE_TTL=600;
+// Classification WMO: aucun symbole ne sera créé sans code météo valide.
+function kfsFranceWmoIcon(code){
+ if(!Number.isInteger(code))return null;
+ if(code===0)return "sun";
+ if(code===1||code===2)return "partly";
+ if(code===3)return "cloud";
+ if(code===45||code===48)return "fog";
+ if([51,53,55,56,57,61,63,65,66,67,80,81,82].includes(code))return "rain";
+ if([71,73,75,77,85,86].includes(code))return "snow";
+ if([95,96,97,99].includes(code))return "storm";
+ return null;
+}
+function kfsFranceWmoRank(code){
+ const kind=kfsFranceWmoIcon(code);
+ return ({sun:0,partly:1,cloud:2,fog:3,rain:4,snow:5,storm:6})[kind]??-1;
+}
 function kfsFranceRegionColor(v,metric){
  const spec=KFS_FRANCE_REGION_SCALES[metric];
  if(!Number.isFinite(v))return [55,72,91];
@@ -68,6 +84,49 @@ function kfsFranceRegionalRender(features,depts,samples,zone,metric,subtitle){
   let dX=Math.abs(x1-x0),sx=x0<x1?1:-1,dY=-Math.abs(y1-y0),sy=y0<y1?1:-1,err=dX+dY;
   for(let n=0;n<6000;n++){put(x0,y0,color);if(x0===x1&&y0===y1)break;const e2=2*err;
    if(e2>=dY){err+=dY;x0+=sx;}if(e2<=dX){err+=dX;y0+=sy;}}
+ }
+ // Pictogrammes vectoriels compacts : couleurs et formes lisibles sans pastille noire.
+ function dot(cx,cy,r,color){
+  for(let y=Math.floor(cy-r);y<=Math.ceil(cy+r);y++)
+   for(let x=Math.floor(cx-r);x<=Math.ceil(cx+r);x++)
+    if((x-cx)*(x-cx)+(y-cy)*(y-cy)<=r*r)put(x,y,color);
+ }
+ function icon(cx,cy,kind){
+  const ink=[11,44,72],white=[240,248,255],gray=[202,221,234],
+        sun=[255,198,67],blue=[67,187,255],snow=[248,250,255],gold=[255,219,79];
+  const cloud=(x,y)=>{
+   // Fin contour blanc: lisibilité sur fonds de température, pluie et rafales.
+   dot(x-8,y+1,8,ink);dot(x,y-4,10,ink);dot(x+10,y+1,8,ink);
+   rect(x-14,y,29,10,ink);
+   dot(x-8,y,6,white);dot(x,y-5,8,gray);dot(x+10,y,6,white);
+   rect(x-13,y,27,8,gray);rect(x-11,y+7,23,2,white);
+  };
+  const sunshine=(x,y)=>{
+   dot(x,y,9,ink);dot(x,y,7,sun);
+   for(let a=0;a<8;a++){const p=a*Math.PI/4;
+    line(x+Math.cos(p)*11,y+Math.sin(p)*11,
+         x+Math.cos(p)*15,y+Math.sin(p)*15,sun);}
+  };
+  if(kind==="sun"){sunshine(cx,cy);return;}
+  if(kind==="partly"){sunshine(cx-8,cy-7);cloud(cx+4,cy+4);return;}
+  cloud(cx,cy-3);
+  if(kind==="cloud")return;
+  if(kind==="fog"){
+   for(let i=0;i<3;i++)line(cx-12,cy+10+i*4,cx+12-(i%2)*4,cy+10+i*4,white);
+  }else if(kind==="rain"){
+   for(let i=0;i<3;i++)line(cx-10+i*10,cy+9,cx-14+i*10,cy+17,blue);
+  }else if(kind==="snow"){
+   for(let i=0;i<3;i++){
+    const x=cx-11+i*11,y=cy+13;
+    line(x-3,y,x+3,y,snow);line(x,y-4,x,y+4,snow);
+    line(x-3,y-3,x+3,y+3,snow);line(x-3,y+3,x+3,y-3,snow);
+   }
+  }else if(kind==="storm"){
+   line(cx+1,cy+7,cx-5,cy+17,gold);
+   line(cx-5,cy+17,cx+2,cy+15,gold);
+   line(cx+2,cy+15,cx-1,cy+24,gold);
+   line(cx-9,cy+10,cx-12,cy+16,blue);
+  }
  }
  const GW=108,GH=86,field=new Float32Array(GW*GH);
  const valid=samples.filter(p=>Number.isFinite(p.value));
@@ -203,6 +262,25 @@ function kfsFranceRegionalRender(features,depts,samples,zone,metric,subtitle){
  txt("KFS METEO FRANCE",40,14,3,[239,247,255]);
  txt(zoneName,385,20,2,[200,233,250]);
  txt(KFS_FRANCE_REGION_METRICS[metric][0],40,40,2,[112,216,244]);
+ // Conditions issues des codes WMO au même point et au même jour/période.
+ // Espacement strict : ne pas couvrir les villes ni les nombres existants.
+ const weatherPoints=samples.filter(p=>Number.isFinite(p.value)&&
+   kfsFranceWmoIcon(p.weatherCode)&&features.some(f=>kfsProbaInFeature(p.lon,p.lat,f)));
+ const positions=[];
+ const maximum=zone==="11"||zone==="94"?3:5;
+ // Varier géographiquement les pictogrammes, sans surreprésenter les fortes pluies.
+ for(const p of [...weatherPoints].sort((a,b)=>b.lat-a.lat||a.lon-b.lon)){
+  const x=xx(p.lon),y=yy(p.lat),kind=kfsFranceWmoIcon(p.weatherCode);
+  if(x<P.x+27||y<P.y+27||x>P.x+P.w-27||y>P.y+P.h-30)continue;
+  const box={x:x-21,y:y-22,w:43,h:51};
+  if(occupied.some(q=>!(box.x>q.x+q.w+12||box.x+box.w+12<q.x||
+    box.y>q.y+q.h+12||box.y+box.h+12<q.y)))continue;
+  if(cityPlaces.some(c=>Math.hypot(c.x-x,c.y-y)<55))continue;
+  if(positions.some(q=>Math.hypot(q.x-x,q.y-y)<126))continue;
+  positions.push({x,y,kind});
+  if(positions.length>=maximum)break;
+ }
+ for(const p of positions)icon(p.x,p.y,p.kind);
  // Légende quantitative + unités, hors territoire.
  const scaleSpec=KFS_FRANCE_REGION_SCALES[metric],levels=scaleSpec[0],
        colors=scaleSpec.slice(1),x0=75,y0=700,band=770/colors.length;
@@ -232,23 +310,37 @@ async function kfsFranceRegionRequest(model,metric,day,hour,samples){
  const fields=risk?(metric==="orage"?
    ["cape","precipitation","wind_speed_850hPa","wind_direction_850hPa","wind_speed_500hPa","wind_direction_500hPa"]:
    ["temperature_2m","wet_bulb_temperature_2m","snowfall",...(model==="icon_eu"?["snow_depth","soil_temperature_0cm"]:[])]):[];
+ // Le code météo est une donnée supplémentaire, facultative.
+ // Si le modèle ne l'expose pas, préserver la carte numérique existante.
  const url=new URL("https://api.open-meteo.com/v1/forecast");
- url.search=new URLSearchParams({latitude,longitude,
+ const requestParams=(withCode)=>({latitude,longitude,
   models:params[1],timezone:"Europe/Paris",
-  ...(risk?{hourly:fields.join(","),forecast_hours:"48"}:
-     {daily:KFS_FRANCE_REGION_METRICS[metric][1],
-      hourly:"temperature_2m",forecast_days:String(Math.max(day+2,4))})}).toString();
- const response=await fetch(url,{signal:AbortSignal.timeout(14000),
+  ...(risk?{hourly:[...fields,...(withCode?["weather_code"]:[])].join(","),
+      forecast_hours:"48"}:
+     {daily:[KFS_FRANCE_REGION_METRICS[metric][1],
+       ...(withCode?["weather_code"]:[])].join(","),
+      hourly:"temperature_2m",forecast_days:String(Math.max(day+2,4))})});
+ url.search=new URLSearchParams(requestParams(true)).toString();
+ let response=await fetch(url,{signal:AbortSignal.timeout(14000),
   cf:{cacheEverything:true,cacheTtl:450}});
+ if(response.status===400){
+  // Fallback prévu pour les modèles ne supportant pas weather_code.
+  url.search=new URLSearchParams(requestParams(false)).toString();
+  response=await fetch(url,{signal:AbortSignal.timeout(14000),
+    cf:{cacheEverything:true,cacheTtl:450}});
+ }
  if(!response.ok)throw Error("Source modèle "+params[0]+" HTTP "+response.status+
   " ; aucune carte inventée.");
  const raw=await response.json(),records=Array.isArray(raw)?raw:[raw];
  if(records.length!==samples.length)throw Error("Incohérence de points dans la réponse météo.");
- const date=kfsProbaDay(day),coverage=[];
+ const date=kfsProbaDay(day),coverage=[],codes=[];
  const values=records.map(rec=>{
   if(risk){
    const h=rec.hourly||{},length=h.time?.length||0;
    const ending=Math.min(hour,length),starting=({6:0,12:6,24:12,36:24,48:36})[hour];
+   const present=h.weather_code?.slice(starting,ending).filter(Number.isInteger)||[];
+   const representative=present.reduce((a,b)=>kfsFranceWmoRank(b)>kfsFranceWmoRank(a)?b:a,null);
+   codes.push(representative);
    let max=null;
    for(let i=starting;i<ending;i++){
     let level=null;
@@ -288,6 +380,8 @@ async function kfsFranceRegionRequest(model,metric,day,hour,samples){
   }
   const index=rec.daily?.time?.indexOf(date)??-1;
   const q=index>=0?rec.daily?.[KFS_FRANCE_REGION_METRICS[metric][1]]?.[index]:null;
+  codes.push(index>=0&&Number.isInteger(rec.daily?.weather_code?.[index])?
+    rec.daily.weather_code[index]:null);
   const hours=rec.hourly?.time?.filter(t=>String(t).startsWith(date)).length||0;
   coverage.push(hours);
   return Number.isFinite(q)?q:null;
@@ -297,7 +391,7 @@ async function kfsFranceRegionRequest(model,metric,day,hour,samples){
   throw Error("Données régionales insuffisantes pour "+params[0]+
     ", "+KFS_FRANCE_REGION_METRICS[metric][0]+
     " (points exploitables "+ok.length+"/"+samples.length+").");
- return {values,date,coverage:risk?null:
+ return {values,codes,date,coverage:risk?null:
   (Math.min(...coverage)>=23?"complete":"partial"),count:ok.length};
 }
 async function kfsFranceRegionHandle(interaction,model,metric,rawDay,rawHour,zone){
@@ -309,7 +403,7 @@ async function kfsFranceRegionHandle(interaction,model,metric,rawDay,rawHour,zon
   if(!Number.isInteger(day)||day<0||day>5)throw Error("Choisis J+0 à J+5.");
   const risk=metric==="orage"||metric==="neige_sol";
   const name=KFS_PROBA_REGIONS.find(r=>r[0]===zone)[1];
-  const key="https://kfs-meteo-ia.alain-leprevost.workers.dev/__cache/france-regions/"+
+  const key="https://kfs-meteo-ia.alain-leprevost.workers.dev/__cache/france-regions/v2-icons/"+
       encodeURIComponent([zone,model,metric,risk?hour:day].join("-"));
   let bytes=null,record=null;
   try{
@@ -325,7 +419,10 @@ async function kfsFranceRegionHandle(interaction,model,metric,rawDay,rawHour,zon
    const [departments,forecast]=await Promise.all([
     kfsProbaDepartments(zone),kfsFranceRegionRequest(model,metric,day,hour,points)
    ]);
-   for(let i=0;i<points.length;i++)points[i].value=forecast.values[i];
+   for(let i=0;i<points.length;i++){
+    points[i].value=forecast.values[i];
+    points[i].weatherCode=forecast.codes?.[i]??null;
+   }
    record=forecast;
    const note=risk?"H+"+hour:"J+"+day;
    const frame=kfsFranceRegionalRender(features,departments,points,zone,metric,note);
@@ -346,6 +443,8 @@ async function kfsFranceRegionHandle(interaction,model,metric,rawDay,rawHour,zon
    " · "+(risk?"H+"+hour:"J+"+day)+"**"+
    (record?.date&&!risk?" · "+record.date:"")+
    "\n📍 Villes principales et limites départementales."+
+   "\n🌤️ Pictogrammes : codes météo WMO du modèle, lorsque disponibles"+
+   (risk?" (phénomène le plus marqué de la période).":" (sur la journée).")+
    partial+cautions;
   await kfsFranceSendDiscord(endpoint,{
    content:title,allowed_mentions:{parse:[]},
