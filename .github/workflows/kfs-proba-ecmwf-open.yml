@@ -1,6 +1,12 @@
 name: KFS PROBA - ECMWF ENS open probabilities
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - scripts/build_ecmwf_probability.py
+      - scripts/requirements-ecmwf-proba.txt
+      - proba/points-ecmwf.json
+      - .github/workflows/kfs-proba-ecmwf-open.yml
   schedule:
     # ECMWF 00Z ENS: wait until the open-data files are published
     - cron: '20 11,15 * * *'
@@ -30,6 +36,8 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq libeccodes0 libeccodes-data
           python -m pip install -r scripts/requirements-ecmwf-proba.txt
+      - name: Check Python syntax
+        run: python -m py_compile scripts/build_ecmwf_probability.py
       - name: Produce ECMWF ensemble probability grid
         env:
           ECMWF_SOURCE: ecmwf
