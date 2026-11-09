@@ -1,0 +1,59 @@
+name: KFS - verifier les cycles des ensembles ECMWF ENS et GEFS
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/verify-ensemble-metadata.yml
+
+permissions:
+  contents: read
+
+jobs:
+  verifier:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Vérifier les métadonnées Open-Meteo des ensembles
+        run: |
+          python - <<'PY'
+          from urllib.request import urlopen,Request
+          from datetime import datetime,timezone
+          import json
+          models=("ecmwf_ifs025_ensemble","ncep_gefs025","ncep_gefs05")
+          for model in models:
+              url="https://api.open-meteo.com/data/"+model+"/static/meta.json"
+              with urlopen(Request(url,headers={"User-Agent":"KFS-Meteo/1.0"}),timeout=20) as r:
+                  data=json.load(r)
+              init=data.get("last_run_initialisation_time")
+              available=data.get("last_run_availability_time")
+              if not init or not available:
+                  raise RuntimeError(model+": métadonnées d'initialisation ou disponibilité manquantes")
+              fmt=lambda t:datetime.fromtimestamp(t,tz=timezone.utc).isoformat()
+              print(model,"RUN",fmt(init),"DISPONIBLE",fmt(available),
+                    "AGE DISPONIBILITE MIN",round((datetime.now(timezone.utc).timestamp()-available)/60))
+          print("ENSEMBLE_METADATA_OK")
+          PY
+      - name: Vérifier les données d'ensemble réelles pour Évreux
+        run: |
+          python - <<'PY'
+          import json
+          from urllib.request import Request,urlopen
+          for model in ("ecmwf_ifs025_ensemble","ncep_gefs025","ncep_gefs05"):
+              u=("https://ensemble-api.open-meteo.com/v1/ensemble"
+                 "?latitude=49.02&longitude=1.15&models="+model+
+                 "&hourly=temperature_2m,precipitation,pressure_msl"
+                 "&forecast_days=1&temporal_resolution=native&timezone=UTC")
+              with urlopen(Request(u,headers={"User-Agent":"KFS-Meteo/1.0"}),timeout=30) as response:
+                  data=json.load(response)
+              hourly=data.get("hourly",{})
+              if data.get("error") or not hourly.get("time"):
+                  raise RuntimeError(model+": données d'ensemble non disponibles "+str(data)[:200])
+              members={v:sum(k.startswith(v+"_member") for k in hourly)
+                       for v in ("temperature_2m","precipitation","pressure_msl")}
+              print(model,"SAMPLES",len(hourly["time"]),"MEMBERS",members)
+              if min(members.values())<8:
+                  raise RuntimeError(model+": ensemble incomplet")
+          print("ENSEMBLE_API_DATA_OK")
+          PY
