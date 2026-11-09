@@ -392,12 +392,19 @@ def main():
                 views[key]=plot(model,kind,period,coords,values[kind],timestamp)
         document["models"][model]={"name":CODES[model],"fields":list(COMMON+EXTRA[model]),
                                    "maps":views}
-        generate_short_daily(model,data,coords,source_runs.get(model,{}).get("run_utc"),daily_document)
+        try:
+            generate_short_daily(model,data,coords,
+                                 source_runs.get(model,{}).get("run_utc"),daily_document)
+        except Exception as exc:
+            # Le nouveau produit quotidien ne doit jamais interrompre
+            # la publication des cartes de risques déjà en production.
+            print("KFS_FRANCE_SHORT_DAILY_ERROR",model,str(exc)[:200],flush=True)
         print("KFS_FRANCE_RISK_MODEL_OK",model,len(coords),"points",flush=True)
     (OUT/"latest.json").write_text(
         json.dumps(document,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
-    (SHORT_OUT/"latest.json").write_text(
-        json.dumps(daily_document,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
+    if any(model.get("days") for model in daily_document["models"].values()):
+        (SHORT_OUT/"latest.json").write_text(
+            json.dumps(daily_document,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
     print("KFS_FRANCE_SHORTTERM_RISKS_OK",timestamp.isoformat(),flush=True)
 
 if __name__=="__main__":
