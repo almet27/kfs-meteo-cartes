@@ -80,10 +80,16 @@ def load_fields(path, points):
             finally:
                 codes_release(msg)
     expected = len(STEPS) * len(MEMBERS) * len(PARAMS)
-    if count != expected:
-        missing = [(k, s, n) for k in PARAMS for s in STEPS for n in MEMBERS
-                   if (k, s, n) not in values]
-        raise RuntimeError(f"ECMWF PF incomplete: {count}/{expected} messages; missing {missing[:5]}")
+    missing = [(k, s, n) for k in PARAMS for s in STEPS for n in MEMBERS
+               if (k, s, n) not in values]
+    # Some runs omit the +96h gust field; this must not block snow or imply
+    # zero wind. Other missing products are a hard failure.
+    optional = {( "10fg", 96, member) for member in MEMBERS}
+    required_missing = [k for k in missing if k not in optional]
+    if required_missing:
+        raise RuntimeError(f"ECMWF PF incomplete: {count}/{expected}; missing {required_missing[:5]}")
+    if missing:
+        print("Warn: optional ECMWF gust fields missing (not treated as zero):", missing)
     return values
 
 
@@ -127,7 +133,9 @@ def produce(fields, npoints, run):
 
                 cp = fields[("cp", step, member)]
                 accum = np.maximum(0, (cp - previous_cp) * 1000.0)
-                gusts = fields[("10fg", step, member)] * 3.6
+                gust_raw = fields.get(("10fg", step, member))
+                gusts = (gust_raw * 3.6 if gust_raw is not None
+                         else np.full(npoints, np.nan))
                 cape = fields[("mucape", step, member)]
                 idx = np.fromiter(
                     (convective_tier(cape[i], accum[i], gusts[i]) or 0
