@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_utc": "2026-11-09T10:07:27.018972+00:00",
+  "generated_utc": "2026-11-09T10:18:08.669916+00:00",
   "atlas_generated_utc": "2026-11-09T08:44:12.932477+00:00",
   "reference": "ECMWF Open Data, Copernicus DEM GLO-90 via Open-Meteo — champs géoréférencés",
   "stages": [
@@ -94,58 +94,6 @@
           "kind": "pluie_forte"
         }
       ],
-      "air_masses": [
-        {
-          "lon": -22.0,
-          "lat": 54.0,
-          "temp_850_c": 4.6,
-          "label": "Air tempéré à 850 hPa",
-          "basis": "ECMWF t 850hPa (moyenne locale)"
-        },
-        {
-          "lon": 20.0,
-          "lat": 51.0,
-          "temp_850_c": 3.5,
-          "label": "Air frais à 850 hPa",
-          "basis": "ECMWF t 850hPa (moyenne locale)"
-        }
-      ],
-      "frontal_zones": [
-        {
-          "kind": "chaud",
-          "lon": 25.0,
-          "lat": 48.0,
-          "strength_c_per_100km": 7.43,
-          "change_6h_c": 2.6,
-          "rain_6h_mm": 4.4,
-          "tangent": [
-            -0.4242,
-            0.9056
-          ],
-          "normal": [
-            0.9056,
-            0.4242
-          ],
-          "confidence": "indice frontal, non validé comme front de surface"
-        },
-        {
-          "kind": "froid",
-          "lon": -13.25,
-          "lat": 50.0,
-          "strength_c_per_100km": 3.23,
-          "change_6h_c": -1.6,
-          "rain_6h_mm": 2.2,
-          "tangent": [
-            0.9762,
-            0.217
-          ],
-          "normal": [
-            0.217,
-            -0.9762
-          ],
-          "confidence": "indice frontal, non validé comme front de surface"
-        }
-      ],
       "t850_shading": {
         "enabled": true,
         "level_hpa": 850,
@@ -156,7 +104,6 @@
         ],
         "description": "Température à 850 hPa modélisée, pas température au sol"
       },
-      "frontal_method": "Thermal gradient / 6h tendency / rain (experimental), only J+3/J+7",
       "risk_scope": "France et secteurs proches, domaine rectangulaire terre + mer",
       "method": "Vent moyen 10m, pluie/neige 6h ; neige hors relief selon altitudes GLO-90 ; pas une vigilance officielle."
     },
@@ -239,58 +186,6 @@
           "kind": "pluie_forte"
         }
       ],
-      "air_masses": [
-        {
-          "lon": -22.0,
-          "lat": 54.0,
-          "temp_850_c": -3.8,
-          "label": "Air froid à 850 hPa",
-          "basis": "ECMWF t 850hPa (moyenne locale)"
-        },
-        {
-          "lon": 20.0,
-          "lat": 51.0,
-          "temp_850_c": 4.6,
-          "label": "Air tempéré à 850 hPa",
-          "basis": "ECMWF t 850hPa (moyenne locale)"
-        }
-      ],
-      "frontal_zones": [
-        {
-          "kind": "chaud",
-          "lon": -13.75,
-          "lat": 49.75,
-          "strength_c_per_100km": 7.52,
-          "change_6h_c": 4.6,
-          "rain_6h_mm": 11.2,
-          "tangent": [
-            0.7188,
-            -0.6953
-          ],
-          "normal": [
-            -0.6953,
-            -0.7188
-          ],
-          "confidence": "indice frontal, non validé comme front de surface"
-        },
-        {
-          "kind": "froid",
-          "lon": 7.75,
-          "lat": 56.25,
-          "strength_c_per_100km": 3.68,
-          "change_6h_c": -1.6,
-          "rain_6h_mm": 8.8,
-          "tangent": [
-            -0.1225,
-            0.9925
-          ],
-          "normal": [
-            0.9925,
-            0.1225
-          ],
-          "confidence": "indice frontal, non validé comme front de surface"
-        }
-      ],
       "t850_shading": {
         "enabled": true,
         "level_hpa": 850,
@@ -301,7 +196,6 @@
         ],
         "description": "Température à 850 hPa modélisée, pas température au sol"
       },
-      "frontal_method": "Thermal gradient / 6h tendency / rain (experimental), only J+3/J+7",
       "risk_scope": "France et secteurs proches, domaine rectangulaire terre + mer",
       "method": "Vent moyen 10m, pluie/neige 6h ; neige hors relief selon altitudes GLO-90 ; pas une vigilance officielle."
     },
@@ -384,23 +278,6 @@
           "kind": "pluie_forte"
         }
       ],
-      "air_masses": [
-        {
-          "lon": -22.0,
-          "lat": 54.0,
-          "temp_850_c": -0.6,
-          "label": "Air frais à 850 hPa",
-          "basis": "ECMWF t 850hPa (moyenne locale)"
-        },
-        {
-          "lon": 20.0,
-          "lat": 51.0,
-          "temp_850_c": 2.8,
-          "label": "Air frais à 850 hPa",
-          "basis": "ECMWF t 850hPa (moyenne locale)"
-        }
-      ],
-      "frontal_zones": [],
       "t850_shading": {
         "enabled": true,
         "level_hpa": 850,
@@ -411,7 +288,6 @@
         ],
         "description": "Température à 850 hPa modélisée, pas température au sol"
       },
-      "frontal_method": "Thermal gradient / 6h tendency / rain (experimental), only J+3/J+7",
       "risk_scope": "France et secteurs proches, domaine rectangulaire terre + mer",
       "method": "Vent moyen 10m, pluie/neige 6h ; neige hors relief selon altitudes GLO-90 ; pas une vigilance officielle."
     },
@@ -499,23 +375,6 @@
           "kind": "pluie_forte"
         }
       ],
-      "air_masses": [
-        {
-          "lon": -22.0,
-          "lat": 54.0,
-          "temp_850_c": -4.0,
-          "label": "Air froid à 850 hPa",
-          "basis": "ECMWF t 850hPa (moyenne locale)"
-        },
-        {
-          "lon": 20.0,
-          "lat": 51.0,
-          "temp_850_c": 9.0,
-          "label": "Air doux à 850 hPa",
-          "basis": "ECMWF t 850hPa (moyenne locale)"
-        }
-      ],
-      "frontal_zones": [],
       "t850_shading": {
         "enabled": true,
         "level_hpa": 850,
@@ -526,7 +385,6 @@
         ],
         "description": "Température à 850 hPa modélisée, pas température au sol"
       },
-      "frontal_method": "Thermal gradient / 6h tendency / rain (experimental), only J+3/J+7",
       "risk_scope": "France et secteurs proches, domaine rectangulaire terre + mer",
       "method": "Vent moyen 10m, pluie/neige 6h ; neige hors relief selon altitudes GLO-90 ; pas une vigilance officielle."
     }
