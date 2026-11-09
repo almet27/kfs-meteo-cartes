@@ -22,10 +22,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patheffects as pe
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
-from kfs_synoptic_overlays import (
-    premium_pictogram, t850_celsius, air_masses, frontal_candidates,
-    draw_air_masses, draw_frontal_candidates,
-)
+from kfs_synoptic_overlays import premium_pictogram, t850_celsius
 from cartopy.io import shapereader
 from shapely.geometry import Point
 from shapely.ops import unary_union
@@ -246,7 +243,7 @@ def weather_pictogram(kind):
     """Premium independent icon, no background circle."""
     return premium_pictogram(kind)
 
-def render(id,run,fields,marks,masses,fronts):
+def render(id,run,fields,marks):
     lon,lat=fields["msl"][0],fields["msl"][1]
     msl=fields["msl"][2]/100.0
     gh=fields["gh"][2]/10.0
@@ -311,10 +308,6 @@ def render(id,run,fields,marks,masses,fronts):
     for a in labels:a.set_path_effects([pe.Stroke(linewidth=2.5,foreground="#173147"),pe.Normal()])
     ax.coastlines("110m",linewidth=.85,color="#EFF6F9",zorder=10)
     ax.add_feature(cfeature.BORDERS,linewidth=.56,edgecolor="#E2EFF5",alpha=.82,zorder=10)
-    # Derived from numerical temperature gradients + 6-hour tendency + precipitation.
-    # Not official analysed fronts; long-range maps intentionally omit individual fronts.
-    draw_frontal_candidates(ax,fronts)
-    draw_air_masses(ax,masses)
     for mark in marks:
         x,y=mark["lon"],mark["lat"]
         icon=weather_pictogram(mark["kind"])
@@ -342,8 +335,6 @@ def calculate(id,step,model,atlas,now):
         f[key]=single(client,model,step,run,param,var,lev)
     for key,param,var in (("tp_prev","tp","tp"),("sf_prev","sf","sf")):
         f[key]=single(client,model,step-6,run,param,var)
-    if step<=168:
-        f["t850_prev"]=single(client,model,step-6,run,"t","t",850)
     verify(f["msl"],list(f.values()))
     x,y=f["msl"][0],f["msl"][1]
     wind=np.hypot(f["u"][2],f["v"][2])*3.6
@@ -386,22 +377,14 @@ def calculate(id,step,model,atlas,now):
     for p in sorted(markers,key=lambda p:p["value"],reverse=True):
         if all(distance_km(p["lon"],p["lat"],q["lon"],q["lat"])>=125 for q in selected):
             selected.append(p)
-    t850=t850_celsius(f["t850"][2],f["t850"][4])
-    masses=air_masses(x,y,t850)
-    fronts=[]
-    if step<=168:
-        previous=t850_celsius(f["t850_prev"][2],f["t850_prev"][4])
-        fronts=frontal_candidates(x,y,t850,previous,rain,step)
     f["rain6h"]=(x,y,rain,recorded,"mm")
-    background=render(id,recorded,f,selected,masses,fronts)
+    background=render(id,recorded,f,selected)
     return {"id":id,"step_h":step,"model":model,"run_utc":recorded,
             "valid_utc":(run+timedelta(hours=step)).isoformat(),
             "background_path":str(background),"risks":risks,"markers":selected,
-            "air_masses":masses,"frontal_zones":fronts,
             "t850_shading":{"enabled":True,"level_hpa":850,"unit":"°C",
                             "fixed_scale_c":[-20,20],
                             "description":"Température à 850 hPa modélisée, pas température au sol"},
-            "frontal_method":"Thermal gradient / 6h tendency / rain (experimental), only J+3/J+7",
             "risk_scope":"France et secteurs proches, domaine rectangulaire terre + mer",
             "method":"Vent moyen 10m, pluie/neige 6h ; neige hors relief selon altitudes GLO-90 ; pas une vigilance officielle."}
 
