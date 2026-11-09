@@ -16,11 +16,17 @@ async function kfsStratoRead(path, version, format) {
         signal: AbortSignal.timeout(format === "png" ? 18000 : 11000)
       });
       if (!res.ok) throw Error("HTTP " + res.status);
-      if (format === "json") {
+      if (format === "json" || format === "signals") {
         const data = await res.json();
-        if (!data || data.model !== "ifs" ||
-            !data.run_utc || !data.maps || !data.maps["10"])
+        if (format === "signals") {
+          if (!data || data.model !== "ifs" || !data.run_utc ||
+              data.chart !== "strato/ifs-ssw-signals.png" ||
+              !data.diagnostic || !data.series)
+            throw Error("Diagnostic stratwarm indisponible ou non conforme");
+        } else if (!data || data.model !== "ifs" ||
+            !data.run_utc || !data.maps || !data.maps["10"]) {
           throw Error("Catalogue incomplet ou non conforme");
+        }
         return data;
       }
       const bytes = await res.arrayBuffer();
@@ -109,7 +115,8 @@ async function kfsStratoRegister(env) {
           {name: "Vortex polaire / vents", value: "vortex"},
           {name: "Température stratosphérique", value: "temperature"},
           {name: "Vent zonal · courbe du niveau sélectionné", value: "vent_zonal"},
-          {name: "Vent zonal · comparaison 10/50/100 hPa", value: "vent_zonal_comparaison"}
+          {name: "Vent zonal · comparaison 10/50/100 hPa", value: "vent_zonal_comparaison"},
+          {name: "Signaux de stratwarm · vent / T polaire / ondes", value: "signaux_stratwarm"}
         ]
       },
       {
@@ -133,7 +140,7 @@ async function kfsStratoRegister(env) {
   const existingOptions = existing?.options || [];
   const carte = existingOptions.find(o => o.name === "carte");
   const choices = carte?.choices?.map(c => c.value) || [];
-  if (existing && ["vent_zonal", "vent_zonal_comparaison"].every(x => choices.includes(x)))
+  if (existing && ["vent_zonal", "vent_zonal_comparaison", "signaux_stratwarm"].every(x => choices.includes(x)))
     return {registered: true, changed: false};
   const url = existing ? endpoint + "/" + existing.id : endpoint;
   const post = await fetch(url, {
@@ -177,7 +184,7 @@ async function kfsStratoComplete(interaction, level, kind, hours) {
   try {
     const isZonalChart = ["vent_zonal", "vent_zonal_comparaison"].includes(kind);
     if (!KFS_STRATO_LEVELS.includes(level) ||
-        !["temperature", "vortex", "vent_zonal", "vent_zonal_comparaison"].includes(kind) ||
+        !["temperature", "vortex", "vent_zonal", "vent_zonal_comparaison", "signaux_stratwarm"].includes(kind) ||
         !KFS_STRATO_HOURS.includes(hours))
       throw Error("Paramètres /strato invalides");
     const m = await kfsStratoMetadata(isZonalChart);
@@ -185,6 +192,50 @@ async function kfsStratoComplete(interaction, level, kind, hours) {
     if (m.model !== "ifs" || !Number.isFinite(stamp) ||
         stamp > Date.now() + 3600000 || Date.now() - stamp > 48 * 3600000)
       throw Error("Run stratosphérique absent, ancien ou non vérifié.");
+    if (kind === "signaux_stratwarm") {
+      const data = await kfsStratoRead("strato/signals.json",
+        Math.floor(Date.now() / 300000), "signals");
+      if (data.run_utc !== m.run_utc)
+        throw Error("Le diagnostic stratwarm attend encore les champs du dernier run.");
+      const diagnosis = data.diagnostic;
+      const series = data.series || {};
+      if (!["inversion_prevue", "signaux_convergents", "surveillance",
+             "pas_de_signal_marque"].includes(diagnosis.status) ||
+          Object.keys(series.temperature_cap_10hpa_60_90n_c || {}).length < 12)
+        throw Error("Indices de réchauffement polaire incomplets.");
+      const chart = await kfsStratoRead(data.chart, data.run_utc, "png");
+      const fmt = value => Number.isFinite(Number(value)) ?
+        (Number(value) > 0 ? "+" : "") + Number(value).toFixed(1) : "indisponible";
+      const inversions = (diagnosis.wind_inversion_hours || [])
+        .filter(h => Number.isInteger(h) && h >= 24 && h <= 360);
+      const firstInverse = inversions.length ? "J+" + inversions[0] / 24 : "aucune";
+      const warming = diagnosis.warming_max_5d_k;
+      const decel = diagnosis.deceleration_max_5d_ms;
+      const wave = series.eddy_heat_flux_100hpa_60n_kms || {};
+      const positiveFluxDays = Object.values(wave).filter(v => Number(v)>0).length;
+      let content = "🌀 **KFS MÉTÉO — SIGNAUX PRÉCURSEURS DE STRATWARM**\n" +
+        "📡 **ECMWF IFS** · hémisphère Nord · **J+1 à J+15**\n" +
+        "🔄 Run **" + new Date(stamp).toISOString().slice(0,16).replace("T"," ") +
+        " UTC**\n" +
+        "🔎 **" + String(diagnosis.label).slice(0,100) + "**\n" +
+        "🌬️ Vent zonal 10 hPa / 60°N : inversion prévue **" + firstInverse + "**\n" +
+        "📉 Décélération maximale sur 5 j : **" + fmt(decel) + " m/s**\n" +
+        "🌡️ Hausse maximale de T polaire (60–90°N) sur 5 j : **" +
+        fmt(warming) + " °C**\n" +
+        "〰️ Activité ondulatoire 100 hPa : flux v′T′ positif sur " +
+        positiveFluxDays + "/15 échéances calculées (sans seuil climatologique).\n" +
+        "⚠️ **Ce sont des signaux issus d'un seul modèle, pas une probabilité SSW.** " +
+        "Une inversion prévue ne confirme pas un événement observé. " +
+        "Le refroidissement de l'Europe n'en découle pas automatiquement.\n" +
+        "*Repères d'affichage : +10 °C/5 j ou −10 m/s/5 j ; " +
+        "non homologués comme critères de SSW. Source : ECMWF Open Data.*";
+      await kfsStratoEdit(interaction, {
+        content, allowed_mentions:{parse:[]}
+      }, {
+        name: "kfs-strato-signaux-stratwarm.png", bytes:chart
+      });
+      return;
+    }
     if (isZonalChart) {
       const compare = kind === "vent_zonal_comparaison";
       const key = compare ? "comparison" : String(level);
@@ -218,6 +269,16 @@ async function kfsStratoComplete(interaction, level, kind, hours) {
         if (points.some(([, val]) => val < 0))
           content += " · inversion prévue à au moins une échéance";
       }
+      const zonal10 = Object.entries(valuesByLevel["10"] || {})
+        .map(([hour,val])=>({hour:Number(hour),value:Number(val)}))
+        .filter(p=>Number.isFinite(p.hour)&&Number.isFinite(p.value));
+      const earlyInversions = zonal10.filter(p=>p.value < 0).sort((a,b)=>a.hour-b.hour);
+      if (earlyInversions.length)
+        content += "\n🔎 **Signal stratwarm :** inversion à 10 hPa prévue dès J+" +
+          earlyInversions[0].hour/24 + " ; vérifier aussi le réchauffement polaire et les ondes.";
+      else
+        content += "\n🔎 **Signal stratwarm :** surveiller tout ralentissement rapide " +
+          "du 10 hPa, puis le réchauffement polaire.";
       content += "\n⚠️ Une inversion prévue isolée ne confirme pas " +
         "à elle seule un réchauffement stratosphérique majeur (SSW)." +
         "\n*ECMWF Open Data · CC BY 4.0 · courbes issues des champs réels du modèle.*";
