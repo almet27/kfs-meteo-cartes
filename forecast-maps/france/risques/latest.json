@@ -1,6 +1,18 @@
 {
   "schema": 1,
-  "generated_utc": "2026-11-09T14:31:56.598563+00:00",
+  "generated_utc": "2026-11-09T14:50:07.473441+00:00",
+  "model_runs": {
+    "arome": {
+      "run_utc": "2026-11-09T09:00:00+00:00",
+      "available_utc": "2026-11-09T13:21:54+00:00",
+      "model_code": "meteofrance_arome_france0025"
+    },
+    "icon_eu": {
+      "run_utc": "2026-11-09T09:00:00+00:00",
+      "available_utc": "2026-11-09T11:56:10+00:00",
+      "model_code": "dwd_icon_eu"
+    }
+  },
   "source": "Open-Meteo, modèles natifs ARÔME France et DWD ICON Europe",
   "spatial_sampling": "Points terrestres esp. 0.38° lon / 0.32° lat ; pas une grille native",
   "not_official_warning": true,
