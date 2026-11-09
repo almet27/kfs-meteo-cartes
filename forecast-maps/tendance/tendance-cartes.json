@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "status": "illustrative_model_maps",
-  "generated_utc": "2026-11-09T09:43:54.220888+00:00",
-  "source_generated_utc": "2026-11-09T09:42:32.693080+00:00",
+  "generated_utc": "2026-11-09T09:47:04.875692+00:00",
+  "source_generated_utc": "2026-11-09T09:46:09.780034+00:00",
   "charts_generated_utc": "2026-11-09T08:44:12.932477+00:00",
   "source": "ECMWF Open Data (CC BY 4.0)",
   "not_weekly_anomalies": true,
@@ -12,7 +12,7 @@
       "step_h": 72,
       "path": "forecast-maps/tendance/tendance-carte-j3.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j3.png",
-      "size_bytes": 322818,
+      "size_bytes": 323957,
       "run_utc": {
         "ifs": "2026-11-09T00:00Z",
         "aifs": "2026-11-09T00:00Z"
@@ -123,35 +123,35 @@
       "frontal_zones": [
         {
           "kind": "chaud",
-          "lon": -3.75,
-          "lat": 41.0,
-          "strength_c_per_100km": 5.61,
-          "change_6h_c": 3.2,
-          "rain_6h_mm": 20.0,
+          "lon": 25.0,
+          "lat": 48.0,
+          "strength_c_per_100km": 7.43,
+          "change_6h_c": 2.6,
+          "rain_6h_mm": 4.4,
           "tangent": [
-            -0.6024,
-            -0.7982
+            -0.4242,
+            0.9056
           ],
           "normal": [
-            -0.7982,
-            0.6024
+            0.9056,
+            0.4242
           ],
           "confidence": "indice frontal, non validé comme front de surface"
         },
         {
           "kind": "froid",
-          "lon": 1.5,
-          "lat": 42.75,
-          "strength_c_per_100km": 4.87,
-          "change_6h_c": -2.1,
-          "rain_6h_mm": 4.9,
+          "lon": -13.25,
+          "lat": 50.0,
+          "strength_c_per_100km": 3.23,
+          "change_6h_c": -1.6,
+          "rain_6h_mm": 2.2,
           "tangent": [
-            -0.9257,
-            0.3782
+            0.9762,
+            0.217
           ],
           "normal": [
-            0.3782,
-            0.9257
+            0.217,
+            -0.9762
           ],
           "confidence": "indice frontal, non validé comme front de surface"
         }
