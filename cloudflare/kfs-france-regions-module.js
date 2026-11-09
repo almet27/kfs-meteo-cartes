@@ -255,7 +255,9 @@ function kfsFranceRegionalRender(features,depts,samples,zone,metric,subtitle){
   if(a.x<P.x||a.x+w>P.x+P.w||a.y<P.y||a.y+h>P.y+P.h)continue;
   if(occupied.some(t=>!(a.x>t.x+t.w+6||a.x+a.w+6<t.x||a.y>t.y+t.h+6||a.y+a.h+6<t.y)))continue;
   if(shown.some(q=>Math.hypot(x-q[0],y-q[1])<105))continue;
-  rect(a.x,a.y,w,h,[9,30,50]);txt(label,a.x+7,a.y+5,2,[247,251,255]);shown.push([x,y]);
+  rect(a.x,a.y,w,h,[9,30,50]);txt(label,a.x+7,a.y+5,2,[247,251,255]);
+  occupied.push(a); // Réserver aussi la boîte de chaque valeur, pas seulement celle des villes.
+  shown.push([x,y]);
   if(shown.length>=maxMarks)break;
  }
  const zoneName=KFS_PROBA_REGIONS.find(r=>r[0]===zone)?.[1]||"REGION";
@@ -268,16 +270,27 @@ function kfsFranceRegionalRender(features,depts,samples,zone,metric,subtitle){
    kfsFranceWmoIcon(p.weatherCode)&&features.some(f=>kfsProbaInFeature(p.lon,p.lat,f)));
  const positions=[];
  const maximum=zone==="11"||zone==="94"?3:5;
- // Varier géographiquement les pictogrammes, sans surreprésenter les fortes pluies.
+ // Déplacer légèrement chaque pictogramme autour de son point météo.
+ // Les chiffres ET les noms des villes ont priorité : leurs rectangles sont réservés.
+ // Contrôle de collision rectangle contre rectangle avec une marge de 12 pixels.
+ const offsets=[[0,0],[0,-46],[46,-12],[-46,-12],[0,47],[46,38],[-46,38],
+                [70,-30],[-70,-30]];
+ const free=(r,q,pad=0)=>r.x>=q.x+q.w+pad||r.x+r.w+pad<=q.x||
+    r.y>=q.y+q.h+pad||r.y+r.h+pad<=q.y;
  for(const p of [...weatherPoints].sort((a,b)=>b.lat-a.lat||a.lon-b.lon)){
-  const x=xx(p.lon),y=yy(p.lat),kind=kfsFranceWmoIcon(p.weatherCode);
-  if(x<P.x+27||y<P.y+27||x>P.x+P.w-27||y>P.y+P.h-30)continue;
-  const box={x:x-21,y:y-22,w:43,h:51};
-  if(occupied.some(q=>!(box.x>q.x+q.w+12||box.x+box.w+12<q.x||
-    box.y>q.y+q.h+12||box.y+box.h+12<q.y)))continue;
-  if(cityPlaces.some(c=>Math.hypot(c.x-x,c.y-y)<55))continue;
-  if(positions.some(q=>Math.hypot(q.x-x,q.y-y)<126))continue;
-  positions.push({x,y,kind});
+  const sx=xx(p.lon),sy=yy(p.lat),kind=kfsFranceWmoIcon(p.weatherCode);
+  for(const [ox,oy] of offsets){
+   const x=sx+ox,y=sy+oy;
+   const box={x:x-23,y:y-24,w:46,h:54};
+   if(box.x<P.x+3||box.y<P.y+3||box.x+box.w>P.x+P.w-3||
+     box.y+box.h>P.y+P.h-3)continue;
+   if(!features.some(f=>kfsProbaInFeature(lon(x),lat(y),f)))continue;
+   if(occupied.some(q=>!free(box,q,13)))continue;
+   if(cityPlaces.some(c=>Math.hypot(c.x-x,c.y-y)<48))continue;
+   if(positions.some(q=>Math.hypot(q.x-x,q.y-y)<115))continue;
+   positions.push({x,y,kind});
+   break;
+  }
   if(positions.length>=maximum)break;
  }
  for(const p of positions)icon(p.x,p.y,p.kind);
