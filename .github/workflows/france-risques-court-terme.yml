@@ -1,0 +1,62 @@
+name: KFS France - risques orage neige ARÔME ICON (48 h)
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - scripts/generate_france_shortterm_risks.py
+      - .github/workflows/france-risques-court-terme.yml
+  schedule:
+    # ARÔME et ICON EU: actualisation toutes les 3 h; GitHub peut décaler les cron.
+    - cron: '21 0,3,6,9,12,15,18,21 * * *'
+permissions:
+  contents: write
+concurrency:
+  group: kfs-france-risques-48h
+  cancel-in-progress: false
+jobs:
+  cartes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Synchroniser la dernière version du dépôt
+        run: |
+          git fetch origin main
+          git checkout -B main origin/main
+      - name: Installer Cartopy et dépendances
+        run: |
+          python -m pip install 'numpy>=1.26,<3' 'matplotlib>=3.8' 'cartopy>=0.23'
+      - name: Vérifier la syntaxe
+        run: python -m py_compile scripts/generate_france_shortterm_risks.py
+      - name: Calculer les vrais champs ARÔME et ICON et produire les cartes
+        run: python scripts/generate_france_shortterm_risks.py
+      - name: Conserver une archive pour les diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: france-arome-icon-orage-neige-48h
+          path: |
+            forecast-maps/france/risques/latest.json
+            forecast-maps/france/risques/*.png
+          retention-days: 3
+          if-no-files-found: warn
+      - name: Publier les nouvelles cartes ensemble
+        if: success()
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add forecast-maps/france/risques/
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Actualiser risques orage neige 48 h ARÔME ICON'
+          for attempt in 1 2 3 4 5; do
+            if ! git pull --rebase origin main; then
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:main; then exit 0; fi
+            sleep 5
+          done
+          exit 1
