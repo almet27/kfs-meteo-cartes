@@ -40,6 +40,42 @@ async function kfsStratoRead(path, version, format) {
     errors.join(" ; ").slice(0, 310));
 }
 
+// En cas de catalogue Raw obsolète après une publication, consulte le dernier
+// contenu via l'API GitHub. Uniquement pour les nouveaux graphiques, jamais
+// pour les cartes ordinaires : on préserve le quota GitHub.
+async function kfsStratoMetadata(requireWindCharts=false) {
+  const m = await kfsStratoRead("strato/metadata.json",
+    Math.floor(Date.now() / 300000), "json");
+  if (!requireWindCharts ||
+      (m.zonal_wind_charts?.comparison &&
+       m.zonal_wind_series_60n?.["10"]))
+    return m;
+  const endpoint = "https://api.github.com/repos/almet27/kfs-meteo-cartes" +
+    "/contents/strato/metadata.json?ref=main";
+  const res = await fetch(endpoint, {
+    headers: {
+      "Accept": "application/vnd.github+json",
+      "User-Agent": "KFS-Meteo-Strato"
+    },
+    cache: "no-store",
+    signal: AbortSignal.timeout(12000)
+  });
+  if (!res.ok)
+    throw Error("Ancien catalogue en cache ; source GitHub à jour indisponible (HTTP " +
+      res.status + ").");
+  const payload = await res.json();
+  if (payload.encoding !== "base64" || !payload.content)
+    throw Error("Catalogue GitHub API invalide.");
+  const bytes = Uint8Array.from(
+    atob(payload.content.replace(/\s/g, "")), c => c.charCodeAt(0));
+  const fresh = JSON.parse(new TextDecoder().decode(bytes));
+  if (!fresh.zonal_wind_charts?.comparison ||
+      !fresh.zonal_wind_series_60n?.["10"] ||
+      fresh.model !== "ifs")
+    throw Error("Le catalogue actuel n'inclut pas encore les courbes zonales.");
+  return fresh;
+}
+
 const KFS_STRATO_LEVELS = [10, 50, 100];
 const KFS_STRATO_HOURS = [24, 72, 120, 168, 240, 360];
 let KFS_STRATO_SYNCED = false;
@@ -144,7 +180,7 @@ async function kfsStratoComplete(interaction, level, kind, hours) {
         !["temperature", "vortex", "vent_zonal", "vent_zonal_comparaison"].includes(kind) ||
         !KFS_STRATO_HOURS.includes(hours))
       throw Error("Paramètres /strato invalides");
-    const m = await kfsStratoRead("strato/metadata.json", Math.floor(Date.now() / 300000), "json");
+    const m = await kfsStratoMetadata(isZonalChart);
     const stamp = Date.parse(m.run_utc || "");
     if (m.model !== "ifs" || !Number.isFinite(stamp) ||
         stamp > Date.now() + 3600000 || Date.now() - stamp > 48 * 3600000)
