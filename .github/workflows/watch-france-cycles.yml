@@ -7,8 +7,12 @@ on:
       - 'scripts/check_france_cycles.py'
       - 'scripts/check_europe_cycles.py'
       - '.github/workflows/watch-france-cycles.yml'
+  workflow_run:
+    workflows:
+      - 'Publier radar RainViewer pour Discord'
+    types: [completed]
   schedule:
-    - cron: '02,07,12,17,22,27,32,37,42,47,52,57 * * * *' # contrôle toutes les 5 min, déclenchement à disponibilité
+    - cron: '2-59/5 * * * *' # secours : contrôle toutes les 5 minutes
 
 permissions:
   contents: write
@@ -20,6 +24,7 @@ concurrency:
 
 jobs:
   verifier:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
