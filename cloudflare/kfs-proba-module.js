@@ -289,11 +289,43 @@ function kfsProbaRender(features,samples,zone,type,departments=[]){
    }
   }
  }
+ // Contours départementaux fins ; dessinés sous le contour régional.
+ if(zone!=="FR")for(const d of departments)for(const ring of kfsProbaRings(d))
+  for(let i=1;i<ring.length;i++)
+   line(lonToX(ring[i-1][0]),latToY(ring[i-1][1]),
+        lonToX(ring[i][0]),latToY(ring[i][1]),[139,182,211]);
  for(const rr of rings)for(const ring of rr)for(let i=1;i<ring.length;i++){
   line(ring[i-1][0],ring[i-1][1],ring[i][0],ring[i][1],[219,231,241]);
  }
  // Police pixel 5×7, labels intégrés dans l'image pour la lecture sur Discord.
  const glyphs={
+  "A":["01110","10001","10001","11111","10001","10001","10001"],
+  "B":["11110","10001","10001","11110","10001","10001","11110"],
+  "C":["01111","10000","10000","10000","10000","10000","01111"],
+  "D":["11110","10001","10001","10001","10001","10001","11110"],
+  "E":["11111","10000","10000","11110","10000","10000","11111"],
+  "F":["11111","10000","10000","11110","10000","10000","10000"],
+  "G":["01111","10000","10000","10111","10001","10001","01110"],
+  "H":["10001","10001","10001","11111","10001","10001","10001"],
+  "I":["01110","00100","00100","00100","00100","00100","01110"],
+  "J":["00111","00010","00010","00010","10010","10010","01100"],
+  "K":["10001","10010","10100","11000","10100","10010","10001"],
+  "L":["10000","10000","10000","10000","10000","10000","11111"],
+  "M":["10001","11011","10101","10101","10001","10001","10001"],
+  "N":["10001","11001","10101","10011","10001","10001","10001"],
+  "O":["01110","10001","10001","10001","10001","10001","01110"],
+  "P":["11110","10001","10001","11110","10000","10000","10000"],
+  "Q":["01110","10001","10001","10001","10101","10010","01101"],
+  "R":["11110","10001","10001","11110","10100","10010","10001"],
+  "S":["01111","10000","10000","01110","00001","00001","11110"],
+  "T":["11111","00100","00100","00100","00100","00100","00100"],
+  "U":["10001","10001","10001","10001","10001","10001","01110"],
+  "V":["10001","10001","10001","10001","10001","01010","00100"],
+  "W":["10001","10001","10001","10101","10101","10101","01010"],
+  "X":["10001","10001","01010","00100","01010","10001","10001"],
+  "Y":["10001","10001","01010","00100","00100","00100","00100"],
+  "Z":["11111","00001","00010","00100","01000","10000","11111"],
+  " ":["00000","00000","00000","00000","00000","00000","00000"],
   "0":["01110","10001","10011","10101","11001","10001","01110"],
   "1":["00100","01100","00100","00100","00100","00100","01110"],
   "2":["01110","10001","00001","00010","00100","01000","11111"],
@@ -331,7 +363,7 @@ function kfsProbaRender(features,samples,zone,type,departments=[]){
  for(const p of sorted){
   const x=lonToX(p.lon),y=latToY(p.lat);
   if(x<P.x+15||x>P.x+P.w-60||y<P.y+22||y>P.y+P.h-24)continue;
-  if(marked.some(q=>Math.abs(q.x-x)<107&&Math.abs(q.y-y)<55))continue;
+  if(marked.some(q=>Math.abs(q.x-x)<112&&Math.abs(q.y-y)<62))continue;
   marked.push({x,y});
   const score=Math.round(p.value),unit=KFS_PROBA_SCALE[type].unit;
   const qty=(type==="vent"?Math.round(p.amount):Math.round(p.amount*10)/10)+unit;
@@ -342,6 +374,31 @@ function kfsProbaRender(features,samples,zone,type,departments=[]){
   txt(proba,bx+7,by+3,2,score>=50?[255,225,133]:[255,255,255]);
   txt(qty,bx+7,by+21,2,[134,220,255]);
   if(marked.length>=maxMarks)break;
+ }
+
+ // Grandes villes : marqueurs géoréférencés, noms non superposés aux chiffres.
+ if(zone!=="FR"){
+  const boxes=[];
+  for(const [name,lon,lat] of (KFS_PROBA_CITIES[zone]||[])){
+   if(!features.some(f=>kfsProbaInFeature(lon,lat,f)))continue;
+   const x=lonToX(lon),y=latToY(lat);
+   if(x<P.x||x>P.x+P.w||y<P.y||y>P.y+P.h)continue;
+   rect(Math.round(x)-2,Math.round(y)-2,5,5,[10,27,46]);
+   rect(Math.round(x)-1,Math.round(y)-1,3,3,[252,253,255]);
+   const label=name.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase();
+   const lw=label.length*12+10,lh=21;
+   const positions=[[x+9,y-9],[x-lw-9,y-9],[x-lw/2,y-27],[x-lw/2,y+8],[x+9,y+11],[x-lw-9,y+11]];
+   for(const [xx,yy] of positions){
+    const bx=Math.round(xx),by=Math.round(yy);
+    if(bx<P.x||by<P.y||bx+lw>P.x+P.w||by+lh>P.y+P.h)continue;
+    if(marked.some(q=>Math.abs(q.x-(bx+lw/2))<lw/2+57&&Math.abs(q.y-(by+lh/2))<lh/2+26))continue;
+    if(boxes.some(q=>!(bx+lw+4<q.x||bx>q.x+q.w+4||by+lh+4<q.y||by>q.y+q.h+4)))continue;
+    rect(bx,by,lw,lh,[9,25,43]);
+    txt(label,bx+5,by+4,2,[244,249,255]);
+    boxes.push({x:bx,y:by,w:lw,h:lh});
+    break;
+   }
+  }
  }
  // Légende des quantités en unités physiques propres au phénomène.
  const legend=KFS_PROBA_SCALE[type],ly=679,left=104,right=794;
