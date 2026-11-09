@@ -416,7 +416,7 @@ async function kfsFranceRegionHandle(interaction,model,metric,rawDay,rawHour,zon
   if(!Number.isInteger(day)||day<0||day>5)throw Error("Choisis J+0 à J+5.");
   const risk=metric==="orage"||metric==="neige_sol";
   const name=KFS_PROBA_REGIONS.find(r=>r[0]===zone)[1];
-  const key="https://kfs-meteo-ia.alain-leprevost.workers.dev/__cache/france-regions/v2-icons/"+
+  const key="https://kfs-meteo-ia.alain-leprevost.workers.dev/__cache/france-regions/v3-nooverlap/"+
       encodeURIComponent([zone,model,metric,risk?hour:day].join("-"));
   let bytes=null,record=null;
   try{
