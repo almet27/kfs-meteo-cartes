@@ -1,3 +1,37 @@
+# /climato — version 2 déployée (9 novembre 2026)
+
+Le Worker Cloudflare `kfs-meteo-ia` a été mis à jour, avec conservation des bindings. La **disponibilité effective dans le menu Discord reste à confirmer** ; le Worker enregistre la commande lors d'une requête entrante. Une GitHub Action `.github/workflows/kfs-climato-sync.yml` déclenche une requête publique après son ajout au dépôt.
+
+## Exemples
+- `/climato ville: Évreux` : bilan observé de la dernière année complète (2025).
+- `/climato ville: Évreux annee: 2024` : températures, date la plus chaude/la plus froide, gel/chaleur, pluie, rafales et dates.
+- `/climato ville: Rouen annee: 2022 mois: juillet rubrique: complet` : bilan de juillet 2022.
+- `/climato ville: Paris annee: 2025 rubrique: mensuel` : tableau des 12 mois.
+- `/climato ville: Bourth rubrique: normales` : normales et climatologie de référence.
+- `/climato ville: Évreux rubrique: records` : records historiques disponibles.
+
+## Signification des indicateurs
+Les jours `Tmax≥30°C`, `≥35°C`, `≥40°C`, `Tmin≤−5°C`, `≤−10°C` et les nuits tropicales `Tmin≥20°C` sont calculés à partir des relevés quotidiens effectivement disponibles. Les **séquences chaudes** sont un indicateur *non officiel* : au moins 3 jours consécutifs avec Tmax ≥ 30 °C et Tmin ≥ 20 °C ; elles ne constituent pas un décompte officiel des jours de vigilance canicule, qui dépend de seuils locaux.
+
+Les rafales sont converties des m/s en km/h. Les précipitations sont en mm. L'heure éventuelle de rafale est indiquée en UTC. Les jours sans donnée ne comptent pas comme zéro ; les effectifs valides sont affichés.
+
+## Sources
+- Données quotidiennes, métropole et outre-mer : https://www.data.gouv.fr/datasets/donnees-climatologiques-de-base-quotidiennes
+- Fiches climatologiques : https://www.data.gouv.fr/datasets/fiches-climatologiques
+- Module additionnel : [kfs-climato-observations.js](./kfs-climato-observations.js)
+
+## Limitations
+- Les fichiers `1950–2024` par département sont volumineux : la première consultation d'une année ancienne peut être plus lente. Cache des relevés par station/année.
+- Les dates de début/fin de séries et les paramètres disponibles varient d'une station à l'autre. Aucun chiffre n'est extrapolé.
+- Une commune sans station de mesures sera rattachée à une station proche, explicitement nommée.
+- Les fichiers quotidiens et les rubriques ne sont pas encore tous validés de bout en bout dans Discord.
+- La période actuelle de distribution des archives est 2025–2026 ; sa dénomination devra être ajustée lors du changement d'année.
+- Le jeu `RR-T-Vent` ne couvre pas tous les paramètres optionnels (neige, humidité, ensoleillement) ; ceux-ci ne sont pas présentés comme observés s'ils ne sont pas présents.
+
+---
+
+## Documentation précédente / instructions manuelles
+
 # KFS MÉTÉO — Installation de la commande `/climato`
 
 ## État
