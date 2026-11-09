@@ -82,7 +82,10 @@ def diagnose(wind, series):
     fastwarm=bool(warm and warm[0]>=10)
     fastslow=bool(slow and slow[0]<=-10)
     if invert:
-        code, title="inversion_prevue","Inversion zonale prévue à 10 hPa"
+        if len(invert)<=3 and not fastwarm:
+            code, title="inversion_prevue","Inversion temporaire prévue, sans réchauffement polaire rapide"
+        else:
+            code, title="inversion_prevue","Inversion zonale prévue à 10 hPa"
     elif fastwarm and fastslow:
         code,title="signaux_convergents","Ralentissement et réchauffement polaire prévus"
     elif fastwarm or fastslow or min(u.values())<=5:
@@ -136,7 +139,7 @@ def render(wind, series, diagnostic, run):
                  color="#eaf3fc",fontsize=13,weight="bold")
     ax.set_ylabel("Température (°C)",color="#bcd5ec")
     if diagnostic["warming_max_5d_k"] is not None:
-        ax.text(.985,.91,"Hausse max/5 j : %+.1f °C"%diagnostic["warming_max_5d_k"],
+        ax.text(.985,.91,"Variation maximale de T sur 5 j : %+.1f °C"%diagnostic["warming_max_5d_k"],
                 transform=ax.transAxes,ha="right",va="top",
                 color="#ffd0ba",fontsize=10)
     ax=axes[2]
@@ -186,7 +189,21 @@ def main():
                 "gradient_pole_minus_60n_10hpa_k",
                 "eddy_heat_flux_100hpa_60n_kms"
                )):
-                print("SSW SIGNALS : run déjà calculé",source["run_utc"])
+                if old.get("algorithm_version")==2:
+                    print("SSW SIGNALS : run déjà calculé",source["run_utc"])
+                    return
+                # Refaire le graphique depuis les valeurs brutes du même run :
+                # aucune requête météo supplémentaire après un changement de présentation.
+                existing={key:{int(h):float(v) for h,v in values.items()}
+                          for key,values in old["series"].items()}
+                diagnostic=diagnose(wind,existing)
+                render(wind,existing,diagnostic,run)
+                old["diagnostic"]=diagnostic
+                old["algorithm_version"]=2
+                old["generated_utc"]=datetime.now(timezone.utc).isoformat()
+                OUT.write_text(json.dumps(old,ensure_ascii=False,indent=2)+"\n",
+                               encoding="utf-8")
+                print("SSW SIGNALS UPDATED from cache",diagnostic["label"],flush=True)
                 return
         except (ValueError,OSError):
             pass
@@ -217,7 +234,7 @@ def main():
     diagnosis=diagnose(wind,series)
     render(wind,series,diagnosis,run)
     result={
-        "schema":1,"model":"ifs","run_utc":source["run_utc"],
+        "schema":1,"algorithm_version":2,"model":"ifs","run_utc":source["run_utc"],
         "generated_utc":datetime.now(timezone.utc).isoformat(),
         "source":SOURCE,"chart":"strato/"+PNG.name,
         "wind_10hpa_60n":wind_raw,
