@@ -1,4 +1,4 @@
-name: KFS France - réparer les publications quotidiennes AIFS et AIGFS
+name: KFS France - regenerer les cartes avec labels RUN 00Z/06Z/12Z/18Z
 
 on:
   push:
@@ -14,14 +14,15 @@ jobs:
   lancer:
     runs-on: ubuntu-latest
     steps:
-      - name: Réessayer AIFS et publier le quotidien alternatif AIGFS
+      - name: Actualiser les visuels France pour tous les modeles
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
-          for run in 42539015128 42539017242; do
-            gh workflow run publier-france-releases.yml --repo "$GH_REPO" --ref main \
-              -f source_run_id="$run"
+          for model in gfs ifs aifs-single aigfs; do
+            echo "Demander les nouvelles cartes annotées avec RUN pour $model"
+            gh workflow run france-h72.yml --repo "$GH_REPO" --ref main \
+              -f modele="$model" -f horizon=72
           done
-          echo "Publications AIFS/AIGFS demandées"
+          echo "Les cartographies Europe restent inchangées."
