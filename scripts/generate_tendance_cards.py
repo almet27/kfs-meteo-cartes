@@ -349,6 +349,25 @@ def write_premium_stage(stage, meta, data, now, risk_document):
         other_run=other["run_utc"]
         model_a="IFS"
         model_b="AIFS"
+    # Le GFS est affiché uniquement si les diagnostics NOAA sont réels,
+    # horodatés et à échéance comparable (max. 12 h de décalage).
+    gfs_record=data.get("models",{}).get("gfs",{}).get(step)
+    gfs_ready=False
+    gfs_t850=None
+    if gfs_record:
+        try:
+            gfs_t850=float(gfs_record["fields"]["t850"]["france"]["mean"])
+            gfs_pressure=float(gfs_record["fields"]["msl"]["france"]["mean"])
+            gfs_ready=(math.isfinite(gfs_t850) and -80<gfs_t850<50 and
+                       math.isfinite(gfs_pressure) and 850<gfs_pressure<1100 and
+                       abs((parsed(gfs_record["valid_utc"])-
+                            parsed(details["valid_utc"])).total_seconds())<=12*3600 and
+                       bool(gfs_record.get("run_utc")))
+        except (KeyError,TypeError,ValueError,OverflowError):
+            gfs_ready=False
+    if step=="360":
+        model_b="GFS" if gfs_ready else "GFS indisponible"
+        other_run=gfs_record["run_utc"] if gfs_ready else None
     date=parsed(details["valid_utc"])
     hazards=next((a for a in risk_document["stages"] if a["id"]==stage["id"]),None)
     if not hazards or hazards["step_h"]!=int(step):
@@ -381,7 +400,16 @@ def write_premium_stage(stage, meta, data, now, risk_document):
     txt(d,(166,22),"KFS MÉTÉO",37,"white",True)
     txt(d,(40,86),"Jusqu'au "+str(date.day)+" "+MONTHS[date.month-1],49,"white",True)
     d.rounded_rectangle((935,25,1549,80),radius=25,fill=(208,233,251,245))
-    txt(d,(954,36),"ECMWF "+model_a+"  •  "+model_b,23,(9,42,77),True)
+    header_models=("ECMWF "+model_a+"  •  "+model_b+
+                   ("  •  GFS" if gfs_ready and step!="360" else ""))
+    txt(d,(954,36),header_models,21,(9,42,77),True)
+    # Le rouge signale un indicateur modélisé « marqué », PAS une vigilance officielle.
+    marked_categories=[key for key,item in hazards["risks"].items()
+                       if item.get("status")=="marque"]
+    if marked_categories:
+        d.ellipse((1477,91,1542,156),fill=(224,39,57,255),
+                  outline=(255,250,250,255),width=3)
+        txt(d,(1498,96),"!",44,"white",True)
     # A forecast-based editorial headline, not a fabricated synopsis.
     wind_dir=sector(flow.get("from_deg"))
     rain_state=hazards["risks"]["pluie_forte"]["status"]
@@ -422,6 +450,10 @@ def write_premium_stage(stage, meta, data, now, risk_document):
         txt(d,(x+4,650),label,17,"white",True)
         txt(d,(x+4,683),pretty.get(state,"Non calculé"),16,
             palette.get(state,"muted"),True)
+        if state=="marque":
+            d.ellipse((x+156,652,x+182,678),fill=(221,37,58,255),
+                      outline=(255,255,255,255),width=2)
+            txt(d,(x+165,653),"!",21,"white",True)
     # Main editorial four-part bar inspired by the user's reference image.
     d.rounded_rectangle((30,735,1570,864),radius=28,
                         fill=(7,31,60,248),outline=(104,193,239,240),width=3)
@@ -441,6 +473,9 @@ def write_premium_stage(stage, meta, data, now, risk_document):
     elif wind_state=="possible":principal="Vent possible"
     else:principal="Signal faible ou incertain"
     txt(d,(830,802),principal,22,"white",True)
+    if gfs_ready:
+        txt(d,(830,838),"GFS T850 France : "+("%+0.1f °C"%gfs_t850).replace(".",","),
+            15,"light",True)
     txt(d,(1220,752),"CONFIANCE",19,"cyan",True)
     d.rounded_rectangle((1216,794,1548,852),radius=26,fill=(251,209,110,255))
     txt(d,(1232,812),stage["confidence"],23,(20,40,62),True)
@@ -451,14 +486,19 @@ def write_premium_stage(stage, meta, data, now, risk_document):
     runs={model_a.lower():details["run_utc"]}
     if other_run is not None:
         runs[model_b.lower()]=other_run
+    if gfs_ready and step!="360":
+        runs["gfs"]=gfs_record["run_utc"]
+    display_models=model_a+" / "+model_b+(" / GFS" if gfs_ready and step!="360" else "")
     return {"id":stage["id"],"step_h":int(step),"path":str(out),
        "image_url":"https://almet27.github.io/kfs-meteo-cartes/"+str(out),
        "size_bytes":out.stat().st_size, "run_utc":runs,
-       "valid_utc":details["valid_utc"], "title":stage["period"]+" — synthèse synoptique "+model_a+" / "+model_b,
+       "valid_utc":details["valid_utc"], "title":stage["period"]+" — synthèse synoptique "+display_models,
        "confidence_label":stage["confidence"]+" (indicative)",
+       "marked_phenomena":marked_categories, "not_official_warning":True,
+       "gfs_available":gfs_ready,
        "risk_status":"altitude_filtered_georeferenced", "risks":hazards["risks"], "risk_markers":hazards["markers"],
        "t850_shading":hazards.get("t850_shading",{}),
-       "style":"kfs-editorial-masses-air-sans-fronts-v8",
+       "style":"kfs-editorial-masses-air-sans-fronts-v9",
        "note":"Plages thermiques à 850 hPa et échelle °C fixe ; aucun front ni texte descriptif des masses d’air."}
 
 def main():
@@ -483,10 +523,10 @@ def main():
       "schema_version":1,"status":"illustrative_model_maps",
       "generated_utc":now.isoformat(),"source_generated_utc":data["generated_utc"],
       "charts_generated_utc":meta["generated_utc"],
-      "source":"ECMWF Open Data (CC BY 4.0)",
+      "source":"ECMWF Open Data (CC BY 4.0), NOAA GFS si disponible",
       "not_weekly_anomalies":True,"period_maps":maps,"public":True,
       "graphic_style":"KFS PREMIUM 16:9 — 4 échéances, champs réels",
-      "note":"Infographies tirées des vraies cartes IFS/AIFS, flux moyen 850 hPa calculé, sans fronts inventés ni prévisions à 4 semaines extrapolées."}
+      "note":"Cartes ECMWF IFS/AIFS et comparaison GFS si run NOAA vérifié ; ! rouge = signal modélisé marqué, pas de vigilance officielle. Aucun front inventé ni extrapolation à 4 semaines."}
     (OUT/"tendance-cartes.json").write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
     print(json.dumps({"generated_utc":manifest["generated_utc"],
                       "cards":[{"id":x["id"],"size_bytes":x["size_bytes"],"title":x["title"]} for x in maps]},
