@@ -2,7 +2,7 @@
   "schema": 1,
   "model": "ifs",
   "run_utc": "2026-11-09T00:00:00Z",
-  "generated_utc": "2026-11-09T19:07:45.933318+00:00",
+  "generated_utc": "2026-11-09T19:10:56.748251+00:00",
   "source": "ECMWF IFS Open Data · CC BY 4.0",
   "chart": "strato/ifs-ssw-signals.png",
   "wind_10hpa_60n": {
@@ -94,7 +94,7 @@
   },
   "diagnostic": {
     "status": "inversion_prevue",
-    "label": "Inversion zonale prévue à 10 hPa",
+    "label": "Inversion temporaire prévue, sans réchauffement polaire rapide",
     "wind_inversion_hours": [
       48,
       72,
@@ -125,5 +125,6 @@
     "threshold_disclaimer": "Réchauffement >=10 K/5 jours et décélération <=-10 m/s/5 jours ne sont que des repères d'affichage non calibrés, pas des probabilités."
   },
   "errors": {},
-  "limitations": "Single deterministic forecast. No climatology/ensemble, no formal observed SSW diagnosis, no forecast of surface-weather impacts."
+  "limitations": "Single deterministic forecast. No climatology/ensemble, no formal observed SSW diagnosis, no forecast of surface-weather impacts.",
+  "algorithm_version": 2
 }
