@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """KFS NOAA: split T850 and Z500+MSLP, using real GFS/AIGFS GRIB fields."""
 import json
+import os
+import shutil
+from check_france_cycles import noaa_latest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import matplotlib
@@ -21,11 +24,28 @@ from herbie import Herbie
 OUT=Path("forecast-maps/europe")
 OUT.mkdir(parents=True,exist_ok=True)
 STEPS=[24,48,72,120,168,240,360]
-# Attendre environ 5 h après le cycle pour disposer des champs longue échéance GFS/AIGFS.
-now=datetime.now(timezone.utc)-timedelta(hours=5)
-RUN=now.replace(hour=(now.hour//6)*6,minute=0,second=0,microsecond=0)
-metadata={"generated_utc":datetime.now(timezone.utc).isoformat(),"run_utc":RUN.isoformat(),"runs_utc":{"gfs":{},"aigfs":{}},
-          "source":"NOAA NCEP NOMADS","maps":{},"errors":{}}
+RUN=datetime.now(timezone.utc).replace(minute=0,second=0,microsecond=0)
+OLD_PATH=OUT/"noaa-metadata.json"
+try:
+    previous=json.loads(OLD_PATH.read_text(encoding="utf-8"))
+except (FileNotFoundError,ValueError):
+    previous={}
+metadata={"generated_utc":datetime.now(timezone.utc).isoformat(),
+          "run_utc":previous.get("run_utc",""),
+          "runs_utc":previous.get("runs_utc",{"gfs":{},"aigfs":{}}),
+          "source":"NOAA NCEP NOMADS","maps":previous.get("maps",{}),
+          "derived_estimates":previous.get("derived_estimates",{}),"errors":{}}
+STAGING=OUT/"_kfs_europe_noaa_tmp"
+STAGING.mkdir(parents=True,exist_ok=True)
+NEW={}
+UPDATED=0
+def when(value):
+    try:
+        d=datetime.fromisoformat(str(value).replace("Z","+00:00"))
+        return d.replace(tzinfo=timezone.utc) if d.tzinfo is None else d.astimezone(timezone.utc)
+    except (ValueError,TypeError):
+        return datetime(1970,1,1,tzinfo=timezone.utc)
+
 
 def subset(dataset):
     names=list(dataset.data_vars)
@@ -57,9 +77,9 @@ def canvas():
 
 def save(fig,model,step,param):
     filename=f"{model}-h{step:03}-{param}.png"
-    fig.savefig(OUT/filename,bbox_inches="tight",facecolor="white")
+    fig.savefig(STAGING/filename,bbox_inches="tight",facecolor="white")
     plt.close(fig)
-    metadata["maps"].setdefault(model,{}).setdefault(str(step),{})[param]="forecast-maps/europe/"+filename
+    NEW[param]="forecast-maps/europe/"+filename
 
 
 # Couleurs lisibles dès 0.1 mm ; les zones sèches restent non coloriées.
@@ -80,7 +100,7 @@ def render_precip_total(lon,lat,total,model,title,step):
                  label="Pluie + neige (cumul TOTAL, mm équivalent-eau / 6 h)")
     ax.set_title(f"KFS MÉTÉO | {title} | Atlantique Nord · Groenland · Europe | +{step} h\n"
                  f"Précipitations TOTALES (pluie et neige non séparables) | période +{step-6} à +{step} h\n"
-                 f"Run : {RUN.strftime('%d/%m %H:%M')} UTC · zones sèches (<0,1 mm) en blanc")
+                 f"RUN {RUN.strftime('%HZ du %d/%m/%Y')} UTC · zones sèches (<0,1 mm) en blanc")
     save(fig,model,step,"precip6h")
 
 
@@ -108,7 +128,7 @@ def render_gfs_phase(lon,lat,quantity,uncertain,step,kind):
                  label=name+" (mm équivalent-eau sur 6 h)")
     ax.set_title(f"KFS MÉTÉO | GFS | Atlantique Nord · Groenland · Europe | +{step} h\n"
                  f"{name} · ESTIMATION indicative, période +{step-6} à +{step} h\n"
-                 f"APCP 6 h × fraction CPOFP instantanée à +{step} h · Run {RUN.strftime('%d/%m %H:%M')} UTC\n"
+                 f"APCP 6 h × fraction CPOFP instantanée à +{step} h · RUN {RUN.strftime('%HZ du %d/%m/%Y')} UTC\n"
                  "Gris : précipitations présentes, mais phase non déterminée ; blanc : temps sec")
     save(fig,"gfs",step,kind+"6h")
 
@@ -122,9 +142,16 @@ REGIONS={
     "europe":("Europe occidentale",(-11,16,42,59)),
     "groenland":("Groenland et environs",(-59,-18,59,81)),
 }
-diagnostics={"schema_version":1,"generated_utc":metadata["generated_utc"],
-             "source_run_utc":RUN.isoformat(),"source":"NOAA GFS / NCEP NOMADS",
-             "models":{"gfs":{}},"errors":{},"steps_h":sorted(DIAG_STEPS)}
+try:
+    diagnostics=json.loads((OUT/"noaa-diagnostics.json").read_text(encoding="utf-8"))
+except (FileNotFoundError,ValueError):
+    diagnostics={"schema_version":1,"models":{"gfs":{}},"errors":{}}
+diagnostics["generated_utc"]=metadata["generated_utc"]
+diagnostics["source"]="NOAA GFS / NCEP NOMADS"
+diagnostics["steps_h"]=sorted(DIAG_STEPS)
+diagnostics.setdefault("models",{}).setdefault("gfs",{})
+diagnostics.setdefault("errors",{})
+
 def regional_means(lon,lat,data):
     results={}
     for key,(name,(west,east,south,north)) in REGIONS.items():
@@ -157,9 +184,22 @@ def regional_flow(fields):
     return flows
 
 for model,title in [("gfs","GFS"),("aigfs","AIGFS")]:
+    metadata["runs_utc"].setdefault(model,{})
+    metadata["maps"].setdefault(model,{})
     for step in STEPS:
         key=f"{model}-h{step:03}"
-        metadata["runs_utc"][model][str(step)]=RUN.isoformat()
+        latest=noaa_latest(model,step)
+        if not latest:
+            print("NOAA Europe:",model,"+",step,"h indisponible à la source",flush=True)
+            continue
+        candidate=when(latest)
+        prior=when(metadata["runs_utc"][model].get(str(step)))
+        if candidate<=prior:
+            continue
+        RUN=candidate
+        NEW={}
+        pending_diag={}
+        print("EUROPE NOAA NEW CYCLE",model,step,"RUN",RUN.isoformat(),flush=True)
         diag_fields={}
         pressure_product="pgrb2.0p25" if model=="gfs" else "sfc"
         upper_product="pgrb2.0p25" if model=="gfs" else "pres"
@@ -200,7 +240,7 @@ for model,title in [("gfs","GFS"),("aigfs","AIGFS")]:
                 ])
             fig.colorbar(shade,ax=ax,orientation="horizontal",pad=.04,shrink=.8,ticks=KFS_T850_TICKS,
                          label="Température à 850 hPa (°C) · Couleurs KFS météo")
-            ax.set_title(f"KFS MÉTÉO | {title} | Atlantique Nord · Groenland · Europe | +{step} h\nTempérature 850 hPa · Run : {RUN.strftime('%d/%m %H:%M')} UTC · Validité : {(RUN+timedelta(hours=step)).strftime('%d/%m %H:%M')} UTC")
+            ax.set_title(f"KFS MÉTÉO | {title} | Atlantique Nord · Groenland · Europe | +{step} h\nTempérature 850 hPa · RUN {RUN.strftime('%HZ du %d/%m/%Y')} UTC · Validité : {(RUN+timedelta(hours=step)).strftime('%d/%m %H:%M')} UTC")
             save(fig,model,step,"t850")
         except Exception as e:
             metadata["errors"][key+"-t850"]=str(e)[:350]
@@ -233,7 +273,7 @@ for model,title in [("gfs","GFS"),("aigfs","AIGFS")]:
                 ])
             fig.colorbar(shade,ax=ax,orientation="horizontal",pad=.04,shrink=.8,ticks=KFS_Z500_TICKS,
                          label="Géopotentiel Z500 (dam) · Couleurs KFS météo")
-            ax.set_title(f"KFS MÉTÉO | {title} | Atlantique Nord · Groenland · Europe | +{step} h\nZ500 (dam) et pression au sol (hPa) · Run : {RUN.strftime('%d/%m %H:%M')} UTC · Validité : {(RUN+timedelta(hours=step)).strftime('%d/%m %H:%M')} UTC")
+            ax.set_title(f"KFS MÉTÉO | {title} | Atlantique Nord · Groenland · Europe | +{step} h\nZ500 (dam) et pression au sol (hPa) · RUN {RUN.strftime('%HZ du %d/%m/%Y')} UTC · Validité : {(RUN+timedelta(hours=step)).strftime('%d/%m %H:%M')} UTC")
             save(fig,model,step,"z500_msl")
         except Exception as e:
             metadata["errors"][key+"-z500_msl"]=str(e)[:350]
@@ -254,11 +294,10 @@ for model,title in [("gfs","GFS"),("aigfs","AIGFS")]:
             except Exception as e:
                 diagnostics["errors"][key+"-wind850"]=str(e)[:260]
             if all(n in diag_fields for n in ("t850","msl","z500")):
-                diagnostics["models"]["gfs"][str(step)]={
-                    "run_utc":RUN.isoformat(),
-                    "valid_utc":(RUN+timedelta(hours=step)).isoformat(),
-                    "fields":diag_fields,
-                    "flow_850":regional_flow(diag_fields)}
+                pending_diag={"run_utc":RUN.isoformat(),
+                              "valid_utc":(RUN+timedelta(hours=step)).isoformat(),
+                              "fields":diag_fields,
+                              "flow_850":regional_flow(diag_fields)}
             else:
                 diagnostics["errors"][key+"-required"]="T850, pression ou Z500 absent : scénario exclu de l'analyse"
 
@@ -280,7 +319,7 @@ for model,title in [("gfs","GFS"),("aigfs","AIGFS")]:
                       scale=680,width=.0016,transform=ccrs.PlateCarree())
             fig.colorbar(shade,ax=ax,orientation="horizontal",pad=.04,shrink=.8,
                          label="Vitesse du vent à 10 m (km/h) — flèches : direction")
-            ax.set_title(f"KFS MÉTÉO | {title} | Atlantique Nord · Groenland · Europe | +{step} h\nVent à 10 m · Run : {RUN.strftime('%d/%m %H:%M')} UTC · Validité : {(RUN+timedelta(hours=step)).strftime('%d/%m %H:%M')} UTC")
+            ax.set_title(f"KFS MÉTÉO | {title} | Atlantique Nord · Groenland · Europe | +{step} h\nVent à 10 m · RUN {RUN.strftime('%HZ du %d/%m/%Y')} UTC · Validité : {(RUN+timedelta(hours=step)).strftime('%d/%m %H:%M')} UTC")
             save(fig,model,step,"wind10m")
         except Exception as e:
             metadata["errors"][key+"-wind10m"]=str(e)[:350]
@@ -326,6 +365,26 @@ for model,title in [("gfs","GFS"),("aigfs","AIGFS")]:
 
         except Exception as e:
             metadata["errors"][key+"-precip6h"]=str(e)[:350]
+        essential={"t850","z500_msl","wind10m","precip6h"}
+        if essential.issubset(NEW):
+            for filename in NEW.values():
+                os.replace(STAGING/Path(filename).name,OUT/Path(filename).name)
+            metadata["maps"][model][str(step)]=dict(NEW)
+            metadata["runs_utc"][model][str(step)]=RUN.isoformat()
+            if RUN>when(metadata.get("run_utc")):
+                metadata["run_utc"]=RUN.isoformat()
+            if model=="gfs" and step in DIAG_STEPS and pending_diag.get("run_utc")==RUN.isoformat():
+                diagnostics["models"]["gfs"][str(step)]=pending_diag
+            UPDATED+=1
+            print("EUROPE NOAA PUBLISHED",model,step,RUN.isoformat(),flush=True)
+        else:
+            print("EUROPE NOAA WAITING",model,step,"missing",sorted(essential-set(NEW)),flush=True)
+            for file in NEW.values():
+                (STAGING/Path(file).name).unlink(missing_ok=True)
+shutil.rmtree(STAGING,ignore_errors=True)
+if not UPDATED:
+    print("NOAA Europe: aucun nouveau pas complet ; conservation des anciennes cartes.")
+    raise SystemExit(0)
 (OUT/"noaa-diagnostics.json").write_text(
     json.dumps(diagnostics,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
 print("GFS numerical diagnostics",json.dumps({"steps":list(diagnostics["models"]["gfs"]),
