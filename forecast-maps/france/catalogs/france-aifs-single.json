@@ -1,0 +1,467 @@
+{
+  "schema": 2,
+  "model": "aifs-single",
+  "run_utc": "2026-11-09T06:00:00Z",
+  "native_step_h": 6,
+  "area": "France",
+  "source_generated_utc": "2026-11-09T12:33:22Z",
+  "max_hour": 72,
+  "early": false,
+  "published_utc": "2026-11-09T12:33:48.841737+00:00",
+  "maps": {
+    "6": {
+      "mslp": {
+        "file": "mslp-h006.webp",
+        "note": ""
+      },
+      "precip_total": {
+        "file": "precip_total-h006.webp",
+        "note": "first_interval_since_run"
+      },
+      "rain": {
+        "file": "rain-h006.webp",
+        "note": "pluie = total - neige, équivalent-eau"
+      },
+      "snow": {
+        "file": "snow-h006.webp",
+        "note": "first_interval_since_run"
+      },
+      "t2m": {
+        "file": "t2m-h006.webp",
+        "note": ""
+      },
+      "t850": {
+        "file": "t850-h006.webp",
+        "note": ""
+      },
+      "wind10m": {
+        "file": "wind10m-h006.webp",
+        "note": ""
+      }
+    },
+    "12": {
+      "mslp": {
+        "file": "mslp-h012.webp",
+        "note": ""
+      },
+      "precip_total": {
+        "file": "precip_total-h012.webp",
+        "note": "cumulative_difference"
+      },
+      "rain": {
+        "file": "rain-h012.webp",
+        "note": "pluie = total - neige, équivalent-eau"
+      },
+      "snow": {
+        "file": "snow-h012.webp",
+        "note": "cumulative_difference"
+      },
+      "t2m": {
+        "file": "t2m-h012.webp",
+        "note": ""
+      },
+      "t850": {
+        "file": "t850-h012.webp",
+        "note": ""
+      },
+      "wind10m": {
+        "file": "wind10m-h012.webp",
+        "note": ""
+      }
+    },
+    "18": {
+      "mslp": {
+        "file": "mslp-h018.webp",
+        "note": ""
+      },
+      "precip_total": {
+        "file": "precip_total-h018.webp",
+        "note": "cumulative_difference"
+      },
+      "rain": {
+        "file": "rain-h018.webp",
+        "note": "pluie = total - neige, équivalent-eau"
+      },
+      "snow": {
+        "file": "snow-h018.webp",
+        "note": "cumulative_difference"
+      },
+      "t2m": {
+        "file": "t2m-h018.webp",
+        "note": ""
+      },
+      "t850": {
+        "file": "t850-h018.webp",
+        "note": ""
+      },
+      "wind10m": {
+        "file": "wind10m-h018.webp",
+        "note": ""
+      }
+    },
+    "24": {
+      "mslp": {
+        "file": "mslp-h024.webp",
+        "note": ""
+      },
+      "precip_total": {
+        "file": "precip_total-h024.webp",
+        "note": "cumulative_difference"
+      },
+      "rain": {
+        "file": "rain-h024.webp",
+        "note": "pluie = total - neige, équivalent-eau"
+      },
+      "snow": {
+        "file": "snow-h024.webp",
+        "note": "cumulative_difference"
+      },
+      "t2m": {
+        "file": "t2m-h024.webp",
+        "note": ""
+      },
+      "t850": {
+        "file": "t850-h024.webp",
+        "note": ""
+      },
+      "wind10m": {
+        "file": "wind10m-h024.webp",
+        "note": ""
+      }
+    },
+    "30": {
+      "mslp": {
+        "file": "mslp-h030.webp",
+        "note": ""
+      },
+      "precip_total": {
+        "file": "precip_total-h030.webp",
+        "note": "cumulative_difference"
+      },
+      "rain": {
+        "file": "rain-h030.webp",
+        "note": "pluie = total - neige, équivalent-eau"
+      },
+      "snow": {
+        "file": "snow-h030.webp",
+        "note": "cumulative_difference"
+      },
+      "t2m": {
+        "file": "t2m-h030.webp",
+        "note": ""
+      },
+      "t850": {
+        "file": "t850-h030.webp",
+        "note": ""
+      },
+      "wind10m": {
+        "file": "wind10m-h030.webp",
+        "note": ""
+      }
+    },
+    "36": {
+      "mslp": {
+        "file": "mslp-h036.webp",
+        "note": ""
+      },
+      "precip_total": {
+        "file": "precip_total-h036.webp",
+        "note": "cumulative_difference"
+      },
+      "rain": {
+        "file": "rain-h036.webp",
+        "note": "pluie = total - neige, équivalent-eau"
+      },
+      "snow": {
+        "file": "snow-h036.webp",
+        "note": "cumulative_difference"
+      },
+      "t2m": {
+        "file": "t2m-h036.webp",
+        "note": ""
+      },
+      "t850": {
+        "file": "t850-h036.webp",
+        "note": ""
+      },
+      "wind10m": {
+        "file": "wind10m-h036.webp",
+        "note": ""
+      }
+    },
+    "42": {
+      "mslp": {
+        "file": "mslp-h042.webp",
+        "note": ""
+      },
+      "precip_total": {
+        "file": "precip_total-h042.webp",
+        "note": "cumulative_difference"
+      },
+      "rain": {
+        "file": "rain-h042.webp",
+        "note": "pluie = total - neige, équivalent-eau"
+      },
+      "snow": {
+        "file": "snow-h042.webp",
+        "note": "cumulative_difference"
+      },
+      "t2m": {
+        "file": "t2m-h042.webp",
+        "note": ""
+      },
+      "t850": {
+        "file": "t850-h042.webp",
+        "note": ""
+      },
+      "wind10m": {
+        "file": "wind10m-h042.webp",
+        "note": ""
+      }
+    },
+    "48": {
+      "mslp": {
+        "file": "mslp-h048.webp",
+        "note": ""
+      },
+      "precip_total": {
+        "file": "precip_total-h048.webp",
+        "note": "cumulative_difference"
+      },
+      "rain": {
+        "file": "rain-h048.webp",
+        "note": "pluie = total - neige, équivalent-eau"
+      },
+      "snow": {
+        "file": "snow-h048.webp",
+        "note": "cumulative_difference"
+      },
+      "t2m": {
+        "file": "t2m-h048.webp",
+        "note": ""
+      },
+      "t850": {
+        "file": "t850-h048.webp",
+        "note": ""
+      },
+      "wind10m": {
+        "file": "wind10m-h048.webp",
+        "note": ""
+      }
+    },
+    "54": {
+      "mslp": {
+        "file": "mslp-h054.webp",
+        "note": ""
+      },
+      "precip_total": {
+        "file": "precip_total-h054.webp",
+        "note": "cumulative_difference"
+      },
+      "rain": {
+        "file": "rain-h054.webp",
+        "note": "pluie = total - neige, équivalent-eau"
+      },
+      "snow": {
+        "file": "snow-h054.webp",
+        "note": "cumulative_difference"
+      },
+      "t2m": {
+        "file": "t2m-h054.webp",
+        "note": ""
+      },
+      "t850": {
+        "file": "t850-h054.webp",
+        "note": ""
+      },
+      "wind10m": {
+        "file": "wind10m-h054.webp",
+        "note": ""
+      }
+    },
+    "60": {
+      "mslp": {
+        "file": "mslp-h060.webp",
+        "note": ""
+      },
+      "precip_total": {
+        "file": "precip_total-h060.webp",
+        "note": "cumulative_difference"
+      },
+      "rain": {
+        "file": "rain-h060.webp",
+        "note": "pluie = total - neige, équivalent-eau"
+      },
+      "snow": {
+        "file": "snow-h060.webp",
+        "note": "cumulative_difference"
+      },
+      "t2m": {
+        "file": "t2m-h060.webp",
+        "note": ""
+      },
+      "t850": {
+        "file": "t850-h060.webp",
+        "note": ""
+      },
+      "wind10m": {
+        "file": "wind10m-h060.webp",
+        "note": ""
+      }
+    },
+    "66": {
+      "mslp": {
+        "file": "mslp-h066.webp",
+        "note": ""
+      },
+      "precip_total": {
+        "file": "precip_total-h066.webp",
+        "note": "cumulative_difference"
+      },
+      "rain": {
+        "file": "rain-h066.webp",
+        "note": "pluie = total - neige, équivalent-eau"
+      },
+      "snow": {
+        "file": "snow-h066.webp",
+        "note": "cumulative_difference"
+      },
+      "t2m": {
+        "file": "t2m-h066.webp",
+        "note": ""
+      },
+      "t850": {
+        "file": "t850-h066.webp",
+        "note": ""
+      },
+      "wind10m": {
+        "file": "wind10m-h066.webp",
+        "note": ""
+      }
+    },
+    "72": {
+      "mslp": {
+        "file": "mslp-h072.webp",
+        "note": ""
+      },
+      "precip_total": {
+        "file": "precip_total-h072.webp",
+        "note": "cumulative_difference"
+      },
+      "rain": {
+        "file": "rain-h072.webp",
+        "note": "pluie = total - neige, équivalent-eau"
+      },
+      "snow": {
+        "file": "snow-h072.webp",
+        "note": "cumulative_difference"
+      },
+      "t2m": {
+        "file": "t2m-h072.webp",
+        "note": ""
+      },
+      "t850": {
+        "file": "t850-h072.webp",
+        "note": ""
+      },
+      "wind10m": {
+        "file": "wind10m-h072.webp",
+        "note": ""
+      }
+    }
+  },
+  "daily": {
+    "0": {
+      "date": "2026-11-09",
+      "coverage": "partial",
+      "start_utc": "2026-11-09T06:00:00Z",
+      "end_utc": "2026-11-09T23:00:00Z",
+      "maps": {
+        "precip": {
+          "file": "daily-precip-d0.webp",
+          "note": "Période incomplète : 09/11 07h à 10/11 00h · répartition approximative aux limites des pas GRIB"
+        },
+        "rain": {
+          "file": "daily-rain-d0.webp",
+          "note": "Période incomplète : 09/11 07h à 10/11 00h · répartition approximative aux limites des pas GRIB"
+        },
+        "tmax": {
+          "file": "daily-tmax-d0.webp",
+          "note": "Période incomplète : 09/11 07h à 10/11 00h · extrêmes calculés sur les pas du modèle"
+        },
+        "tmin": {
+          "file": "daily-tmin-d0.webp",
+          "note": "Période incomplète : 09/11 07h à 10/11 00h · extrêmes calculés sur les pas du modèle"
+        }
+      }
+    },
+    "1": {
+      "date": "2026-11-10",
+      "coverage": "complete",
+      "start_utc": "2026-11-09T23:00:00Z",
+      "end_utc": "2026-11-10T23:00:00Z",
+      "maps": {
+        "precip": {
+          "file": "daily-precip-d1.webp",
+          "note": "Journée civile 00h–24h (heure française) · répartition approximative aux limites des pas GRIB"
+        },
+        "rain": {
+          "file": "daily-rain-d1.webp",
+          "note": "Journée civile 00h–24h (heure française) · répartition approximative aux limites des pas GRIB"
+        },
+        "tmax": {
+          "file": "daily-tmax-d1.webp",
+          "note": "Journée civile 00h–24h (heure française) · extrêmes calculés sur les pas du modèle"
+        },
+        "tmin": {
+          "file": "daily-tmin-d1.webp",
+          "note": "Journée civile 00h–24h (heure française) · extrêmes calculés sur les pas du modèle"
+        }
+      }
+    },
+    "2": {
+      "date": "2026-11-11",
+      "coverage": "complete",
+      "start_utc": "2026-11-10T23:00:00Z",
+      "end_utc": "2026-11-11T23:00:00Z",
+      "maps": {
+        "precip": {
+          "file": "daily-precip-d2.webp",
+          "note": "Journée civile 00h–24h (heure française) · répartition approximative aux limites des pas GRIB"
+        },
+        "rain": {
+          "file": "daily-rain-d2.webp",
+          "note": "Journée civile 00h–24h (heure française) · répartition approximative aux limites des pas GRIB"
+        },
+        "tmax": {
+          "file": "daily-tmax-d2.webp",
+          "note": "Journée civile 00h–24h (heure française) · extrêmes calculés sur les pas du modèle"
+        },
+        "tmin": {
+          "file": "daily-tmin-d2.webp",
+          "note": "Journée civile 00h–24h (heure française) · extrêmes calculés sur les pas du modèle"
+        }
+      }
+    }
+  },
+  "errors": {
+    "6-gust": "Champ de rafales non disponible en données ouvertes AIFS",
+    "12-gust": "Champ de rafales non disponible en données ouvertes AIFS",
+    "18-gust": "Champ de rafales non disponible en données ouvertes AIFS",
+    "24-gust": "Champ de rafales non disponible en données ouvertes AIFS",
+    "30-gust": "Champ de rafales non disponible en données ouvertes AIFS",
+    "36-gust": "Champ de rafales non disponible en données ouvertes AIFS",
+    "42-gust": "Champ de rafales non disponible en données ouvertes AIFS",
+    "48-gust": "Champ de rafales non disponible en données ouvertes AIFS",
+    "54-gust": "Champ de rafales non disponible en données ouvertes AIFS",
+    "60-gust": "Champ de rafales non disponible en données ouvertes AIFS",
+    "66-gust": "Champ de rafales non disponible en données ouvertes AIFS",
+    "72-gust": "Champ de rafales non disponible en données ouvertes AIFS"
+  },
+  "notes": [
+    "Previsions generees depuis les champs GRIB reels.",
+    "Pas de donnees interpolees pour combler des echeances absentes.",
+    "Neige ECMWF en equivalent-eau, pas en centimetres au sol.",
+    "Phase pluie/neige GFS estimee seulement si disponible."
+  ]
+}

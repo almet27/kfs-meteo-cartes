@@ -1,0 +1,76 @@
+{
+  "schema": 2,
+  "model": "aigfs",
+  "area": "France",
+  "run_utc": "2026-11-08T12:00:00Z",
+  "source_generated_utc": "2026-11-09T00:15:11Z",
+  "published_utc": "2026-11-09T00:19:41.631057+00:00",
+  "daily": {
+    "1": {
+      "date": "2026-11-09",
+      "coverage": "complete",
+      "start_utc": "2026-11-08T23:00:00Z",
+      "end_utc": "2026-11-09T23:00:00Z",
+      "maps": {
+        "precip": {
+          "file": "daily-precip-d1.webp",
+          "note": "Journée civile 00h–24h (heure française) · répartition approximative aux limites des pas GRIB"
+        },
+        "tmax": {
+          "file": "daily-tmax-d1.webp",
+          "note": "Journée civile 00h–24h (heure française) · extrêmes calculés sur les pas du modèle"
+        },
+        "tmin": {
+          "file": "daily-tmin-d1.webp",
+          "note": "Journée civile 00h–24h (heure française) · extrêmes calculés sur les pas du modèle"
+        }
+      }
+    },
+    "2": {
+      "date": "2026-11-10",
+      "coverage": "complete",
+      "start_utc": "2026-11-09T23:00:00Z",
+      "end_utc": "2026-11-10T23:00:00Z",
+      "maps": {
+        "precip": {
+          "file": "daily-precip-d2.webp",
+          "note": "Journée civile 00h–24h (heure française) · répartition approximative aux limites des pas GRIB"
+        },
+        "tmax": {
+          "file": "daily-tmax-d2.webp",
+          "note": "Journée civile 00h–24h (heure française) · extrêmes calculés sur les pas du modèle"
+        },
+        "tmin": {
+          "file": "daily-tmin-d2.webp",
+          "note": "Journée civile 00h–24h (heure française) · extrêmes calculés sur les pas du modèle"
+        }
+      }
+    },
+    "3": {
+      "date": "2026-11-11",
+      "coverage": "partial",
+      "start_utc": "2026-11-10T23:00:00Z",
+      "end_utc": "2026-11-11T12:00:00Z",
+      "maps": {
+        "precip": {
+          "file": "daily-precip-d3.webp",
+          "note": "Période incomplète : 11/11 00h à 11/11 13h · répartition approximative aux limites des pas GRIB"
+        },
+        "tmax": {
+          "file": "daily-tmax-d3.webp",
+          "note": "Période incomplète : 11/11 00h à 11/11 13h · extrêmes calculés sur les pas du modèle"
+        },
+        "tmin": {
+          "file": "daily-tmin-d3.webp",
+          "note": "Période incomplète : 11/11 00h à 11/11 13h · extrêmes calculés sur les pas du modèle"
+        }
+      }
+    }
+  },
+  "notes": [
+    "Previsions generees depuis les champs GRIB reels.",
+    "Pas de donnees interpolees pour combler des echeances absentes.",
+    "Neige ECMWF en equivalent-eau, pas en centimetres au sol.",
+    "Phase pluie/neige GFS estimee seulement si disponible."
+  ]
+}
