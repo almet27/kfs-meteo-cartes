@@ -379,10 +379,16 @@ function kfsProbaRender(features,samples,zone,type,departments=[]){
   }
   ordered.push(pending.splice(best,1)[0]);
  }
- const maxMarks=zone==="FR"?12:10;
+ // Préserver les emplacements des villes sans modifier leur rendu.
+ // Sur les petites régions, réduire la densité des étiquettes météo.
+ const cityGuardRadius=zone==="28"?50:(zone==="24"||zone==="32"?0:40);
+ const cityAnchors=(KFS_PROBA_CITIES[zone]||[]).map(([,lon,lat])=>({x:lonToX(lon),y:latToY(lat)}));
+ const maxMarks=zone==="FR"?12:(zone==="24"?5:zone==="94"?6:zone==="11"?7:10);
  for(const p of ordered){
   const x=lonToX(p.lon),y=latToY(p.lat);
   if(!Number.isFinite(x)||!Number.isFinite(y))continue;
+  if(cityGuardRadius>0&&cityAnchors.some(q=>
+     Math.abs(q.x-x)<cityGuardRadius&&Math.abs(q.y-y)<cityGuardRadius*.7))continue;
   const score=Math.round(p.value),unit=KFS_PROBA_SCALE[type].unit;
   const qty=(type==="vent"?Math.round(p.amount):Math.round(p.amount*10)/10)+unit;
   const proba=score+"%",lw=Math.max(proba.length,qty.length)*12+14,h=39;
