@@ -296,7 +296,7 @@ def short_plot_daily(model,metric,day,coords,values,coverage,start,end,run):
     ax.add_feature(cfeature.LAND,facecolor="#e3e9e2",zorder=0)
     surface=ax.pcolormesh(lons,lats,np.ma.masked_invalid(matrix),cmap=cmap,
         norm=norm,shading="nearest",transform=ccrs.PlateCarree(),zorder=1)
-    ax.coastlines("10m",linewidth=.75,color="#223646",zorder=3)
+    ax.coastlines("110m",linewidth=.75,color="#223646",zorder=3)
     ax.add_feature(cfeature.BORDERS,linewidth=.65,edgecolor="#334c60",zorder=3)
     for x,y,name in SHORT_CITIES:
         k=min(range(len(coords)),key=lambda j:
