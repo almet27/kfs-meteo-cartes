@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
   "status": "illustrative_model_maps",
-  "generated_utc": "2026-11-09T13:25:37.772822+00:00",
-  "source_generated_utc": "2026-11-09T13:24:25.985056+00:00",
+  "generated_utc": "2026-11-09T13:44:03.873475+00:00",
+  "source_generated_utc": "2026-11-09T13:42:59.957131+00:00",
   "charts_generated_utc": "2026-11-09T12:33:20.720935+00:00",
-  "source": "ECMWF Open Data (CC BY 4.0)",
+  "source": "ECMWF Open Data (CC BY 4.0), NOAA GFS si disponible",
   "not_weekly_anomalies": true,
   "period_maps": [
     {
@@ -12,14 +12,20 @@
       "step_h": 72,
       "path": "forecast-maps/tendance/tendance-carte-j3.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j3.png",
-      "size_bytes": 372496,
+      "size_bytes": 564441,
       "run_utc": {
         "ifs": "2026-11-09T06:00Z",
-        "aifs": "2026-11-09T06:00Z"
+        "aifs": "2026-11-09T06:00Z",
+        "gfs": "2026-11-09T06:00:00+00:00"
       },
       "valid_utc": "2026-11-12T06:00:00+00:00",
-      "title": "J+3 — synthèse synoptique IFS / AIFS",
+      "title": "J+3 — synthèse synoptique IFS / AIFS / GFS",
       "confidence_label": "Modérée (indicative)",
+      "marked_phenomena": [
+        "pluie_forte"
+      ],
+      "not_official_warning": true,
+      "gfs_available": true,
       "risk_status": "altitude_filtered_georeferenced",
       "risks": {
         "neige": {
@@ -68,27 +74,15 @@
       },
       "risk_markers": [
         {
-          "lon": 2.75,
-          "lat": 41.25,
-          "value": 62.1,
-          "kind": "vent_fort"
-        },
-        {
-          "lon": -4.5,
-          "lat": 43.5,
-          "value": 55.1,
-          "kind": "vent_fort"
-        },
-        {
-          "lon": -10.0,
-          "lat": 49.5,
-          "value": 52.7,
-          "kind": "vent_fort"
-        },
-        {
           "lon": 0.5,
           "lat": 42.5,
           "value": 37.5,
+          "kind": "pluie_forte"
+        },
+        {
+          "lon": -4.75,
+          "lat": 43.75,
+          "value": 30.4,
           "kind": "pluie_forte"
         },
         {
@@ -102,6 +96,18 @@
           "lat": 44.0,
           "value": 21.5,
           "kind": "pluie_forte"
+        },
+        {
+          "lon": 2.75,
+          "lat": 41.25,
+          "value": 62.1,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": -10.0,
+          "lat": 49.5,
+          "value": 52.7,
+          "kind": "vent_fort"
         }
       ],
       "t850_shading": {
@@ -114,22 +120,28 @@
         ],
         "description": "Température à 850 hPa modélisée, pas température au sol"
       },
-      "style": "kfs-editorial-masses-air-sans-fronts-v8",
-      "note": "Plages thermiques à 850 hPa et échelle °C fixe ; aucun front ni texte descriptif des masses d’air."
+      "style": "kfs-editorial-masses-air-sans-fronts-v10-grande-carte",
+      "note": "Grande carte géoréférencée 1544x720 sans encart superposé ; ! rouge localisé = pic dépassant un seuil marqué, non officiel."
     },
     {
       "id": "j7",
       "step_h": 168,
       "path": "forecast-maps/tendance/tendance-carte-j7.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j7.png",
-      "size_bytes": 412077,
+      "size_bytes": 633169,
       "run_utc": {
         "ifs": "2026-11-09T00:00Z",
-        "aifs": "2026-11-09T06:00Z"
+        "aifs": "2026-11-09T06:00Z",
+        "gfs": "2026-11-09T06:00:00+00:00"
       },
       "valid_utc": "2026-11-16T00:00:00+00:00",
-      "title": "J+7 — synthèse synoptique IFS / AIFS",
+      "title": "J+7 — synthèse synoptique IFS / AIFS / GFS",
       "confidence_label": "Limitée (indicative)",
+      "marked_phenomena": [
+        "pluie_forte"
+      ],
+      "not_official_warning": true,
+      "gfs_available": true,
       "risk_status": "altitude_filtered_georeferenced",
       "risks": {
         "neige": {
@@ -173,6 +185,12 @@
       },
       "risk_markers": [
         {
+          "lon": -8.5,
+          "lat": 42.25,
+          "value": 30.5,
+          "kind": "pluie_forte"
+        },
+        {
           "lon": 5.0,
           "lat": 53.0,
           "value": 58.7,
@@ -183,12 +201,6 @@
           "lat": 44.5,
           "value": 55.3,
           "kind": "vent_fort"
-        },
-        {
-          "lon": -8.5,
-          "lat": 42.25,
-          "value": 30.5,
-          "kind": "pluie_forte"
         },
         {
           "lon": -2.5,
@@ -213,22 +225,26 @@
         ],
         "description": "Température à 850 hPa modélisée, pas température au sol"
       },
-      "style": "kfs-editorial-masses-air-sans-fronts-v8",
-      "note": "Plages thermiques à 850 hPa et échelle °C fixe ; aucun front ni texte descriptif des masses d’air."
+      "style": "kfs-editorial-masses-air-sans-fronts-v10-grande-carte",
+      "note": "Grande carte géoréférencée 1544x720 sans encart superposé ; ! rouge localisé = pic dépassant un seuil marqué, non officiel."
     },
     {
       "id": "j10",
       "step_h": 240,
       "path": "forecast-maps/tendance/tendance-carte-j10.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j10.png",
-      "size_bytes": 365149,
+      "size_bytes": 560145,
       "run_utc": {
         "ifs": "2026-11-09T00:00Z",
-        "aifs": "2026-11-09T06:00Z"
+        "aifs": "2026-11-09T06:00Z",
+        "gfs": "2026-11-09T06:00:00+00:00"
       },
       "valid_utc": "2026-11-19T00:00:00+00:00",
-      "title": "J+10 — synthèse synoptique IFS / AIFS",
+      "title": "J+10 — synthèse synoptique IFS / AIFS / GFS",
       "confidence_label": "Faible (indicative)",
+      "marked_phenomena": [],
+      "not_official_warning": true,
+      "gfs_available": true,
       "risk_status": "altitude_filtered_georeferenced",
       "risks": {
         "neige": {
@@ -312,15 +328,15 @@
         ],
         "description": "Température à 850 hPa modélisée, pas température au sol"
       },
-      "style": "kfs-editorial-masses-air-sans-fronts-v8",
-      "note": "Plages thermiques à 850 hPa et échelle °C fixe ; aucun front ni texte descriptif des masses d’air."
+      "style": "kfs-editorial-masses-air-sans-fronts-v10-grande-carte",
+      "note": "Grande carte géoréférencée 1544x720 sans encart superposé ; ! rouge localisé = pic dépassant un seuil marqué, non officiel."
     },
     {
       "id": "j15",
       "step_h": 360,
       "path": "forecast-maps/tendance/tendance-carte-j15.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j15.png",
-      "size_bytes": 340480,
+      "size_bytes": 492346,
       "run_utc": {
         "aifs": "2026-11-09T06:00Z",
         "gfs": "2026-11-09T06:00:00+00:00"
@@ -328,6 +344,9 @@
       "valid_utc": "2026-11-24T06:00:00+00:00",
       "title": "J+15 — synthèse synoptique AIFS / GFS",
       "confidence_label": "Très limitée (indicative)",
+      "marked_phenomena": [],
+      "not_official_warning": true,
+      "gfs_available": true,
       "risk_status": "altitude_filtered_georeferenced",
       "risks": {
         "neige": {
@@ -412,11 +431,11 @@
         ],
         "description": "Température à 850 hPa modélisée, pas température au sol"
       },
-      "style": "kfs-editorial-masses-air-sans-fronts-v8",
-      "note": "Plages thermiques à 850 hPa et échelle °C fixe ; aucun front ni texte descriptif des masses d’air."
+      "style": "kfs-editorial-masses-air-sans-fronts-v10-grande-carte",
+      "note": "Grande carte géoréférencée 1544x720 sans encart superposé ; ! rouge localisé = pic dépassant un seuil marqué, non officiel."
     }
   ],
   "public": true,
   "graphic_style": "KFS PREMIUM 16:9 — 4 échéances, champs réels",
-  "note": "Infographies tirées des vraies cartes IFS/AIFS, flux moyen 850 hPa calculé, sans fronts inventés ni prévisions à 4 semaines extrapolées."
+  "note": "Cartes ECMWF IFS/AIFS et comparaison GFS si run NOAA vérifié ; ! rouge = signal modélisé marqué, pas de vigilance officielle. Aucun front inventé ni extrapolation à 4 semaines."
 }

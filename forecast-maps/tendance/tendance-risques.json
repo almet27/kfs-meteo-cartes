@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_utc": "2026-11-09T13:24:59.565356+00:00",
+  "generated_utc": "2026-11-09T13:43:29.190515+00:00",
   "atlas_generated_utc": "2026-11-09T12:33:20.720935+00:00",
   "reference": "ECMWF Open Data, Copernicus DEM GLO-90 via Open-Meteo — champs géoréférencés",
   "stages": [
@@ -58,27 +58,15 @@
       },
       "markers": [
         {
-          "lon": 2.75,
-          "lat": 41.25,
-          "value": 62.1,
-          "kind": "vent_fort"
-        },
-        {
-          "lon": -4.5,
-          "lat": 43.5,
-          "value": 55.1,
-          "kind": "vent_fort"
-        },
-        {
-          "lon": -10.0,
-          "lat": 49.5,
-          "value": 52.7,
-          "kind": "vent_fort"
-        },
-        {
           "lon": 0.5,
           "lat": 42.5,
           "value": 37.5,
+          "kind": "pluie_forte"
+        },
+        {
+          "lon": -4.75,
+          "lat": 43.75,
+          "value": 30.4,
           "kind": "pluie_forte"
         },
         {
@@ -92,6 +80,18 @@
           "lat": 44.0,
           "value": 21.5,
           "kind": "pluie_forte"
+        },
+        {
+          "lon": 2.75,
+          "lat": 41.25,
+          "value": 62.1,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": -10.0,
+          "lat": 49.5,
+          "value": 52.7,
+          "kind": "vent_fort"
         }
       ],
       "t850_shading": {
@@ -156,6 +156,12 @@
       },
       "markers": [
         {
+          "lon": -8.5,
+          "lat": 42.25,
+          "value": 30.5,
+          "kind": "pluie_forte"
+        },
+        {
           "lon": 5.0,
           "lat": 53.0,
           "value": 58.7,
@@ -166,12 +172,6 @@
           "lat": 44.5,
           "value": 55.3,
           "kind": "vent_fort"
-        },
-        {
-          "lon": -8.5,
-          "lat": 42.25,
-          "value": 30.5,
-          "kind": "pluie_forte"
         },
         {
           "lon": -2.5,
