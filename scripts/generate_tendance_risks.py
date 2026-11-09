@@ -22,6 +22,10 @@ import matplotlib.pyplot as plt
 import matplotlib.patheffects as pe
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
+from kfs_synoptic_overlays import (
+    premium_pictogram, t850_celsius, air_masses, frontal_candidates,
+    draw_air_masses, draw_frontal_candidates,
+)
 from cartopy.io import shapereader
 from shapely.geometry import Point
 from shapely.ops import unary_union
@@ -238,54 +242,10 @@ def snow_off_mountain(lon,lat,snow):
         "terrain_source":"Copernicus DEM GLO-90 via Open-Meteo"}
 
 def weather_pictogram(kind):
-    """Vector pictograms (no letter glyphs or system emoji fonts).
+    """Premium independent icon, no background circle."""
+    return premium_pictogram(kind)
 
-    White pictogram on a risk-coloured circular pin:
-    wind swirls, rainy cloud and snowflake.
-    """
-    area=DrawingArea(52,52,0,0)
-    bg=COLORS[kind]
-    area.add_artist(Circle((27,23),23,facecolor="#03172F",edgecolor="none",alpha=.50))
-    area.add_artist(Circle((26,27),22,facecolor=bg,edgecolor="#EAF8FF",linewidth=2.4))
-    area.add_artist(Circle((26,27),18.5,facecolor="none",edgecolor="#FFFFFF",linewidth=.6,alpha=.48))
-    ink="#092B49"
-    if kind in ("vent_fort","tempete"):
-        # Three curved air-stream lines, with trailing gust curls.
-        for y in (35,27,19):
-            verts=[(12,y),(19,y+3),(27,y+3),(32,y),
-                   (37,y-3),(40,y-1),(39,y+3)]
-            codes=[MplPath.MOVETO]+[MplPath.CURVE4]*6
-            area.add_artist(PathPatch(MplPath(verts,codes),fill=False,
-                        edgecolor=ink,linewidth=2.6,capstyle="round"))
-        area.add_artist(Circle((14,15),2.2,facecolor=ink,edgecolor="none"))
-    elif kind=="pluie_forte":
-        # Stylised cloud with three rain streaks.
-        area.add_artist(Circle((19,31),7.2,facecolor="white",edgecolor="none"))
-        area.add_artist(Circle((27,35),9,facecolor="white",edgecolor="none"))
-        area.add_artist(Circle((35,30),6.8,facecolor="white",edgecolor="none"))
-        area.add_artist(FancyBboxPatch((14,27),25,8,boxstyle="round,pad=0,rounding_size=4",
-                                       facecolor="white",edgecolor="none"))
-        for x in (19,26,33):
-            area.add_artist(Line2D([x+1,x-2],[21,14],linewidth=2.7,
-                          color=ink,solid_capstyle="round"))
-    elif kind=="neige":
-        for angle in (0,60,120):
-            a=math.radians(angle)
-            dx,dy=13*math.cos(a),13*math.sin(a)
-            area.add_artist(Line2D([26-dx,26+dx],[27-dy,27+dy],
-                         color="white",linewidth=2.7,solid_capstyle="round"))
-            # Two barbs at both ends of each snowflake arm.
-            for sign in (-1,1):
-                ex,ey=26+sign*dx,27+sign*dy
-                ax0,ay0=-sign*math.cos(a),-sign*math.sin(a)
-                px,py=-math.sin(a),math.cos(a)
-                for side in (-1,1):
-                    area.add_artist(Line2D([ex,ex+ax0*4+side*px*3],
-                              [ey,ey+ay0*4+side*py*3],color="white",linewidth=1.7,
-                              solid_capstyle="round"))
-    return area
-
-def render(id,run,fields,marks):
+def render(id,run,fields,marks,masses,fronts):
     lon,lat=fields["msl"][0],fields["msl"][1]
     msl=fields["msl"][2]/100.0
     gh=fields["gh"][2]/10.0
@@ -324,6 +284,10 @@ def render(id,run,fields,marks):
     for a in labels:a.set_path_effects([pe.Stroke(linewidth=2.5,foreground="#173147"),pe.Normal()])
     ax.coastlines("110m",linewidth=.85,color="#EFF6F9",zorder=10)
     ax.add_feature(cfeature.BORDERS,linewidth=.56,edgecolor="#E2EFF5",alpha=.82,zorder=10)
+    # Derived from numerical temperature gradients + 6-hour tendency + precipitation.
+    # Not official analysed fronts; long-range maps intentionally omit individual fronts.
+    draw_frontal_candidates(ax,fronts)
+    draw_air_masses(ax,masses)
     for mark in marks:
         x,y=mark["lon"],mark["lat"]
         icon=weather_pictogram(mark["kind"])
@@ -346,10 +310,13 @@ def calculate(id,step,model,atlas,now):
     f={}
     for key,param,var,lev in (("gh","gh","gh",500),("msl","msl","msl",None),
                                ("u","10u","u10",None),("v","10v","v10",None),
-                               ("tp","tp","tp",None),("sf","sf","sf",None)):
+                               ("tp","tp","tp",None),("sf","sf","sf",None),
+                               ("t850","t","t",850)):
         f[key]=single(client,model,step,run,param,var,lev)
     for key,param,var in (("tp_prev","tp","tp"),("sf_prev","sf","sf")):
         f[key]=single(client,model,step-6,run,param,var)
+    if step<=168:
+        f["t850_prev"]=single(client,model,step-6,run,"t","t",850)
     verify(f["msl"],list(f.values()))
     x,y=f["msl"][0],f["msl"][1]
     wind=np.hypot(f["u"][2],f["v"][2])*3.6
@@ -392,11 +359,19 @@ def calculate(id,step,model,atlas,now):
     for p in sorted(markers,key=lambda p:p["value"],reverse=True):
         if all(distance_km(p["lon"],p["lat"],q["lon"],q["lat"])>=125 for q in selected):
             selected.append(p)
+    t850=t850_celsius(f["t850"][2],f["t850"][4])
+    masses=air_masses(x,y,t850)
+    fronts=[]
+    if step<=168:
+        previous=t850_celsius(f["t850_prev"][2],f["t850_prev"][4])
+        fronts=frontal_candidates(x,y,t850,previous,rain,step)
     f["rain6h"]=(x,y,rain,recorded,"mm")
-    background=render(id,recorded,f,selected)
+    background=render(id,recorded,f,selected,masses,fronts)
     return {"id":id,"step_h":step,"model":model,"run_utc":recorded,
             "valid_utc":(run+timedelta(hours=step)).isoformat(),
             "background_path":str(background),"risks":risks,"markers":selected,
+            "air_masses":masses,"frontal_zones":fronts,
+            "frontal_method":"Thermal gradient / 6h tendency / rain (experimental), only J+3/J+7",
             "risk_scope":"France et secteurs proches, domaine rectangulaire terre + mer",
             "method":"Vent moyen 10m, pluie/neige 6h ; neige hors relief selon altitudes GLO-90 ; pas une vigilance officielle."}
 
