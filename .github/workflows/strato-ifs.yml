@@ -1,0 +1,53 @@
+name: KFS MÉTÉO · Stratosphère ECMWF IFS
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - scripts/generate_strato.py
+      - .github/workflows/strato-ifs.yml
+  schedule:
+    # Après publication habituelle des runs longs 00Z et 12Z.
+    - cron: '20 8,20 * * *'
+permissions:
+  contents: write
+concurrency:
+  group: kfs-strato-ifs
+  cancel-in-progress: false
+jobs:
+  stratosphere:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Synchroniser la branche main
+        run: |
+          git fetch origin main
+          git checkout -B main origin/main
+      - name: Installer les outils GRIB et cartographiques
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libeccodes-dev
+          python -m pip install --upgrade pip
+          pip install ecmwf-opendata cfgrib eccodes xarray numpy matplotlib cartopy
+      - name: Générer cartes 10, 50, 100 hPa et catalogue
+        run: |
+          python -m py_compile scripts/generate_strato.py
+          python scripts/generate_strato.py
+      - name: Publier les cartes stratosphériques
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add strato/metadata.json strato/*.png
+          if ! git diff --cached --quiet; then
+            git commit -m "Actualiser cartes KFS stratosphère ECMWF IFS"
+            for attempt in 1 2 3 4 5 6; do
+              git pull --rebase
+              if git push; then exit 0; fi
+              sleep 5
+            done
+            echo "Publication KFS /strato impossible après 6 tentatives" >&2
+            exit 1
+          fi
