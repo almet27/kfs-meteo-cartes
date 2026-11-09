@@ -1,24 +1,24 @@
 {
-  "generated_utc": "2026-11-09T01:38:30.882643+00:00",
-  "run_utc": "2026-11-08T18:00:00+00:00",
+  "generated_utc": "2026-11-09T06:20:31.432971+00:00",
+  "run_utc": "2026-11-09T00:00:00+00:00",
   "runs_utc": {
     "gfs": {
-      "24": "2026-11-08T18:00:00+00:00",
-      "48": "2026-11-08T18:00:00+00:00",
-      "72": "2026-11-08T18:00:00+00:00",
-      "120": "2026-11-08T18:00:00+00:00",
-      "168": "2026-11-08T18:00:00+00:00",
-      "240": "2026-11-08T18:00:00+00:00",
-      "360": "2026-11-08T18:00:00+00:00"
+      "24": "2026-11-09T00:00:00+00:00",
+      "48": "2026-11-09T00:00:00+00:00",
+      "72": "2026-11-09T00:00:00+00:00",
+      "120": "2026-11-09T00:00:00+00:00",
+      "168": "2026-11-09T00:00:00+00:00",
+      "240": "2026-11-09T00:00:00+00:00",
+      "360": "2026-11-09T00:00:00+00:00"
     },
     "aigfs": {
-      "24": "2026-11-08T18:00:00+00:00",
-      "48": "2026-11-08T18:00:00+00:00",
-      "72": "2026-11-08T18:00:00+00:00",
-      "120": "2026-11-08T18:00:00+00:00",
-      "168": "2026-11-08T18:00:00+00:00",
-      "240": "2026-11-08T18:00:00+00:00",
-      "360": "2026-11-08T18:00:00+00:00"
+      "24": "2026-11-09T00:00:00+00:00",
+      "48": "2026-11-09T00:00:00+00:00",
+      "72": "2026-11-09T00:00:00+00:00",
+      "120": "2026-11-09T00:00:00+00:00",
+      "168": "2026-11-09T00:00:00+00:00",
+      "240": "2026-11-09T00:00:00+00:00",
+      "360": "2026-11-09T00:00:00+00:00"
     }
   },
   "source": "NOAA NCEP NOMADS",
@@ -132,50 +132,50 @@
         "rain6h": "APCP_6h*(1-CPOFP_at_valid_time/100)",
         "snow6h": "APCP_6h*CPOFP_at_valid_time/100",
         "warning": "ESTIMATION. CPOFP est instantané en fin d'intervalle. Le champ snow6h contient les précipitations gelées (dont neige, potentiellement grésil), et non un cumul neige natif.",
-        "wet_cells_with_valid_phase": 10645,
-        "wet_cells_total": 41946
+        "wet_cells_with_valid_phase": 11064,
+        "wet_cells_total": 41675
       },
       "48": {
         "rain6h": "APCP_6h*(1-CPOFP_at_valid_time/100)",
         "snow6h": "APCP_6h*CPOFP_at_valid_time/100",
         "warning": "ESTIMATION. CPOFP est instantané en fin d'intervalle. Le champ snow6h contient les précipitations gelées (dont neige, potentiellement grésil), et non un cumul neige natif.",
-        "wet_cells_with_valid_phase": 11133,
-        "wet_cells_total": 45028
+        "wet_cells_with_valid_phase": 11435,
+        "wet_cells_total": 43710
       },
       "72": {
         "rain6h": "APCP_6h*(1-CPOFP_at_valid_time/100)",
         "snow6h": "APCP_6h*CPOFP_at_valid_time/100",
         "warning": "ESTIMATION. CPOFP est instantané en fin d'intervalle. Le champ snow6h contient les précipitations gelées (dont neige, potentiellement grésil), et non un cumul neige natif.",
-        "wet_cells_with_valid_phase": 12188,
-        "wet_cells_total": 49039
+        "wet_cells_with_valid_phase": 14966,
+        "wet_cells_total": 52696
       },
       "120": {
         "rain6h": "APCP_6h*(1-CPOFP_at_valid_time/100)",
         "snow6h": "APCP_6h*CPOFP_at_valid_time/100",
         "warning": "ESTIMATION. CPOFP est instantané en fin d'intervalle. Le champ snow6h contient les précipitations gelées (dont neige, potentiellement grésil), et non un cumul neige natif.",
-        "wet_cells_with_valid_phase": 13208,
-        "wet_cells_total": 47411
+        "wet_cells_with_valid_phase": 12310,
+        "wet_cells_total": 45111
       },
       "168": {
         "rain6h": "APCP_6h*(1-CPOFP_at_valid_time/100)",
         "snow6h": "APCP_6h*CPOFP_at_valid_time/100",
         "warning": "ESTIMATION. CPOFP est instantané en fin d'intervalle. Le champ snow6h contient les précipitations gelées (dont neige, potentiellement grésil), et non un cumul neige natif.",
-        "wet_cells_with_valid_phase": 11144,
-        "wet_cells_total": 44912
+        "wet_cells_with_valid_phase": 14064,
+        "wet_cells_total": 47498
       },
       "240": {
         "rain6h": "APCP_6h*(1-CPOFP_at_valid_time/100)",
         "snow6h": "APCP_6h*CPOFP_at_valid_time/100",
         "warning": "ESTIMATION. CPOFP est instantané en fin d'intervalle. Le champ snow6h contient les précipitations gelées (dont neige, potentiellement grésil), et non un cumul neige natif.",
-        "wet_cells_with_valid_phase": 13195,
-        "wet_cells_total": 49496
+        "wet_cells_with_valid_phase": 11986,
+        "wet_cells_total": 45893
       },
       "360": {
         "rain6h": "APCP_6h*(1-CPOFP_at_valid_time/100)",
         "snow6h": "APCP_6h*CPOFP_at_valid_time/100",
         "warning": "ESTIMATION. CPOFP est instantané en fin d'intervalle. Le champ snow6h contient les précipitations gelées (dont neige, potentiellement grésil), et non un cumul neige natif.",
-        "wet_cells_with_valid_phase": 10973,
-        "wet_cells_total": 53015
+        "wet_cells_with_valid_phase": 12915,
+        "wet_cells_total": 47746
       }
     }
   },
