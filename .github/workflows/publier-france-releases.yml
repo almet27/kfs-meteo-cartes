@@ -73,11 +73,12 @@ jobs:
             # Jamais ecraser un run plus recent avec une archive plus ancienne.
             previous="/tmp/kfs-previous-$model-$horizon"
             mkdir -p "$previous"
+            old_cycle=""
+            new_cycle="$(jq -r '.run_utc // ""' "$staging/metadata.json")"
             if gh release view "$tag" >/dev/null 2>&1; then
               gh release download "$tag" --pattern metadata.json --dir "$previous" --clobber || true
               if [ -f "$previous/metadata.json" ]; then
                 old_cycle="$(jq -r '.run_utc // ""' "$previous/metadata.json")"
-                new_cycle="$(jq -r '.run_utc // ""' "$staging/metadata.json")"
                 if [ -n "$old_cycle" ] && [[ "$new_cycle" < "$old_cycle" ]]; then
                   echo "KEEP $model : run $old_cycle plus récent que $new_cycle"
                   # Garder les cartes horaires récentes intactes. Les bilans
@@ -122,7 +123,34 @@ jobs:
                 --notes "Cartes France +3h/+6h a +72h, issues de donnees reelles. Release mise a jour sur les nouveaux runs. Europe non modifiee."
             fi
             echo "Publication France $model : $tag"
-            gh release upload "$tag" "$staging"/*.webp "$staging/metadata.json" --clobber
+            # Si c'est le même run, conserver les cartes horaires déjà en place :
+            # ajouter uniquement le produit quotidien et son manifeste.
+            if [ -n "$old_cycle" ] && [ "$old_cycle" = "$new_cycle" ]; then
+              shopt -s nullglob
+              daily_assets=("$staging"/daily-*.webp)
+              shopt -u nullglob
+              if [ "${#daily_assets[@]}" -gt 0 ]; then
+                upload_assets=("${daily_assets[@]}" "$staging/metadata.json")
+                echo "Même run : publication sélective de ${#daily_assets[@]} bilans quotidiens"
+              else
+                upload_assets=("$staging"/*.webp "$staging/metadata.json")
+              fi
+            else
+              upload_assets=("$staging"/*.webp "$staging/metadata.json")
+            fi
+            uploaded=0
+            for attempt in 1 2 3 4; do
+              if gh release upload "$tag" "${upload_assets[@]}" --clobber; then
+                uploaded=1
+                break
+              fi
+              echo "GitHub 502 ou interruption : nouvel essai $attempt sur $tag"
+              sleep $((5*attempt))
+            done
+            if [ "$uploaded" -ne 1 ]; then
+              echo "Échec de publication $tag après 4 essais" >&2
+              exit 1
+            fi
             published=$((published+1))
           done
           echo "Modeles France publies : $published"
