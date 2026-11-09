@@ -1,0 +1,92 @@
+name: KFS France - miroir des catalogues Discord
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/france-catalog-mirror.yml'
+  workflow_run:
+    workflows:
+      - 'KFS France - publication isolee des cartes WebP'
+    types: [completed]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: kfs-france-catalog-mirror
+  cancel-in-progress: false
+
+jobs:
+  mirror:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Copier uniquement les petits catalogues des releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          mkdir -p forecast-maps/france/catalogs
+          count=0
+          for model in ifs gfs aifs-single aigfs; do
+            for suffix in '' '-early' '-daily'; do
+              tag="france-${model}${suffix}"
+              tmp="$(mktemp -d)"
+              if ! gh release download "$tag" --repo "$GH_REPO" --pattern metadata.json --dir "$tmp" --clobber >/dev/null 2>&1; then
+                rm -rf "$tmp"
+                echo "Sans publication $tag : ne pas créer de catalogue artificiel"
+                continue
+              fi
+              source="$tmp/metadata.json"
+              target="forecast-maps/france/catalogs/${tag}.json"
+              if python - "$source" "$target" "$model" <<'PY'
+          import json,sys,datetime
+          from pathlib import Path
+          src,dst,model=map(str,sys.argv[1:])
+          doc=json.loads(Path(src).read_text())
+          if doc.get("schema")!=2 or doc.get("model")!=model or doc.get("area")!="France":
+              raise SystemExit("Catalogue non conforme")
+          dt=datetime.datetime.fromisoformat(doc["run_utc"].replace("Z","+00:00"))
+          if dt.tzinfo is None: raise SystemExit("Run sans fuseau")
+          if not (doc.get("maps") or doc.get("daily")): raise SystemExit("Aucune carte validée")
+          if Path(src).stat().st_size>250000: raise SystemExit("Catalogue trop gros")
+          if Path(dst).exists():
+              older=json.loads(Path(dst).read_text())
+              old=older.get("run_utc","")
+              if old and datetime.datetime.fromisoformat(old.replace("Z","+00:00"))>dt:
+                  print("Conserver le miroir plus récent",dst)
+                  raise SystemExit(0)
+          Path(dst).write_text(json.dumps(doc,ensure_ascii=False,indent=2)+"\n")
+          PY
+              then
+                count=$((count+1))
+              fi
+              rm -rf "$tmp"
+            done
+          done
+          echo "Catalogues vérifiés : $count"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add forecast-maps/france/catalogs/
+          if git diff --cached --quiet; then
+            echo "Aucune nouveauté"
+            exit 0
+          fi
+          git commit -m 'Mettre à jour les catalogues France pour Discord sans 429'
+          for attempt in 1 2 3 4; do
+            git fetch origin main
+            if ! git rebase origin/main; then
+              git rebase --abort || true
+              echo "Conflit : ne pas écraser un catalogue plus récent"
+              exit 1
+            fi
+            if git push origin HEAD:main; then exit 0; fi
+            sleep $((attempt*3))
+          done
+          exit 1
