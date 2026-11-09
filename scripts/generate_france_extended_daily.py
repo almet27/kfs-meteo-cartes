@@ -23,6 +23,7 @@ import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 from PIL import Image
 from generate_france_shortterm_risks import points
+from kfs_weather_symbols import overlay as draw_wmo_icons
 
 OUT=Path("forecast-maps/france/daily-extended")
 OUT.mkdir(parents=True,exist_ok=True)
@@ -37,14 +38,18 @@ FIELDS={
 PARIS=ZoneInfo("Europe/Paris")
 
 def fetch_batch(model,points_):
-    qs=urlencode({"latitude":",".join(str(p[0]) for p in points_),
-                  "longitude":",".join(str(p[1]) for p in points_),
-                  "models":SOURCE[model],
-                  "daily":",".join(x[0] for x in FIELDS.values()),
-                  "forecast_days":7,"timezone":"Europe/Paris"})
-    url="https://api.open-meteo.com/v1/forecast?"+qs
+    # Un seul appel batch pour les valeurs + code WMO du jour.
+    # Si le modèle ne produit pas weather_code, on conserve les cartes numériques.
+    code_available=True
     error=None
-    for attempt in range(3):
+    for attempt in range(4):
+        qs=urlencode({"latitude":",".join(str(p[0]) for p in points_),
+                      "longitude":",".join(str(p[1]) for p in points_),
+                      "models":SOURCE[model],
+                      "daily":",".join([x[0] for x in FIELDS.values()]+
+                                       (["weather_code"] if code_available else [])),
+                      "forecast_days":7,"timezone":"Europe/Paris"})
+        url="https://api.open-meteo.com/v1/forecast?"+qs
         try:
             with urlopen(Request(url,headers={"User-Agent":"KFS-Meteo-Daily/1.0"}),
                          timeout=45) as response:
@@ -54,8 +59,12 @@ def fetch_batch(model,points_):
             return value
         except (HTTPError,URLError,TimeoutError,ValueError) as exc:
             error=exc
+            if isinstance(exc,HTTPError) and exc.code==400 and code_available:
+                code_available=False
+                print("KFS_J5_WMO_UNSUPPORTED",model,flush=True)
+                continue
             if isinstance(exc,HTTPError) and exc.code in (400,401,403):raise
-            time.sleep(2+2*attempt)
+            if attempt<3:time.sleep(2+2*min(attempt,2))
     raise RuntimeError("API "+model+" indisponible : "+str(error)[:180])
 
 def fetch_all(model,coords):
@@ -71,7 +80,7 @@ def fetch_all(model,coords):
     if any(x is None for x in values):raise RuntimeError("Données incomplètes")
     return values
 
-def render(model,metric,offset,date,coords,vals):
+def render(model,metric,offset,date,coords,vals,codes=None):
     variable,label,vmin,vmax,cmap=FIELDS[metric]
     fig=plt.figure(figsize=(11,10.2),dpi=120,facecolor="#082a4e")
     ax=fig.add_axes([.06,.16,.87,.68],projection=ccrs.PlateCarree())
@@ -90,6 +99,12 @@ def render(model,metric,offset,date,coords,vals):
     scatter=ax.scatter(xs,ys,c=zs,cmap=cmap,norm=norm,s=65,
                        edgecolors="#1a3551",linewidths=.14,
                        transform=ccrs.PlateCarree(),zorder=4)
+    if codes:
+        try:
+            icons=draw_wmo_icons(ax,coords,codes,max_icons=8)
+            if icons:print("KFS_J5_WMO_ICONS",model,metric,offset,icons,flush=True)
+        except Exception as exc:
+            print("KFS_J5_WMO_ICON_SKIPPED",str(exc)[:130],flush=True)
     cb=fig.colorbar(scatter,ax=ax,orientation="horizontal",shrink=.82,pad=.055)
     cb.ax.tick_params(colors="#eef5fc")
     cb.outline.set_edgecolor("#e8f2ff")
@@ -126,6 +141,15 @@ def main():
         for day in (4,5):
             target=(date+timedelta(days=day)).isoformat()
             fields={}
+            day_codes=[]
+            for record in records:
+                daily=record.get("daily",{})
+                try:
+                    at_day=daily["time"].index(target)
+                    code=daily.get("weather_code",[])[at_day]
+                except (ValueError,IndexError,KeyError,TypeError):
+                    code=None
+                day_codes.append(code)
             for metric,(name,_,_,_,_) in FIELDS.items():
                 values=[]
                 for record in records:
@@ -136,7 +160,7 @@ def main():
                     except (ValueError,IndexError,KeyError,TypeError):
                         value=None
                     values.append(value)
-                fields[metric]=render(model,metric,day,target,coords,values)
+                fields[metric]=render(model,metric,day,target,coords,values,day_codes)
             maps[str(day)]={"date":target,"maps":fields}
         all_models[model]={"source":SOURCE[model],"days":maps}
         print("KFS_FRANCE_J5_MODEL_OK",model,len(coords),flush=True)
