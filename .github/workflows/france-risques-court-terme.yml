@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - scripts/generate_france_shortterm_risks.py
+      - scripts/kfs_weather_symbols.py
       - scripts/check_france_risk_runs.py
       - .github/workflows/france-risques-court-terme.yml
   schedule:
@@ -36,7 +37,7 @@ jobs:
           python -m pip install 'numpy>=1.26,<3' 'matplotlib>=3.8' 'cartopy>=0.23'
       - name: Vérifier la syntaxe
         if: github.event_name != 'schedule' || steps.poll.outputs.generate == 'true'
-        run: python -m py_compile scripts/generate_france_shortterm_risks.py scripts/check_france_risk_runs.py
+        run: python -m py_compile scripts/generate_france_shortterm_risks.py scripts/check_france_risk_runs.py scripts/kfs_weather_symbols.py
       - name: Calculer les vrais champs ARÔME et ICON et produire les cartes
         if: github.event_name != 'schedule' || steps.poll.outputs.generate == 'true'
         run: python scripts/generate_france_shortterm_risks.py
