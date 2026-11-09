@@ -117,7 +117,7 @@ function kfsQAggregate(days) {
   const episodes=[];let run=[];
   const endRun=()=>{if(run.length>=3)episodes.push({start:run[0].date,end:run[run.length-1].date,days:run.length});run=[];};
   for(const day of sorted){
-    const match=day.tx!==null&&day.tn!==null&&day.tx>=30&&day.tn>=20;
+    const match=day.tx!==null&&day.tx>30;
     if(match){
       if(run.length && (Date.parse(day.date)-Date.parse(run[run.length-1].date)!==86400000))endRun();
       run.push(day);
@@ -163,7 +163,7 @@ function kfsQReport(city,station,year,month,data,rubrique){
   }
   if(["bilan","complet","episodes","temperature"].includes(rubrique)||!rubrique){
     const labels=a.episodes.slice(0,4).map(e=>kfsQCalendarDate(e.start)+" → "+kfsQCalendarDate(e.end)+" ("+e.days+" j)").join("\n");
-    add("🥵 Séquences chaudes (indicateur simplifié)","**"+a.episodes.length+" séquence(s), "+a.hotSequenceDays+" jours**\nCritère expérimental : ≥3 jours consécutifs, Tx ≥30 °C et Tn ≥20 °C."+(labels?"\n"+labels:""));
+    add("🥵 Séquences chaudes (indicateur simplifié)","**"+a.episodes.length+" séquence(s), "+a.hotSequenceDays+" jours**\nCritère : au moins 3 jours consécutifs avec Tmax > 30 °C (sans condition sur les nuits). Ce n’est pas une définition officielle de canicule."+(labels?"\n"+labels:""));
   }
   if(["bilan","complet","pluie"].includes(rubrique)||!rubrique){
     add("🌧️ Précipitations","Cumul : **"+kfsQR(a.rainSum," mm")+"**\nJours ≥1 mm : **"+a.wet1+"**\nJours ≥10 mm : **"+a.wet10+"**\nJours ≥20 mm : **"+a.wet20+"**");
