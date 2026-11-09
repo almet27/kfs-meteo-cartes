@@ -91,27 +91,52 @@ def _weather_icon(code,size=32):
                 closed=True,facecolor=sun,edgecolor=ink,linewidth=.8))
     return area
 
-def overlay(ax,coords,codes,max_icons=8,exclude_cities=True):
-    """Place au maximum max_icons, uniquement aux points effectivement échantillonnés."""
-    if not codes or len(coords)!=len(codes):
+def overlay(ax,coords,codes,max_icons=8,exclude_cities=True,protected=None):
+    """Positionne les pictos loin des textes, sur des points du modèle vérifiés.
+
+    protected : centres lon/lat de nombres déjà affichés. La distance est
+    mesurée en pixels sur la carte et non en degrés pour éviter les collisions
+    quelles que soient la projection et la taille d'export.
+    """
+    if codes is None or len(coords)!=len(codes) or not coords:
         return 0
+    # Matplotlib fournit les dimensions réelles après définition de l'emprise.
+    ax.figure.canvas.draw()
+    to_px=ax.transData.transform
+    protected=list(protected or [])
+    protected.extend(CITIES if exclude_cities else [])
+    reserved=[to_px((lon,lat)) for lon,lat in protected]
     plotted=[]
+    taken=set()
     for lo,la in ANCHORS:
-        nearest=min(range(len(coords)),
-            key=lambda i:((coords[i][1]-lo)*math.cos(math.radians(la)))**2+
-                         (coords[i][0]-la)**2)
-        latitude,longitude=coords[nearest]
-        if exclude_cities and any(math.hypot((longitude-x)*.72,latitude-y)<.42
-                                  for x,y in CITIES):
-            continue
-        if any(math.hypot((longitude-x)*.72,latitude-y)<1.15 for x,y in plotted):
-            continue
-        graphic=_weather_icon(codes[nearest],size=32)
-        if graphic is None:
-            continue
-        ab=AnnotationBbox(graphic,(longitude,latitude),xycoords="data",
-            box_alignment=(.5,.5),frameon=False,zorder=13,pad=0)
-        ax.add_artist(ab)
-        plotted.append((longitude,latitude))
-        if len(plotted)>=max_icons:break
+        # Recherche locale parmi les vrais points météorologiques terrestres.
+        # On déplace la sélection vers un point voisin, jamais le symbole
+        # d'un phénomène vers une zone au code météo différent.
+        candidates=sorted(range(len(coords)),key=lambda i:
+            ((coords[i][1]-lo)*math.cos(math.radians(la)))**2+
+            (coords[i][0]-la)**2)
+        for i in candidates[:75]:
+            if i in taken or not kind(codes[i]):
+                continue
+            latitude,longitude=coords[i]
+            px,py=to_px((longitude,latitude))
+            # Zone protégée du libellé : ~50x25px + icône ~50px + marge.
+            if any(abs(px-x)<61 and abs(py-y)<51 for x,y in reserved):
+                continue
+            if any(math.hypot(px-x,py-y)<116 for x,y in plotted):
+                continue
+            # Limiter le déplacement au voisinage (~ 1 degré).
+            if math.hypot((longitude-lo)*.72,latitude-la)>1.05:
+                continue
+            graphic=_weather_icon(codes[i],size=28)
+            if graphic is None:
+                continue
+            ax.add_artist(AnnotationBbox(graphic,(longitude,latitude),
+                xycoords="data",box_alignment=(.5,.5),frameon=False,
+                zorder=13,pad=0))
+            plotted.append((px,py))
+            taken.add(i)
+            break
+        if len(plotted)>=max_icons:
+            break
     return len(plotted)
