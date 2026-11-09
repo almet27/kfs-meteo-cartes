@@ -1,9 +1,9 @@
 {
-  "generated_utc": "2026-11-09T12:31:51.471202+00:00",
-  "run_utc": "2026-11-09T06:00:00+00:00",
+  "generated_utc": "2026-11-09T15:45:40.795091+00:00",
+  "run_utc": "2026-11-09T12:00:00+00:00",
   "runs_utc": {
     "gfs": {
-      "24": "2026-11-09T06:00:00+00:00",
+      "24": "2026-11-09T12:00:00+00:00",
       "48": "2026-11-09T06:00:00+00:00",
       "72": "2026-11-09T06:00:00+00:00",
       "120": "2026-11-09T06:00:00+00:00",
@@ -12,7 +12,7 @@
       "360": "2026-11-09T06:00:00+00:00"
     },
     "aigfs": {
-      "24": "2026-11-09T06:00:00+00:00",
+      "24": "2026-11-09T12:00:00+00:00",
       "48": "2026-11-09T06:00:00+00:00",
       "72": "2026-11-09T06:00:00+00:00",
       "120": "2026-11-09T06:00:00+00:00",
@@ -132,8 +132,8 @@
         "rain6h": "APCP_6h*(1-CPOFP_at_valid_time/100)",
         "snow6h": "APCP_6h*CPOFP_at_valid_time/100",
         "warning": "ESTIMATION. CPOFP est instantané en fin d'intervalle. Le champ snow6h contient les précipitations gelées (dont neige, potentiellement grésil), et non un cumul neige natif.",
-        "wet_cells_with_valid_phase": 12299,
-        "wet_cells_total": 45075
+        "wet_cells_with_valid_phase": 12236,
+        "wet_cells_total": 45883
       },
       "48": {
         "rain6h": "APCP_6h*(1-CPOFP_at_valid_time/100)",
@@ -179,5 +179,8 @@
       }
     }
   },
-  "errors": {}
+  "errors": {
+    "aigfs-h048-t850": "\nNo index file was found for https://nomads.ncep.noaa.gov/pub/data/nccf/com/aigfs/prod/aigfs.20261109/12/model/atmos/grib2/aigfs.t12z.pres.f048.grib2\nDownload the full file first (with `H.download()`).\nYou will need to remake the Herbie object (H = `Herbie()`)\nor delete this cached property: `del H.index_as_dataframe()`",
+    "aigfs-h048-z500_msl": "\nNo index file was found for https://nomads.ncep.noaa.gov/pub/data/nccf/com/aigfs/prod/aigfs.20261109/12/model/atmos/grib2/aigfs.t12z.pres.f048.grib2\nDownload the full file first (with `H.download()`).\nYou will need to remake the Herbie object (H = `Herbie()`)\nor delete this cached property: `del H.index_as_dataframe()`"
+  }
 }
