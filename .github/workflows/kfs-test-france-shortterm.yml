@@ -62,3 +62,6 @@ jobs:
               except Exception as e:
                 print("META_ERROR",model,root,str(e)[:135])
           PY
+      - uses: actions/checkout@v4
+      - name: Confirmer qu'aucun run publié ne doit être régénéré
+        run: python scripts/check_france_risk_runs.py
