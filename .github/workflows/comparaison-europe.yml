@@ -13,7 +13,7 @@ on:
       - 'forecast-maps/europe/metadata.json'
       - 'forecast-maps/europe/noaa-metadata.json'
   schedule:
-    - cron: '35 1,7,13,19 * * *'
+    - cron: '04,09,14,19,24,29,34,39,44,49,54,59 * * *' # rattrapage toutes les 5 min après sorties
 permissions:
   contents: write
 concurrency:
@@ -33,11 +33,61 @@ jobs:
         run: |
           git fetch origin main
           git checkout -B main origin/main
+      - name: Vérifier la fraîcheur de la comparaison
+        id: freshness
+        env:
+          KFS_EVENT: ${{ github.event_name }}
+        run: |
+          python - <<'PY'
+          import json,os
+          from datetime import datetime, timezone
+          from pathlib import Path
+          root=Path("forecast-maps/europe")
+          def load(name):
+              try: return json.loads((root/name).read_text(encoding="utf-8"))
+              except (OSError,ValueError): return {}
+          def dt(raw):
+              try:
+                  value=datetime.fromisoformat(str(raw).replace("Z","+00:00"))
+                  return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
+              except (TypeError,ValueError):
+                  return datetime(1970,1,1,tzinfo=timezone.utc)
+          compare=load("compare-metadata.json")
+          manifests={"ifs":load("metadata.json"),"aifs-single":load("metadata.json"),
+                     "gfs":load("noaa-metadata.json"),"aigfs":load("noaa-metadata.json")}
+          stale=not compare.get("runs_by_map")
+          if not stale:
+              last=dt(compare.get("generated_utc"))
+              if any(dt(m.get("generated_utc"))>last for m in manifests.values()):
+                  stale=True
+          if not stale:
+              for model,source in manifests.items():
+                  for step,fields in source.get("maps",{}).get(model,{}).items():
+                      for field in fields:
+                          expected=source.get("runs_utc",{}).get(model,{}).get(step)
+                          published=compare.get("runs_by_map",{}).get(step,{}).get(field,{}).get(model)
+                          if expected and dt(expected)!=dt(published):
+                              stale=True
+                              break
+                      if stale: break
+                  if stale: break
+          force=os.getenv("KFS_EVENT")=="push"
+          rebuild=stale or force
+          print("KFS_COMPARE_FRESHNESS",{"stale":stale,"force":force,"rebuild":rebuild,
+                "comparison":compare.get("generated_utc"),
+                "ecmwf":manifests["ifs"].get("generated_utc"),
+                "noaa":manifests["gfs"].get("generated_utc")})
+          with open(os.environ["GITHUB_OUTPUT"],"a") as output:
+              output.write("rebuild="+str(rebuild).lower()+"\n")
+          PY
       - name: Installer Pillow
+        if: steps.freshness.outputs.rebuild == 'true'
         run: pip install Pillow
       - name: Assembler les modèles
+        if: steps.freshness.outputs.rebuild == 'true'
         run: python scripts/compare_europe_forecasts.py
       - name: Publier les comparaisons
+        if: steps.freshness.outputs.rebuild == 'true'
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
