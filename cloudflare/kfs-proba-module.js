@@ -685,6 +685,48 @@ async function kfsProbaEcmwfRead(type,threshold,zone,day,points){
  }catch(e){console.error("KFS_PROBA_ECMWF_OPEN",String(e));return null;}
 }
 
+// Expérimental : fraction de 8 membres IFS-ENS, générée hors Open-Meteo.
+// Sans fichier valide, ne jamais inventer une carte.
+const KFS_PROBA_ECMWF_SUBSET_FIELDS={
+ neige:{"1":"snow1","3":"snow3","5":"snow5","10":"snow10"},
+ orage:{"1":"storm1","2":"storm2","3":"storm3","4":"storm4","5":"storm5"}
+};
+async function kfsProbaEcmwfSubsetRead(type,threshold,zone,day,points){
+ const field=KFS_PROBA_ECMWF_SUBSET_FIELDS[type]?.[String(threshold)];
+ if(!field)return null;
+ const urls=[
+  "https://raw.githubusercontent.com/almet27/kfs-meteo-cartes/main/proba/ecmwf-subset-probabilities.json",
+  "https://almet27.github.io/kfs-meteo-cartes/proba/ecmwf-subset-probabilities.json"
+ ];
+ try{
+  let j=null;
+  for(const url of urls){
+   try{
+    const resp=await fetch(url,{signal:AbortSignal.timeout(3000),headers:{accept:"application/json"},
+     cf:{cacheTtl:900,cacheEverything:true}});
+    if(!resp.ok)continue;
+    j=await resp.json();
+    if(j?.schema===1)break;
+   }catch(e){console.error("KFS_PROBA_SUBSET_SOURCE",String(e).slice(0,150));}
+  }
+  if(!j||j.provider!=="ECMWF IFS ENS 8-member subset"||j.ensemble_members?.length!==8)
+   throw Error("Fichier ECMWF ENS 8 membres indisponible.");
+  const age=Date.now()-Date.parse(j.run_utc);
+  if(!Number.isFinite(age)||age<0||age>48*3600000)
+   throw Error("Run ECMWF ENS échantillonné trop ancien.");
+  const d=j.days?.[day],pct=d?.fields?.[field]?.[zone];
+  const meanKey=type==="neige"?"snow_mean_cm":"storm_mean_level";
+  const amounts=d?.fields?.[meanKey]?.[zone];
+  if(!Array.isArray(pct)||pct.length!==points.length||!Array.isArray(amounts)||
+    amounts.length!==points.length||j.zone_point_counts?.[zone]!==points.length)
+   throw Error("Points ECMWF ENS incomplets.");
+  if(pct.some(v=>!Number.isFinite(v)||v<0||v>100)||amounts.some(v=>!Number.isFinite(v)||v<0))
+   throw Error("Probabilités/quantités expérimentales invalides ou incomplètes.");
+  return {source:"ECMWF-8",values:pct,amounts,run:j.run_utc,
+    members:j.ensemble_members.length,period_start:d.valid_from_utc,period_end:d.valid_to_utc};
+ }catch(e){console.error("KFS_PROBA_ECMWF_SUBSET",String(e));return null;}
+}
+
 async function kfsProbaComplete(interaction,phenom,zone,jour,seuil){
  try{
   const rules=KFS_PROBA_RULES[phenom];
@@ -699,6 +741,31 @@ async function kfsProbaComplete(interaction,phenom,zone,jour,seuil){
   const points=kfsProbaSamples(features,zone!=="FR");
   if(points.length<2)throw Error("Échantillonnage spatial insuffisant.");
   const day=kfsProbaDay(jour),available=[],failures=[];
+  const subset=await kfsProbaEcmwfSubsetRead(phenom,seuil,zone,day,points);
+  if(subset){
+   for(let i=0;i<points.length;i++){points[i].value=subset.values[i];points[i].amount=subset.amounts[i];}
+   const departments=await departmentsPromise;
+   const frame=kfsProbaRender(features,points,zone,phenom,departments),png=await kfsProbaPng(frame);
+   const name=zone==="FR"?"France métropolitaine":KFS_PROBA_REGIONS.find(r=>r[0]===zone)?.[1]||zone;
+   const minimum=Math.round(Math.min(...subset.values)),maximum=Math.round(Math.max(...subset.values));
+   const label=phenom==="neige"?"neige présente au sol ≥ "+seuil+" cm":
+    "potentiel orageux au moins "+KFS_STORM_NAMES[seuil].toLowerCase();
+   const valueType=phenom==="neige"?"épaisseur moyenne de neige au sol (cm)":"indice moyen de potentiel convectif (0–5)";
+   const content="**KFS MÉTÉO · /proba · "+name+" · J+"+jour+" ("+day+")**\n"+
+    "**Événement :** "+label+".\n"+
+    "🗺️ **Probabilité indicative :** "+minimum+" à "+maximum+" % sur les points échantillonnés.\n"+
+    "📊 **Source sans Open-Meteo :** "+subset.members+" membres sélectionnés de l'IFS ENS ouvert d'ECMWF.\n"+
+    "**Carte :** chiffres % = fraction des membres dépassant le seuil ; couleur = "+valueType+".\n"+
+    "**Run :** "+subset.run+" · **période UTC :** "+subset.period_start+" → "+subset.period_end+".\n"+
+    (zone!=="FR"?"**Repères :** départements et grandes villes.\n":"")+
+    (phenom==="neige"?"🏔️ Le relief montagneux est inclus ; le modèle représente les zones naturelles, pas la tenue sur les routes.\n":
+     "⛈️ Indice heuristique CAPE, pluie convective et rafales ; ne prévoit pas directement l'occurrence ni la sévérité d'un orage.\n")+
+    "⚠️ **Probabilités expérimentales non calibrées.** Échantillon de 8 membres et deux échéances par 24 h, à maille 0,25°. Ne remplace pas une vigilance officielle.\n"+
+    "_ECMWF Open Data, licence CC BY 4.0._";
+   try{await kfsProbaEdit(interaction,{content,allowed_mentions:{parse:[]}},png);}
+   catch(e){await kfsProbaEdit(interaction,{content:content+"\n⚠️ Image indisponible : "+String(e.message||e).slice(0,150),allowed_mentions:{parse:[]}});}
+   return;
+  }
   const ecmwf=await kfsProbaEcmwfRead(phenom,seuil,zone,day,points);
   if(ecmwf){
    for(let i=0;i<points.length;i++){
