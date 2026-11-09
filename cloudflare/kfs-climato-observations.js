@@ -192,6 +192,75 @@ function kfsQReport(city,station,year,month,data,rubrique){
   });
   return {embeds,allowed_mentions:{parse:[]}};
 }
+
+// KFS_CLIMATO_RECORD_V3 — records mensuels historiques depuis la fiche officielle.
+const KFS_CLIMATO_RECORD_CHOICES=[
+  {name:"Rafale maximale",value:"rafale_max"},
+  {name:"Température maximale",value:"chaleur_max"},
+  {name:"Température minimale",value:"froid_min"},
+  {name:"Pluie maximale en 24 h",value:"pluie_max"}
+];
+const KFS_CLIMATO_RECORDS={
+  rafale_max:{label:"Record de rafale",title:"Rafale maximale",unit:"m/s"},
+  chaleur_max:{label:"Record de chaleur",title:"Température maximale absolue",unit:"°C"},
+  froid_min:{label:"Record de froid",title:"Température minimale absolue",unit:"°C"},
+  pluie_max:{label:"Record de pluie sur 24 h",title:"Précipitations maximales sur 24 h",unit:"mm"}
+};
+function kfsClimatoRecordDate(row,index){
+  let value=String(row.dates?.[index]||"").trim();
+  let m=index;
+  if(index===12 && /^\d{4}$/.test(value)){
+    const j=Array.from({length:12},(_,i)=>i).find(i=>row.values[i]===row.values[12]&&/^\d{1,2}-\d{4}$/.test(row.dates?.[i]||""));
+    if(j!==undefined){m=j;value=String(row.dates[j]);}
+  }
+  const v=value.match(/^(\d{1,2})-(\d{4})$/);
+  if(v&&m<12)return Number(v[1])+" "+KFS_Q_MONTHS[m]+" "+v[2];
+  if(/^\d{4}$/.test(value))return "année "+value;
+  return value||"Date non publiée";
+}
+async function kfsClimatoRecordResponse(city,record,month,hasYear){
+  const config=KFS_CLIMATO_RECORDS[record];
+  if(!config)throw Error("Record demandé non reconnu");
+  const m=kfsQMonth(month),index=m===0?12:m-1;
+  const candidates=(await kfsClimStations()).map(s=>({...s,km:kfsClimDistance(city.lat,city.lon,s.lat,s.lon)})).sort((a,b)=>a.km-b.km);
+  let selected=null;
+  for(let i=0;i<Math.min(candidates.length,24)&&!selected;i+=4){
+    const group=candidates.slice(i,i+4);
+    const found=await Promise.all(group.map(async s=>{
+      try{
+        const text=await (await kfsClimFetch(KFS_CLIM_BASE+"FICHECLIM_"+s.id+".data",86400)).text();
+        const data=kfsClimParse(text,s.id);
+        const row=data.rows.find(x=>x.record&&x.label===config.label&&Number.isFinite(x.values[index]));
+        return row?{station:s,row,meta:data.meta}:null;
+      }catch(_){return null;}
+    }));
+    selected=found.filter(Boolean).sort((a,b)=>a.station.km-b.station.km)[0]||null;
+  }
+  if(!selected)throw Error("Aucune station proche ne publie ce record pour le mois demandé.");
+  const n=selected.row.values[index];
+  const value=record==="rafale_max"?kfsQR(n*3.6," km/h")+" ("+kfsQR(n," m/s")+")":kfsQR(n," "+config.unit);
+  const date=kfsClimatoRecordDate(selected.row,index);
+  const source=KFS_CLIM_BASE+"FICHECLIM_"+selected.station.id+".pdf";
+  const period=m===0?"tous mois confondus":"pour "+KFS_Q_MONTHS[m-1];
+  const fields=[
+    {name:"🏆 Valeur du record",value:"**"+value+"**",inline:true},
+    {name:"📅 Date du record",value:"**"+date+"**",inline:true}
+  ];
+  if(selected.row.recordPeriod)fields.push({name:"Période des records",value:selected.row.recordPeriod,inline:false});
+  if(hasYear)fields.push({name:"Précision",value:"Le champ année est ignoré ici : on consulte le record historique toutes années confondues.",inline:false});
+  return {embeds:[{
+    title:"KFS MÉTÉO · "+config.title+" · "+(m?KFS_Q_MONTHS[m-1]:"année"),
+    color:0x1975b8,url:source,
+    description:"📍 **"+city.name+"** · Station **"+selected.station.name+"** (n° "+selected.station.id+")"+
+      "\nDistance : **"+kfsQR(selected.station.km," km")+"**"+
+      (selected.station.km>30?"\n⚠️ Station éloignée.":"")+
+      "\nRecord historique "+period+", toutes années confondues.",
+    fields,
+    footer:{text:"Source : Météo-France, fiche climatologique"+(selected.meta.date?" (édition "+selected.meta.date+")":"")}
+  }],allowed_mentions:{parse:[]}};
+}
+// FIN KFS_CLIMATO_RECORD_V3
+
 async function kfsClimatoHandleV2(interaction,appId) {
   const args=interaction.data?.options||[];
   const get=n=>args.find(x=>x.name===n)?.value;
@@ -199,15 +268,20 @@ async function kfsClimatoHandleV2(interaction,appId) {
   let payload;
   try {
     const city=await kfsClimCity(String(get("ville")||""));
-    const selected=await kfsClimStationForCity(city);
     const rubrique=String(get("rubrique")||"bilan");
     const month=String(get("mois")||"annee");
-    if(["normales","records"].includes(rubrique)){
-      payload=kfsClimMessage(city,selected,rubrique==="normales"?"complet":"records",month);
+    const record=String(get("record")||"");
+    if(record){
+      payload=await kfsClimatoRecordResponse(city,record,month,get("annee")!==undefined);
     } else {
-      const year=kfsQInputYear(get("annee"));
-      const result=await kfsQStationDays(selected.station.id,year);
-      payload=kfsQReport(city,selected,year,kfsQMonth(month),result,rubrique);
+      const selected=await kfsClimStationForCity(city);
+      if(["normales","records"].includes(rubrique)){
+        payload=kfsClimMessage(city,selected,rubrique==="normales"?"complet":"records",month);
+      } else {
+        const year=kfsQInputYear(get("annee"));
+        const result=await kfsQStationDays(selected.station.id,year);
+        payload=kfsQReport(city,selected,year,kfsQMonth(month),result,rubrique);
+      }
     }
   } catch(e) {
     payload={content:"⚠️ **KFS MÉTÉO — /climato** : "+String(e?.message||e).slice(0,350)+
@@ -243,7 +317,8 @@ async function kfsClimatoRegisterV2(botToken,appId,guildId){
           {name:"Épisodes chauds",value:"episodes"},
           {name:"Normales 1991–2020",value:"normales"},
           {name:"Records historiques de la station",value:"records"}
-        ]}
+        ]},
+      {type:3,name:"record",description:"Quel record historique consulter ?",required:false,choices:KFS_CLIMATO_RECORD_CHOICES}
     ]};
   const u="https://discord.com/api/v10/applications/"+appId+"/guilds/"+guildId+"/commands";
   const r=await fetch(u,{method:"POST",headers:{"Authorization":"Bot "+botToken,"content-type":"application/json"},body:JSON.stringify(cmd)});
