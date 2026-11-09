@@ -727,6 +727,33 @@ async function kfsProbaEcmwfSubsetRead(type,threshold,zone,day,points){
  }catch(e){console.error("KFS_PROBA_ECMWF_SUBSET",String(e));return null;}
 }
 
+// Cumuls ECMWF réels, calculés indépendamment sur 8 membres IFS ENS.
+// Les % officiels restent issus du produit ENS complet (type=ep).
+async function kfsProbaEcmwfRainMeanRead(zone,day,points,run,validFrom,validTo){
+ const urls=[
+  "https://raw.githubusercontent.com/almet27/kfs-meteo-cartes/main/proba/ecmwf-subset-probabilities.json",
+  "https://almet27.github.io/kfs-meteo-cartes/proba/ecmwf-subset-probabilities.json"
+ ];
+ for(const url of urls){
+  try{
+   const r=await fetch(url,{signal:AbortSignal.timeout(3500),
+    headers:{accept:"application/json"},cf:{cacheTtl:900,cacheEverything:true}});
+   if(!r.ok)continue;
+   const j=await r.json(),d=j?.days?.[day],values=d?.fields?.rain_mean_mm?.[zone];
+   if(j?.schema!==1||j.provider!=="ECMWF IFS ENS 8-member subset"||
+     j.run_utc!==run||j.ensemble_members?.length!==8||j.zone_point_counts?.[zone]!==points.length||
+     d?.valid_from_utc!==validFrom||d?.valid_to_utc!==validTo||
+     !Array.isArray(values)||values.length!==points.length||
+     values.some(v=>!Number.isFinite(v)||v<0||v>500)){
+    console.error("KFS_PROBA_RAIN_MEAN_REJECT","absent, incompatible ou d'un autre run",url);
+    continue;
+   }
+   return {values,members:8,run};
+  }catch(e){console.error("KFS_PROBA_RAIN_MEAN_SOURCE",String(e).slice(0,160));}
+ }
+ return null;
+}
+
 async function kfsProbaComplete(interaction,phenom,zone,jour,seuil){
  try{
   const rules=KFS_PROBA_RULES[phenom];
@@ -768,12 +795,14 @@ async function kfsProbaComplete(interaction,phenom,zone,jour,seuil){
   }
   const ecmwf=await kfsProbaEcmwfRead(phenom,seuil,zone,day,points);
   if(ecmwf){
+   const rainMean=phenom==="pluie"?
+    await kfsProbaEcmwfRainMeanRead(zone,day,points,ecmwf.run,ecmwf.period_start,ecmwf.period_end):null;
    for(let i=0;i<points.length;i++){
-    points[i].value=ecmwf.values[i];
-    points[i].amount=ecmwf.values[i]; // palette = probabilités %, jamais mm/km/h
+    points[i].value=ecmwf.values[i]; // % d'ensemble ECMWF complet, seuil demandé
+    points[i].amount=rainMean?rainMean.values[i]:ecmwf.values[i];
    }
    const departments=await departmentsPromise;
-   const frame=kfsProbaRender(features,points,zone,"probabilite",departments);
+   const frame=kfsProbaRender(features,points,zone,rainMean?"pluie":"probabilite",departments);
    const png=await kfsProbaPng(frame);
    const name=zone==="FR"?"France métropolitaine":KFS_PROBA_REGIONS.find(r=>r[0]===zone)?.[1]||zone;
    const min=Math.round(Math.min(...ecmwf.values)),max=Math.round(Math.max(...ecmwf.values));
@@ -781,8 +810,13 @@ async function kfsProbaComplete(interaction,phenom,zone,jour,seuil){
      "rafales de vent ≥ "+seuil+" km/h";
    const content="**KFS MÉTÉO · /proba · "+name+" · J+"+jour+" ("+day+")**\n"+
     "**Événement ECMWF ENS :** "+what+".\n"+
-    "🗺️ **Probabilité :** "+min+" à "+max+" % aux points étudiés. La couleur et les étiquettes indiquent les probabilités.\n"+
-    "📊 **Source indépendante d’Open-Meteo :** ECMWF IFS ENS Open Data (probabilités natives).\n"+
+    "🗺️ **Probabilité ECMWF :** "+min+" à "+max+" % aux points étudiés.\n"+
+    (rainMean?
+      "💧 **Cumul moyen estimé :** "+Math.min(...rainMean.values).toFixed(1)+" à "+Math.max(...rainMean.values).toFixed(1)+" mm sur 24 h (8 membres ENS).\n"+
+      "**Carte :** zones de couleur = quantités en mm ; chiffres jaunes/blancs = risque en % ; chiffres bleus = cumul moyen en mm.\n":
+      "ℹ️ Cumul moyen en mm indisponible pour ce run ; la carte reste en probabilités sans inventer de quantité.\n")+
+    "📊 **Source :** ECMWF IFS ENS Open Data (probabilités natives)"+
+      (rainMean?" et cumuls moyens d’un échantillon de 8 membres":"")+".\n"+
     "🕓 **Validité des prévisions :** "+ecmwf.period_start+" → "+ecmwf.period_end+
     " (période de 24 h UTC, pas exactement le jour civil français).\n"+
     "**Modèle :** IFS ENS run "+ecmwf.run+" · dernières données consultées à la génération.\n"+
