@@ -1,0 +1,27 @@
+name: Activer la commande Discord KFS climato
+on:
+  push:
+    paths:
+      - .github/workflows/kfs-climato-sync.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Declencher la synchronisation Discord dans le Worker
+        shell: bash
+        run: |
+          set -euo pipefail
+          url="https://kfs-meteo-ia.alain-leprevost.workers.dev/"
+          code=$(curl --max-time 30 -sSL -o /tmp/kfs-climato-response.txt -w "%{http_code}" "$url")
+          echo "Worker KFS HTTP: $code"
+          head -c 400 /tmp/kfs-climato-response.txt || true
+          echo
+          if [ "$code" -lt 200 ] || [ "$code" -ge 400 ]; then
+            echo "Worker non accessible ; enregistrement Discord non confirme"
+            exit 1
+          fi
+          echo "Worker joint ; enregistrement en tache differee dans le Worker"
