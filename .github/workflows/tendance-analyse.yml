@@ -6,6 +6,7 @@ on:
     paths:
       - 'scripts/generate_tendance_cards.py'
       - 'scripts/generate_tendance_risks.py'
+      - 'scripts/kfs_synoptic_overlays.py'
       - 'scripts/generate_tendance_analysis.py'
       - '.github/workflows/tendance-analyse.yml'
   schedule:
