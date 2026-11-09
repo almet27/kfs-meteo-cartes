@@ -1,0 +1,129 @@
+{
+  "schema": 1,
+  "model": "ifs",
+  "run_utc": "2026-11-09T00:00:00Z",
+  "generated_utc": "2026-11-09T19:07:45.933318+00:00",
+  "source": "ECMWF IFS Open Data · CC BY 4.0",
+  "chart": "strato/ifs-ssw-signals.png",
+  "wind_10hpa_60n": {
+    "24": 0.55,
+    "48": -2.05,
+    "72": -3.55,
+    "96": -0.97,
+    "120": 2.77,
+    "144": 3.79,
+    "168": 4.31,
+    "192": 4.98,
+    "216": 7.78,
+    "240": 11.14,
+    "264": 15.25,
+    "288": 20.63,
+    "312": 25.3,
+    "336": 26.54,
+    "360": 29.88
+  },
+  "series": {
+    "temperature_cap_10hpa_60_90n_c": {
+      "24": -55.74,
+      "48": -56.23,
+      "72": -56.88,
+      "96": -57.94,
+      "120": -59.12,
+      "144": -60.01,
+      "168": -60.55,
+      "192": -61.5,
+      "216": -62.99,
+      "240": -64.83,
+      "264": -66.53,
+      "288": -67.91,
+      "312": -68.76,
+      "336": -69.29,
+      "360": -69.33
+    },
+    "temperature_pole_10hpa_80_90n_c": {
+      "24": -51.0,
+      "48": -50.89,
+      "72": -51.91,
+      "96": -54.39,
+      "120": -57.0,
+      "144": -57.82,
+      "168": -58.27,
+      "192": -58.73,
+      "216": -60.9,
+      "240": -64.71,
+      "264": -68.63,
+      "288": -71.61,
+      "312": -73.38,
+      "336": -73.69,
+      "360": -73.77
+    },
+    "gradient_pole_minus_60n_10hpa_k": {
+      "24": 7.44,
+      "48": 8.01,
+      "72": 7.05,
+      "96": 4.7,
+      "120": 3.0,
+      "144": 3.03,
+      "168": 3.61,
+      "192": 4.13,
+      "216": 2.83,
+      "240": -0.53,
+      "264": -4.33,
+      "288": -7.29,
+      "312": -9.22,
+      "336": -9.71,
+      "360": -10.19
+    },
+    "eddy_heat_flux_100hpa_60n_kms": {
+      "24": 17.99,
+      "48": 14.19,
+      "72": 15.58,
+      "96": 11.14,
+      "120": 7.45,
+      "144": 7.74,
+      "168": 7.31,
+      "192": 12.67,
+      "216": 15.13,
+      "240": 11.87,
+      "264": 12.48,
+      "288": 21.78,
+      "312": 19.05,
+      "336": 18.39,
+      "360": 17.17
+    }
+  },
+  "diagnostic": {
+    "status": "inversion_prevue",
+    "label": "Inversion zonale prévue à 10 hPa",
+    "wind_inversion_hours": [
+      48,
+      72,
+      96
+    ],
+    "thermal_gradient_positive_hours": [
+      24,
+      48,
+      72,
+      96,
+      120,
+      144,
+      168,
+      192,
+      216
+    ],
+    "warming_max_5d_k": -4.27,
+    "warming_window_hours": [
+      24,
+      144
+    ],
+    "deceleration_max_5d_ms": 3.24,
+    "deceleration_window_hours": [
+      24,
+      144
+    ],
+    "guidance": "Un ralentissement, une hausse polaire et l'activité ondulatoire peuvent précéder un SSW. La valeur U<0 m/s à 10 hPa et 60N est un critère fréquemment utilisé pour diagnostiquer un SSW majeur observé en hiver; une simple prévision d'inversion n'est pas une confirmation.",
+    "threshold_disclaimer": "Réchauffement >=10 K/5 jours et décélération <=-10 m/s/5 jours ne sont que des repères d'affichage non calibrés, pas des probabilités."
+  },
+  "errors": {},
+  "limitations": "Single deterministic forecast. No climatology/ensemble, no formal observed SSW diagnosis, no forecast of surface-weather impacts."
+}
