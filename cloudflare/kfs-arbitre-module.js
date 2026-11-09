@@ -10,11 +10,18 @@ function kfsArbitreCommand(){
     {type:3,name:"contexte",description:"Arguments des participants (facultatif)",required:false,max_length:700}
   ]};
 }
+function kfsArbitreMessageCommand(){
+  // Discord application command type 3: menu contextuel sur un message.
+  return {type:3,name:"Arbitrer ce message"};
+}
 async function kfsArbitreRegister(env){
   if(!env.DISCORD_BOT_TOKEN||!KFS_TENDANCE_GUILD)throw Error("Discord non configuré");
   const url="https://discord.com/api/v10/applications/"+APPLICATION_ID+"/guilds/"+KFS_TENDANCE_GUILD+"/commands";
-  const r=await fetch(url,{method:"POST",headers:{Authorization:"Bot "+env.DISCORD_BOT_TOKEN,"content-type":"application/json"},body:JSON.stringify(kfsArbitreCommand())});
-  if(!r.ok)throw Error("Discord /arbitre registration "+r.status+" "+(await r.text()).slice(0,150));
+  // Conserve /arbitre et ajoute séparément la commande de message.
+  for(const command of [kfsArbitreCommand(),kfsArbitreMessageCommand()]){
+    const r=await fetch(url,{method:"POST",headers:{Authorization:"Bot "+env.DISCORD_BOT_TOKEN,"content-type":"application/json"},body:JSON.stringify(command)});
+    if(!r.ok)throw Error("Discord command registration "+command.name+" "+r.status+" "+(await r.text()).slice(0,200));
+  }
 }
 async function kfsArbitreQuota(interaction,env){
   const uid=interaction.member?.user?.id||interaction.user?.id;
@@ -76,7 +83,27 @@ async function kfsArbitreEdit(interaction,payload){
   const r=await fetch(url,{method:"PATCH",headers:{"content-type":"application/json"},body:JSON.stringify({...payload,allowed_mentions:{parse:[]}})});
   if(!r.ok)throw Error("Discord update "+r.status+" "+(await r.text()).slice(0,150));
 }
-async function kfsArbitreComplete(interaction,env,question,contexte){
+async function kfsArbitrePostNativeReply(interaction,env,target,embeds){
+  if(!env.DISCORD_BOT_TOKEN||!interaction.channel_id||!target?.id)throw Error("Impossible de répondre dans le salon");
+  const url="https://discord.com/api/v10/channels/"+interaction.channel_id+"/messages";
+  const r=await fetch(url,{
+    method:"POST",
+    headers:{Authorization:"Bot "+env.DISCORD_BOT_TOKEN,"content-type":"application/json"},
+    body:JSON.stringify({
+      content:"⚖️ **KFS Arbitre — vérification de cette affirmation**",
+      embeds,
+      message_reference:{
+        message_id:target.id,
+        channel_id:interaction.channel_id,
+        guild_id:interaction.guild_id,
+        fail_if_not_exists:true
+      },
+      allowed_mentions:{parse:[],replied_user:false}
+    })
+  });
+  if(!r.ok)throw Error("Discord native reply "+r.status+" "+(await r.text()).slice(0,250));
+}
+async function kfsArbitreComplete(interaction,env,question,contexte,target=null){
   try{
     const quota=await kfsArbitreQuota(interaction,env);
     if(!quota.allowed){
@@ -110,11 +137,23 @@ async function kfsArbitreComplete(interaction,env,question,contexte){
     const warning=sources.some(s=>s.kind==="factcheck")
       ?"À vérifier : le résultat doit concerner exactement la question posée."
       :"⚠️ Aucune vérification indépendante : réponse indicative, non probante.";
-    await kfsArbitreEdit(interaction,{content:"",embeds:[{
+    const embeds=[{
       title:"⚖️ KFS — Médiation factuelle",description:answer,color:3447003,
       fields:[{name:"Sources consultables",value:(refs.length?refs.join("\n").slice(0,900):"Aucune source récupérée.")+"\n"+warning}],
       footer:{text:"Restant : "+quota.remaining+"/5 • remise à zéro 00 h UTC"+(quota.persistent?"":" • quota provisoire")}
-    }]});
+    }];
+    if(target){
+      try{
+        // Répond directement sous le message d'origine, sans ping automatique.
+        await kfsArbitrePostNativeReply(interaction,env,target,embeds);
+        await kfsArbitreEdit(interaction,{content:"✅ Analyse publiée sous le message sélectionné."});
+      }catch(e){
+        console.warn("KFS_ARBITRE_CONTEXT_REPLY",String(e));
+        await kfsArbitreEdit(interaction,{content:"⚠️ Réponse directe impossible : voici l’analyse visible uniquement par toi.",embeds});
+      }
+    }else{
+      await kfsArbitreEdit(interaction,{content:"",embeds});
+    }
   }catch(e){
     console.error("KFS_ARBITRE_ERROR",String(e));
     try{await kfsArbitreEdit(interaction,{content:"⚠️ Médiateur temporairement indisponible. Aucun verdict émis."});}
