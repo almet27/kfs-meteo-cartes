@@ -68,15 +68,17 @@ async function kfsStratoRegister(env) {
       },
       {
         name: "carte", type: 3, required: false,
-        description: "Température ou vitesse du vent et contours du vortex",
+        description: "Cartes ou courbes des vents zonaux (60°N)",
         choices: [
           {name: "Vortex polaire / vents", value: "vortex"},
-          {name: "Température stratosphérique", value: "temperature"}
+          {name: "Température stratosphérique", value: "temperature"},
+          {name: "Vent zonal · courbe du niveau sélectionné", value: "vent_zonal"},
+          {name: "Vent zonal · comparaison 10/50/100 hPa", value: "vent_zonal_comparaison"}
         ]
       },
       {
         name: "echeance", type: 4, required: false,
-        description: "Échéance de prévision (72 h par défaut)",
+        description: "Échéance pour les cartes seulement (graphiques sur J+1 à J+15)",
         choices: KFS_STRATO_HOURS.map(h => ({
           name: "J+" + (h / 24) + " · " + h + " h", value: h
         }))
@@ -92,12 +94,18 @@ async function kfsStratoRegister(env) {
   // Empêche les POST répétitifs à chaque exécution des triggers Cloudflare.
   const existing = Array.isArray(registered) ?
     registered.find(c => c.name === "strato" && c.type === 1) : null;
-  if (existing) return {registered: true, changed: false};
-  const post = await fetch(endpoint, {
-    method: "POST", headers, body: JSON.stringify(cmd),
+  const existingOptions = existing?.options || [];
+  const carte = existingOptions.find(o => o.name === "carte");
+  const choices = carte?.choices?.map(c => c.value) || [];
+  if (existing && ["vent_zonal", "vent_zonal_comparaison"].every(x => choices.includes(x)))
+    return {registered: true, changed: false};
+  const url = existing ? endpoint + "/" + existing.id : endpoint;
+  const post = await fetch(url, {
+    method: existing ? "PATCH" : "POST",
+    headers, body: JSON.stringify(cmd),
     signal: AbortSignal.timeout(12000)
   });
-  if (!post.ok) throw Error("Enregistrement /strato HTTP " + post.status +
+  if (!post.ok) throw Error("Mise à jour /strato HTTP " + post.status +
     " " + (await post.text()).slice(0, 160));
   console.log("KFS_STRATO_REGISTERED");
   return {registered: true, changed: true};
@@ -131,8 +139,9 @@ async function kfsStratoEdit(interaction, payload, file) {
 
 async function kfsStratoComplete(interaction, level, kind, hours) {
   try {
+    const isZonalChart = ["vent_zonal", "vent_zonal_comparaison"].includes(kind);
     if (!KFS_STRATO_LEVELS.includes(level) ||
-        !["temperature", "vortex"].includes(kind) ||
+        !["temperature", "vortex", "vent_zonal", "vent_zonal_comparaison"].includes(kind) ||
         !KFS_STRATO_HOURS.includes(hours))
       throw Error("Paramètres /strato invalides");
     const m = await kfsStratoRead("strato/metadata.json", Math.floor(Date.now() / 300000), "json");
@@ -140,6 +149,50 @@ async function kfsStratoComplete(interaction, level, kind, hours) {
     if (m.model !== "ifs" || !Number.isFinite(stamp) ||
         stamp > Date.now() + 3600000 || Date.now() - stamp > 48 * 3600000)
       throw Error("Run stratosphérique absent, ancien ou non vérifié.");
+    if (isZonalChart) {
+      const compare = kind === "vent_zonal_comparaison";
+      const key = compare ? "comparison" : String(level);
+      const expectedChart = "strato/ifs-zonal-wind-" +
+        (compare ? "comparison" : level + "hpa") + ".png";
+      const imagePath = m.zonal_wind_charts?.[key];
+      if (imagePath !== expectedChart)
+        throw Error("Graphique zonal indisponible pour ce run. " +
+          "La génération quotidienne doit publier les courbes avant affichage.");
+      const valuesByLevel = m.zonal_wind_series_60n || {};
+      const levels = compare ? KFS_STRATO_LEVELS : [level];
+      const good = levels.every(z => Object.keys(valuesByLevel[String(z)] || {}).length >= 10);
+      if (!good) throw Error("Série de vent zonal trop incomplète pour une courbe.");
+      const imageBytes = await kfsStratoRead(imagePath, m.run_utc, "png");
+      const levelTitle = compare ? "10 / 50 / 100 hPa" : level + " hPa";
+      let content = "📈 **KFS MÉTÉO — VENTS ZONAUX STRATOSPHÉRIQUES**\n" +
+        "**ECMWF IFS** · **" + levelTitle + "** · **60°N** · J+1 à J+15\n" +
+        "🔄 Run " + new Date(stamp).toISOString().slice(0, 16).replace("T", " ") + " UTC\n" +
+        "🌬️ Vent U moyen sur les longitudes : **+** vents d'ouest · " +
+        "**−** vents d'est · ligne zéro = inversion.";
+      for (const z of levels) {
+        const series = valuesByLevel[String(z)] || {};
+        const points = Object.entries(series)
+          .map(([hour, val]) => [Number(hour), Number(val)])
+          .filter(([hour, val]) => Number.isFinite(hour) && Number.isFinite(val))
+          .sort((a, b) => a[0] - b[0]);
+        const last = points.at(-1);
+        if (!last) continue;
+        content += "\n• " + z + " hPa : J+" + (last[0] / 24) + " = **" +
+          (last[1] > 0 ? "+" : "") + last[1].toFixed(1) + " m/s**";
+        if (points.some(([, val]) => val < 0))
+          content += " · inversion prévue à au moins une échéance";
+      }
+      content += "\n⚠️ Une inversion prévue isolée ne confirme pas " +
+        "à elle seule un réchauffement stratosphérique majeur (SSW)." +
+        "\n*ECMWF Open Data · CC BY 4.0 · courbes issues des champs réels du modèle.*";
+      await kfsStratoEdit(interaction, {
+        content, allowed_mentions: {parse: []}
+      }, {
+        name: "kfs-strato-" + (compare ? "comparison" : level + "hpa") +
+          "-vent-zonal.png", bytes: imageBytes
+      });
+      return;
+    }
     const path = m.maps?.[String(level)]?.[String(hours)]?.[kind];
     const expected = "strato/ifs-h" + String(hours).padStart(3, "0") +
       "-" + level + "hpa-" + kind + ".png";
