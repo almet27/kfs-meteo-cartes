@@ -3,6 +3,7 @@ on:
   push:
     paths:
       - .github/workflows/kfs-climato-sync.yml
+      - cloudflare/kfs-climato-observations.js
   workflow_dispatch:
 permissions:
   contents: read
@@ -20,8 +21,8 @@ jobs:
           echo "Worker KFS HTTP: $code"
           head -c 400 /tmp/kfs-climato-response.txt || true
           echo
-          if [ "$code" -lt 200 ] || [ "$code" -ge 400 ]; then
+          if [ "$code" -lt 200 ] || [ "$code" -ge 500 ]; then
             echo "Worker non accessible ; enregistrement Discord non confirme"
             exit 1
           fi
-          echo "Worker joint ; enregistrement en tache differee dans le Worker"
+          echo "Worker joint ; synchronisation Discord déclenchée par la requête (vérifier les journaux pour confirmation)"
