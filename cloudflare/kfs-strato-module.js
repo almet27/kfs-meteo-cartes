@@ -1,6 +1,45 @@
 // KFS MÉTÉO /strato — cartes natives ECMWF IFS depuis GitHub Pages.
 // Aucun appel à Open-Meteo ni à une API payante. Fichiers calculés par GitHub Actions.
-const KFS_STRATO_BASE = "https://almet27.github.io/kfs-meteo-cartes/";
+// Priorité au CDN GitHub brut : GitHub Pages peut être désactivé (HTTP 404).
+// jsDelivr est un miroir indépendant, Pages reste un dernier secours.
+const KFS_STRATO_BASES = [
+  "https://raw.githubusercontent.com/almet27/kfs-meteo-cartes/main/",
+  "https://cdn.jsdelivr.net/gh/almet27/kfs-meteo-cartes@main/",
+  "https://almet27.github.io/kfs-meteo-cartes/"
+];
+async function kfsStratoRead(path, version, format) {
+  const errors = [];
+  for (const base of KFS_STRATO_BASES) {
+    try {
+      const res = await fetch(base + path + "?kfs=" + encodeURIComponent(String(version)), {
+        cache: "no-store",
+        signal: AbortSignal.timeout(format === "png" ? 18000 : 11000)
+      });
+      if (!res.ok) throw Error("HTTP " + res.status);
+      if (format === "json") {
+        const data = await res.json();
+        if (!data || data.model !== "ifs" ||
+            !data.run_utc || !data.maps || !data.maps["10"])
+          throw Error("Catalogue incomplet ou non conforme");
+        return data;
+      }
+      const bytes = await res.arrayBuffer();
+      const sig = new Uint8Array(bytes, 0, Math.min(bytes.byteLength, 8));
+      if (bytes.byteLength < 4000 || bytes.byteLength > 8 * 1024 * 1024 ||
+          sig[0] !== 137 || sig[1] !== 80 || sig[2] !== 78 || sig[3] !== 71)
+        throw Error("Données reçues non PNG");
+      return bytes;
+    } catch (e) {
+      const host = new URL(base).hostname;
+      const err = String(e?.message || e).slice(0, 75);
+      errors.push(host + ": " + err);
+      console.warn("KFS_STRATO_FALLBACK", host, err);
+    }
+  }
+  throw Error("Catalogue/cartes indisponibles sur les trois sources : " +
+    errors.join(" ; ").slice(0, 310));
+}
+
 const KFS_STRATO_LEVELS = [10, 50, 100];
 const KFS_STRATO_HOURS = [24, 72, 120, 168, 240, 360];
 let KFS_STRATO_SYNCED = false;
@@ -96,13 +135,7 @@ async function kfsStratoComplete(interaction, level, kind, hours) {
         !["temperature", "vortex"].includes(kind) ||
         !KFS_STRATO_HOURS.includes(hours))
       throw Error("Paramètres /strato invalides");
-    const index = await fetch(KFS_STRATO_BASE + "strato/metadata.json?" +
-      "v=" + Math.floor(Date.now() / 300000), {
-        cache: "no-store", signal: AbortSignal.timeout(14000)
-      });
-    if (!index.ok) throw Error("Catalogue stratosphérique indisponible (HTTP " +
-      index.status + "). Première génération probablement en cours.");
-    const m = await index.json();
+    const m = await kfsStratoRead("strato/metadata.json", Math.floor(Date.now() / 300000), "json");
     const stamp = Date.parse(m.run_utc || "");
     if (m.model !== "ifs" || !Number.isFinite(stamp) ||
         stamp > Date.now() + 3600000 || Date.now() - stamp > 48 * 3600000)
@@ -112,17 +145,7 @@ async function kfsStratoComplete(interaction, level, kind, hours) {
       "-" + level + "hpa-" + kind + ".png";
     if (path !== expected)
       throw Error("Carte non calculée pour ce niveau ou cette échéance.");
-    const imageResponse = await fetch(KFS_STRATO_BASE + path +
-      "?run=" + encodeURIComponent(m.run_utc), {
-        cache: "no-store", signal: AbortSignal.timeout(22000)
-      });
-    if (!imageResponse.ok)
-      throw Error("Image indisponible HTTP " + imageResponse.status);
-    const bytes = await imageResponse.arrayBuffer();
-    const sig = new Uint8Array(bytes, 0, Math.min(8, bytes.byteLength));
-    if (bytes.byteLength < 4000 || bytes.byteLength > 8 * 1024 * 1024 ||
-        sig[0] !== 137 || sig[1] !== 80 || sig[2] !== 78 || sig[3] !== 71)
-      throw Error("Image stratosphérique absente ou non PNG.");
+    const bytes = await kfsStratoRead(path, m.run_utc, "png");
     const target = new Date(stamp + hours * 3600000);
     const fmt = date => new Intl.DateTimeFormat("fr-FR", {
       timeZone: "Europe/Paris", day: "2-digit", month: "2-digit",
