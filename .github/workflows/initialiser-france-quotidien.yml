@@ -14,15 +14,15 @@ jobs:
   lancer:
     runs-on: ubuntu-latest
     steps:
-      - name: Déclencher IFS et GFS +72 h pour produire les cartes quotidiennes
+      - name: Déclencher AIFS et AIGFS +72 h pour compléter les cartes quotidiennes
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
-          for model in ifs gfs; do
+          for model in aifs-single aigfs; do
             echo "Lancement KFS France +72h $model sur main"
             gh workflow run france-h72.yml --repo "$GH_REPO" --ref main \
               -f modele="$model" -f horizon=72
           done
-          echo "Les autres modèles suivent le détecteur régulier de nouveaux runs."
+          echo "IFS et GFS déjà générés, compléter AIFS et AIGFS."
