@@ -31,7 +31,7 @@ from check_france_risk_runs import run_info
 OUT=Path("forecast-maps/france/risques")
 OUT.mkdir(parents=True,exist_ok=True)
 PERIODS=((0,6),(6,12),(12,24),(24,36),(36,48))
-COMMON=("temperature_2m","wet_bulb_temperature_2m","cape","snowfall",
+COMMON=("temperature_2m","wet_bulb_temperature_2m","cape","snowfall","rain",
   "precipitation","wind_speed_850hPa","wind_direction_850hPa",
   "wind_speed_500hPa","wind_direction_500hPa","wind_gusts_10m")
 EXTRA={"arome":(),"icon_eu":("showers","snow_depth",
@@ -226,11 +226,150 @@ def plot(model,variable,period,coords,values,issued):
                        "possible":values.count(2),"marque":values.count(3)},
             "start_h":lo,"end_h":hi}
 
+
+# Bilans civils ARÔME / ICON à partir des mêmes échéances Open-Meteo
+# que les cartes de risque. Ne jamais attribuer une prévision J+3 inexistante.
+from zoneinfo import ZoneInfo
+from matplotlib.colors import BoundaryNorm, ListedColormap
+from matplotlib import colormaps
+
+SHORT_OUT=Path("forecast-maps/france/shortterm-daily")
+SHORT_OUT.mkdir(parents=True,exist_ok=True)
+PARIS_ZONE=ZoneInfo("Europe/Paris")
+SHORT_LABELS={"tmin":"Température minimale","tmax":"Température maximale",
+              "gust":"Rafales maximales","precip":"Précipitations cumulées",
+              "rain":"Pluie cumulée"}
+SHORT_SOURCE={"tmin":"temperature_2m","tmax":"temperature_2m",
+              "gust":"wind_gusts_10m","precip":"precipitation","rain":"rain"}
+SHORT_CITIES=((-4.49,48.38,"Brest"),(-1.55,47.22,"Nantes"),(-.58,44.84,"Bordeaux"),
+              (1.44,43.60,"Toulouse"),(2.35,48.86,"Paris"),(3.06,50.63,"Lille"),
+              (1.10,49.44,"Rouen"),(4.84,45.76,"Lyon"),(5.37,43.30,"Marseille"),
+              (7.75,48.58,"Strasbourg"),(7.26,43.71,"Nice"))
+
+def short_utc(time_label):
+    return datetime.fromisoformat(time_label.replace("Z","+00:00")).replace(tzinfo=timezone.utc)
+
+def short_daily_values(data,indices,key,aggregation):
+    values=[]
+    for row in data:
+        h=row.get("hourly",{})
+        arr=h.get(key)
+        if not isinstance(arr,list) or any(i>=len(arr) for i in indices):
+            values.append(float("nan"))
+            continue
+        seq=[arr[i] for i in indices]
+        if not seq or any(not isnum(v) for v in seq):
+            values.append(float("nan"))
+            continue
+        values.append(float(min(seq) if aggregation=="min" else
+                            max(seq) if aggregation=="max" else sum(seq)))
+    return np.asarray(values,dtype=float)
+
+def short_plot_daily(model,metric,day,coords,values,coverage,start,end,run):
+    from matplotlib.colors import Normalize
+    lons=np.unique(np.array([p[1] for p in coords],dtype=float))
+    lats=np.unique(np.array([p[0] for p in coords],dtype=float))
+    index_lon={round(float(v),3):i for i,v in enumerate(lons)}
+    index_lat={round(float(v),3):i for i,v in enumerate(lats)}
+    matrix=np.full((len(lats),len(lons)),np.nan)
+    for (lat,lon),value in zip(coords,values):
+        matrix[index_lat[round(lat,3)],index_lon[round(lon,3)]]=value
+    if metric in ("tmin","tmax"):
+        cmap=colormaps["RdYlBu_r"]
+        norm=Normalize(vmin=-12,vmax=32)
+        unit="°C"
+    elif metric=="gust":
+        cmap=colormaps["turbo"]
+        norm=Normalize(vmin=0,vmax=130)
+        unit="km/h"
+    else:
+        cols=("#bfeaff","#67caff","#2d83d0","#2255ac","#29a073",
+              "#85c94b","#f5dc42","#f9a03c","#d94f59","#983a8a")
+        cmap=ListedColormap(cols)
+        norm=BoundaryNorm([0,.2,.5,1,2,4,7,12,20,35,60],cmap.N)
+        unit="mm"
+    title="ARÔME France" if model=="arome" else "ICON Europe"
+    fig=plt.figure(figsize=(11,9),dpi=115,facecolor="#09233e")
+    ax=fig.add_axes((.075,.15,.85,.70),projection=ccrs.PlateCarree())
+    ax.set_extent((-5.9,9.9,41.1,51.9),crs=ccrs.PlateCarree())
+    ax.add_feature(cfeature.OCEAN,facecolor="#0d3656",zorder=0)
+    ax.add_feature(cfeature.LAND,facecolor="#e3e9e2",zorder=0)
+    surface=ax.pcolormesh(lons,lats,np.ma.masked_invalid(matrix),cmap=cmap,
+        norm=norm,shading="nearest",transform=ccrs.PlateCarree(),zorder=1)
+    ax.coastlines("10m",linewidth=.75,color="#223646",zorder=3)
+    ax.add_feature(cfeature.BORDERS,linewidth=.65,edgecolor="#334c60",zorder=3)
+    for x,y,name in SHORT_CITIES:
+        k=min(range(len(coords)),key=lambda j:
+              (coords[j][0]-y)**2+(coords[j][1]-x)**2)
+        v=values[k]
+        if not np.isfinite(v):
+            continue
+        number=(f"{v:+.0f}°" if metric in ("tmin","tmax") else
+                f"{v:.0f}" if metric=="gust" else f"{v:.1f}")
+        txt=ax.text(x,y,number,fontsize=8.2,color="#152439",weight="bold",
+              ha="center",va="center",zorder=6,transform=ccrs.PlateCarree())
+        txt.set_path_effects([pe.Stroke(linewidth=2.5,foreground="white"),pe.Normal()])
+    cb=fig.colorbar(surface,ax=ax,orientation="horizontal",shrink=.74,pad=.04)
+    cb.set_label(unit,color="white",fontsize=9)
+    cb.ax.tick_params(colors="white",labelsize=8)
+    fig.text(.07,.955,"KFS MÉTÉO   /FRANCE  •  COURT TERME",fontsize=15,
+             weight="bold",color="#f3fbff")
+    fig.text(.07,.910,f"{title} | {SHORT_LABELS[metric]} | J+{day}",
+             color="#76dcf0",fontsize=15,weight="bold")
+    day_label=start.astimezone(PARIS_ZONE).strftime("%d/%m/%Y")
+    fig.text(.07,.870,day_label+" · "+("journée complète" if coverage=="complete" else
+             "période partielle"),color="#cde6ef",fontsize=11)
+    fig.text(.07,.072,"Échantillonnage terrestre ~25–35 km (pas la grille native).",
+             color="#d2e4f2",fontsize=9)
+    fig.text(.07,.044,"Intervalle UTC "+start.strftime("%d/%m %Hh")+" – "+
+             end.strftime("%d/%m %Hh")+" | run modèle "+str(run or "non vérifié"),
+             color="#c9d8e6",fontsize=8)
+    filename=f"daily-{model}-{metric}-d{day}.png"
+    target=SHORT_OUT/filename
+    fig.savefig(target,dpi=115,facecolor=fig.get_facecolor())
+    plt.close(fig)
+    if target.stat().st_size<12000:
+        raise RuntimeError("Image courte invalide "+filename)
+    return {"filename":filename,"size_bytes":target.stat().st_size,
+            "date":day_label,"coverage":coverage,
+            "url":"https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/shortterm-daily/"+filename}
+
+def generate_short_daily(model,data,coords,run,document):
+    h=data[0]["hourly"]
+    timestamps=[short_utc(v) for v in h["time"][:48]]
+    today=datetime.now(timezone.utc).astimezone(PARIS_ZONE).date()
+    days={}
+    for d in range(3):
+        day=today+__import__("datetime").timedelta(days=d)
+        indices=[i for i,t in enumerate(timestamps) if t.astimezone(PARIS_ZONE).date()==day]
+        if len(indices)<4:
+            continue
+        begin=timestamps[indices[0]]
+        finish=timestamps[indices[-1]]
+        hours=[t.astimezone(PARIS_ZONE).hour for t in (begin,finish)]
+        coverage="complete" if len(indices)>=24 and hours[0]==0 and hours[-1]==23 else "partial"
+        maps={}
+        for metric,key in SHORT_SOURCE.items():
+            aggregate="min" if metric=="tmin" else "max" if metric in ("tmax","gust") else "sum"
+            values=short_daily_values(data,indices,key,aggregate)
+            if np.isfinite(values).sum()<int(.8*len(coords)):
+                continue
+            maps[metric]=short_plot_daily(model,metric,d,coords,values,
+                coverage,begin,finish,run)
+        if maps:
+            days[str(d)]={"date":day.isoformat(),"coverage":coverage,
+                "start_utc":begin.isoformat(),"end_utc":finish.isoformat(),
+                "hours":len(indices),"maps":maps}
+    document["models"][model]={"name":CODES[model],"run_utc":run,"days":days}
+
 def main():
     timestamp=datetime.now(timezone.utc)
     # Source runs explicitly tagged; no invented run hours on the maps.
     source_runs=run_info()
     coords=points()
+    daily_document={"schema":1,"generated_utc":timestamp.isoformat(),
+      "source":"Open-Meteo, modèles explicites ARÔME France et ICON EU",
+      "not_native_grid":True,"models":{}}
     document={"schema":1,"generated_utc":timestamp.isoformat(),
       "model_runs":source_runs,
       "source":"Open-Meteo, modèles natifs ARÔME France et DWD ICON Europe",
@@ -247,9 +386,12 @@ def main():
                 views[key]=plot(model,kind,period,coords,values[kind],timestamp)
         document["models"][model]={"name":CODES[model],"fields":list(COMMON+EXTRA[model]),
                                    "maps":views}
+        generate_short_daily(model,data,coords,source_runs.get(model,{}).get("run_utc"),daily_document)
         print("KFS_FRANCE_RISK_MODEL_OK",model,len(coords),"points",flush=True)
     (OUT/"latest.json").write_text(
         json.dumps(document,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
+    (SHORT_OUT/"latest.json").write_text(
+        json.dumps(daily_document,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
     print("KFS_FRANCE_SHORTTERM_RISKS_OK",timestamp.isoformat(),flush=True)
 
 if __name__=="__main__":
