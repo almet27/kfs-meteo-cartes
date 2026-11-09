@@ -201,6 +201,7 @@ function kfsFranceRegionalRender(features,depts,samples,zone,metric,subtitle){
  }
  const zoneName=KFS_PROBA_REGIONS.find(r=>r[0]===zone)?.[1]||"REGION";
  txt("KFS METEO FRANCE",40,14,3,[239,247,255]);
+ txt(zoneName,385,20,2,[200,233,250]);
  txt(KFS_FRANCE_REGION_METRICS[metric][0],40,40,2,[112,216,244]);
  // Légende quantitative + unités, hors territoire.
  const scaleSpec=KFS_FRANCE_REGION_SCALES[metric],levels=scaleSpec[0],
