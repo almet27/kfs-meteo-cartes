@@ -4,9 +4,11 @@ on:
   push:
     paths:
       - 'scripts/generate_noaa_forecasts.py'
+      - 'scripts/poll_noaa_europe.py'
       - '.github/workflows/previsions-noaa.yml'
   schedule:
-    - cron: '15 6,12,18,0 * * *'
+    # Vérifications légères toutes les 15 min ; données GRIB publiées progressivement.
+    - cron: '2,17,32,47 * * * *'
 permissions:
   contents: write
 concurrency:
@@ -21,14 +23,26 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - name: Synchroniser la dernière version publiée
+        run: |
+          git fetch origin main
+          git checkout -B main origin/main
+      - name: Vérifier les fichiers NOAA non publiés (sans télécharger de GRIB)
+        id: poll
+        run: |
+          python -m py_compile scripts/poll_noaa_europe.py
+          python scripts/poll_noaa_europe.py
       - name: Installer les dépendances
+        if: steps.poll.outputs.generate == 'true' || github.event_name == 'workflow_dispatch'
         run: |
           sudo apt-get update
           sudo apt-get install -y libeccodes-dev
           pip install herbie-data cfgrib eccodes xarray numpy matplotlib cartopy
       - name: Générer GFS et AIGFS
+        if: steps.poll.outputs.generate == 'true' || github.event_name == 'workflow_dispatch'
         run: python scripts/generate_noaa_forecasts.py
       - name: Publier les cartes NOAA
+        if: steps.poll.outputs.generate == 'true' || github.event_name == 'workflow_dispatch'
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
