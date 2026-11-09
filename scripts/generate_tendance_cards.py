@@ -400,13 +400,6 @@ def write_premium_stage(stage, meta, data, now, risk_document):
     txt(d,(67,183),synopsis,25,(9,42,77),True)
     d.rounded_rectangle((46,234,770,271),radius=14,fill=(5,30,54,229))
     txt(d,(63,243),stage["period"]+"  •  "+date.strftime("%d/%m/%Y %H:%M")+" UTC",20,"white",True)
-    # Fronts are indicative thermal boundaries only, not analysed fronts.
-    fronts=hazards.get("frontal_zones",[])
-    label=("Zones frontales possibles (modèle)" if fronts else
-           "Fronts : aucun signal robuste") if int(step)<=168 else "Fronts non tracés à longue échéance"
-    d.rounded_rectangle((1120,169,1556,213),radius=15,fill=(5,31,54,225))
-    txt(d,(1132,181),label,15,"light",True)
-
     # Decorative flow arrow points in the measured mean 850-hPa wind direction.
     canvas=curve_arrow(canvas,(873,504),flow.get("from_deg"),scale=.51)
     d=ImageDraw.Draw(canvas)
@@ -438,8 +431,8 @@ def write_premium_stage(stage, meta, data, now, risk_document):
     flow_text="Flux de "+wind_dir
     if wind_dir.startswith(("est","ouest")):flow_text="Flux d'"+wind_dir
     txt(d,(55,802),flow_text[:24],25,"white",True)
-    txt(d,(445,756),"MASSE D'AIR",19,"cyan",True)
-    txt(d,(445,802),temp_desc(t850)[:27],23,"white",True)
+    txt(d,(445,756),"T850 • FRANCE",19,"cyan",True)
+    txt(d,(445,802),("%+0.1f °C"%t850).replace(".",","),25,"white",True)
     txt(d,(830,756),"RISQUE PRINCIPAL",19,"cyan",True)
     if rain_state=="marque":principal="Pluies soutenues"
     elif wind_state=="marque":principal="Vent fort"
@@ -452,7 +445,7 @@ def write_premium_stage(stage, meta, data, now, risk_document):
     d.rounded_rectangle((1216,794,1548,852),radius=26,fill=(251,209,110,255))
     txt(d,(1232,812),stage["confidence"],23,(20,40,62),True)
     txt(d,(37,875),
-        "Plages de couleur : bleu = air froid, jaune/orange = air doux à 850 hPa (pas au sol) • fronts indicatifs • non officiel.",12,"light")
+        "Plages colorées : température à 850 hPa en °C (pas au sol) • isobares et risques indicatifs.",12,"light")
     out=OUT/("tendance-carte-"+stage["id"]+".png")
     canvas.convert("RGB").save(out,"PNG",optimize=True)
     runs={model_a.lower():details["run_utc"]}
@@ -464,12 +457,9 @@ def write_premium_stage(stage, meta, data, now, risk_document):
        "valid_utc":details["valid_utc"], "title":stage["period"]+" — synthèse synoptique "+model_a+" / "+model_b,
        "confidence_label":stage["confidence"]+" (indicative)",
        "risk_status":"altitude_filtered_georeferenced", "risks":hazards["risks"], "risk_markers":hazards["markers"],
-       "air_masses":hazards.get("air_masses",[]),
-       "frontal_zones":hazards.get("frontal_zones",[]),
-       "frontal_method":hazards.get("frontal_method",""),
        "t850_shading":hazards.get("t850_shading",{}),
-       "style":"kfs-editorial-masses-air-v7",
-       "note":"Masses d’air colorées à 850 hPa et échelle °C fixe ; ne représente ni la température au sol ni une vigilance. Fronts potentiels uniquement J+3/J+7."}
+       "style":"kfs-editorial-masses-air-sans-fronts-v8",
+       "note":"Plages thermiques à 850 hPa et échelle °C fixe ; aucun front ni texte descriptif des masses d’air."}
 
 def main():
     now=datetime.now(timezone.utc)
