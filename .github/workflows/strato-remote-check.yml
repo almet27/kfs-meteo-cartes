@@ -12,6 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      - uses: actions/checkout@v4
       - name: Vérifier le catalogue publié GitHub Raw
         run: |
           curl --fail --location --silent --show-error --retry 2 --max-time 25 \
@@ -37,22 +38,25 @@ jobs:
           PY
       - name: Vérifier les courbes zonales 10/50/100 hPa sur 15 jours
         run: |
+          # Le checkout GitHub est la source canonique. Un CDN peut conserver
+          # quelques minutes l'ancien metadata.json après publication.
           python - <<'PY'
           import json
-          d=json.load(open('/tmp/strato.json'))
+          from pathlib import Path
+          d=json.loads(Path('strato/metadata.json').read_text())
           charts=d['zonal_wind_charts']
           curves=d['zonal_wind_series_60n']
           assert set(charts)=={'10','50','100','comparison'}, charts
           for level in ('10','50','100'):
               assert len(curves[level])==15, (level,len(curves[level]))
-          print('COURBES STRATO: 4 graphiques, 15 jours par niveau')
+          for key, name in charts.items():
+              filename=Path(name)
+              assert filename.exists(), name
+              b=filename.read_bytes()
+              assert len(b)>4000 and b[:8]==bytes.fromhex('89504e470d0a1a0a'), name
+              print(key, 'PNG', len(b), 'octets OK')
+          print('KFS ZONAL OK : 4 graphiques, 15 jours par niveau')
           PY
-          for name in 10hpa 50hpa 100hpa comparison; do
-            curl --fail --location --silent --show-error --retry 2 --max-time 25 \
-              "https://raw.githubusercontent.com/almet27/kfs-meteo-cartes/main/strato/ifs-zonal-wind-$name.png?check=$GITHUB_RUN_ID" \
-              -o "/tmp/zonal-$name.png"
-            python -c 'import sys; b=open(sys.argv[1],"rb").read(); assert len(b)>4000 and b[:8]==bytes.fromhex("89504e470d0a1a0a"); print(sys.argv[1],len(b),"octets OK")' "/tmp/zonal-$name.png"
-          done
       - name: Vérifier le miroir jsDelivr
         run: |
           curl --fail --location --silent --show-error --retry 2 --max-time 25 \
