@@ -315,6 +315,17 @@ def render(id,run,fields,marks):
                            xycoords=ccrs.PlateCarree()._as_mpl_transform(ax),
                            box_alignment=(0.5,0.5),frameon=False,pad=0,zorder=18)
         ax.add_artist(pin)
+        # Point d'exclamation rouge au voisinage des seuls pics atteignant
+        # les seuils "marqué" du calcul des risques ; pas une vigilance.
+        threshold={"pluie_forte":20.0,"vent_fort":70.0,"neige":2.0}.get(mark["kind"])
+        if threshold is not None and float(mark["value"])>=threshold:
+            ax.annotate("!",xy=(x,y),
+                        xycoords=ccrs.PlateCarree()._as_mpl_transform(ax),
+                        xytext=(13,13),textcoords="offset points",
+                        ha="center",va="center",fontsize=15,fontweight="bold",
+                        color="#FFFFFF",zorder=25,
+                        bbox={"boxstyle":"circle,pad=0.22","fc":"#D92D41",
+                              "ec":"#FFFFFF","lw":1.5})
     fn=OUT/("tendance-risques-fond-"+id+".png")
     fig.savefig(fn,dpi=100,facecolor=fig.get_facecolor(),pad_inches=0)
     plt.close(fig)
