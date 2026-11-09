@@ -44,3 +44,21 @@ jobs:
               print("MODEL_ERROR",model,str(e)[:500])
               raise
           PY
+      - name: Vérifier la date exacte de chaque run Open-Meteo
+        continue-on-error: true
+        run: |
+          python - <<'PY'
+          import json
+          from urllib.request import Request,urlopen
+          roots=("https://data.open-meteo.com/data","https://api.open-meteo.com/data")
+          models=("meteofrance_arome_france","icon_eu","dwd_icon_eu")
+          for model in models:
+            for root in roots:
+              u=root+"/"+model+"/static/meta.json"
+              try:
+                with urlopen(Request(u,headers={"User-Agent":"KFS-Meteo/1.0"}),timeout=12) as f:
+                  j=json.load(f)
+                print("META_OK",model,root,{k:v for k,v in j.items() if "run" in k or "time" in k})
+              except Exception as e:
+                print("META_ERROR",model,root,str(e)[:135])
+          PY
