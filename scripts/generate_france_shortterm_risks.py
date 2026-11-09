@@ -26,6 +26,7 @@ import cartopy.feature as cfeature
 from cartopy.io import shapereader
 from shapely.geometry import Point
 from shapely.prepared import prep
+from check_france_risk_runs import run_info
 
 OUT=Path("forecast-maps/france/risques")
 OUT.mkdir(parents=True,exist_ok=True)
@@ -227,8 +228,11 @@ def plot(model,variable,period,coords,values,issued):
 
 def main():
     timestamp=datetime.now(timezone.utc)
+    # Source runs explicitly tagged; no invented run hours on the maps.
+    source_runs=run_info()
     coords=points()
     document={"schema":1,"generated_utc":timestamp.isoformat(),
+      "model_runs":source_runs,
       "source":"Open-Meteo, modèles natifs ARÔME France et DWD ICON Europe",
       "spatial_sampling":"Points terrestres esp. 0.38° lon / 0.32° lat ; pas une grille native",
       "not_official_warning":True,"not_thunderstorm_probability":True,
