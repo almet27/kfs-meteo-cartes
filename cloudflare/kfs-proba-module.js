@@ -23,7 +23,7 @@ const KFS_PROBA_REGIONS = [
 ];
 const KFS_PROBA_RULES = {
  neige:{unit:"cm",defaults:1,allowed:[1,3,5,10],variable:"snow_depth",title:"Neige présente au sol"},
- pluie:{unit:"mm / 24 h",defaults:10,allowed:[1,5,10,20,40],variable:"rain",title:"Cumul de pluie"},
+ pluie:{unit:"mm / 24 h",defaults:0.1,allowed:[0.1,1,5,10,20,40],variable:"rain",title:"Cumul de pluie"},
  vent:{unit:"km/h",defaults:80,allowed:[60,80,100,120],variable:"wind_gusts_10m",title:"Rafales maximales"}
 };
 let KFS_PROBA_LAST_REGISTER=0;
@@ -36,7 +36,7 @@ async function kfsProbaRegister(env){
    choices:[{name:"France métropolitaine",value:"FR"},...KFS_PROBA_REGIONS.map(([code,name])=>({name,value:code}))]},
   {name:"jour",type:4,description:"De J+0 à J+3",required:false,
    choices:[0,1,2,3].map(i=>({name:"J+"+i,value:i}))},
-  {name:"seuil",type:4,description:"Neige : 1/3/5/10 cm ; pluie : 1/5/10/20/40 mm ; vent : 60/80/100/120 km/h",required:false,min_value:1,max_value:120}
+  {name:"seuil",type:10,description:"Pluie: 0,1/1/5/10/20/40 mm · Neige: 1/3/5/10 cm · Vent: 60/80/100/120 km/h",required:false,min_value:0.1,max_value:120}
  ]};
  const endpoint="https://discord.com/api/v10/applications/"+APPLICATION_ID+"/commands";
  const verify=await fetch(endpoint,{headers:{Authorization:"Bot "+env.DISCORD_BOT_TOKEN}});
@@ -142,26 +142,28 @@ function kfsProbaDay(day){
 }
 function kfsProbaMemberProbability(hourly,day,type,threshold){
  if(!hourly?.time?.length)return null;
- const times=hourly.time;
  const ids=[];
- for(let i=0;i<times.length;i++)if(String(times[i]).startsWith(day))ids.push(i);
+ for(let i=0;i<hourly.time.length;i++)if(String(hourly.time[i]).startsWith(day))ids.push(i);
  if(!ids.length)return null;
- let pass=0,valid=0;
+ let pass=0,valid=0,anyRain=0;
  const prefix=KFS_PROBA_RULES[type].variable;
  const keys=Object.keys(hourly).filter(k=>k.startsWith(prefix+"_")&&/member\d+/.test(k));
  for(const key of keys){
   const arr=hourly[key];
   if(!Array.isArray(arr))continue;
   const nums=ids.map(i=>arr[i]).filter(v=>typeof v==="number"&&Number.isFinite(v));
-  if(nums.length<Math.ceil(ids.length*0.7))continue;
+  if(nums.length<Math.ceil(ids.length*0.85))continue;
   valid++;
   let event=false;
-  if(type==="pluie")event=nums.reduce((a,b)=>a+b,0)>=threshold;
-  else if(type==="vent")event=Math.max(...nums)>=threshold;
-  else event=Math.max(...nums)*100>=threshold; // API snow_depth en mètres
+  if(type==="pluie"){
+   const mm=nums.reduce((a,b)=>a+b,0);
+   event=mm>=threshold;
+   if(mm>=0.1)anyRain++;
+  }else if(type==="vent")event=Math.max(...nums)>=threshold;
+  else event=Math.max(...nums)*100>=threshold; // snow_depth Open-Meteo en mètres
   if(event)pass++;
  }
- return valid>=2?{pct:100*pass/valid,members:valid}:null;
+ return valid>=2?{pct:100*pass/valid,members:valid,wetPct:type==="pluie"?100*anyRain/valid:null}:null;
 }
 async function kfsProbaModel(model,samples,day,type,threshold){
  const varName=KFS_PROBA_RULES[type].variable;
@@ -169,7 +171,7 @@ async function kfsProbaModel(model,samples,day,type,threshold){
   latitude:samples.map(p=>p.lat).join(","),
   longitude:samples.map(p=>p.lon).join(","),
   models:model[1],hourly:varName,forecast_days:"4",
-  timezone:"Europe/Paris",temporal_resolution:"hourly_3"
+  timezone:"Europe/Paris",temporal_resolution:"hourly_1"
  });
  const controller=new AbortController();
  const timer=setTimeout(()=>controller.abort(),18000);
@@ -191,9 +193,16 @@ async function kfsProbaModel(model,samples,day,type,threshold){
 }
 function kfsProbaClamp(x,lo,hi){return Math.max(lo,Math.min(hi,x));}
 function kfsProbaPalette(p){
- const cs=[[17,37,64],[30,106,159],[36,168,166],[229,196,71],[246,128,53],[224,49,72]];
- const u=kfsProbaClamp(p/20,0,5),k=Math.min(4,Math.floor(u)),f=u-k;
- return cs[k].map((v,i)=>Math.round(v*(1-f)+cs[k+1][i]*f));
+ // Distinguer visuellement 0, 5, 10 et 20 % sans truquer l'échelle.
+ const stops=[[0,[19,36,60]],[1,[24,63,105]],[5,[31,116,170]],
+ [10,[37,160,225]],[20,[63,208,198]],[40,[239,207,74]],
+ [60,[248,146,58]],[80,[238,71,72]],[100,[207,43,109]]];
+ for(let i=0;i<stops.length-1;i++){
+  const [v,a]=stops[i],[next,b]=stops[i+1];
+  if(p<=next){const t=kfsProbaClamp((p-v)/(next-v),0,1);
+   return a.map((c,j)=>Math.round(c+(b[j]-c)*t));}
+ }
+ return stops[stops.length-1][1];
 }
 function kfsProbaRender(features,samples,zone){
  const W=900,H=615,P={x:24,y:26,w:852,h:515};
@@ -263,15 +272,59 @@ function kfsProbaRender(features,samples,zone){
  for(const rr of rings)for(const ring of rr)for(let i=1;i<ring.length;i++){
   line(ring[i-1][0],ring[i-1][1],ring[i][0],ring[i][1],[219,231,241]);
  }
- // Bandeau de légende graduée, 0% à 100%. Les textes sont dans le message Discord.
- const ly=565,left=124,right=775;
+ // Police pixel 5×7, labels intégrés dans l'image pour la lecture sur Discord.
+ const glyphs={
+  "0":["01110","10001","10011","10101","11001","10001","01110"],
+  "1":["00100","01100","00100","00100","00100","00100","01110"],
+  "2":["01110","10001","00001","00010","00100","01000","11111"],
+  "3":["11110","00001","00001","01110","00001","00001","11110"],
+  "4":["00010","00110","01010","10010","11111","00010","00010"],
+  "5":["11111","10000","11110","00001","00001","10001","01110"],
+  "6":["00110","01000","10000","11110","10001","10001","01110"],
+  "7":["11111","00001","00010","00100","01000","01000","01000"],
+  "8":["01110","10001","10001","01110","10001","10001","01110"],
+  "9":["01110","10001","10001","01111","00001","00010","11100"],
+  "%":["11001","11010","00100","01000","10110","00110","00000"]
+ };
+ function rect(x,y,w,h,color){
+  for(let a=Math.max(0,Math.round(y));a<Math.min(H,y+h);a++)for(let b=Math.max(0,Math.round(x));b<Math.min(W,x+w);b++)put(b,a,...color);
+ }
+ function txt(str,x,y,scale=2,color=[255,255,255]){
+  let px=Math.round(x);
+  for(const char of String(str)){
+   const rows=glyphs[char];if(!rows){px+=3*scale;continue;}
+   for(let yy=0;yy<7;yy++)for(let xx=0;xx<5;xx++)if(rows[yy][xx]==="1")
+    rect(px+xx*scale,y+yy*scale,scale,scale,color);
+   px+=6*scale;
+  }
+ }
+ // Étiquettes aux lieux échantillonnés, espacées pour éviter les chevauchements.
+ const sorted=[...valid].sort((a,b)=>b.value-a.value);
+ const marked=[];
+ const maxMarks=zone==="FR"?14:9;
+ for(const p of sorted){
+  const x=lonToX(p.lon),y=latToY(p.lat);
+  if(x<P.x+10||x>P.x+P.w-50||y<P.y+12||y>P.y+P.h-28)continue;
+  if(marked.some(q=>Math.abs(q.x-x)<78&&Math.abs(q.y-y)<40))continue;
+  marked.push({x,y});
+  const score=Math.round(p.value),label=score+"%",lw=label.length*12+12;
+  const bx=Math.round(x-lw/2),by=Math.round(y-17);
+  rect(bx-1,by-1,lw+2,23,[228,241,252]);
+  rect(bx,by,lw,21,[10,29,50]);
+  txt(label,bx+6,by+4,2,score>=50?[255,225,133]:[255,255,255]);
+  if(marked.length>=maxMarks)break;
+ }
+ // Barre graduée chiffrée 0-10-25-50-75-100%.
+ const ly=554,left=104,right=794;
  for(let x=left;x<=right;x++){
   const c=kfsProbaPalette(100*(x-left)/(right-left));
-  for(let y=ly;y<ly+15;y++)put(x,y,...c);
+  for(let y=ly;y<ly+14;y++)put(x,y,...c);
  }
- for(let i=0;i<=4;i++){
-  const x=Math.round(left+(right-left)*i/4);
-  for(let y=ly-5;y<ly+20;y++)put(x,y,246,250,254);
+ for(const v of [0,10,25,50,75,100]){
+  const x=Math.round(left+(right-left)*v/100);
+  for(let y=ly-4;y<ly+19;y++)put(x,y,246,250,254);
+  const label=v+"%",lw=label.length*12;
+  txt(label,x-lw/2,581,2);
  }
  return {rgba,W,H};
 }
@@ -325,12 +378,12 @@ async function kfsProbaComplete(interaction,phenom,zone,jour,seuil){
    let count=0;
    for(let i=0;i<points.length;i++){
     const v=r.values[i];
-    if(v){points[i].models.push(v.pct);count++;}
+    if(v){points[i].models.push(v.pct);if(Number.isFinite(v.wetPct)){(points[i].wetModels ||= []).push(v.wetPct);}count++;}
    }
    if(count)available.push(r.name);
    else failures.push(r.name+" : variable indisponible");
   }
-  for(const p of points)if(p.models.length)p.value=p.models.reduce((a,b)=>a+b,0)/p.models.length;
+  for(const p of points){if(p.models.length)p.value=p.models.reduce((a,b)=>a+b,0)/p.models.length;if(p.wetModels?.length)p.wetValue=p.wetModels.reduce((a,b)=>a+b,0)/p.wetModels.length;}
   const counted=points.filter(p=>Number.isFinite(p.value));
   if(!counted.length)throw Error("Aucun membre d'ensemble exploitable pour ce paramètre. Aucune probabilité affichée.");
   const frame=kfsProbaRender(features,points,zone),png=await kfsProbaPng(frame);
@@ -340,11 +393,17 @@ async function kfsProbaComplete(interaction,phenom,zone,jour,seuil){
    "rafale maximale ≥ "+seuil+" km/h sur le jour";
   const values=counted.map(p=>p.value);
   const min=Math.round(Math.min(...values)),max=Math.round(Math.max(...values));
+  const wetValues=counted.map(p=>p.wetValue).filter(Number.isFinite);
+  const wetRange=phenom==="pluie"&&seuil>0.1&&wetValues.length?
+   "🌦️ **Risque d’avoir de la pluie (≥ 0,1 mm) :** "+Math.round(Math.min(...wetValues))+" à "+Math.round(Math.max(...wetValues))+" % aux points étudiés.\n":"";
+  const caution=phenom==="pluie"&&seuil>=10?
+   "💡 Une probabilité faible pour ≥ "+seuil+" mm n'exclut pas une journée avec des pluies faibles ou des averses.\n":"";
+
   const content="**KFS MÉTÉO · /proba · "+name+" · J+"+jour+" ("+day+")**\n"+
    "**Événement :** "+label+"\n"+
    "🗺️ **Probabilité estimée :** "+min+" à "+max+" % sur les points échantillonnés.\n"+
    "📊 **Modèles exploités :** "+available.join(", ")+" ("+available.length+" familles).\n"+
-   "**Échelle de la carte :** 0 % · 25 % · 50 % · 75 % · 100 % (de gauche à droite).\n"+
+   "**Échelle de la carte :** 0 % · 10 % · 25 % · 50 % · 75 % · 100 % (de gauche à droite).\n"+wetRange+caution+
    (phenom==="neige"?"🏔️ Les points situés au-dessus de 800 m sont écartés ; neige au sol modélisée, pas chute fraîche.\n":"")+
    "ℹ️ Estimation **non calibrée**, issue des proportions de membres (poids égal par modèle), et non une probabilité officielle de vigilance. "+
    "Échantillonnage régional : ne remplace pas une prévision locale fine.\n"+
