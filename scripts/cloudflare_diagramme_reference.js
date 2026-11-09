@@ -256,7 +256,10 @@ async function kfsCompleteDiagramme(interaction,model,cityName,param,duration){
     const runVerified=Boolean(ensembleMetaBefore?.ready&&ensembleMetaAfter?.ready&&
       ensembleMetaBefore.iso===ensembleMetaAfter.iso);
     const latestEnsembleMeta=ensembleMetaAfter||ensembleMetaBefore;
-    const runTitle=runVerified?kfsEnsembleRunTitle(latestEnsembleMeta):"RUN à confirmer";
+    const shortEnsCycle=Boolean(model==="ens"&&duration===15&&latestEnsembleMeta&&
+      [6,18].includes(new Date(latestEnsembleMeta.init).getUTCHours()));
+    const runTitle=runVerified?kfsEnsembleRunTitle(latestEnsembleMeta)+
+      (shortEnsCycle?" (échéances courtes)":""):"RUN à confirmer";
     const charts=await Promise.all(series.wanted.map(async name=>{
       const config=kfsEnsembleChart(name,series,modelName,cityLabel,duration,runTitle);
       return {name,filename:"kfs-"+model+"-"+name+".png",
@@ -278,6 +281,7 @@ async function kfsCompleteDiagramme(interaction,model,cityName,param,duration){
       (runVerified?"\n🕒 **"+runTitle+"** · cycle confirmé disponible chez Open-Meteo.":
         latestEnsembleMeta?"\n⏳ "+kfsEnsembleRunTitle(latestEnsembleMeta)+" détecté chez Open-Meteo, mais sa propagation est encore en cours : run des courbes non confirmé.":
         "\n⚠️ Initialisation du run non vérifiable actuellement.")+
+      (shortEnsCycle?"\nℹ️ ECMWF ENS 06Z/18Z : les échéances à 15 jours peuvent encore provenir du dernier cycle long 00Z/12Z.":"")+
       "\n_Source et données : Open-Meteo (CC BY 4.0), données ECMWF/NOAA. Utilisation non commerciale._";
     const embeds=charts.map(p=>({
       title:names[p.name].toLocaleUpperCase("fr"),
