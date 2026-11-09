@@ -26,7 +26,7 @@ POINTS = ROOT / "proba" / "points-ecmwf.json"
 OUT = ROOT / "proba" / "ecmwf-subset-probabilities.json"
 MEMBERS = [3, 9, 15, 21, 27, 33, 39, 45]
 STEPS = list(range(12, 97, 12))
-PARAMS = ["sd", "rsn", "mucape", "cp", "10fg"]
+PARAMS = ["sd", "rsn", "mucape", "cp", "10fg", "tp"]
 
 
 def indexed_points(zones):
@@ -55,6 +55,7 @@ def nearest(msg, points):
 
 def load_fields(path, points):
     values = {}
+    tp_start_steps = {}
     index = None
     count = 0
     ngrid = 0
@@ -76,6 +77,8 @@ def load_fields(path, points):
                     # Keep NaNs as missing: never replace with zero.
                     sampled = np.where(np.isfinite(sampled), sampled, np.nan)
                 values[(short, step, number)] = sampled
+                if short == "tp":
+                    tp_start_steps[(step, number)] = int(codes_get(msg, "startStep"))
                 count += 1
             finally:
                 codes_release(msg)
@@ -85,12 +88,13 @@ def load_fields(path, points):
     # Some runs omit the +96h gust field; this must not block snow or imply
     # zero wind. Other missing products are a hard failure.
     optional = {( "10fg", 96, member) for member in MEMBERS}
+    optional.update(( "tp", step, member) for step in STEPS for member in MEMBERS)
     required_missing = [k for k in missing if k not in optional]
     if required_missing:
         raise RuntimeError(f"ECMWF PF incomplete: {count}/{expected}; missing {required_missing[:5]}")
     if missing:
         print("Warn: optional ECMWF gust fields missing (not treated as zero):", missing)
-    return values
+    return values, tp_start_steps
 
 
 def convective_tier(cape, precipitation_mm, gust_kmh):
@@ -109,13 +113,66 @@ def convective_tier(cape, precipitation_mm, gust_kmh):
     return 0
 
 
-def produce(fields, npoints, run):
+def daily_rain_mm(values, tp_starts, member, day_start, npoints):
+    """Extract actual 24h TP (m -> mm) using GRIB startStep, not probability thresholds.
+
+    Supports cumulative 0..T forecasts, adjacent 12h increments, or a direct
+    24h accumulation. No ambiguous or missing step is silently turned into 0.
+    """
+    day_end = day_start + 24
+    middle = day_start + 12
+    end = values.get(("tp", day_end, member))
+    if end is None:
+        return None
+    end_start = tp_starts.get((day_end, member))
+    if end_start == day_start:
+        rainfall_m = end
+    elif end_start == middle:
+        first = values.get(("tp", middle, member))
+        first_start = tp_starts.get((middle, member))
+        if first is None:
+            return None
+        if first_start == day_start:
+            rainfall_m = first + end
+        elif first_start == 0 and day_start > 0:
+            # The first interval is the difference between run-cumulative
+            # middle and dayStart, then add the final 12-hour increment.
+            previous = values.get(("tp", day_start, member))
+            if previous is None or tp_starts.get((day_start, member)) != 0:
+                return None
+            rainfall_m = first - previous + end
+        else:
+            return None
+    elif end_start == 0 and day_start > 0:
+        previous = values.get(("tp", day_start, member))
+        if previous is None or tp_starts.get((day_start, member)) != 0:
+            return None
+        rainfall_m = end - previous
+    else:
+        return None
+    if not np.all(np.isfinite(rainfall_m)):
+        return None
+    # A difference of two forecast accumulations can be slightly negative
+    # from packing; large negative results mean a broken interpretation.
+    if np.min(rainfall_m) < -0.0002:
+        return None
+    mm = np.maximum(rainfall_m, 0) * 1000.0
+    if np.max(mm) > 500:
+        return None
+    return mm
+
+
+def produce(fields, tp_starts, npoints, run):
     by_day = {}
     for lead in range(4):
         day = (run + timedelta(days=lead)).strftime("%Y-%m-%d")
         steps = [lead * 24 + 12, lead * 24 + 24]
         snow_by_member, storm_by_member = [], []
+        rain_by_member = []
         for member in MEMBERS:
+            rainfall = daily_rain_mm(fields, tp_starts, member, lead*24, npoints)
+            if rainfall is not None:
+                rain_by_member.append(rainfall)
             snow_at_steps, storm_at_steps = [], []
             previous_cp = np.zeros(npoints, dtype=np.float64) if lead == 0 else fields.get(
                 ("cp", lead * 24, member), np.full(npoints, np.nan))
@@ -174,6 +231,16 @@ def produce(fields, npoints, run):
         with np.errstate(invalid="ignore"):
             fields_out["snow_mean_cm"] = np.nanmean(snow,axis=0)
             fields_out["storm_mean_level"] = np.nanmean(storm,axis=0)
+        if len(rain_by_member) == len(MEMBERS):
+            rain = np.vstack(rain_by_member)
+            if np.all(np.isfinite(rain)):
+                fields_out["rain_mean_mm"] = np.mean(rain,axis=0)
+                print(f"ECMWF rain 24h {day}: mean subset 8 members, "
+                      f"{np.min(fields_out['rain_mean_mm']):.1f}–"
+                      f"{np.max(fields_out['rain_mean_mm']):.1f} mm")
+        else:
+            print(f"WARNING: rain_mean_mm unavailable {day}: "
+                  f"{len(rain_by_member)}/{len(MEMBERS)} valid members")
         by_day[day] = fields_out
     return by_day
 
@@ -192,8 +259,11 @@ def main():
         run=run.astimezone(timezone.utc)
         if run.hour!=0 or datetime.now(timezone.utc)-run>timedelta(hours=40):
             raise RuntimeError("Ensemble run is stale or not 00Z")
-        fields = load_fields(file, coords)
-    products = produce(fields,len(coords),run)
+        fields, tp_starts = load_fields(file, coords)
+        print("ECMWF TP stepRange:", 
+              [(step, member, tp_starts.get((step,member))) 
+               for step in (12,24,36,48,72,96) for member in MEMBERS[:1]])
+    products = produce(fields,tp_starts,len(coords),run)
     data = {}
     for day, fields in products.items():
         data[day] = {
