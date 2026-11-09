@@ -352,6 +352,12 @@ def generate_short_daily(model,data,coords,run,document):
         for metric,key in SHORT_SOURCE.items():
             aggregate="min" if metric=="tmin" else "max" if metric in ("tmax","gust") else "sum"
             values=short_daily_values(data,indices,key,aggregate)
+            if metric=="rain" and model=="icon_eu":
+                # Pour ICON, "rain" représente la pluie stratiforme.
+                # Les averses convectives sont un champ horaire séparé.
+                showers=short_daily_values(data,indices,"showers","sum")
+                values=np.where(np.isfinite(values)&np.isfinite(showers),
+                                values+showers,np.nan)
             if np.isfinite(values).sum()<int(.8*len(coords)):
                 continue
             maps[metric]=short_plot_daily(model,metric,d,coords,values,
