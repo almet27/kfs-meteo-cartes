@@ -163,7 +163,7 @@ def decode(raw, run, member, step, grid_index, precip_only=False):
                     if str(codes_get(h, "units")) != "m" or                        str(codes_get(h, "stepType")) != "instant":
                         raise RuntimeError("Unexpected NOAA snow depth units or interval")
                     if np.min(values) < -0.00001 or np.max(values) > 10:
-                        raise RuntimeError("GEFS invalid snow depth")
+                        raise RuntimeError(f"GEFS invalid snow depth min={np.min(values)} max={np.max(values)} at +{step} p{member:02d}")
                     values = np.maximum(values, 0) * 100.0
                 result[field] = values
             finally:
