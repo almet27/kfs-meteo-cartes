@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_utc": "2026-11-09T09:50:21.246398+00:00",
+  "generated_utc": "2026-11-09T10:04:05.974872+00:00",
   "atlas_generated_utc": "2026-11-09T08:44:12.932477+00:00",
   "reference": "ECMWF Open Data, Copernicus DEM GLO-90 via Open-Meteo — champs géoréférencés",
   "stages": [
@@ -146,6 +146,16 @@
           "confidence": "indice frontal, non validé comme front de surface"
         }
       ],
+      "t850_shading": {
+        "enabled": true,
+        "level_hpa": 850,
+        "unit": "°C",
+        "fixed_scale_c": [
+          -20,
+          20
+        ],
+        "description": "Température à 850 hPa modélisée, pas température au sol"
+      },
       "frontal_method": "Thermal gradient / 6h tendency / rain (experimental), only J+3/J+7",
       "risk_scope": "France et secteurs proches, domaine rectangulaire terre + mer",
       "method": "Vent moyen 10m, pluie/neige 6h ; neige hors relief selon altitudes GLO-90 ; pas une vigilance officielle."
@@ -281,6 +291,16 @@
           "confidence": "indice frontal, non validé comme front de surface"
         }
       ],
+      "t850_shading": {
+        "enabled": true,
+        "level_hpa": 850,
+        "unit": "°C",
+        "fixed_scale_c": [
+          -20,
+          20
+        ],
+        "description": "Température à 850 hPa modélisée, pas température au sol"
+      },
       "frontal_method": "Thermal gradient / 6h tendency / rain (experimental), only J+3/J+7",
       "risk_scope": "France et secteurs proches, domaine rectangulaire terre + mer",
       "method": "Vent moyen 10m, pluie/neige 6h ; neige hors relief selon altitudes GLO-90 ; pas une vigilance officielle."
@@ -381,6 +401,16 @@
         }
       ],
       "frontal_zones": [],
+      "t850_shading": {
+        "enabled": true,
+        "level_hpa": 850,
+        "unit": "°C",
+        "fixed_scale_c": [
+          -20,
+          20
+        ],
+        "description": "Température à 850 hPa modélisée, pas température au sol"
+      },
       "frontal_method": "Thermal gradient / 6h tendency / rain (experimental), only J+3/J+7",
       "risk_scope": "France et secteurs proches, domaine rectangulaire terre + mer",
       "method": "Vent moyen 10m, pluie/neige 6h ; neige hors relief selon altitudes GLO-90 ; pas une vigilance officielle."
@@ -486,6 +516,16 @@
         }
       ],
       "frontal_zones": [],
+      "t850_shading": {
+        "enabled": true,
+        "level_hpa": 850,
+        "unit": "°C",
+        "fixed_scale_c": [
+          -20,
+          20
+        ],
+        "description": "Température à 850 hPa modélisée, pas température au sol"
+      },
       "frontal_method": "Thermal gradient / 6h tendency / rain (experimental), only J+3/J+7",
       "risk_scope": "France et secteurs proches, domaine rectangulaire terre + mer",
       "method": "Vent moyen 10m, pluie/neige 6h ; neige hors relief selon altitudes GLO-90 ; pas une vigilance officielle."

@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "status": "illustrative_model_maps",
-  "generated_utc": "2026-11-09T09:51:00.607550+00:00",
-  "source_generated_utc": "2026-11-09T09:49:46.056829+00:00",
+  "generated_utc": "2026-11-09T10:04:44.354489+00:00",
+  "source_generated_utc": "2026-11-09T10:03:37.279780+00:00",
   "charts_generated_utc": "2026-11-09T08:44:12.932477+00:00",
   "source": "ECMWF Open Data (CC BY 4.0)",
   "not_weekly_anomalies": true,
@@ -12,7 +12,7 @@
       "step_h": 72,
       "path": "forecast-maps/tendance/tendance-carte-j3.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j3.png",
-      "size_bytes": 323957,
+      "size_bytes": 374426,
       "run_utc": {
         "ifs": "2026-11-09T00:00Z",
         "aifs": "2026-11-09T00:00Z"
@@ -157,15 +157,25 @@
         }
       ],
       "frontal_method": "Thermal gradient / 6h tendency / rain (experimental), only J+3/J+7",
-      "style": "kfs-editorial-premium-fronts-v6",
-      "note": "Icônes sans rond; masses d'air T850; fronts possibles automatisés J+3/J+7 seulement, non officiels."
+      "t850_shading": {
+        "enabled": true,
+        "level_hpa": 850,
+        "unit": "°C",
+        "fixed_scale_c": [
+          -20,
+          20
+        ],
+        "description": "Température à 850 hPa modélisée, pas température au sol"
+      },
+      "style": "kfs-editorial-masses-air-v7",
+      "note": "Masses d’air colorées à 850 hPa et échelle °C fixe ; ne représente ni la température au sol ni une vigilance. Fronts potentiels uniquement J+3/J+7."
     },
     {
       "id": "j7",
       "step_h": 168,
       "path": "forecast-maps/tendance/tendance-carte-j7.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j7.png",
-      "size_bytes": 373495,
+      "size_bytes": 420511,
       "run_utc": {
         "ifs": "2026-11-09T00:00Z",
         "aifs": "2026-11-09T00:00Z"
@@ -299,15 +309,25 @@
         }
       ],
       "frontal_method": "Thermal gradient / 6h tendency / rain (experimental), only J+3/J+7",
-      "style": "kfs-editorial-premium-fronts-v6",
-      "note": "Icônes sans rond; masses d'air T850; fronts possibles automatisés J+3/J+7 seulement, non officiels."
+      "t850_shading": {
+        "enabled": true,
+        "level_hpa": 850,
+        "unit": "°C",
+        "fixed_scale_c": [
+          -20,
+          20
+        ],
+        "description": "Température à 850 hPa modélisée, pas température au sol"
+      },
+      "style": "kfs-editorial-masses-air-v7",
+      "note": "Masses d’air colorées à 850 hPa et échelle °C fixe ; ne représente ni la température au sol ni une vigilance. Fronts potentiels uniquement J+3/J+7."
     },
     {
       "id": "j10",
       "step_h": 240,
       "path": "forecast-maps/tendance/tendance-carte-j10.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j10.png",
-      "size_bytes": 325145,
+      "size_bytes": 370150,
       "run_utc": {
         "ifs": "2026-11-09T00:00Z",
         "aifs": "2026-11-09T00:00Z"
@@ -406,15 +426,25 @@
       ],
       "frontal_zones": [],
       "frontal_method": "Thermal gradient / 6h tendency / rain (experimental), only J+3/J+7",
-      "style": "kfs-editorial-premium-fronts-v6",
-      "note": "Icônes sans rond; masses d'air T850; fronts possibles automatisés J+3/J+7 seulement, non officiels."
+      "t850_shading": {
+        "enabled": true,
+        "level_hpa": 850,
+        "unit": "°C",
+        "fixed_scale_c": [
+          -20,
+          20
+        ],
+        "description": "Température à 850 hPa modélisée, pas température au sol"
+      },
+      "style": "kfs-editorial-masses-air-v7",
+      "note": "Masses d’air colorées à 850 hPa et échelle °C fixe ; ne représente ni la température au sol ni une vigilance. Fronts potentiels uniquement J+3/J+7."
     },
     {
       "id": "j15",
       "step_h": 360,
       "path": "forecast-maps/tendance/tendance-carte-j15.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j15.png",
-      "size_bytes": 346405,
+      "size_bytes": 375000,
       "run_utc": {
         "aifs": "2026-11-09T00:00Z"
       },
@@ -517,8 +547,18 @@
       ],
       "frontal_zones": [],
       "frontal_method": "Thermal gradient / 6h tendency / rain (experimental), only J+3/J+7",
-      "style": "kfs-editorial-premium-fronts-v6",
-      "note": "Icônes sans rond; masses d'air T850; fronts possibles automatisés J+3/J+7 seulement, non officiels."
+      "t850_shading": {
+        "enabled": true,
+        "level_hpa": 850,
+        "unit": "°C",
+        "fixed_scale_c": [
+          -20,
+          20
+        ],
+        "description": "Température à 850 hPa modélisée, pas température au sol"
+      },
+      "style": "kfs-editorial-masses-air-v7",
+      "note": "Masses d’air colorées à 850 hPa et échelle °C fixe ; ne représente ni la température au sol ni une vigilance. Fronts potentiels uniquement J+3/J+7."
     }
   ],
   "public": true,
