@@ -1,0 +1,110 @@
+{
+  "schema": 1,
+  "model": "ifs",
+  "source": "ECMWF IFS Open Data · CC BY 4.0",
+  "generated_utc": "2026-11-09T18:35:54.329259+00:00",
+  "run_utc": "2026-11-09T00:00:00Z",
+  "description": "Vortex et température. Vent U 10 hPa à 60°N diagnostique ; valeur négative ponctuelle ≠ événement SSW confirmé.",
+  "levels_hpa": [
+    10,
+    50,
+    100
+  ],
+  "forecast_hours": [
+    24,
+    72,
+    120,
+    168,
+    240,
+    360
+  ],
+  "maps": {
+    "10": {
+      "24": {
+        "temperature": "strato/ifs-h024-10hpa-temperature.png",
+        "vortex": "strato/ifs-h024-10hpa-vortex.png"
+      },
+      "72": {
+        "temperature": "strato/ifs-h072-10hpa-temperature.png",
+        "vortex": "strato/ifs-h072-10hpa-vortex.png"
+      },
+      "120": {
+        "temperature": "strato/ifs-h120-10hpa-temperature.png",
+        "vortex": "strato/ifs-h120-10hpa-vortex.png"
+      },
+      "168": {
+        "temperature": "strato/ifs-h168-10hpa-temperature.png",
+        "vortex": "strato/ifs-h168-10hpa-vortex.png"
+      },
+      "240": {
+        "temperature": "strato/ifs-h240-10hpa-temperature.png",
+        "vortex": "strato/ifs-h240-10hpa-vortex.png"
+      },
+      "360": {
+        "temperature": "strato/ifs-h360-10hpa-temperature.png",
+        "vortex": "strato/ifs-h360-10hpa-vortex.png"
+      }
+    },
+    "50": {
+      "24": {
+        "temperature": "strato/ifs-h024-50hpa-temperature.png",
+        "vortex": "strato/ifs-h024-50hpa-vortex.png"
+      },
+      "72": {
+        "temperature": "strato/ifs-h072-50hpa-temperature.png",
+        "vortex": "strato/ifs-h072-50hpa-vortex.png"
+      },
+      "120": {
+        "temperature": "strato/ifs-h120-50hpa-temperature.png",
+        "vortex": "strato/ifs-h120-50hpa-vortex.png"
+      },
+      "168": {
+        "temperature": "strato/ifs-h168-50hpa-temperature.png",
+        "vortex": "strato/ifs-h168-50hpa-vortex.png"
+      },
+      "240": {
+        "temperature": "strato/ifs-h240-50hpa-temperature.png",
+        "vortex": "strato/ifs-h240-50hpa-vortex.png"
+      },
+      "360": {
+        "temperature": "strato/ifs-h360-50hpa-temperature.png",
+        "vortex": "strato/ifs-h360-50hpa-vortex.png"
+      }
+    },
+    "100": {
+      "24": {
+        "temperature": "strato/ifs-h024-100hpa-temperature.png",
+        "vortex": "strato/ifs-h024-100hpa-vortex.png"
+      },
+      "72": {
+        "temperature": "strato/ifs-h072-100hpa-temperature.png",
+        "vortex": "strato/ifs-h072-100hpa-vortex.png"
+      },
+      "120": {
+        "temperature": "strato/ifs-h120-100hpa-temperature.png",
+        "vortex": "strato/ifs-h120-100hpa-vortex.png"
+      },
+      "168": {
+        "temperature": "strato/ifs-h168-100hpa-temperature.png",
+        "vortex": "strato/ifs-h168-100hpa-vortex.png"
+      },
+      "240": {
+        "temperature": "strato/ifs-h240-100hpa-temperature.png",
+        "vortex": "strato/ifs-h240-100hpa-vortex.png"
+      },
+      "360": {
+        "temperature": "strato/ifs-h360-100hpa-temperature.png",
+        "vortex": "strato/ifs-h360-100hpa-vortex.png"
+      }
+    }
+  },
+  "zonal_wind_10hpa_60n": {
+    "24": 0.6,
+    "72": -3.6,
+    "120": 2.8,
+    "168": 4.3,
+    "240": 11.1,
+    "360": 29.9
+  },
+  "errors": {}
+}
