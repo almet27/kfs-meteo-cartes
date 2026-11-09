@@ -337,11 +337,12 @@ def write_premium_stage(stage, meta, data, now, risk_document):
         chart, details, flow, t850, pressure=select(meta,data,stage,"aifs-single")
         model_a="AIFS"
         other=data.get("models",{}).get("gfs",{}).get(step)
-        if not other or other.get("fields",{}).get("t850",{}).get("france",{}).get("mean") is None:
-            raise RuntimeError("J+15 indisponible : AIFS et GFS requis")
-        model_b="GFS"
-        other_t=float(other["fields"]["t850"]["france"]["mean"])
-        other_run=other["run_utc"]
+        gfs_ok=(other is not None and
+                other.get("fields",{}).get("t850",{}).get("france",{}).get("mean") is not None and
+                bool(other.get("run_utc")))
+        model_b="GFS" if gfs_ok else "GFS indisponible"
+        other_t=float(other["fields"]["t850"]["france"]["mean"]) if gfs_ok else None
+        other_run=other["run_utc"] if gfs_ok else None
     else:
         chart, details, flow, t850, pressure=select(meta,data,stage,"ifs")
         _,other,_,other_t,_=select(meta,data,stage,"aifs-single")
@@ -379,8 +380,8 @@ def write_premium_stage(stage, meta, data, now, risk_document):
     cloud(d,39,23)
     txt(d,(166,22),"KFS MÉTÉO",37,"white",True)
     txt(d,(40,86),"Jusqu'au "+str(date.day)+" "+MONTHS[date.month-1],49,"white",True)
-    d.rounded_rectangle((1005,25,1549,80),radius=25,fill=(208,233,251,245))
-    txt(d,(1023,36),"ECMWF "+model_a+"  •  "+model_b,25,(9,42,77),True)
+    d.rounded_rectangle((935,25,1549,80),radius=25,fill=(208,233,251,245))
+    txt(d,(954,36),"ECMWF "+model_a+"  •  "+model_b,23,(9,42,77),True)
     # A forecast-based editorial headline, not a fabricated synopsis.
     wind_dir=sector(flow.get("from_deg"))
     rain_state=hazards["risks"]["pluie_forte"]["status"]
@@ -454,7 +455,9 @@ def write_premium_stage(stage, meta, data, now, risk_document):
         "Masses d'air qualifiées par T850 • fronts potentiels auto (J+3/J+7) • neige hors relief ≤800 m • non officiel.",13,"light")
     out=OUT/("tendance-carte-"+stage["id"]+".png")
     canvas.convert("RGB").save(out,"PNG",optimize=True)
-    runs={model_a.lower():details["run_utc"],model_b.lower():other_run}
+    runs={model_a.lower():details["run_utc"]}
+    if other_run is not None:
+        runs[model_b.lower()]=other_run
     return {"id":stage["id"],"step_h":int(step),"path":str(out),
        "image_url":"https://almet27.github.io/kfs-meteo-cartes/"+str(out),
        "size_bytes":out.stat().st_size, "run_utc":runs,
