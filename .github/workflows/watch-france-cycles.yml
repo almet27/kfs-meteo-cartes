@@ -38,12 +38,12 @@ jobs:
         run: |
           python -m py_compile scripts/check_france_cycles.py
           python scripts/check_france_cycles.py
-      - name: Contrôler les cycles Europe pour /modele
+      - name: Vérifier les nouveaux runs Europe
         id: europe
         run: |
           python -m py_compile scripts/check_europe_cycles.py
           python scripts/check_europe_cycles.py
-      - name: Déclencher les générations Europe dès les échéances disponibles
+      - name: Déclencher /modele Europe dès disponibilité des sources
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
@@ -51,107 +51,28 @@ jobs:
           EUROPE_ECMWF: ${{ steps.europe.outputs.europe_ecmwf }}
         run: |
           set -euo pipefail
-          # One pipeline per model family. Any available newer model/step is useful.
-          # Avoid duplicate jobs and repeated incomplete 24-hour editions.
-          for type in noaa ecmwf; do
-            if [ "$type" = noaa ]; then
-              [ "$EUROPE_NOAA" = true ] || continue
+          for family in noaa ecmwf; do
+            if [ "$family" = "noaa" ]; then
+              [ "$EUROPE_NOAA" = "true" ] || continue
               workflow="previsions-noaa.yml"
             else
-              [ "$EUROPE_ECMWF" = true ] || continue
+              [ "$EUROPE_ECMWF" = "true" ] || continue
               workflow="previsions-europe.yml"
             fi
-            recent="$(gh run list --repo "$GH_REPO" --workflow "$workflow" --limit 8 \
-              --json createdAt,status --jq '.[0] | [.createdAt,.status] | @tsv' 2>/dev/null || true)"
-            if [ -n "$recent" ]; then
-              IFS=
-        run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          if [ -f forecast-maps/france/latest-cycles.json ]; then
-            git add forecast-maps/france/latest-cycles.json
-          fi
-          if ! git diff --cached --quiet; then
-            git commit -m 'Mettre a jour disponibilite des runs France'
-            for attempt in 1 2 3 4; do
-              if git push origin HEAD:main; then exit 0; fi
-              echo "La branche a change depuis le controle; recalculer plutot que fusionner le JSON."
-              git fetch origin main
-              git reset --hard origin/main
-              python scripts/check_france_cycles.py
-              git add forecast-maps/france/latest-cycles.json
-              if git diff --cached --quiet; then exit 0; fi
-              git commit -m 'Synchroniser disponibilite des derniers runs France'
-              sleep 4
-            done
-            exit 1
-          fi
-      - name: Déclencher les derniers runs encore non publiés et réessayer les échecs
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-        run: |
-          set -euo pipefail
-          state="forecast-maps/france/latest-cycles.json"
-          if [ ! -s "$state" ]; then
-            echo "Pas de fichier d'état NOAA/ECMWF : aucun run inventé."
-            exit 0
-          fi
-          published_cycle() {
-            local tag="$1"
-            local folder
-            folder="$(mktemp -d)"
-            local cycle=""
-            if gh release download "$tag" --repo "$GH_REPO" \
-                --pattern metadata.json --dir "$folder" --clobber >/dev/null 2>&1; then
-              cycle="$(jq -r '.run_utc // ""' "$folder/metadata.json" 2>/dev/null || true)"
-            fi
-            rm -rf "$folder"
-            printf '%s' "$cycle"
-          }
-          for model in ifs gfs aifs-single aigfs; do
-            latest="$(jq -r --arg model "$model" \
-              '.models[$model].latest_first_step_utc // ""' "$state")"
-            early="$(jq -r --arg model "$model" \
-              'if .models[$model].early_12h_available_for_latest_run then .models[$model].latest_12h_temperature_step_utc else "" end // ""' "$state")"
-            full="$(jq -r --arg model "$model" \
-              'if .models[$model].temperature_72h_available_for_latest_run then .models[$model].latest_72h_temperature_step_utc else "" end // ""' "$state")"
-            if [ -z "$latest" ]; then
-              echo "SKIP $model : source non confirmée."
-              continue
-            fi
-            if [ -n "$full" ] && [ "$full" = "$latest" ]; then
-              previous="$(published_cycle "france-$model")"
-              if [ -z "$previous" ] || [[ "$full" > "$previous" ]]; then
-                echo "Nouveau run COMPLET $model : $full ; publié: $previous"
-                gh workflow run france-h72.yml --repo "$GH_REPO" --ref main \
-                  -f modele="$model" -f horizon=72
-              else
-                echo "Complet $model déjà publié ($previous)"
-              fi
-            elif [ -n "$early" ] && [ "$early" = "$latest" ]; then
-              previous="$(published_cycle "france-$model-early")"
-              if [ -z "$previous" ] || [[ "$early" > "$previous" ]]; then
-                echo "Nouveau run PRÉCOCE $model : $early (+12 h), complet non disponible"
-                gh workflow run france-h72.yml --repo "$GH_REPO" --ref main \
-                  -f modele="$model" -f horizon=12
-              else
-                echo "Précoce $model déjà publié ($previous)"
-              fi
-            else
-              echo "Run $model $latest détecté, fichiers +12 h encore incomplets."
-            fi
-          done
-\t' read -r created status <<< "$recent"
-              launched="$(date -u -d "$created" +%s 2>/dev/null || echo 0)"
+            recent_json="$(gh run list --repo "$GH_REPO" --workflow "$workflow" --limit 4 \
+              --json createdAt,status 2>/dev/null || echo '[]')"
+            last_time="$(printf '%s' "$recent_json" | jq -r '.[0].createdAt // empty')"
+            last_status="$(printf '%s' "$recent_json" | jq -r '.[0].status // empty')"
+            if [ -n "$last_time" ]; then
+              launched="$(date -u -d "$last_time" +%s 2>/dev/null || echo 0)"
               now="$(date -u +%s)"
-              if [ "$status" != completed ] || [ "$((now-launched))" -lt 720 ]; then
-                echo "EUROPE $type : génération en cours ou récente ($status), ne pas doubler."
+              if [ "$last_status" != "completed" ] || [ "$((now-launched))" -lt 720 ]; then
+                echo "Europe $family : génération en cours ou récente ($last_status), pas de doublon."
                 continue
               fi
             fi
             gh workflow run "$workflow" --repo "$GH_REPO" --ref main
-            echo "EUROPE $type : nouvelle génération demandée pour /modele."
+            echo "Europe $family : nouvelle édition /modele demandée."
           done
       - name: Mettre a jour l'etat seulement si les cycles changent
         run: |
