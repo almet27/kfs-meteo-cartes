@@ -8,7 +8,7 @@ const KFS_PROBA_MODELS = [
   ["ECMWF AIFS ENS","ecmwf_aifs025_ensemble"],
   ["GEFS NOAA","ncep_gefs025"],
   ["AIGEFS NOAA","ncep_aigefs025"],
-  ["ICON EU EPS","icon_eu_eps"],
+  ["ICON EU EPS","dwd_icon_eu_eps"],
   ["UKMO MOGREPS-G","ukmo_global_ensemble_20km"],
   ["GEM EPS","cmc_gem_geps"]
 ];
@@ -38,7 +38,14 @@ async function kfsProbaRegister(env){
    choices:[0,1,2,3].map(i=>({name:"J+"+i,value:i}))},
   {name:"seuil",type:4,description:"Neige : 1/3/5/10 cm ; pluie : 1/5/10/20/40 mm ; vent : 60/80/100/120 km/h",required:false,min_value:1,max_value:120}
  ]};
- const r=await fetch("https://discord.com/api/v10/applications/"+APPLICATION_ID+"/commands",{
+ const endpoint="https://discord.com/api/v10/applications/"+APPLICATION_ID+"/commands";
+ const verify=await fetch(endpoint,{headers:{Authorization:"Bot "+env.DISCORD_BOT_TOKEN}});
+ if(verify.ok){
+  const registered=await verify.json();
+  const same=Array.isArray(registered)&&registered.some(existing=>existing.name==="proba"&&existing.description===cmd.description&&JSON.stringify(existing.options||[])===JSON.stringify(cmd.options));
+  if(same){KFS_PROBA_LAST_REGISTER=Date.now();return true;}
+ }
+ const r=await fetch(endpoint,{
   method:"POST",headers:{Authorization:"Bot "+env.DISCORD_BOT_TOKEN,"content-type":"application/json"},
   body:JSON.stringify(cmd)
  });
