@@ -169,7 +169,7 @@ async function kfsProbaModel(model,samples,day,type,threshold){
  let result;
  try{
   const r=await fetch("https://ensemble-api.open-meteo.com/v1/ensemble?"+params,{
-   signal:controller.signal,headers:{accept:"application/json"}
+   signal:controller.signal,headers:{accept:"application/json"},cf:{cacheTtl:1800,cacheEverything:true}
   });
   if(!r.ok)throw Error("HTTP "+r.status+": "+(await r.text()).slice(0,100));
   result=await r.json();
