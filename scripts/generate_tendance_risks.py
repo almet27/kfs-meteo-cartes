@@ -30,7 +30,8 @@ from cartopy.io import shapereader
 from shapely.geometry import Point
 from shapely.ops import unary_union
 from shapely.prepared import prep
-from matplotlib.colors import LinearSegmentedColormap
+from matplotlib.colors import LinearSegmentedColormap, Normalize
+from matplotlib.cm import ScalarMappable
 from matplotlib.offsetbox import AnnotationBbox, DrawingArea
 from matplotlib.patches import Circle, FancyBboxPatch, PathPatch
 from matplotlib.lines import Line2D
@@ -266,10 +267,36 @@ def render(id,run,fields,marks,masses,fronts):
     except Exception:
         ax.add_feature(cfeature.OCEAN,facecolor="#06406B")
         ax.add_feature(cfeature.LAND,facecolor="#73A56C")
-    cmap=LinearSegmentedColormap.from_list("kfs_synoptic",
-       ["#073967","#0D629A","#36A1BC","#65C5B6","#9DC885","#E3C179","#EF985A"])
-    ax.contourf(xx,yy,geop,levels=np.arange(470,605,5),cmap=cmap,alpha=.32,
-                extend="both",transform=ccrs.PlateCarree())
+    # The filled palette now encodes REAL 850-hPa air temperature in Celsius.
+    # A fixed scale is used for J+3/J+7/J+10/J+15: equal colours = equal temperatures.
+    # 850-hPa temperature describes air aloft, not 2-m temperature or heatwave risk.
+    temp850=t850_celsius(fields["t850"][2],fields["t850"][4])
+    tc=temp850[np.ix_(iy,ix)]
+    palette=LinearSegmentedColormap.from_list("kfs_t850_masses_d_air",[
+        (0.00,"#142A82"), (0.20,"#2452BA"), (0.325,"#4B99D7"),
+        (0.425,"#91D8E8"), (0.50,"#75BEA5"), (0.625,"#F5DC85"),
+        (0.750,"#F1A05C"), (0.875,"#E9674A"), (1.00,"#B93451")])
+    temp_norm=Normalize(vmin=-20,vmax=20)
+    ax.contourf(xx,yy,tc,levels=np.arange(-30,32,2),
+                cmap=palette,norm=temp_norm,alpha=.70,
+                extend="both",transform=ccrs.PlateCarree(),zorder=2)
+    # Keep subtle 500-hPa height contours but do NOT use them as heat colours.
+    ax.contour(xx,yy,geop,levels=np.arange(470,610,10),
+               colors="#EDF6FF",linewidths=.42,linestyles="dashed",
+               alpha=.22,transform=ccrs.PlateCarree(),zorder=3)
+    # Compact fixed Celsius legend, positioned above map annotations.
+    cax=fig.add_axes([.685,.793,.272,.029])
+    cb=fig.colorbar(ScalarMappable(norm=temp_norm,cmap=palette),
+                    cax=cax,orientation="horizontal",
+                    ticks=[-20,-10,0,10,20],extend="both")
+    cb.ax.set_xticklabels(["-20","-10","0","+10","+20"])
+    cb.ax.tick_params(axis="x",colors="#F7FAFF",labelsize=10,length=3,pad=2)
+    cb.outline.set_edgecolor("#EAF6FF")
+    cb.outline.set_linewidth(1)
+    fig.text(.684,.851,"MASSES D'AIR  •  TEMPÉRATURE 850 hPa (°C)",
+             fontsize=10.5,color="white",weight="bold",
+             bbox=dict(boxstyle="round,pad=0.35",facecolor="#082A51",
+                       edgecolor="#99CBEA",alpha=.9))
     # Cyan precipitation veils are derived only from the 6-hour model field.
     if "rain6h" in fields:
         rr=fields["rain6h"][2][np.ix_(iy,ix)]
@@ -371,6 +398,9 @@ def calculate(id,step,model,atlas,now):
             "valid_utc":(run+timedelta(hours=step)).isoformat(),
             "background_path":str(background),"risks":risks,"markers":selected,
             "air_masses":masses,"frontal_zones":fronts,
+            "t850_shading":{"enabled":True,"level_hpa":850,"unit":"°C",
+                            "fixed_scale_c":[-20,20],
+                            "description":"Température à 850 hPa modélisée, pas température au sol"},
             "frontal_method":"Thermal gradient / 6h tendency / rain (experimental), only J+3/J+7",
             "risk_scope":"France et secteurs proches, domaine rectangulaire terre + mer",
             "method":"Vent moyen 10m, pluie/neige 6h ; neige hors relief selon altitudes GLO-90 ; pas une vigilance officielle."}
