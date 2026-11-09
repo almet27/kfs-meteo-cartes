@@ -120,8 +120,13 @@ function kfsStratoInterpretation(data) {
     label = shortEvent ?
       "Inversion temporaire prévue, sans réchauffement polaire rapide" :
       "Inversion des vents zonaux prévue à 10 hPa";
+    const when = spans.length === 1 ?
+      (spans[0][0] === spans[0][1] ?
+        "à J+" + spans[0][0]/24 :
+        "entre J+" + spans[0][0]/24 + " et J+" + spans[0][1]/24) :
+      "aux échéances " + period;
     prose = "Le modèle prévoit une inversion des vents zonaux à 10 hPa " +
-      "et 60°N " + (spans.length === 1 ? "entre " : "vers ") + period + ". ";
+      "et 60°N " + when + ". ";
     if (warming !== null && warming <= 0) {
       prose += "En parallèle, la température du cap polaire ne se réchauffe " +
         "pas sur cinq jours (variation maximale : " + fmt(warming) + " °C). ";
