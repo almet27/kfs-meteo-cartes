@@ -111,7 +111,8 @@ def frontal_candidates(lon,lat,current,previous,rain,step):
     strength=np.hypot(x100,y100)
     delta=current-previous
     g=np.isfinite(strength)&np.isfinite(delta)&np.isfinite(rain)
-    geographical=((lat[:,None]>=41)&(lat[:,None]<=62)&
+    # Avoid Iberian/Pyrenean topographic gradients being misread as surface fronts.
+    geographical=((lat[:,None]>=45)&(lat[:,None]<=62)&
                   (lon[None,:]>=-29)&(lon[None,:]<=27))
     qualified=g&geographical&(strength>=2.35)&(rain>=1.8)&(np.abs(delta)>=1.4)
     ys,xs=np.where(qualified)
