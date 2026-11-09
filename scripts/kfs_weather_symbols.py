@@ -101,7 +101,6 @@ def overlay(ax,coords,codes,max_icons=8,exclude_cities=True,protected=None):
     if codes is None or len(coords)!=len(codes) or not coords:
         return 0
     # Matplotlib fournit les dimensions réelles après définition de l'emprise.
-    ax.figure.canvas.draw()
     to_px=ax.transData.transform
     protected=list(protected or [])
     protected.extend(CITIES if exclude_cities else [])
