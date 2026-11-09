@@ -27,6 +27,7 @@ from cartopy.io import shapereader
 from shapely.geometry import Point
 from shapely.prepared import prep
 from check_france_risk_runs import run_info
+from kfs_weather_symbols import overlay as draw_wmo_icons, representative as wmo_representative
 
 OUT=Path("forecast-maps/france/risques")
 OUT.mkdir(parents=True,exist_ok=True)
@@ -122,12 +123,16 @@ def get_batch(model,records,tries=3):
     lat=",".join(str(x[0]) for x in records)
     lon=",".join(str(x[1]) for x in records)
     names=COMMON+EXTRA[model]
-    url="https://api.open-meteo.com/v1/forecast?"+urlencode({
-        "latitude":lat,"longitude":lon,"models":CODES[model],
-        "hourly":",".join(names),"forecast_hours":48,"timezone":"UTC"})
+    # weather_code est facultatif : ne jamais mettre en échec les cartes
+    # existantes si un modèle ne fournit pas ce champ dérivé.
+    include_weather=True
     err=None
-    for attempt in range(tries):
+    for attempt in range(tries+1):
         try:
+            requested=names+(("weather_code",) if include_weather else ())
+            url="https://api.open-meteo.com/v1/forecast?"+urlencode({
+                "latitude":lat,"longitude":lon,"models":CODES[model],
+                "hourly":",".join(requested),"forecast_hours":48,"timezone":"UTC"})
             with urlopen(Request(url,headers={"User-Agent":"KFS-Meteo-OpenData/1.0"}),
                          timeout=45) as response:
                 data=json.load(response)
@@ -144,9 +149,13 @@ def get_batch(model,records,tries=3):
             return data
         except (HTTPError,URLError,TimeoutError,ValueError) as exc:
             err=exc
+            if isinstance(exc,HTTPError) and exc.code==400 and include_weather:
+                include_weather=False
+                print("KFS_WMO_MODEL_UNSUPPORTED",model,flush=True)
+                continue
             if isinstance(exc,HTTPError) and exc.code in (400,401,403):
                 raise
-            time.sleep(2+3*attempt)
+            if attempt<tries:time.sleep(2+3*min(attempt,2))
     raise RuntimeError("Source "+model+" temporairement indisponible: "+str(err)[:120])
 
 def fetch_model(model,coords):
@@ -180,7 +189,14 @@ def compute(model,data,period):
         output["neige_sol"].append(sn)
     return output
 
-def plot(model,variable,period,coords,values,issued):
+def get_wmo_codes(data,indices):
+    return [wmo_representative(
+        [row.get("hourly",{}).get("weather_code",[])[i]
+         for i in indices
+         if i<len(row.get("hourly",{}).get("weather_code",[]))])
+        for row in data]
+
+def plot(model,variable,period,coords,values,issued,weather_codes=None):
     label=LABELS[variable]
     lo,hi=period
     fig=plt.figure(figsize=(11.4,10.2),dpi=120,facecolor="#092340")
@@ -198,6 +214,12 @@ def plot(model,variable,period,coords,values,issued):
             ax.scatter(xs,ys,c=COLORS[grade],s=64 if grade==3 else 34,
                        marker="o",edgecolors="#21384b",linewidths=.35,
                        transform=ccrs.PlateCarree(),zorder=4+grade)
+    if weather_codes:
+        try:
+            added=draw_wmo_icons(ax,coords,weather_codes,max_icons=7)
+            if added:print("KFS_WMO_ICONS_RISK",model,variable,period[1],added,flush=True)
+        except Exception as exc:
+            print("KFS_WMO_ICON_SKIPPED",str(exc)[:110],flush=True)
     fig.text(.05,.952,"KFS MÉTÉO  |  FRANCE COURT TERME",color="#edfaff",
              fontsize=16,weight="bold")
     fig.text(.05,.909,label+" • "+model.upper()+" • H+"+str(lo)+" à H+"+str(hi),
@@ -265,7 +287,7 @@ def short_daily_values(data,indices,key,aggregation):
                             max(seq) if aggregation=="max" else sum(seq)))
     return np.asarray(values,dtype=float)
 
-def short_plot_daily(model,metric,day,coords,values,coverage,start,end,run):
+def short_plot_daily(model,metric,day,coords,values,coverage,start,end,run,weather_codes=None):
     from matplotlib.colors import Normalize
     lons=np.unique(np.array([p[1] for p in coords],dtype=float))
     lats=np.unique(np.array([p[0] for p in coords],dtype=float))
@@ -309,6 +331,12 @@ def short_plot_daily(model,metric,day,coords,values,coverage,start,end,run):
         txt=ax.text(x,y,number,fontsize=8.2,color="#152439",weight="bold",
               ha="center",va="center",zorder=6,transform=ccrs.PlateCarree())
         txt.set_path_effects([pe.Stroke(linewidth=2.5,foreground="white"),pe.Normal()])
+    if weather_codes:
+        try:
+            added=draw_wmo_icons(ax,coords,weather_codes,max_icons=8)
+            if added:print("KFS_WMO_ICONS_DAILY",model,metric,day,added,flush=True)
+        except Exception as exc:
+            print("KFS_WMO_ICON_SKIPPED",str(exc)[:110],flush=True)
     cb=fig.colorbar(surface,ax=ax,orientation="horizontal",shrink=.74,pad=.04)
     cb.set_label(unit,color="white",fontsize=9)
     cb.ax.tick_params(colors="white",labelsize=8)
@@ -349,6 +377,7 @@ def generate_short_daily(model,data,coords,run,document):
         hours=[t.astimezone(PARIS_ZONE).hour for t in (begin,finish)]
         coverage="complete" if len(indices)>=24 and hours[0]==0 and hours[-1]==23 else "partial"
         maps={}
+        day_weather=get_wmo_codes(data,indices)
         for metric,key in SHORT_SOURCE.items():
             aggregate="min" if metric=="tmin" else "max" if metric in ("tmax","gust") else "sum"
             values=short_daily_values(data,indices,key,aggregate)
@@ -361,7 +390,7 @@ def generate_short_daily(model,data,coords,run,document):
             if np.isfinite(values).sum()<int(.8*len(coords)):
                 continue
             maps[metric]=short_plot_daily(model,metric,d,coords,values,
-                coverage,begin,finish,run)
+                coverage,begin,finish,run,day_weather)
         if maps:
             days[str(d)]={"date":day.isoformat(),"coverage":coverage,
                 "start_utc":begin.isoformat(),"end_utc":finish.isoformat(),
@@ -387,9 +416,11 @@ def main():
         views={}
         for period in PERIODS:
             values=compute(model,data,period)
+            window_weather=get_wmo_codes(data,range(period[0],period[1]))
             for kind in ("orage","neige_sol"):
                 key=kind+"_h"+str(period[1])
-                views[key]=plot(model,kind,period,coords,values[kind],timestamp)
+                views[key]=plot(model,kind,period,coords,values[kind],timestamp,
+                                window_weather)
         document["models"][model]={"name":CODES[model],"fields":list(COMMON+EXTRA[model]),
                                    "maps":views}
         try:
