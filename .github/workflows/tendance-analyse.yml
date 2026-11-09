@@ -32,6 +32,7 @@ jobs:
           pip install ecmwf-opendata cfgrib eccodes xarray numpy matplotlib cartopy 'Pillow>=10,<13'
       - name: Extraire les diagnostics aux memes cycles que les cartes Europe
         run: python scripts/generate_tendance_analysis.py
+      # Inclut les masses d'air à 850 hPa et les fronts thermiques potentiels J+3/J+7.
       - name: Calculer les signaux géoréférencés de vent pluie neige
         run: python scripts/generate_tendance_risks.py
       - name: Generer les quatre cartes avec les diagnostics de la MEME acquisition
