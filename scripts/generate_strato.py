@@ -173,6 +173,118 @@ def render(x, y, fields, level, step, cycle, kind):
     plt.close(fig)
     return out
 
+# Courbes zonales : composante U moyennée sur toutes les longitudes à 60°N.
+# Le calcul est une moyenne sur le cercle, pas un vent instantané en un point.
+WIND_STEPS = tuple(range(24, 361, 24))
+WIND_COLORS = {10: "#ffb35b", 50: "#57c4ff", 100: "#b89cff"}
+
+def extract_u_60n_from_full(y, levels):
+    idx = int(np.argmin(np.abs(y - 60.0)))
+    if abs(float(y[idx]) - 60.0) > 0.3:
+        raise ValueError("Latitude 60°N absente de la grille")
+    values = {}
+    for level in LEVELS:
+        u = np.asarray(levels[level]["u"][idx, :], dtype=float)
+        if u.size < 360 or not np.all(np.isfinite(u)):
+            raise ValueError("Échantillons du vent zonal incomplets")
+        values[level] = round(float(np.mean(u)), 2)
+    return values
+
+
+def read_u_60n(path):
+    ds = xr.open_dataset(path, engine="cfgrib", backend_kwargs={"indexpath": ""})
+    try:
+        if "u" not in ds or "isobaricInhPa" not in ds.coords:
+            raise RuntimeError("Champ U et niveaux isobares attendus")
+        latitude = np.asarray(ds.latitude.values, dtype=float)
+        idx = int(np.argmin(np.abs(latitude - 60.0)))
+        if abs(latitude[idx] - 60) > .3:
+            raise ValueError("Latitude 60°N non disponible")
+        results = {}
+        for level in LEVELS:
+            values = np.asarray(
+                ds["u"].sel(isobaricInhPa=level).isel(latitude=idx).values,
+                dtype=float
+            ).reshape(-1)
+            if values.size < 360 or not np.all(np.isfinite(values)):
+                raise RuntimeError("U 60°N incomplet sur 360° longitude")
+            value = float(np.mean(values))
+            if not -150 < value < 150:
+                raise ValueError("Vent moyen hors plage physique")
+            results[level] = round(value, 2)
+        return results
+    finally:
+        ds.close()
+
+
+def render_zonal_chart(series, cycle, level=None):
+    # Aucun raccordement artificiel : les journées absentes restent des trous.
+    fig, ax = plt.subplots(figsize=(12.6, 6.9), dpi=125)
+    fig.patch.set_facecolor("#081628")
+    ax.set_facecolor("#102641")
+    levels = (level,) if level in LEVELS else LEVELS
+    all_values = [v for z in levels for v in series[z].values()]
+    if len(all_values) < 6:
+        plt.close(fig)
+        raise ValueError("Points journaliers insuffisants pour un graphique zonal")
+    ymin = min(-5, math.floor(min(all_values) / 10) * 10 - 5)
+    ymax = max(5, math.ceil(max(all_values) / 10) * 10 + 5)
+    if ymin >= ymax:
+        ymin, ymax = -10, 10
+    ax.set_ylim(ymin, ymax)
+    if ymin < 0:
+        ax.axhspan(ymin, 0, color="#386b98", alpha=.16)
+    if ymax > 0:
+        ax.axhspan(0, ymax, color="#b98a4b", alpha=.09)
+    ax.axhline(0, color="#f0df8c", linewidth=1.8, linestyle="--",
+               label="0 m/s · inversion", zorder=5)
+    for lev in levels:
+        values = np.array(
+            [series[lev].get(h, np.nan) for h in WIND_STEPS], dtype=float
+        )
+        if np.count_nonzero(np.isfinite(values)) < 6:
+            continue
+        ax.plot(np.array(WIND_STEPS) / 24, values, label=f"{lev} hPa",
+                color=WIND_COLORS[lev], linewidth=2.9,
+                marker="o", markersize=4.3, zorder=6)
+    ax.set_xlim(.8, 15.2)
+    ax.set_xticks([1, 3, 5, 7, 10, 12, 15],
+                  ["J+1", "J+3", "J+5", "J+7", "J+10", "J+12", "J+15"])
+    ax.set_ylabel("Vent zonal moyen U à 60°N (m/s)",
+                  color="#e3edf9", fontsize=12)
+    ax.tick_params(colors="#c7d9eb", labelsize=11)
+    ax.grid(True, alpha=.17, color="#e6f0ff")
+    for sp in ax.spines.values():
+        sp.set_color("#55718f")
+    ax.text(1.02, ymax - .04*(ymax-ymin), "POSITIF · VENTS D'OUEST",
+            color="#f4c68d", fontsize=9, va="top", weight="bold")
+    ax.text(1.02, ymin + .04*(ymax-ymin), "NÉGATIF · VENTS D'EST",
+            color="#9cd4ff", fontsize=9, va="bottom", weight="bold")
+    ax.legend(loc="upper right", ncol=len(levels)+1,
+              framealpha=.22, facecolor="#1a3553", labelcolor="white",
+              fontsize=10)
+    main_title = (f"{level} hPa" if level else "10 / 50 / 100 hPa")
+    fig.suptitle("KFS MÉTÉO  |  VENTS ZONAUX  |  " + main_title,
+                 x=.08, ha="left", y=.97, color="#ffffff",
+                 fontsize=19, fontweight="bold")
+    fig.text(.08, .913,
+             "ECMWF IFS · RUN " + cycle.strftime("%d/%m/%Y %HZ") +
+             " UTC  |  60°N, moyenne sur toutes les longitudes",
+             color="#bad0e5", fontsize=10)
+    fig.text(.08, .027,
+             "Composante U zonale (m/s) · valeurs prévues, pas observées. "
+             "Une inversion isolée ne confirme pas un SSW majeur.",
+             color="#abc6db", fontsize=9)
+    fig.text(.93, .027, "ECMWF Open Data · CC BY 4.0",
+             ha="right", color="#abc6db", fontsize=9)
+    fig.subplots_adjust(left=.083, right=.96, bottom=.16, top=.82)
+    suffix = f"{level}hpa" if level else "comparison"
+    output = ROOT / f"ifs-zonal-wind-{suffix}.png"
+    fig.savefig(output, facecolor=fig.get_facecolor(), dpi=125)
+    plt.close(fig)
+    return output
+
+
 def main():
     cycle = find_cycle()
     stamp = cycle.strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -180,7 +292,10 @@ def main():
         (ROOT / f"ifs-h{step:03}-{level}hpa-{kind}.png").is_file()
         for step in STEPS for level in LEVELS
         for kind in ("temperature", "vortex")
-    )
+    ) and all(
+        (ROOT / f"ifs-zonal-wind-{suffix}.png").is_file()
+        for suffix in ("10hpa", "50hpa", "100hpa", "comparison")
+    ) and len(previous.get("zonal_wind_series_60n", {}).get("10", {})) >= 12
     if ready and not os.getenv("KFS_FORCE_STRATO"):
         print("STRATO : cartes déjà à jour pour", stamp, flush=True)
         return
@@ -193,7 +308,12 @@ def main():
                        "valeur négative ponctuelle ≠ événement SSW confirmé.",
         "levels_hpa": list(LEVELS), "forecast_hours": list(STEPS),
         "maps": {}, "zonal_wind_10hpa_60n": {}, "errors": {},
+        "zonal_wind_series_60n": {},
+        "zonal_wind_charts": {},
+        "zonal_wind_hours": list(WIND_STEPS),
+        "zonal_wind_definition": "Moyenne zonale de U sur toutes les longitudes, latitude 60°N. Valeurs positives = vents d'ouest, négatives = vents d'est.",
     }
+    zonal = {level: {} for level in LEVELS}
     for step in STEPS:
         target = ROOT / f".strato-h{step:03}.grib2"
         try:
@@ -203,6 +323,12 @@ def main():
                 levtype="pl", param=list(PARAMS), levelist=list(LEVELS),
                 target=str(target))
             x, y, all_levels = read_grib(target)
+            try:
+                sample = extract_u_60n_from_full(y, all_levels)
+                for zlevel, value in sample.items():
+                    zonal[zlevel][step] = value
+            except Exception as exc:
+                current["errors"][f"zonal-{step}"] = str(exc)[:200]
             for level in LEVELS:
                 f = all_levels[level]
                 results = {}
@@ -220,6 +346,57 @@ def main():
             print("STRATO ÉCHEC", step, str(error), flush=True)
         finally:
             target.unlink(missing_ok=True)
+
+    # Quotidien J+1 à J+15. Les échéances déjà téléchargées sont réutilisées.
+    # Les autres récupèrent uniquement U, pour limiter trafic et temps de calcul.
+    for step in WIND_STEPS:
+        if all(step in zonal[level] for level in LEVELS):
+            continue
+        target = ROOT / f".strato-zonal-h{step:03}.grib2"
+        try:
+            client.retrieve(
+                date=cycle.strftime("%Y-%m-%d"), time=cycle.hour,
+                stream="oper", type="fc", step=step,
+                levtype="pl", param="u", levelist=list(LEVELS),
+                target=str(target)
+            )
+            values = read_u_60n(target)
+            for zlevel, value in values.items():
+                zonal[zlevel][step] = value
+            print("STRATO ZONAL OK", step, values, flush=True)
+        except Exception as exc:
+            current["errors"][f"zonal-{step}"] = str(exc)[:250]
+            print("STRATO ZONAL ÉCHEC", step, exc, flush=True)
+        finally:
+            target.unlink(missing_ok=True)
+
+    for level in LEVELS:
+        current["zonal_wind_series_60n"][str(level)] = {
+            str(step): zonal[level][step] for step in WIND_STEPS
+            if step in zonal[level]
+        }
+    current["zonal_wind_10hpa_60n"].update({
+        str(step): round(float(zonal[10][step]), 1)
+        for step in WIND_STEPS if step in zonal[10]
+    })
+
+    # Graphiques par niveau et comparatif. Pas de graphique trompeur si
+    # le run est trop incomplet : les jours manquants restent absents.
+    for lev in (*LEVELS, None):
+        key = str(lev) if lev is not None else "comparison"
+        wanted = (lev,) if lev is not None else LEVELS
+        if any(len(zonal[z]) < 10 for z in wanted):
+            current["errors"]["chart-" + key] = (
+                "Moins de 10 jours fiables sur un niveau requis"
+            )
+            continue
+        try:
+            out = render_zonal_chart(zonal, cycle, lev)
+            current["zonal_wind_charts"][key] = "strato/" + out.name
+            print("STRATO CHART OK", key, out, flush=True)
+        except Exception as exc:
+            current["errors"]["chart-" + key] = str(exc)[:250]
+            print("STRATO CHART ÉCHEC", key, exc, flush=True)
 
     # En cas de rupture du flux météo, garder le précédent catalogue valide.
     count = sum(len(slots) for slots in current["maps"].values())
