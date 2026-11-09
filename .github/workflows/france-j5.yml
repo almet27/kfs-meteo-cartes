@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - scripts/generate_france_extended_daily.py
+      - scripts/kfs_weather_symbols.py
       - .github/workflows/france-j5.yml
   schedule:
     - cron: '42 7,19 * * *'
@@ -28,7 +29,7 @@ jobs:
       - name: Installer les outils graphiques
         run: python -m pip install 'numpy>=1.26,<3' 'matplotlib>=3.8' 'cartopy>=0.23' 'Pillow>=10,<13'
       - name: Valider le code avant appel API
-        run: python -m py_compile scripts/generate_france_shortterm_risks.py scripts/generate_france_extended_daily.py
+        run: python -m py_compile scripts/generate_france_shortterm_risks.py scripts/generate_france_extended_daily.py scripts/kfs_weather_symbols.py
       - name: Préparer les cartes quotidiennes J+4 et J+5
         run: python scripts/generate_france_extended_daily.py
       - name: Sauvegarder les cartes
