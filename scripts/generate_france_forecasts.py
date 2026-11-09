@@ -74,18 +74,25 @@ def native_model(model, required_hour):
         current = parse_datetime(client.latest(stream="oper", type="fc", step=required_hour, param="2t"))
         return {"kind": "ecmwf", "client": client, "cycle": current}
     from herbie import Herbie
-    now = datetime.now(timezone.utc)
-    for lag in (4, 7, 10, 13, 16, 19, 22):
-        candidate = (now - timedelta(hours=lag)).replace(
-            hour=((now - timedelta(hours=lag)).hour // 6) * 6,
-            minute=0, second=0, microsecond=0)
+    # Search the newest 00/06/12/18 UTC cycle immediately, without the
+    # previous hard-coded 4 h lag that systematically preferred an old run.
+    # The required step must actually be available on the native NOAA feed.
+    now=datetime.now(timezone.utc)
+    latest=now.replace(minute=0,second=0,microsecond=0)
+    latest=latest.replace(hour=(latest.hour//6)*6)
+    for n in range(9):
+        candidate=latest-timedelta(hours=6*n)
         try:
-            h = Herbie(candidate.replace(tzinfo=None), model=model,
-                       product="pgrb2.0p25" if model == "gfs" else "sfc",
-                       fxx=required_hour, verbose=False)
+            h=Herbie(candidate.replace(tzinfo=None),model=model,
+                     product="pgrb2.0p25" if model=="gfs" else "sfc",
+                     fxx=required_hour,verbose=False)
             if h.grib is not None:
-                return {"kind": "noaa", "cycle": candidate}
-        except Exception:
+                print("NOAA_SOURCE_SELECTED",model,iso(candidate),
+                      "required_hour",required_hour,flush=True)
+                return {"kind":"noaa","cycle":candidate}
+        except Exception as exc:
+            print("NOAA_SOURCE_PENDING",model,iso(candidate),
+                  str(exc)[:110],flush=True)
             continue
     raise RuntimeError("NOAA : aucun run complet jusqu\u0027a +%d h disponible" % required_hour)
 
