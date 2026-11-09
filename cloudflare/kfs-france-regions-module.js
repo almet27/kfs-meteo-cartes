@@ -29,7 +29,7 @@ const KFS_FRANCE_REGION_SCALES={
  orage:[[0,1,2,3],[83,174,153],[235,210,90],[240,146,76],[221,59,85]],
  neige_sol:[[0,1,2,3],[83,174,153],[190,215,91],[240,158,79],[220,73,115]]
 };
-const KFS_FRANCE_REGION_CACHE_TTL=600;
+const KFS_FRANCE_REGION_CACHE_TTL=300;
 // Classification WMO: aucun symbole ne sera créé sans code météo valide.
 function kfsFranceWmoIcon(code){
  if(!Number.isInteger(code))return null;
@@ -512,8 +512,12 @@ async function kfsFranceRegionHandle(interaction,model,metric,rawDay,rawHour,zon
   if(!Number.isInteger(day)||day<0||day>5)throw Error("Choisis J+0 à J+5.");
   const risk=metric==="orage"||metric==="neige_sol";
   const name=KFS_PROBA_REGIONS.find(r=>r[0]===zone)[1];
-  const key="https://kfs-meteo-ia.alain-leprevost.workers.dev/__cache/france-regions/v4-daytime/"+
-      encodeURIComponent([zone,model,metric,risk?hour:day].join("-"));
+  // Inclure la date cible et une fenêtre de 5 min : J+1 ne recycle jamais
+  // le fichier d'hier, et un nouveau run devient visible rapidement.
+  const currentDate=kfsProbaDay(day);
+  const key="https://kfs-meteo-ia.alain-leprevost.workers.dev/__cache/france-regions/v5-daytime/"+
+      encodeURIComponent([zone,model,metric,risk?hour:day,currentDate,
+        Math.floor(Date.now()/300000)].join("-"));
   let bytes=null,record=null;
   try{
    const cached=await caches.default.match(new Request(key));
