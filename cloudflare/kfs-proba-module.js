@@ -654,13 +654,22 @@ const KFS_PROBA_ECMWF_FIELDS={
 async function kfsProbaEcmwfRead(type,threshold,zone,day,points){
  const field=KFS_PROBA_ECMWF_FIELDS[type]?.[String(threshold)];
  if(!field)return null;
- const url="https://almet27.github.io/kfs-meteo-cartes/proba/ecmwf-probabilities.json";
- let resp;
+ const urls=[
+  "https://raw.githubusercontent.com/almet27/kfs-meteo-cartes/main/proba/ecmwf-probabilities.json",
+  "https://almet27.github.io/kfs-meteo-cartes/proba/ecmwf-probabilities.json"
+ ];
  try{
-  resp=await fetch(url,{signal:AbortSignal.timeout(6500),
-   headers:{accept:"application/json"},cf:{cacheTtl:900,cacheEverything:true}});
-  if(!resp.ok)throw Error("ECMWF publié : HTTP "+resp.status);
-  const j=await resp.json();
+  let j=null;
+  for(const url of urls){
+   try{
+    const resp=await fetch(url,{signal:AbortSignal.timeout(3500),
+     headers:{accept:"application/json"},cf:{cacheTtl:900,cacheEverything:true}});
+    if(!resp.ok)continue;
+    j=await resp.json();
+    if(j&&j.schema===1)break;
+   }catch(e){console.error("KFS_PROBA_ECMWF_SOURCE",String(e).slice(0,140));}
+  }
+  if(!j)throw Error("Aucun fichier ECMWF publié disponible.");
   if(j.schema!==1||j.provider!=="ECMWF IFS ENS Open Data")throw Error("Fichier ECMWF mal formé.");
   const age=Date.now()-Date.parse(j.run_utc);
   if(!Number.isFinite(age)||age<0||age>48*3600000)throw Error("Run ECMWF trop ancien (>48h).");
