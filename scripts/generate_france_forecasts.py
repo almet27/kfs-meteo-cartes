@@ -425,11 +425,12 @@ def render(lon, lat, values, model, run, step, metric, folder, note=""):
     ax.coastlines("10m", linewidth=.7, color="#182A3E", zorder=5)
     ax.add_feature(cf.BORDERS, linewidth=.6, edgecolor="#172A3B", zorder=5)
     ax.set_title("KFS MÉTÉO  •  FRANCE  •  " + MODEL_LABELS[model] +
+                 "  •  RUN " + run.strftime("%HZ du %d/%m/%Y") +
                  f"\n{label}  |  +{step} h  |  validité {iso(run + timedelta(hours=step))}",
                  fontsize=12, weight="bold", pad=11)
     cb = fig.colorbar(shade, ax=ax, orientation="horizontal", shrink=.82, pad=.04)
     cb.set_label(label, fontsize=9)
-    footer = "Run " + iso(run) + " UTC  •  " + ("ECMWF Open Data CC BY 4.0" if model != "gfs" else "NOAA NCEP")
+    footer = "RUN " + run.strftime("%HZ du %d/%m/%Y") + " (UTC)  •  " + ("ECMWF Open Data CC BY 4.0" if model != "gfs" else "NOAA NCEP")
     if note:
         footer += "  •  " + note
     fig.text(.04, .024, footer, fontsize=7.8)
