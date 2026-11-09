@@ -145,25 +145,21 @@ function kfsProbaMemberProbability(hourly,day,type,threshold){
  const ids=[];
  for(let i=0;i<hourly.time.length;i++)if(String(hourly.time[i]).startsWith(day))ids.push(i);
  if(!ids.length)return null;
- let pass=0,valid=0,anyRain=0;
- const prefix=KFS_PROBA_RULES[type].variable;
- const keys=Object.keys(hourly).filter(k=>k.startsWith(prefix+"_")&&/member\d+/.test(k));
+ let pass=0,valid=0,anyRain=0,amountSum=0;
+ const keys=Object.keys(hourly).filter(k=>k.startsWith(KFS_PROBA_RULES[type].variable+"_")&&/member\d+/.test(k));
  for(const key of keys){
-  const arr=hourly[key];
-  if(!Array.isArray(arr))continue;
+  const arr=hourly[key];if(!Array.isArray(arr))continue;
   const nums=ids.map(i=>arr[i]).filter(v=>typeof v==="number"&&Number.isFinite(v));
   if(nums.length<Math.ceil(ids.length*0.85))continue;
-  valid++;
-  let event=false;
-  if(type==="pluie"){
-   const mm=nums.reduce((a,b)=>a+b,0);
-   event=mm>=threshold;
-   if(mm>=0.1)anyRain++;
-  }else if(type==="vent")event=Math.max(...nums)>=threshold;
-  else event=Math.max(...nums)*100>=threshold; // snow_depth Open-Meteo en mètres
-  if(event)pass++;
+  const amount=type==="pluie"?Math.max(0,nums.reduce((a,b)=>a+b,0)):
+   type==="vent"?Math.max(0,...nums):Math.max(0,...nums)*100;
+  if(!Number.isFinite(amount))continue;
+  valid++;amountSum+=amount;
+  if(amount>=threshold)pass++;
+  if(type==="pluie"&&amount>=0.1)anyRain++;
  }
- return valid>=2?{pct:100*pass/valid,members:valid,wetPct:type==="pluie"?100*anyRain/valid:null}:null;
+ return valid>=2?{pct:100*pass/valid,amount:amountSum/valid,members:valid,
+  wetPct:type==="pluie"?100*anyRain/valid:null}:null;
 }
 async function kfsProbaModel(model,samples,day,type,threshold){
  const varName=KFS_PROBA_RULES[type].variable;
@@ -192,19 +188,21 @@ async function kfsProbaModel(model,samples,day,type,threshold){
  return {name:model[0],values};
 }
 function kfsProbaClamp(x,lo,hi){return Math.max(lo,Math.min(hi,x));}
-function kfsProbaPalette(p){
- // Distinguer visuellement 0, 5, 10 et 20 % sans truquer l'échelle.
- const stops=[[0,[19,36,60]],[1,[24,63,105]],[5,[31,116,170]],
- [10,[37,160,225]],[20,[63,208,198]],[40,[239,207,74]],
- [60,[248,146,58]],[80,[238,71,72]],[100,[207,43,109]]];
- for(let i=0;i<stops.length-1;i++){
-  const [v,a]=stops[i],[next,b]=stops[i+1];
-  if(p<=next){const t=kfsProbaClamp((p-v)/(next-v),0,1);
-   return a.map((c,j)=>Math.round(c+(b[j]-c)*t));}
+// Seule la quantité moyenne est codée par la couleur, pas le %.
+const KFS_PROBA_SCALE={
+ pluie:{unit:"mm",ticks:[0,1,5,10,20,40],colors:[[17,35,62],[33,96,154],[48,164,218],[40,191,160],[237,184,63],[223,72,76]]},
+ neige:{unit:"cm",ticks:[0,0.5,1,3,5,10],colors:[[17,35,62],[32,91,150],[71,169,222],[105,151,235],[148,105,207],[221,84,158]]},
+ vent:{unit:"km/h",ticks:[0,30,60,80,100,120],colors:[[17,35,62],[38,106,159],[61,188,166],[236,188,66],[242,123,63],[224,56,80]]}
+};
+function kfsProbaAmountPalette(amount,type){
+ const {ticks,colors}=KFS_PROBA_SCALE[type],v=kfsProbaClamp(amount,ticks[0],ticks[ticks.length-1]);
+ for(let k=0;k<ticks.length-1;k++)if(v<=ticks[k+1]){
+  const t=(v-ticks[k])/(ticks[k+1]-ticks[k]);
+  return colors[k].map((ch,j)=>Math.round(ch+(colors[k+1][j]-ch)*t));
  }
- return stops[stops.length-1][1];
+ return colors[colors.length-1];
 }
-function kfsProbaRender(features,samples,zone){
+function kfsProbaRender(features,samples,zone,type){
  const W=900,H=615,P={x:24,y:26,w:852,h:515};
  const rgba=new Uint8Array(W*H*4);
  for(let i=0;i<rgba.length;i+=4){rgba[i]=9;rgba[i+1]=20;rgba[i+2]=38;rgba[i+3]=255;}
@@ -217,7 +215,7 @@ function kfsProbaRender(features,samples,zone){
  const GW=100,GH=64,field=new Float32Array(GW*GH);
  const scale=Math.cos((bbox[1]+bbox[3])*Math.PI/360);
  const maxDist=zone==="FR"?3.4:Math.max(.9,(bbox[2]-bbox[0])*.62);
- const valid=samples.filter(s=>Number.isFinite(s.value));
+ const valid=samples.filter(s=>Number.isFinite(s.value)&&Number.isFinite(s.amount));
  for(let gy=0;gy<GH;gy++)for(let gx=0;gx<GW;gx++){
   const lon=bbox[0]+(bbox[2]-bbox[0])*gx/(GW-1);
   const lat=bbox[3]-(bbox[3]-bbox[1])*gy/(GH-1);
@@ -225,7 +223,7 @@ function kfsProbaRender(features,samples,zone){
   for(const p of valid){
    const dx=(p.lon-lon)*scale,dy=p.lat-lat,d2=dx*dx+dy*dy;
    nearest=Math.min(nearest,Math.sqrt(d2));
-   const w=1/(d2+.01);num+=p.value*w;den+=w;
+   const w=1/(d2+.01);num+=p.amount*w;den+=w;
   }
   field[gy*GW+gx]=(den&&nearest<=maxDist)?num/den:-1;
  }
@@ -264,7 +262,7 @@ function kfsProbaRender(features,samples,zone){
      let v1=field[y0*GW+x0],v2=field[y0*GW+x1],v3=field[y1*GW+x0],v4=field[y1*GW+x1];
      const all=[v1,v2,v3,v4].filter(v=>v>=0);
      const p=all.length===4?((v1*(1-fx)+v2*fx)*(1-fy)+(v3*(1-fx)+v4*fx)*fy):(all.length?all.reduce((a,b)=>a+b,0)/all.length:-1);
-     put(x,y,...(p<0?[63,77,89]:kfsProbaPalette(p)));
+     put(x,y,...(p<0?[63,77,89]:kfsProbaAmountPalette(p,type)));
     }
    }
   }
@@ -284,7 +282,14 @@ function kfsProbaRender(features,samples,zone){
   "7":["11111","00001","00010","00100","01000","01000","01000"],
   "8":["01110","10001","10001","01110","10001","10001","01110"],
   "9":["01110","10001","10001","01111","00001","00010","11100"],
-  "%":["11001","11010","00100","01000","10110","00110","00000"]
+  "%":["11001","11010","00100","01000","10110","00110","00000"],
+  ".":["00000","00000","00000","00000","00000","00100","00100"],
+  "m":["00000","00000","11010","10101","10101","10101","10101"],
+  "c":["00000","00000","01110","10000","10000","10000","01110"],
+  "k":["10000","10000","10100","11000","10100","10010","10001"],
+  "h":["10000","10000","10110","11001","10001","10001","10001"],
+  "/":["00001","00001","00010","00100","01000","10000","10000"],
+  "-":["00000","00000","00000","11111","00000","00000","00000"]
  };
  function rect(x,y,w,h,color){
   for(let a=Math.max(0,Math.round(y));a<Math.min(H,y+h);a++)for(let b=Math.max(0,Math.round(x));b<Math.min(W,x+w);b++)put(b,a,...color);
@@ -298,34 +303,38 @@ function kfsProbaRender(features,samples,zone){
    px+=6*scale;
   }
  }
- // Étiquettes aux lieux échantillonnés, espacées pour éviter les chevauchements.
- const sorted=[...valid].sort((a,b)=>b.value-a.value);
- const marked=[];
- const maxMarks=zone==="FR"?14:9;
+ // Étiquettes : probabilité du seuil en blanc, quantité moyenne en bleu.
+ const sorted=[...valid].sort((a,b)=>b.value-a.value),marked=[];
+ const maxMarks=zone==="FR"?12:8;
  for(const p of sorted){
   const x=lonToX(p.lon),y=latToY(p.lat);
-  if(x<P.x+10||x>P.x+P.w-50||y<P.y+12||y>P.y+P.h-28)continue;
-  if(marked.some(q=>Math.abs(q.x-x)<78&&Math.abs(q.y-y)<40))continue;
+  if(x<P.x+15||x>P.x+P.w-60||y<P.y+22||y>P.y+P.h-24)continue;
+  if(marked.some(q=>Math.abs(q.x-x)<107&&Math.abs(q.y-y)<55))continue;
   marked.push({x,y});
-  const score=Math.round(p.value),label=score+"%",lw=label.length*12+12;
-  const bx=Math.round(x-lw/2),by=Math.round(y-17);
-  rect(bx-1,by-1,lw+2,23,[228,241,252]);
-  rect(bx,by,lw,21,[10,29,50]);
-  txt(label,bx+6,by+4,2,score>=50?[255,225,133]:[255,255,255]);
+  const score=Math.round(p.value),unit=KFS_PROBA_SCALE[type].unit;
+  const qty=(type==="vent"?Math.round(p.amount):Math.round(p.amount*10)/10)+unit;
+  const proba=score+"%",lw=Math.max(proba.length,qty.length)*12+14;
+  const bx=Math.round(x-lw/2),by=Math.round(y-22);
+  rect(bx-1,by-1,lw+2,39,[228,241,252]);
+  rect(bx,by,lw,37,[10,29,50]);
+  txt(proba,bx+7,by+3,2,score>=50?[255,225,133]:[255,255,255]);
+  txt(qty,bx+7,by+21,2,[134,220,255]);
   if(marked.length>=maxMarks)break;
  }
- // Barre graduée chiffrée 0-10-25-50-75-100%.
- const ly=554,left=104,right=794;
+ // Légende des quantités en unités physiques propres au phénomène.
+ const legend=KFS_PROBA_SCALE[type],ly=552,left=104,right=794;
+ const high=legend.ticks[legend.ticks.length-1];
  for(let x=left;x<=right;x++){
-  const c=kfsProbaPalette(100*(x-left)/(right-left));
-  for(let y=ly;y<ly+14;y++)put(x,y,...c);
+  const c=kfsProbaAmountPalette(high*(x-left)/(right-left),type);
+  for(let y=ly;y<ly+15;y++)put(x,y,...c);
  }
- for(const v of [0,10,25,50,75,100]){
-  const x=Math.round(left+(right-left)*v/100);
-  for(let y=ly-4;y<ly+19;y++)put(x,y,246,250,254);
-  const label=v+"%",lw=label.length*12;
-  txt(label,x-lw/2,581,2);
+ for(const v of legend.ticks){
+  const x=Math.round(left+(right-left)*v/high);
+  for(let y=ly-5;y<ly+20;y++)put(x,y,246,250,254);
+  const label=String(v);
+  txt(label,x-label.length*6,577,2);
  }
+ txt(legend.unit,right-legend.unit.length*12+6,600,2,[197,228,249]);
  return {rgba,W,H};
 }
 function kfsProbaCrc(a){
@@ -358,7 +367,7 @@ async function kfsProbaComplete(interaction,phenom,zone,jour,seuil){
  try{
   const rules=KFS_PROBA_RULES[phenom];
   if(!rules||![0,1,2,3].includes(jour)||!rules.allowed.includes(seuil))throw Error(
-   "Paramètres invalides. Seuils autorisés : neige 1/3/5/10 cm, pluie 1/5/10/20/40 mm, rafales 60/80/100/120 km/h."
+   "Paramètres invalides. Seuils autorisés : neige 1/3/5/10 cm, pluie 0,1/1/5/10/20/40 mm, rafales 60/80/100/120 km/h."
   );
   const all=await kfsProbaFeatures(),features=zone==="FR"?all:all.filter(f=>String(f.properties.code)===zone);
   if(!features.length)throw Error("Région non reconnue.");
@@ -378,20 +387,23 @@ async function kfsProbaComplete(interaction,phenom,zone,jour,seuil){
    let count=0;
    for(let i=0;i<points.length;i++){
     const v=r.values[i];
-    if(v){points[i].models.push(v.pct);if(Number.isFinite(v.wetPct)){(points[i].wetModels ||= []).push(v.wetPct);}count++;}
+    if(v){points[i].models.push(v.pct);(points[i].amountModels ||= []).push(v.amount);if(Number.isFinite(v.wetPct)){(points[i].wetModels ||= []).push(v.wetPct);}count++;}
    }
    if(count)available.push(r.name);
    else failures.push(r.name+" : variable indisponible");
   }
-  for(const p of points){if(p.models.length)p.value=p.models.reduce((a,b)=>a+b,0)/p.models.length;if(p.wetModels?.length)p.wetValue=p.wetModels.reduce((a,b)=>a+b,0)/p.wetModels.length;}
+  for(const p of points){if(p.models.length)p.value=p.models.reduce((a,b)=>a+b,0)/p.models.length;if(p.amountModels?.length)p.amount=p.amountModels.reduce((a,b)=>a+b,0)/p.amountModels.length;if(p.wetModels?.length)p.wetValue=p.wetModels.reduce((a,b)=>a+b,0)/p.wetModels.length;}
   const counted=points.filter(p=>Number.isFinite(p.value));
   if(!counted.length)throw Error("Aucun membre d'ensemble exploitable pour ce paramètre. Aucune probabilité affichée.");
-  const frame=kfsProbaRender(features,points,zone),png=await kfsProbaPng(frame);
+  const frame=kfsProbaRender(features,points,zone,phenom),png=await kfsProbaPng(frame);
   const name=zone==="FR"?"France métropolitaine":KFS_PROBA_REGIONS.find(r=>r[0]===zone)?.[1]||zone;
   const label=phenom==="neige"?"épaisseur de neige présente au sol ≥ "+seuil+" cm":
    phenom==="pluie"?"cumul de pluie ≥ "+seuil+" mm sur le jour":
    "rafale maximale ≥ "+seuil+" km/h sur le jour";
   const values=counted.map(p=>p.value);
+  const amounts=counted.map(p=>p.amount).filter(Number.isFinite);
+  const unit=KFS_PROBA_SCALE[phenom].unit;
+  const minAmount=amounts.length?Math.min(...amounts):null,maxAmount=amounts.length?Math.max(...amounts):null;
   const min=Math.round(Math.min(...values)),max=Math.round(Math.max(...values));
   const wetValues=counted.map(p=>p.wetValue).filter(Number.isFinite);
   const wetRange=phenom==="pluie"&&seuil>0.1&&wetValues.length?
@@ -403,7 +415,9 @@ async function kfsProbaComplete(interaction,phenom,zone,jour,seuil){
    "**Événement :** "+label+"\n"+
    "🗺️ **Probabilité estimée :** "+min+" à "+max+" % sur les points échantillonnés.\n"+
    "📊 **Modèles exploités :** "+available.join(", ")+" ("+available.length+" familles).\n"+
-   "**Échelle de la carte :** 0 % · 10 % · 25 % · 50 % · 75 % · 100 % (de gauche à droite).\n"+wetRange+caution+
+   "**Carte :** couleurs = quantité moyenne (en "+unit+") ; chiffre blanc = probabilité d’atteindre le seuil ; chiffre bleu = quantité moyenne.\n"+
+   "**Échelle des quantités :** "+KFS_PROBA_SCALE[phenom].ticks.join(" · ")+" "+unit+".\n"+
+   (minAmount!==null?"**Quantité moyenne :** "+(Math.round(minAmount*10)/10)+" à "+(Math.round(maxAmount*10)/10)+" "+unit+" sur les points étudiés.\n":"")+wetRange+caution+
    (phenom==="neige"?"🏔️ Les points situés au-dessus de 800 m sont écartés ; neige au sol modélisée, pas chute fraîche.\n":"")+
    "ℹ️ Estimation **non calibrée**, issue des proportions de membres (poids égal par modèle), et non une probabilité officielle de vigilance. "+
    "Échantillonnage régional : ne remplace pas une prévision locale fine.\n"+
