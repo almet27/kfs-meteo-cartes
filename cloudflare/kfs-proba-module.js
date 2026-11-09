@@ -240,56 +240,49 @@ function kfsProbaStormMembers(hourly,day,minimum){
  return valid>=2?{pct:100*meet/valid,amount:sum/valid,stormPct:100*active/valid,members:valid}:null;
 }
 async function kfsProbaStormModel(model,samples,day,minimum){
- const base={
-  latitude:samples.map(p=>p.lat).join(","),
-  longitude:samples.map(p=>p.lon).join(","),
-  models:model[1],forecast_days:"4",
-  timezone:"Europe/Paris",temporal_resolution:KFS_STORM_TEMPO
- };
- // Repli lorsque certains paramètres ne sont pas fournis par le modèle.
- // HTTP 429 : ne pas multiplier les appels, source momentanément indisponible.
+ const base={latitude:samples.map(p=>p.lat).join(","),
+  longitude:samples.map(p=>p.lon).join(","),models:model[1],
+  start_date:day,end_date:day,timezone:"Europe/Paris",temporal_resolution:KFS_STORM_TEMPO};
  const variants=[
-  ["cape","precipitation","weather_code","wind_gusts_10m","convective_inhibition"],
-  ["cape","precipitation","wind_gusts_10m"],
-  ["cape","precipitation"],
-  ["weather_code"]
+  ["cape","precipitation","wind_gusts_10m","weather_code"],
+  ["cape","precipitation","wind_gusts_10m"]
  ];
+ const deadline=Date.now()+12000;
  let error="";
  for(const fields of variants){
+  const left=Math.min(8000,deadline-Date.now());
+  if(left<1500)break;
   const params=new URLSearchParams({...base,hourly:fields.join(",")});
-  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),14000);
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),left);
   try{
-   const response=await fetch("https://ensemble-api.open-meteo.com/v1/ensemble?"+params,{
+   const r=await fetch("https://ensemble-api.open-meteo.com/v1/ensemble?"+params,{
     signal:controller.signal,headers:{accept:"application/json"},cf:{cacheTtl:1800,cacheEverything:true}
    });
-   if(!response.ok){
-    const status=response.status;
-    if(status===429||status>=500)throw Error("HTTP "+status);
-    error="HTTP "+status;continue;
+   if(!r.ok){
+    error="HTTP "+r.status;
+    if(r.status===429||r.status>=500)break;
+    continue;
    }
-   const obj=await response.json(),data=Array.isArray(obj)?obj:[obj];
-   if(data.length!==samples.length){error="points retournés incomplets";continue;}
-   const values=data.map(p=>kfsProbaStormMembers(p.hourly,day,minimum));
-   if(values.some(v=>v))return {name:model[0],values,fields};
-   error="aucun membre valide";
-  }catch(e){
-   error=String(e.message||e).slice(0,140);
-   if(/HTTP 429|HTTP 5\d\d|aborted|abort/i.test(error))break;
-  }finally{clearTimeout(timer);}
+   const data0=await r.json(),data=Array.isArray(data0)?data0:[data0];
+   if(data.length!==samples.length){error="Nombre de points inattendu";continue;}
+   const values=data.map(x=>kfsProbaStormMembers(x.hourly,day,minimum));
+   if(values.some(Boolean))return {name:model[0],values,fields};
+   error="Aucun membre valide";
+  }catch(e){error=String(e.message||e).slice(0,120);}
+  finally{clearTimeout(timer);}
  }
- throw Error("Orage "+model[0]+" : "+error);
+ throw Error("Orage "+model[0]+": "+error);
 }
-
 async function kfsProbaModel(model,samples,day,type,threshold){
  const varName=KFS_PROBA_RULES[type].variable;
  const params=new URLSearchParams({
   latitude:samples.map(p=>p.lat).join(","),
   longitude:samples.map(p=>p.lon).join(","),
-  models:model[1],hourly:varName,forecast_days:"4",
+  models:model[1],hourly:varName,start_date:day,end_date:day,
   timezone:"Europe/Paris",temporal_resolution:"hourly_1"
  });
  const controller=new AbortController();
- const timer=setTimeout(()=>controller.abort(),18000);
+ const timer=setTimeout(()=>controller.abort(),10500);
  let result;
  try{
   const r=await fetch("https://ensemble-api.open-meteo.com/v1/ensemble?"+params,{
@@ -593,6 +586,9 @@ async function kfsProbaComplete(interaction,phenom,zone,jour,seuil){
   );
   const all=await kfsProbaFeatures(),features=zone==="FR"?all:all.filter(f=>String(f.properties.code)===zone);
   if(!features.length)throw Error("Région non reconnue.");
+  const departmentsPromise=zone==="FR"?Promise.resolve([]):kfsProbaDepartments(zone).catch(e=>{
+   console.error("KFS_PROBA_DEPARTMENTS",String(e));return [];
+  });
   const points=kfsProbaSamples(features,zone!=="FR");
   if(points.length<2)throw Error("Échantillonnage spatial insuffisant.");
   const day=kfsProbaDay(jour),available=[],failures=[];
@@ -621,8 +617,10 @@ async function kfsProbaComplete(interaction,phenom,zone,jour,seuil){
   for(const p of points){if(p.models.length)p.value=p.models.reduce((a,b)=>a+b,0)/p.models.length;if(p.amountModels?.length)p.amount=p.amountModels.reduce((a,b)=>a+b,0)/p.amountModels.length;if(p.wetModels?.length)p.wetValue=p.wetModels.reduce((a,b)=>a+b,0)/p.wetModels.length;
    if(p.stormModels?.length)p.stormValue=p.stormModels.reduce((a,b)=>a+b,0)/p.stormModels.length;}
   const counted=points.filter(p=>Number.isFinite(p.value));
-  if(!counted.length)throw Error("Aucun membre d'ensemble exploitable pour ce paramètre. Aucune probabilité affichée.");
-  const departments=zone==="FR"?[]:await kfsProbaDepartments(zone);
+  if(!counted.length)throw Error("Aucun ensemble disponible pour cette prévision. "+
+   (failures.some(x=>x.includes("429"))?"Le fournisseur renvoie HTTP 429 (quota temporaire).":"Modèles sans données ou trop lents.")+
+   " Détail : "+failures.slice(0,3).join(" ; ").slice(0,350));
+  const departments=await departmentsPromise;
   const frame=kfsProbaRender(features,points,zone,phenom,departments),png=await kfsProbaPng(frame);
   const name=zone==="FR"?"France métropolitaine":KFS_PROBA_REGIONS.find(r=>r[0]===zone)?.[1]||zone;
   const label=phenom==="orage"?"potentiel orageux au moins "+KFS_STORM_NAMES[seuil].toLowerCase():
@@ -663,7 +661,14 @@ async function kfsProbaComplete(interaction,phenom,zone,jour,seuil){
    "ℹ️ Estimation **non calibrée**, issue des proportions de membres (poids égal par modèle), et non une probabilité officielle de vigilance. "+
    "Échantillonnage régional : ne remplace pas une prévision locale fine.\n"+
    "_Sources : ensembles Open-Meteo ; contours IGN/INSEE. Données consultées le "+new Date().toISOString().slice(0,16).replace("T"," ")+" UTC._";
-  await kfsProbaEdit(interaction,{content,allowed_mentions:{parse:[]}},png);
+  try{await kfsProbaEdit(interaction,{content,allowed_mentions:{parse:[]}},png);}
+  catch(e){
+   console.error("KFS_PROBA_IMAGE_UPLOAD",String(e));
+   await kfsProbaEdit(interaction,{
+    content:content+"\n⚠️ Carte non jointe : Discord a refusé l'image. "+String(e.message||e).slice(0,150),
+    allowed_mentions:{parse:[]}
+   });
+  }
  }catch(e){
   console.error("KFS_PROBA_ERROR",String(e));
   try{await kfsProbaEdit(interaction,{content:"⚠️ /proba : "+String(e.message||e).slice(0,1500),allowed_mentions:{parse:[]}});}
