@@ -1,4 +1,4 @@
-name: KFS France - publier le quotidien alternatif AIGFS
+name: KFS France - réparer les publications quotidiennes AIFS et AIGFS
 
 on:
   push:
@@ -14,12 +14,14 @@ jobs:
   lancer:
     runs-on: ubuntu-latest
     steps:
-      - name: Publier AIGFS du cycle antérieur sans écraser les cartes horaires
+      - name: Réessayer AIFS et publier le quotidien alternatif AIGFS
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
-          gh workflow run publier-france-releases.yml --repo "$GH_REPO" --ref main \
-            -f source_run_id=42539017242
-          echo "Publication quotidienne AIGFS demandée"
+          for run in 42539015128 42539017242; do
+            gh workflow run publier-france-releases.yml --repo "$GH_REPO" --ref main \
+              -f source_run_id="$run"
+          done
+          echo "Publications AIFS/AIGFS demandées"
