@@ -193,7 +193,8 @@ function kfsArbitreSelectSources(question,candidates){
   // N'affiche pas une référence simplement parce que son thème est vaguement voisin.
   const normalize=x=>String(x||"").toLocaleLowerCase("fr-FR").normalize("NFD")
     .replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ");
-  const focus=kfsArbitreQuery(question).split(/\s+/).map(normalize).filter(x=>x.length>=5);
+  const focus=kfsArbitreQuery(question).split(/\s+/).map(normalize)
+    .map(x=>x.endsWith("s")?x.slice(0,-1):x).filter(x=>x.length>=5);
   if(!focus.length)return [];
   return candidates.map(s=>{
     const title=normalize(s.title),description=normalize(s.excerpt);
@@ -348,7 +349,7 @@ async function kfsArbitreComplete(interaction,env,question,contexte,target=null)
     const embeds=[{
       title:"⚖️ KFS — Arbitrage",
       description:answer,color:3447003,
-      fields:[{name:"📚 Sources (1 à 2)",value:evidenceField.slice(0,1024)}],
+      fields:[{name:"📚 Sources consultables",value:evidenceField.slice(0,1024)}],
       footer:{text:usedModel+" • "+quota.remaining+"/5 utilisations restantes • quota provisoire"}
     }];
     if(target){
