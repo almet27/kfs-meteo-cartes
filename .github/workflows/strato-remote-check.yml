@@ -1,0 +1,59 @@
+name: KFS /strato - vérifier les liens des cartes
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - cloudflare/kfs-strato-module.js
+      - .github/workflows/strato-remote-check.yml
+permissions:
+  contents: read
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Vérifier le catalogue publié GitHub Raw
+        run: |
+          curl --fail --location --silent --show-error --retry 2 --max-time 25 \
+            "https://raw.githubusercontent.com/almet27/kfs-meteo-cartes/main/strato/metadata.json?check=$GITHUB_RUN_ID" \
+            -o /tmp/strato.json
+          python - <<'PY'
+          import json
+          x=json.load(open('/tmp/strato.json'))
+          assert x['model']=='ifs'
+          assert x['maps']['10']['72']['vortex']=='strato/ifs-h072-10hpa-vortex.png'
+          assert x.get('run_utc')
+          print("KFS STRATO RAW OK",x['run_utc'],len(x['maps']['10']))
+          PY
+      - name: Vérifier la disponibilité de l'image PNG
+        run: |
+          curl --fail --location --silent --show-error --retry 2 --max-time 25 \
+            "https://raw.githubusercontent.com/almet27/kfs-meteo-cartes/main/strato/ifs-h072-10hpa-vortex.png?check=$GITHUB_RUN_ID" \
+            -o /tmp/strato.png
+          python - <<'PY'
+          b=open('/tmp/strato.png','rb').read()
+          assert len(b)>4000 and b[:8]==b'\x89PNG\r\n\x1a\n'
+          print("KFS STRATO IMAGE PNG OK",len(b),"bytes")
+          PY
+      - name: Vérifier le miroir jsDelivr
+        run: |
+          curl --fail --location --silent --show-error --retry 2 --max-time 25 \
+            "https://cdn.jsdelivr.net/gh/almet27/kfs-meteo-cartes@main/strato/metadata.json?check=$GITHUB_RUN_ID" \
+            -o /tmp/strato-cdn.json
+          python - <<'PY'
+          import json
+          j=json.load(open('/tmp/strato-cdn.json'))
+          assert j['model']=='ifs' and j.get('maps',{}).get('10')
+          print("KFS STRATO CDN OK",j.get('run_utc'))
+          PY
+      - name: Tester le statut du Worker public
+        run: |
+          curl --fail --location --silent --show-error --max-time 25 \
+            "https://kfs-meteo-ia.alain-leprevost.workers.dev/strato-status" \
+            -o /tmp/strato-worker.json
+          python - <<'PY'
+          import json
+          j=json.load(open('/tmp/strato-worker.json'))
+          assert j['command']=='strato' and j['ok']
+          print("KFS STRATO WORKER OK",j)
+          PY
