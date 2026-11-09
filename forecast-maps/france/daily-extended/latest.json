@@ -1,0 +1,179 @@
+{
+  "schema": 1,
+  "generated_utc": "2026-11-09T14:33:42.649270+00:00",
+  "source": "Modèles ECMWF IFS et NOAA GFS via Open-Meteo",
+  "sampling": "0.38° longitude, 0.32° latitude, points terrestres uniquement",
+  "not_native_grib": true,
+  "models": {
+    "ifs": {
+      "source": "ecmwf_ifs025",
+      "days": {
+        "4": {
+          "date": "2026-11-13",
+          "maps": {
+            "tmin": {
+              "filename": "daily-ifs-tmin-d4.webp",
+              "bytes": 97804,
+              "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/daily-extended/daily-ifs-tmin-d4.webp",
+              "date": "2026-11-13",
+              "valid_points": 543
+            },
+            "tmax": {
+              "filename": "daily-ifs-tmax-d4.webp",
+              "bytes": 110932,
+              "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/daily-extended/daily-ifs-tmax-d4.webp",
+              "date": "2026-11-13",
+              "valid_points": 543
+            },
+            "gust": {
+              "filename": "daily-ifs-gust-d4.webp",
+              "bytes": 114774,
+              "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/daily-extended/daily-ifs-gust-d4.webp",
+              "date": "2026-11-13",
+              "valid_points": 543
+            },
+            "precip": {
+              "filename": "daily-ifs-precip-d4.webp",
+              "bytes": 98680,
+              "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/daily-extended/daily-ifs-precip-d4.webp",
+              "date": "2026-11-13",
+              "valid_points": 543
+            },
+            "rain": {
+              "filename": "daily-ifs-rain-d4.webp",
+              "bytes": 97978,
+              "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/daily-extended/daily-ifs-rain-d4.webp",
+              "date": "2026-11-13",
+              "valid_points": 543
+            }
+          }
+        },
+        "5": {
+          "date": "2026-11-14",
+          "maps": {
+            "tmin": {
+              "filename": "daily-ifs-tmin-d5.webp",
+              "bytes": 99456,
+              "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/daily-extended/daily-ifs-tmin-d5.webp",
+              "date": "2026-11-14",
+              "valid_points": 543
+            },
+            "tmax": {
+              "filename": "daily-ifs-tmax-d5.webp",
+              "bytes": 111096,
+              "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/daily-extended/daily-ifs-tmax-d5.webp",
+              "date": "2026-11-14",
+              "valid_points": 543
+            },
+            "gust": {
+              "filename": "daily-ifs-gust-d5.webp",
+              "bytes": 118886,
+              "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/daily-extended/daily-ifs-gust-d5.webp",
+              "date": "2026-11-14",
+              "valid_points": 543
+            },
+            "precip": {
+              "filename": "daily-ifs-precip-d5.webp",
+              "bytes": 97828,
+              "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/daily-extended/daily-ifs-precip-d5.webp",
+              "date": "2026-11-14",
+              "valid_points": 543
+            },
+            "rain": {
+              "filename": "daily-ifs-rain-d5.webp",
+              "bytes": 97310,
+              "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/daily-extended/daily-ifs-rain-d5.webp",
+              "date": "2026-11-14",
+              "valid_points": 543
+            }
+          }
+        }
+      }
+    },
+    "gfs": {
+      "source": "ncep_gfs_global",
+      "days": {
+        "4": {
+          "date": "2026-11-13",
+          "maps": {
+            "tmin": {
+              "filename": "daily-gfs-tmin-d4.webp",
+              "bytes": 98298,
+              "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/daily-extended/daily-gfs-tmin-d4.webp",
+              "date": "2026-11-13",
+              "valid_points": 543
+            },
+            "tmax": {
+              "filename": "daily-gfs-tmax-d4.webp",
+              "bytes": 111284,
+              "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/daily-extended/daily-gfs-tmax-d4.webp",
+              "date": "2026-11-13",
+              "valid_points": 543
+            },
+            "gust": {
+              "filename": "daily-gfs-gust-d4.webp",
+              "bytes": 114474,
+              "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/daily-extended/daily-gfs-gust-d4.webp",
+              "date": "2026-11-13",
+              "valid_points": 543
+            },
+            "precip": {
+              "filename": "daily-gfs-precip-d4.webp",
+              "bytes": 98570,
+              "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/daily-extended/daily-gfs-precip-d4.webp",
+              "date": "2026-11-13",
+              "valid_points": 543
+            },
+            "rain": {
+              "filename": "daily-gfs-rain-d4.webp",
+              "bytes": 97984,
+              "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/daily-extended/daily-gfs-rain-d4.webp",
+              "date": "2026-11-13",
+              "valid_points": 543
+            }
+          }
+        },
+        "5": {
+          "date": "2026-11-14",
+          "maps": {
+            "tmin": {
+              "filename": "daily-gfs-tmin-d5.webp",
+              "bytes": 99726,
+              "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/daily-extended/daily-gfs-tmin-d5.webp",
+              "date": "2026-11-14",
+              "valid_points": 543
+            },
+            "tmax": {
+              "filename": "daily-gfs-tmax-d5.webp",
+              "bytes": 111280,
+              "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/daily-extended/daily-gfs-tmax-d5.webp",
+              "date": "2026-11-14",
+              "valid_points": 543
+            },
+            "gust": {
+              "filename": "daily-gfs-gust-d5.webp",
+              "bytes": 115946,
+              "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/daily-extended/daily-gfs-gust-d5.webp",
+              "date": "2026-11-14",
+              "valid_points": 543
+            },
+            "precip": {
+              "filename": "daily-gfs-precip-d5.webp",
+              "bytes": 97832,
+              "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/daily-extended/daily-gfs-precip-d5.webp",
+              "date": "2026-11-14",
+              "valid_points": 543
+            },
+            "rain": {
+              "filename": "daily-gfs-rain-d5.webp",
+              "bytes": 97284,
+              "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/daily-extended/daily-gfs-rain-d5.webp",
+              "date": "2026-11-14",
+              "valid_points": 543
+            }
+          }
+        }
+      }
+    }
+  }
+}
