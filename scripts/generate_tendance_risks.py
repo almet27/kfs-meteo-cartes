@@ -243,7 +243,7 @@ def weather_pictogram(kind):
     """Premium independent icon, no background circle."""
     return premium_pictogram(kind)
 
-def render(id,run,fields,marks):
+def render(id,run,fields,marks,risks):
     lon,lat=fields["msl"][0],fields["msl"][1]
     msl=fields["msl"][2]/100.0
     gh=fields["gh"][2]/10.0
@@ -252,7 +252,7 @@ def render(id,run,fields,marks):
     xx,yy=lon[ix],lat[iy]
     pres=msl[np.ix_(iy,ix)]
     geop=gh[np.ix_(iy,ix)]
-    fig=plt.figure(figsize=(15.44,5.65),dpi=100,facecolor="#082D53")
+    fig=plt.figure(figsize=(15.44,7.20),dpi=100,facecolor="#082D53")
     ax=fig.add_axes([0,0,1,1],projection=ccrs.PlateCarree())
     ax.set_extent(GEOGRAPHY,crs=ccrs.PlateCarree())
     ax.set_aspect("auto")
@@ -281,19 +281,7 @@ def render(id,run,fields,marks):
     ax.contour(xx,yy,geop,levels=np.arange(470,610,10),
                colors="#EDF6FF",linewidths=.42,linestyles="dashed",
                alpha=.22,transform=ccrs.PlateCarree(),zorder=3)
-    # Compact fixed Celsius legend, positioned above map annotations.
-    cax=fig.add_axes([.685,.793,.272,.029])
-    cb=fig.colorbar(ScalarMappable(norm=temp_norm,cmap=palette),
-                    cax=cax,orientation="horizontal",
-                    ticks=[-20,-10,0,10,20],extend="both")
-    cb.ax.set_xticklabels(["-20","-10","0","+10","+20"])
-    cb.ax.tick_params(axis="x",colors="#F7FAFF",labelsize=10,length=3,pad=2)
-    cb.outline.set_edgecolor("#EAF6FF")
-    cb.outline.set_linewidth(1)
-    fig.text(.684,.851,"MASSES D'AIR  •  TEMPÉRATURE 850 hPa (°C)",
-             fontsize=10.5,color="white",weight="bold",
-             bbox=dict(boxstyle="round,pad=0.35",facecolor="#082A51",
-                       edgecolor="#99CBEA",alpha=.9))
+    # Légende T850 déplacée sous la carte, dans l'infographie finale.
     # Cyan precipitation veils are derived only from the 6-hour model field.
     if "rain6h" in fields:
         rr=fields["rain6h"][2][np.ix_(iy,ix)]
@@ -318,7 +306,10 @@ def render(id,run,fields,marks):
         # Point d'exclamation rouge au voisinage des seuls pics atteignant
         # les seuils "marqué" du calcul des risques ; pas une vigilance.
         threshold={"pluie_forte":20.0,"vent_fort":70.0,"neige":2.0}.get(mark["kind"])
-        if threshold is not None and float(mark["value"])>=threshold:
+        category={"pluie_forte":"pluie_forte","vent_fort":"tempete","neige":"neige"}.get(mark["kind"])
+        marked=(category and risks.get(category,{}).get("status")=="marque"
+                and threshold is not None and float(mark["value"])>=threshold)
+        if marked:
             ax.annotate("!",xy=(x,y),
                         xycoords=ccrs.PlateCarree()._as_mpl_transform(ax),
                         xytext=(13,13),textcoords="offset points",
@@ -385,11 +376,20 @@ def calculate(id,step,model,atlas,now):
              snow_markers)
     # Adjacent pin collision is undesirable even across different phenomena.
     selected=[]
-    for p in sorted(markers,key=lambda p:p["value"],reverse=True):
+    # Les pics dépassant un seuil marqué sont prioritaires lorsque deux
+    # pictogrammes seraient trop proches ; ne pas comparer directement km/h et mm.
+    thresholds={"vent_fort":70.0,"pluie_forte":20.0,"neige":2.0}
+    keys={"vent_fort":"tempete","pluie_forte":"pluie_forte","neige":"neige"}
+    def priority(p):
+        threshold=thresholds[p["kind"]]
+        is_marked=(risks.get(keys[p["kind"]],{}).get("status")=="marque"
+                   and p["value"]>=threshold)
+        return (is_marked,p["value"]/threshold)
+    for p in sorted(markers,key=priority,reverse=True):
         if all(distance_km(p["lon"],p["lat"],q["lon"],q["lat"])>=125 for q in selected):
             selected.append(p)
     f["rain6h"]=(x,y,rain,recorded,"mm")
-    background=render(id,recorded,f,selected)
+    background=render(id,recorded,f,selected,risks)
     return {"id":id,"step_h":step,"model":model,"run_utc":recorded,
             "valid_utc":(run+timedelta(hours=step)).isoformat(),
             "background_path":str(background),"risks":risks,"markers":selected,
