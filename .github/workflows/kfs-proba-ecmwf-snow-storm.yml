@@ -44,5 +44,19 @@ jobs:
           git add proba/ecmwf-subset-probabilities.json
           if ! git diff --cached --quiet; then
             git commit -m "KFS: risques neige et orages ECMWF echantillon ENS"
-            git push
+            for attempt in 1 2 3 4 5; do
+              git fetch origin main
+              if ! git rebase origin/main; then
+                git rebase --abort
+                echo "Conflit de fichier : abandon sans écraser les autres publications"
+                exit 1
+              fi
+              if git push origin HEAD:main; then
+                echo "Publication réussie après synchronisation"
+                exit 0
+              fi
+              sleep 4
+            done
+            echo "Publication refusée après cinq tentatives"
+            exit 1
           fi
