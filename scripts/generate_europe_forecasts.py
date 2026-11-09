@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """KFS Europe: separate 850 hPa temperature and 500 hPa heights / sea-level pressure."""
 import json
+import os
+import shutil
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 import matplotlib
@@ -24,8 +26,28 @@ OUT.mkdir(parents=True, exist_ok=True)
 STEPS = [24, 48, 72, 120, 168, 240, 360]
 MODELS = {"ifs": "ECMWF IFS", "aifs-single": "ECMWF AIFS"}
 EXTENT = [-65, 40, 30, 85]  # Atlantique Nord, Groenland et Europe
-result = {"generated_utc": datetime.now(timezone.utc).isoformat(),
-          "source": "ECMWF Open Data (CC BY 4.0)", "maps": {}, "runs_utc": {}, "errors": {}}
+OLD_PATH=OUT/"metadata.json"
+try:
+    previous=json.loads(OLD_PATH.read_text(encoding="utf-8"))
+except (FileNotFoundError,ValueError):
+    previous={}
+result={"generated_utc":datetime.now(timezone.utc).isoformat(),
+        "source":"ECMWF Open Data (CC BY 4.0)",
+        "maps":previous.get("maps",{}),"runs_utc":previous.get("runs_utc",{}),
+        "errors":{}}
+STAGING=OUT/"_kfs_europe_ecmwf_tmp"
+STAGING.mkdir(parents=True,exist_ok=True)
+NEW={}
+UPDATED=0
+def when(value):
+    try:
+        d=datetime.fromisoformat(str(value).replace("Z","+00:00"))
+        return d.replace(tzinfo=timezone.utc) if d.tzinfo is None else d.astimezone(timezone.utc)
+    except (ValueError,TypeError):
+        return datetime(1970,1,1,tzinfo=timezone.utc)
+def run_label(value):
+    return "RUN "+when(value).strftime("%HZ du %d/%m/%Y")
+
 
 def read(path, name):
     ds = xr.open_dataset(path, engine="cfgrib", backend_kwargs={"indexpath": ""})
@@ -52,9 +74,9 @@ def canvas():
 
 def save_map(fig, model, step, field):
     filename=f"{model}-h{step:03}-{field}.png"
-    fig.savefig(OUT/filename, bbox_inches="tight", facecolor="white")
+    fig.savefig(STAGING/filename, bbox_inches="tight", facecolor="white")
     plt.close(fig)
-    result["maps"].setdefault(model, {}).setdefault(str(step), {})[field] = "forecast-maps/europe/"+filename
+    NEW[field] = "forecast-maps/europe/"+filename
 
 
 # Palette contraste : pas de couleur sur les cellules seches (<0.1 mm).
@@ -88,23 +110,39 @@ def render_precip(x,y,data,model,title,step,run_utc,kind,filename):
         note="Cumul total, incluant pluie et neige."
     ax.set_title(f"KFS MÉTÉO | {title} | Atlantique Nord · Groenland · Europe | +{step} h\n"
                  f"{labels[kind]} | période +{step-6} à +{step} h\n"
-                 f"Run : {run_utc[:16].replace('T',' ')} UTC · {note}")
+                 f"{run_label(run_utc)} UTC · {note}")
     save_map(fig,model,step,filename)
 
 for model, title in MODELS.items():
     client=Client(source="ecmwf",model=model,resol="0p25")
+    result["maps"].setdefault(model,{})
+    result["runs_utc"].setdefault(model,{})
     for step in STEPS:
         if model=="ifs" and step>240:
             continue
         key=f"{model}-h{step:03}"
+        try:
+            latest=client.latest(stream="oper",type="fc",step=step,param="2t")
+            cycle=when(latest)
+        except Exception as exc:
+            result["errors"][key+"-availability"]=str(exc)[:160]
+            continue
+        if cycle<=when(result["runs_utc"][model].get(str(step))):
+            continue
+        NEW={}
+        print("EUROPE ECMWF NEW CYCLE",model,step,run_label(cycle),flush=True)
+        def retrieve(**kwargs):
+            # Never mix different 00Z/06Z/12Z/18Z source cycles in the same map.
+            return client.retrieve(date=cycle.strftime("%Y-%m-%d"),time=cycle.hour,**kwargs)
+
         temp_path=OUT/(key+"-t850.grib2")
         pres_path=OUT/(key+"-msl.grib2")
         height_path=OUT/(key+"-gh500.grib2")
         try:
             # Temperature at 850 hPa alone, no MSLP overlay.
-            client.retrieve(stream="oper",type="fc",step=step,param="t",levelist=850,target=str(temp_path))
+            retrieve(stream="oper",type="fc",step=step,param="t",levelist=850,target=str(temp_path))
             x,y,temp,units,run_utc=read(temp_path,"t")
-            result["runs_utc"].setdefault(model,{})[str(step)] = run_utc
+            
             if np.nanmedian(temp)<150: raise ValueError("Unexpected 850 hPa temperature units: "+units)
             fig,ax=canvas()
             shade=ax.contourf(x,y,temp-273.15,levels=KFS_T850_LEVELS,
@@ -138,16 +176,16 @@ for model, title in MODELS.items():
                 ])
             fig.colorbar(shade,ax=ax,orientation="horizontal",pad=.04,shrink=.8,ticks=KFS_T850_TICKS,
                          label="Température à 850 hPa (°C) · Couleurs KFS météo")
-            ax.set_title(f"KFS MÉTÉO | {title} | Atlantique Nord · Groenland · Europe | +{step} h\nTempérature 850 hPa · Run : {run_utc[:16].replace('T', ' ')} UTC · Validité : {(datetime.fromisoformat(run_utc.replace('Z','+00:00'))+timedelta(hours=step)).strftime('%d/%m %H:%M')} UTC")
+            ax.set_title(f"KFS MÉTÉO | {title} | Atlantique Nord · Groenland · Europe | +{step} h\nTempérature 850 hPa · {run_label(run_utc)} UTC · Validité : {(datetime.fromisoformat(run_utc.replace('Z','+00:00'))+timedelta(hours=step)).strftime('%d/%m %H:%M')} UTC")
             save_map(fig,model,step,"t850")
         except Exception as exc:
             result["errors"][key+"-t850"]=str(exc)[:350]
         try:
             # Real 500 hPa geopotential height (not 500 hPa temperature).
-            client.retrieve(stream="oper",type="fc",step=step,param="msl",target=str(pres_path))
-            client.retrieve(stream="oper",type="fc",step=step,param="gh",levelist=500,target=str(height_path))
+            retrieve(stream="oper",type="fc",step=step,param="msl",target=str(pres_path))
+            retrieve(stream="oper",type="fc",step=step,param="gh",levelist=500,target=str(height_path))
             x,y,msl,_,run_utc=read(pres_path,"msl")
-            result["runs_utc"].setdefault(model,{})[str(step)] = run_utc
+            
             x2,y2,gh,units,_=read(height_path,"gh")
             if not (np.array_equal(x,x2) and np.array_equal(y,y2)):
                 raise ValueError("500 hPa and MSLP grids differ")
@@ -175,7 +213,7 @@ for model, title in MODELS.items():
                 ])
             fig.colorbar(shade,ax=ax,orientation="horizontal",pad=.04,shrink=.8,ticks=KFS_Z500_TICKS,
                          label="Géopotentiel Z500 (dam) · Couleurs KFS météo")
-            ax.set_title(f"KFS MÉTÉO | {title} | Atlantique Nord · Groenland · Europe | +{step} h\nZ500 (dam) et pression au sol (hPa) · Run : {run_utc[:16].replace('T', ' ')} UTC · Validité : {(datetime.fromisoformat(run_utc.replace('Z','+00:00'))+timedelta(hours=step)).strftime('%d/%m %H:%M')} UTC")
+            ax.set_title(f"KFS MÉTÉO | {title} | Atlantique Nord · Groenland · Europe | +{step} h\nZ500 (dam) et pression au sol (hPa) · {run_label(run_utc)} UTC · Validité : {(datetime.fromisoformat(run_utc.replace('Z','+00:00'))+timedelta(hours=step)).strftime('%d/%m %H:%M')} UTC")
             save_map(fig,model,step,"z500_msl")
         except Exception as exc:
             result["errors"][key+"-z500_msl"]=str(exc)[:350]
@@ -186,7 +224,7 @@ for model, title in MODELS.items():
         # Vent moyen à 10 m : norme des composantes U/V, convertie de m/s en km/h.
         wind_path=OUT/(key+"-wind10m.grib2")
         try:
-            client.retrieve(stream="oper",type="fc",step=step,param=["10u","10v"],target=str(wind_path))
+            retrieve(stream="oper",type="fc",step=step,param=["10u","10v"],target=str(wind_path))
             x,y,u,uu,run_u=read(wind_path,"u10")
             x2,y2,v,uv,run_v=read(wind_path,"v10")
             if not (np.array_equal(x,x2) and np.array_equal(y,y2) and run_u==run_v):
@@ -203,7 +241,7 @@ for model, title in MODELS.items():
                       scale=680,width=.0016,transform=ccrs.PlateCarree())
             fig.colorbar(shade,ax=ax,orientation="horizontal",pad=.04,shrink=.8,
                          label="Vitesse du vent à 10 m (km/h) — flèches : direction")
-            ax.set_title(f"KFS MÉTÉO | {title} | Atlantique Nord · Groenland · Europe | +{step} h\nVent 10 m · Run : {run_u[:16].replace('T',' ')} UTC · Validité : {(datetime.fromisoformat(run_u.replace('Z','+00:00'))+timedelta(hours=step)).strftime('%d/%m %H:%M')} UTC")
+            ax.set_title(f"KFS MÉTÉO | {title} | Atlantique Nord · Groenland · Europe | +{step} h\nVent 10 m · {run_label(run_u)} UTC · Validité : {(datetime.fromisoformat(run_u.replace('Z','+00:00'))+timedelta(hours=step)).strftime('%d/%m %H:%M')} UTC")
             save_map(fig,model,step,"wind10m")
         except Exception as exc:
             result["errors"][key+"-wind10m"]=str(exc)[:350]
@@ -215,8 +253,8 @@ for model, title in MODELS.items():
         wet_now=OUT/(key+"-wet6h-now.grib2")
         wet_prev=OUT/(key+"-wet6h-prev.grib2")
         try:
-            client.retrieve(stream="oper",type="fc",step=step,param=["tp","sf"],target=str(wet_now))
-            client.retrieve(stream="oper",type="fc",step=step-6,param=["tp","sf"],target=str(wet_prev))
+            retrieve(stream="oper",type="fc",step=step,param=["tp","sf"],target=str(wet_now))
+            retrieve(stream="oper",type="fc",step=step-6,param=["tp","sf"],target=str(wet_prev))
             x,y,tp_now,tp_units,run_now=read(wet_now,"tp")
             x2,y2,sf_now,sf_units,run_sf=read(wet_now,"sf")
             x3,y3,tp_prev,_,run_prev=read(wet_prev,"tp")
@@ -246,6 +284,22 @@ for model, title in MODELS.items():
         finally:
             for file in (wet_now,wet_prev):
                 file.unlink(missing_ok=True)
+        essential={"t850","z500_msl","wind10m","precip6h","rain6h","snow6h"}
+        if essential.issubset(NEW):
+            for filename in NEW.values():
+                os.replace(STAGING/Path(filename).name,OUT/Path(filename).name)
+            result["maps"][model][str(step)]=dict(NEW)
+            result["runs_utc"][model][str(step)]=cycle.isoformat()
+            UPDATED+=1
+            print("EUROPE ECMWF PUBLISHED",model,step,run_label(cycle),flush=True)
+        else:
+            print("EUROPE ECMWF WAITING",model,step,"missing",sorted(essential-set(NEW)),flush=True)
+            for file in NEW.values():
+                (STAGING/Path(file).name).unlink(missing_ok=True)
+shutil.rmtree(STAGING,ignore_errors=True)
+if not UPDATED:
+    print("ECMWF Europe: aucun nouveau pas complet ; cartes précédentes conservées.")
+    raise SystemExit(0)
 (OUT/"metadata.json").write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding="utf-8")
 print("ECMWF summary",json.dumps({"maps":result["maps"],"errors":result["errors"]},ensure_ascii=False),flush=True)
 if not result["maps"]: raise RuntimeError("No real ECMWF fields; publication aborted")
