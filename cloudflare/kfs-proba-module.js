@@ -24,19 +24,22 @@ const KFS_PROBA_REGIONS = [
 const KFS_PROBA_RULES = {
  neige:{unit:"cm",defaults:1,allowed:[1,3,5,10],variable:"snow_depth",title:"Neige présente au sol"},
  pluie:{unit:"mm / 24 h",defaults:0.1,allowed:[0.1,1,5,10,20,40],variable:"rain",title:"Cumul de pluie"},
- vent:{unit:"km/h",defaults:80,allowed:[60,80,100,120],variable:"wind_gusts_10m",title:"Rafales maximales"}
+ vent:{unit:"km/h",defaults:80,allowed:[60,80,100,120],variable:"wind_gusts_10m",title:"Rafales maximales"},
+ orage:{unit:"niveau",defaults:3,allowed:[1,2,3,4,5],variable:"cape",title:"Potentiel orageux"}
 };
 let KFS_PROBA_LAST_REGISTER=0;
 async function kfsProbaRegister(env){
  if(!env.DISCORD_BOT_TOKEN)throw Error("Jeton Discord absent");
  const cmd={name:"proba",type:1,description:"Probabilités météo jusqu'à J+3 · France et régions",options:[
-  {name:"phenomene",type:3,description:"Neige au sol, pluie ou rafales",required:true,
-   choices:[{name:"🌨️ Neige au sol",value:"neige"},{name:"🌧️ Pluie",value:"pluie"},{name:"💨 Rafales",value:"vent"}]},
+  {name:"phenomene",type:3,description:"Pluie, neige, rafales et orages",required:true,
+   choices:[{name:"🌨️ Neige au sol",value:"neige"},{name:"🌧️ Pluie",value:"pluie"},{name:"💨 Rafales",value:"vent"},{name:"🌩️ Orages",value:"orage"}]},
   {name:"zone",type:3,description:"France entière ou région",required:false,
    choices:[{name:"France métropolitaine",value:"FR"},...KFS_PROBA_REGIONS.map(([code,name])=>({name,value:code}))]},
   {name:"jour",type:4,description:"De J+0 à J+3",required:false,
    choices:[0,1,2,3].map(i=>({name:"J+"+i,value:i}))},
-  {name:"seuil",type:10,description:"Pluie: 0,1/1/5/10/20/40 mm · Neige: 1/3/5/10 cm · Vent: 60/80/100/120 km/h",required:false,min_value:0.1,max_value:120}
+  {name:"seuil",type:10,description:"Seuil pluie/neige/rafales (non utilisé pour orage)",required:false,min_value:0.1,max_value:120},
+  {name:"niveau",type:3,description:"Orages : niveau minimum à évaluer (défaut : modéré)",required:false,
+   choices:[{name:"Faible",value:"faible"},{name:"Moyen",value:"moyen"},{name:"Modéré",value:"modere"},{name:"Fort",value:"fort"},{name:"Extrême",value:"extreme"}]}
  ]};
  const endpoint="https://discord.com/api/v10/applications/"+APPLICATION_ID+"/commands";
  const verify=await fetch(endpoint,{headers:{Authorization:"Bot "+env.DISCORD_BOT_TOKEN}});
@@ -177,6 +180,106 @@ function kfsProbaMemberProbability(hourly,day,type,threshold){
  return valid>=2?{pct:100*pass/valid,amount:amountSum/valid,members:valid,
   wetPct:type==="pluie"?100*anyRain/valid:null}:null;
 }
+
+// KFS /proba /orage : seuils *heuristiques*, NON calibrés en risque d'orages violents.
+// Les catégories décrivent un potentiel convectif multi-paramètres, pas une vigilance.
+const KFS_STORM_NAMES=["AUCUN","FAIBLE","MOYEN","MODERE","FORT","EXTREME"];
+const KFS_STORM_LEVELS={faible:1,moyen:2,modere:3,fort:4,extreme:5};
+const KFS_STORM_TEMPO="hourly_3";
+// Ne jamais utiliser la CAPE seule comme certitude d'orage ou de sévérité.
+function kfsProbaStormTier(cape,rain,gust,weatherCode,cin){
+ const convective=[95,96,99].includes(weatherCode);
+ const cp=Number.isFinite(cape)?cape:null;
+ const pr=Number.isFinite(rain)?rain:null;
+ const gu=Number.isFinite(gust)?gust:null;
+ if(cp===null && !convective)return 0;
+ let level=convective?1:0;
+ // Pluie et instabilité doivent coexister au même pas de temps.
+ if(cp!==null && pr!==null && cp>=150 && pr>=0.2)level=Math.max(level,1);
+ if(cp!==null && pr!==null && cp>=400 && pr>=0.5)level=Math.max(level,2);
+ if(cp!==null && pr!==null && gu!==null && cp>=900 && pr>=1 && gu>=40)
+  level=Math.max(level,3);
+ if(cp!==null && pr!==null && gu!==null && cp>=1600 && pr>=2.5 && gu>=60)
+  level=Math.max(level,4);
+ if(cp!==null && pr!==null && gu!==null && cp>=3000 && pr>=5 && gu>=90)
+  level=Math.max(level,5);
+ // CIN négative très marquée : réduit l'indice lorsque le modèle ne
+ // prévoit pas explicitement d'orage (évite CAPE brute => signal abusif).
+ if(!convective && Number.isFinite(cin) && cin<=-200)level=Math.max(0,level-1);
+ return level;
+}
+function kfsProbaStormMembers(hourly,day,minimum){
+ if(!Array.isArray(hourly?.time))return null;
+ const ids=[];
+ for(let i=0;i<hourly.time.length;i++)if(String(hourly.time[i]).startsWith(day))ids.push(i);
+ if(ids.length<3)return null;
+ const suffixes=new Set();
+ for(const key of Object.keys(hourly))
+  {const match=key.match(/^(?:cape|weather_code)_member(\d+)$/);if(match)suffixes.add(match[1]);}
+ let valid=0,meet=0,active=0,sum=0;
+ for(const suffix of suffixes){
+  const get=(key,i)=>{
+   const value=hourly[key+"_member"+suffix]?.[i];
+   return Number.isFinite(value)?value:null;
+  };
+  const capes=ids.map(i=>get("cape",i));
+  const codes=ids.map(i=>get("weather_code",i));
+  if(!capes.some(Number.isFinite) && !codes.some(Number.isFinite))continue;
+  let level=0,observed=0;
+  for(let j=0;j<ids.length;j++){
+   const i=ids[j],cape=capes[j],wc=codes[j];
+   if(cape===null && wc===null)continue;
+   observed++;
+   const l=kfsProbaStormTier(cape,get("precipitation",i),
+     get("wind_gusts_10m",i),wc,get("convective_inhibition",i));
+   level=Math.max(level,l);
+  }
+  if(observed<Math.ceil(ids.length*.6))continue;
+  valid++;meet+=Number(level>=minimum);active+=Number(level>=1);sum+=level;
+ }
+ return valid>=2?{pct:100*meet/valid,amount:sum/valid,stormPct:100*active/valid,members:valid}:null;
+}
+async function kfsProbaStormModel(model,samples,day,minimum){
+ const base={
+  latitude:samples.map(p=>p.lat).join(","),
+  longitude:samples.map(p=>p.lon).join(","),
+  models:model[1],forecast_days:"4",
+  timezone:"Europe/Paris",temporal_resolution:KFS_STORM_TEMPO
+ };
+ // Repli lorsque certains paramètres ne sont pas fournis par le modèle.
+ // HTTP 429 : ne pas multiplier les appels, source momentanément indisponible.
+ const variants=[
+  ["cape","precipitation","weather_code","wind_gusts_10m","convective_inhibition"],
+  ["cape","precipitation","wind_gusts_10m"],
+  ["cape","precipitation"],
+  ["weather_code"]
+ ];
+ let error="";
+ for(const fields of variants){
+  const params=new URLSearchParams({...base,hourly:fields.join(",")});
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),14000);
+  try{
+   const response=await fetch("https://ensemble-api.open-meteo.com/v1/ensemble?"+params,{
+    signal:controller.signal,headers:{accept:"application/json"},cf:{cacheTtl:1800,cacheEverything:true}
+   });
+   if(!response.ok){
+    const status=response.status;
+    if(status===429||status>=500)throw Error("HTTP "+status);
+    error="HTTP "+status;continue;
+   }
+   const obj=await response.json(),data=Array.isArray(obj)?obj:[obj];
+   if(data.length!==samples.length){error="points retournés incomplets";continue;}
+   const values=data.map(p=>kfsProbaStormMembers(p.hourly,day,minimum));
+   if(values.some(v=>v))return {name:model[0],values,fields};
+   error="aucun membre valide";
+  }catch(e){
+   error=String(e.message||e).slice(0,140);
+   if(/HTTP 429|HTTP 5\d\d|aborted|abort/i.test(error))break;
+  }finally{clearTimeout(timer);}
+ }
+ throw Error("Orage "+model[0]+" : "+error);
+}
+
 async function kfsProbaModel(model,samples,day,type,threshold){
  const varName=KFS_PROBA_RULES[type].variable;
  const params=new URLSearchParams({
@@ -212,7 +315,9 @@ const KFS_PROBA_SCALE={
  neige:{unit:"cm",ticks:[0,0.5,1,3,5,10,20],
   colors:[[26,52,91],[45,94,160],[76,148,209],[105,172,230],[135,138,221],[168,98,210],[224,67,157]]},
  vent:{unit:"km/h",ticks:[0,30,50,70,90,110,130],
-  colors:[[24,53,90],[45,109,164],[62,161,169],[197,193,76],[243,154,65],[234,92,65],[201,50,111]]}
+  colors:[[24,53,90],[45,109,164],[62,161,169],[197,193,76],[243,154,65],[234,92,65],[201,50,111]]},
+ orage:{unit:"niveau",ticks:[0,1,2,3,4,5],
+  colors:[[19,35,58],[35,96,157],[62,170,180],[229,198,70],[242,111,53],[190,42,87]]}
 };
 function kfsProbaClassIndex(amount,type){
  const ticks=KFS_PROBA_SCALE[type].ticks;
@@ -390,7 +495,8 @@ function kfsProbaRender(features,samples,zone,type,departments=[]){
   if(cityGuardRadius>0&&cityAnchors.some(q=>
      Math.abs(q.x-x)<cityGuardRadius&&Math.abs(q.y-y)<cityGuardRadius*.7))continue;
   const score=Math.round(p.value),unit=KFS_PROBA_SCALE[type].unit;
-  const qty=(type==="vent"?Math.round(p.amount):Math.round(p.amount*10)/10)+unit;
+  const qty=type==="orage"?KFS_STORM_NAMES[kfsProbaClassIndex(p.amount,"orage")]:
+   (type==="vent"?Math.round(p.amount):Math.round(p.amount*10)/10)+unit;
   const proba=score+"%",lw=Math.max(proba.length,qty.length)*12+14,h=39;
   const candidates=[[x-lw/2,y-22],[x-lw/2,y+10],[x-lw/2,y-52],
     [x+12,y-22],[x-lw-12,y-22]];
@@ -436,10 +542,11 @@ function kfsProbaRender(features,samples,zone,type,departments=[]){
  }
  // Légende en classes de quantité, réparties en bandes de même largeur.
  const legend=KFS_PROBA_SCALE[type],ly=679,left=64,right=834;
- const names=legend.ticks.map((start,i)=>{
-  const end=legend.ticks[i+1];
-  return end===undefined?String(start)+"+":String(start)+"-"+String(end);
- });
+ const names=type==="orage"?KFS_STORM_NAMES:
+  legend.ticks.map((start,i)=>{
+   const end=legend.ticks[i+1];
+   return end===undefined?String(start)+"+":String(start)+"-"+String(end);
+  });
  const width=(right-left)/names.length;
  for(let i=0;i<names.length;i++){
   const l=Math.round(left+i*width),r=Math.round(left+(i+1)*width);
@@ -449,7 +556,7 @@ function kfsProbaRender(features,samples,zone,type,departments=[]){
   txt(names[i],Math.round((l+r-names[i].length*12)/2),710,2,[241,246,250]);
  }
  for(let y=ly-3;y<ly+22;y++)put(right,y,246,250,254);
- txt(legend.unit,right-legend.unit.length*12,738,2,[197,228,249]);
+ if(type!=="orage")txt(legend.unit,right-legend.unit.length*12,738,2,[197,228,249]);
  return {rgba,W,H};
 }
 function kfsProbaCrc(a){
@@ -491,7 +598,8 @@ async function kfsProbaComplete(interaction,phenom,zone,jour,seuil){
   const day=kfsProbaDay(jour),available=[],failures=[];
   // Les 7 ensembles sont interrogés en parallèle pour respecter le délai
   // de réponse différée de Discord (max 30 s côté Worker après l'ACK).
-  const settled=await Promise.allSettled(KFS_PROBA_MODELS.map(m=>kfsProbaModel(m,points,day,phenom,seuil)));
+  const settled=await Promise.allSettled(KFS_PROBA_MODELS.map(m=>phenom==="orage"?
+   kfsProbaStormModel(m,points,day,seuil):kfsProbaModel(m,points,day,phenom,seuil)));
   for(let j=0;j<settled.length;j++){
    const outcome=settled[j],model=KFS_PROBA_MODELS[j];
    if(outcome.status==="rejected"){
@@ -502,18 +610,23 @@ async function kfsProbaComplete(interaction,phenom,zone,jour,seuil){
    let count=0;
    for(let i=0;i<points.length;i++){
     const v=r.values[i];
-    if(v){points[i].models.push(v.pct);(points[i].amountModels ||= []).push(v.amount);if(Number.isFinite(v.wetPct)){(points[i].wetModels ||= []).push(v.wetPct);}count++;}
+    if(v){points[i].models.push(v.pct);(points[i].amountModels ||= []).push(v.amount);
+    if(Number.isFinite(v.wetPct))(points[i].wetModels ||= []).push(v.wetPct);
+    if(Number.isFinite(v.stormPct))(points[i].stormModels ||= []).push(v.stormPct);
+    count++;}
    }
    if(count)available.push(r.name);
    else failures.push(r.name+" : variable indisponible");
   }
-  for(const p of points){if(p.models.length)p.value=p.models.reduce((a,b)=>a+b,0)/p.models.length;if(p.amountModels?.length)p.amount=p.amountModels.reduce((a,b)=>a+b,0)/p.amountModels.length;if(p.wetModels?.length)p.wetValue=p.wetModels.reduce((a,b)=>a+b,0)/p.wetModels.length;}
+  for(const p of points){if(p.models.length)p.value=p.models.reduce((a,b)=>a+b,0)/p.models.length;if(p.amountModels?.length)p.amount=p.amountModels.reduce((a,b)=>a+b,0)/p.amountModels.length;if(p.wetModels?.length)p.wetValue=p.wetModels.reduce((a,b)=>a+b,0)/p.wetModels.length;
+   if(p.stormModels?.length)p.stormValue=p.stormModels.reduce((a,b)=>a+b,0)/p.stormModels.length;}
   const counted=points.filter(p=>Number.isFinite(p.value));
   if(!counted.length)throw Error("Aucun membre d'ensemble exploitable pour ce paramètre. Aucune probabilité affichée.");
   const departments=zone==="FR"?[]:await kfsProbaDepartments(zone);
   const frame=kfsProbaRender(features,points,zone,phenom,departments),png=await kfsProbaPng(frame);
   const name=zone==="FR"?"France métropolitaine":KFS_PROBA_REGIONS.find(r=>r[0]===zone)?.[1]||zone;
-  const label=phenom==="neige"?"épaisseur de neige présente au sol ≥ "+seuil+" cm":
+  const label=phenom==="orage"?"potentiel orageux au moins "+KFS_STORM_NAMES[seuil].toLowerCase():
+    phenom==="neige"?"épaisseur de neige présente au sol ≥ "+seuil+" cm":
    phenom==="pluie"?"cumul de pluie ≥ "+seuil+" mm sur le jour":
    "rafale maximale ≥ "+seuil+" km/h sur le jour";
   const values=counted.map(p=>p.value);
@@ -521,6 +634,10 @@ async function kfsProbaComplete(interaction,phenom,zone,jour,seuil){
   const unit=KFS_PROBA_SCALE[phenom].unit;
   const minAmount=amounts.length?Math.min(...amounts):null,maxAmount=amounts.length?Math.max(...amounts):null;
   const min=Math.round(Math.min(...values)),max=Math.round(Math.max(...values));
+  const stormValues=counted.map(p=>p.stormValue).filter(Number.isFinite);
+  const stormRange=phenom==="orage"&&stormValues.length?
+   "⚡ **Probabilité d'un signal orageux (≥ faible) :** "+Math.round(Math.min(...stormValues))+
+   " à "+Math.round(Math.max(...stormValues))+" % sur les points étudiés.\n":"";
   const wetValues=counted.map(p=>p.wetValue).filter(Number.isFinite);
   const wetRange=phenom==="pluie"&&seuil>0.1&&wetValues.length?
    "🌦️ **Risque d’avoir de la pluie (≥ 0,1 mm) :** "+Math.round(Math.min(...wetValues))+" à "+Math.round(Math.max(...wetValues))+" % aux points étudiés.\n":"";
@@ -531,11 +648,18 @@ async function kfsProbaComplete(interaction,phenom,zone,jour,seuil){
    "**Événement :** "+label+"\n"+
    "🗺️ **Probabilité estimée :** "+min+" à "+max+" % sur les points échantillonnés.\n"+
    "📊 **Modèles exploités :** "+available.join(", ")+" ("+available.length+" familles).\n"+
-   "**Carte :** couleurs = quantité moyenne (en "+unit+") ; chiffre blanc = probabilité d’atteindre le seuil ; chiffre bleu = quantité moyenne.\n"+
-   "**Échelle des quantités (classes) :** "+KFS_PROBA_SCALE[phenom].ticks.map((v,i,arr)=>i===arr.length-1?v+" et +":v+"-"+arr[i+1]).join(" · ")+" "+unit+".\n"+
+   (phenom==="orage"?
+     "**Carte :** couleurs = catégorie moyenne indicative de potentiel convectif ; blanc = proportion des membres atteignant le niveau demandé ; bleu = niveau moyen.\n":
+     "**Carte :** couleurs = quantité moyenne (en "+unit+") ; chiffre blanc = probabilité d’atteindre le seuil ; chiffre bleu = quantité moyenne.\n")+
+   (phenom==="orage"?"**Échelle orage :** aucun · faible · moyen · modéré · fort · extrême.\n":
+     "**Échelle des quantités (classes) :** "+KFS_PROBA_SCALE[phenom].ticks.map((v,i,arr)=>i===arr.length-1?v+" et +":v+"-"+arr[i+1]).join(" · ")+" "+unit+".\n")+
    (zone!=="FR"?"**Repères :** limites départementales et grandes villes.\n":"")+
-   (minAmount!==null?"**Quantité moyenne :** "+(Math.round(minAmount*10)/10)+" à "+(Math.round(maxAmount*10)/10)+" "+unit+" sur les points étudiés.\n":"")+wetRange+caution+
+   (minAmount!==null?(phenom==="orage"?
+      "**Indice convectif moyen :** "+minAmount.toFixed(1)+" à "+maxAmount.toFixed(1)+" / 5.\n":
+      "**Quantité moyenne :** "+(Math.round(minAmount*10)/10)+" à "+(Math.round(maxAmount*10)/10)+" "+unit+" sur les points étudiés.\n"):"")+
+     stormRange+wetRange+caution+
    (phenom==="neige"?"🏔️ Les points situés au-dessus de 800 m sont écartés ; neige au sol modélisée, pas chute fraîche.\n":"")+
+   (phenom==="orage"?"⚠️ **Indice orageux expérimental**, fondé sur CAPE, pluie, rafales et codes météo disponibles. Fort/extrême = potentiel convectif, pas prévision certaine de grêle, tornade ou rafales destructrices. **Aucune équivalence avec la vigilance Météo-France.**\n":"")+
    "ℹ️ Estimation **non calibrée**, issue des proportions de membres (poids égal par modèle), et non une probabilité officielle de vigilance. "+
    "Échantillonnage régional : ne remplace pas une prévision locale fine.\n"+
    "_Sources : ensembles Open-Meteo ; contours IGN/INSEE. Données consultées le "+new Date().toISOString().slice(0,16).replace("T"," ")+" UTC._";
