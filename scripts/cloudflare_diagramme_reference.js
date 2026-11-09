@@ -1,3 +1,33 @@
+const KFS_ENSEMBLE_META_CODES=["ecmwf_ifs025_ensemble","ncep_gefs025","ncep_gefs05"];
+function kfsUnixMs(v){
+ const n=Number(v);
+ return Number.isFinite(n)&&n>0?(n>1e12?n:n*1000):null;
+}
+async function kfsEnsembleMeta(modelCode){
+ if(!KFS_ENSEMBLE_META_CODES.includes(modelCode))throw Error("Ensemble inconnu");
+ const url="https://api.open-meteo.com/data/"+modelCode+
+   "/static/meta.json?kfs="+Math.floor(Date.now()/300000);
+ const res=await fetch(url,{cache:"no-store",signal:AbortSignal.timeout(10000)});
+ if(!res.ok)throw Error("Métadonnées "+modelCode+" HTTP "+res.status);
+ const d=await res.json(),init=kfsUnixMs(d.last_run_initialisation_time),
+       available=kfsUnixMs(d.last_run_availability_time),now=Date.now();
+ if(init===null||init>now+600000||now-init>7*86400000)
+   throw Error("Date du run "+modelCode+" invalide");
+ const date=new Date(init);
+ if(![0,6,12,18].includes(date.getUTCHours())||date.getUTCMinutes()!==0)
+   throw Error("Cycle "+modelCode+" inattendu");
+ return {modelCode,init,available,
+   iso:date.toISOString().replace(".000Z","Z"),
+   ready:available!==null&&available>=init&&available<=now-600000};
+}
+function kfsEnsembleRunTitle(meta){
+ if(!meta?.iso)return "RUN non vérifié";
+ const d=new Date(meta.init),month=new Intl.DateTimeFormat("fr-FR",{
+   timeZone:"UTC",month:"long"}).format(d);
+ return "RUN "+String(d.getUTCHours()).padStart(2,"0")+"Z du "+
+   d.getUTCDate()+" "+month+" "+d.getUTCFullYear();
+}
+
 // KFS /diagramme — ECMWF ENS / GEFS (non-commercial use of Open-Meteo).
 // Source: Open-Meteo Ensemble API. The API does not identify a precise
 // initialization time, so never attach an unverified "RUN 00Z" label.
@@ -99,7 +129,7 @@ function kfsEnsembleSeries(hourly,params){
     hour:"2-digit",hourCycle:"h23"}).format(new Date(ts[i])).replace(", "," "));
   return {timeIndices,dateLabels,values,wanted,timestamps:timeIndices.map(i=>ts[i])};
 }
-function kfsEnsembleChart(name,series,label,modelLabel,city,duration){
+function kfsEnsembleChart(name,series,modelLabel,city,duration,runTitle){
   const titles={
     temperature:["TEMPÉRATURE À 2 M","Température (°C)","#ef744c","rgba(239,116,76,0.18)"],
     pluie:["PRÉCIPITATIONS SUR 6 HEURES","Cumul pluie/neige (mm / 6 h)","#278ed1","rgba(39,142,209,0.20)"],
@@ -125,7 +155,7 @@ function kfsEnsembleChart(name,series,label,modelLabel,city,duration){
       layout:{padding:{left:12,right:18,top:10,bottom:6}},
       plugins:{
         title:{display:true,text:[
-          "KFS MÉTÉO  |  "+modelLabel+"  |  "+city+"  |  "+duration+" jours",
+          "KFS MÉTÉO  |  "+modelLabel+"  |  "+city+"  |  "+duration+" jours  |  "+runTitle,
           title+"  ·  médiane et incertitude de l'ensemble"
         ],align:"start",color:"#172942",font:{size:18,weight:"bold"},padding:20},
         legend:{position:"bottom",labels:{color:"#31445d",boxWidth:15,
@@ -198,6 +228,9 @@ async function kfsCompleteDiagramme(interaction,model,cityName,param,duration){
     const modelName=model==="ens"?"ECMWF ENS":"NOAA GEFS";
     const modelCode=model==="ens"?"ecmwf_ifs025_ensemble":
       duration===10?"ncep_gefs025":"ncep_gefs05";
+    let ensembleMetaBefore=null;
+    try{ensembleMetaBefore=await kfsEnsembleMeta(modelCode);}
+    catch(e){console.warn("KFS_META_BEFORE",String(e).slice(0,180));}
     const feed=new URL("https://ensemble-api.open-meteo.com/v1/ensemble");
     feed.searchParams.set("latitude",String(city.latitude));
     feed.searchParams.set("longitude",String(city.longitude));
@@ -217,8 +250,15 @@ async function kfsCompleteDiagramme(interaction,model,cityName,param,duration){
     if(payload.error)throw Error(String(payload.reason||"Réponse météo indisponible").slice(0,170));
     if(!payload.hourly?.time?.length)throw Error("Aucune échéance d'ensemble disponible");
     const series=kfsEnsembleSeries(payload.hourly,param);
+    let ensembleMetaAfter=null;
+    try{ensembleMetaAfter=await kfsEnsembleMeta(modelCode);}
+    catch(e){console.warn("KFS_META_AFTER",String(e).slice(0,180));}
+    const runVerified=Boolean(ensembleMetaBefore?.ready&&ensembleMetaAfter?.ready&&
+      ensembleMetaBefore.iso===ensembleMetaAfter.iso);
+    const latestEnsembleMeta=ensembleMetaAfter||ensembleMetaBefore;
+    const runTitle=runVerified?kfsEnsembleRunTitle(latestEnsembleMeta):"RUN à confirmer";
     const charts=await Promise.all(series.wanted.map(async name=>{
-      const config=kfsEnsembleChart(name,series,cityLabel,modelName,duration);
+      const config=kfsEnsembleChart(name,series,modelName,cityLabel,duration,runTitle);
       return {name,filename:"kfs-"+model+"-"+name+".png",
         bytes:await kfsRenderEnsembleChart(config)};
     }));
@@ -235,7 +275,9 @@ async function kfsCompleteDiagramme(interaction,model,cityName,param,duration){
       "📊 Paramètres : "+series.wanted.map(n=>names[n]).join(", ")+
       "\n🔎 "+units+" · "+Math.min(...models)+" membres minimum · jusqu'au "+valid+
       "\nBande colorée : percentiles **10–90 %** · trait : médiane · pointillés : moyenne."+
-      "\n⚠️ L'API ne garantit pas l'identification du cycle 00Z/06Z/12Z/18Z : aucun run n'est inventé."+
+      (runVerified?"\n🕒 **"+runTitle+"** · cycle confirmé disponible chez Open-Meteo.":
+        latestEnsembleMeta?"\n⏳ "+kfsEnsembleRunTitle(latestEnsembleMeta)+" détecté chez Open-Meteo, mais sa propagation est encore en cours : run des courbes non confirmé.":
+        "\n⚠️ Initialisation du run non vérifiable actuellement.")+
       "\n_Source et données : Open-Meteo (CC BY 4.0), données ECMWF/NOAA. Utilisation non commerciale._";
     const embeds=charts.map(p=>({
       title:names[p.name].toLocaleUpperCase("fr"),
@@ -252,5 +294,56 @@ async function kfsCompleteDiagramme(interaction,model,cityName,param,duration){
       console.error("KFS_DIAGRAMME_REPLY_ERROR",String(e)));
     console.error("KFS_DIAGRAMME_ERROR",String(error));
   }
+}
+
+
+async function kfsEnsembleNotifyDiscord(env){
+ if(!env.DISCORD_BOT_TOKEN)return;
+ const channel=String(env.KFS_RUN_ALERT_CHANNEL_ID||KFS_TENDANCE_CHANNEL||"");
+ if(!/^\d{17,20}$/.test(channel))throw Error("Canal Discord non valide");
+ const all=await Promise.allSettled(KFS_ENSEMBLE_META_CODES.map(kfsEnsembleMeta));
+ const m=all.map((r,i)=>{
+   if(r.status==="fulfilled")return r.value;
+   console.warn("KFS_ENSEMBLE_SOURCE_PENDING",KFS_ENSEMBLE_META_CODES[i],
+     String(r.reason).slice(0,150));
+   return null;
+ }).filter(Boolean);
+ const now=Date.now();
+ const valid=x=>x&&x.ready&&x.available&&now-x.available>=600000&&
+   now-x.available<=4*3600000;
+ const ecmwf=m.find(x=>x.modelCode==="ecmwf_ifs025_ensemble");
+ const gefs=m.filter(x=>x.modelCode==="ncep_gefs025"||
+   x.modelCode==="ncep_gefs05").filter(valid)
+   .sort((a,b)=>b.init-a.init||Number(b.modelCode==="ncep_gefs05")-
+     Number(a.modelCode==="ncep_gefs05"))[0];
+ const pending=[{id:"ens",name:"ECMWF ENS",meta:ecmwf},
+   {id:"gefs",name:"GEFS",meta:gefs}].filter(x=>valid(x.meta));
+ if(!pending.length){console.log("KFS_ENSEMBLE_NO_AVAILABLE_RUN");return;}
+ const history=await kfsDiscordCall(env,"/channels/"+channel+"/messages?limit=100");
+ const seen=new Set();
+ for(const msg of history||[]){
+   if(!msg.author?.bot)continue;
+   const combined=String(msg.content||"")+" "+
+     (msg.embeds||[]).map(e=>String(e.footer?.text||"")).join(" ");
+   for(const hit of combined.matchAll(/KFS-ENSEMBLE-RUN:(?:ens|gefs):\d{4}-\d{2}-\d{2}T(?:00|06|12|18):00:00Z/g))
+     seen.add(hit[0]);
+ }
+ for(const x of pending){
+   const key="KFS-ENSEMBLE-RUN:"+x.id+":"+x.meta.iso;
+   if(seen.has(key))continue;
+   const d=new Date(x.meta.init);
+   const month=new Intl.DateTimeFormat("fr-FR",{timeZone:"UTC",month:"long"}).format(d);
+   const hour=String(d.getUTCHours()).padStart(2,"0");
+   const hint=x.id==="gefs"&&x.meta.modelCode==="ncep_gefs025"?
+      "\nLes diagrammes à 10 jours sont prêts ; la version à 15 jours peut arriver ensuite.":"";
+   const content="Toc toc ! Le nouveau run "+x.name+" "+hour+"Z du "+
+      d.getUTCDate()+" "+month+
+      " vient de sortir ! Tu peux le consulter en tapant /diagramme."+hint;
+   await kfsDiscordCall(env,"/channels/"+channel+"/messages","POST",{
+     content,embeds:[{footer:{text:key}}],allowed_mentions:{parse:[]}
+   });
+   seen.add(key);
+   console.log("KFS_ENSEMBLE_NOTIFIED",key,x.meta.modelCode);
+ }
 }
 
