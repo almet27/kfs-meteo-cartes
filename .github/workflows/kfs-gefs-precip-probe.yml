@@ -1,0 +1,50 @@
+name: KFS - Diagnostic GEFS rain and snow GRIB
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/kfs-gefs-precip-probe.yml
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install eccodes
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libeccodes0 libeccodes-data
+          python -m pip install --quiet 'eccodes>=2.37,<3'
+      - name: Inspect NOAA GEFS APCP SNOD GRIB attributes
+        run: |
+          python - <<'PY'
+          import urllib.request, urllib.parse, json, tempfile, datetime
+          from eccodes import codes_grib_new_from_file,codes_get,codes_release
+          d=json.load(open("diagramme/gefs-noaa-8m.json"))
+          date=datetime.datetime.fromisoformat(d["run_utc"].replace("Z","+00:00"))
+          for step in [6,12,24,240,360]:
+            name=f"gep03.t{date.hour:02d}z.pgrb2a.0p50.f{step:03d}"
+            params=[("file",name),("var_APCP","on"),("var_SNOD","on"),("lev_surface","on"),
+               ("subregion",""),("leftlon","-6"),("rightlon","11"),("toplat","52"),("bottomlat","40"),
+               ("dir",f"/gefs.{date:%Y%m%d}/{date.hour:02d}/atmos/pgrb2ap5")]
+            url="https://nomads.ncep.noaa.gov/cgi-bin/filter_gefs_atmos_0p50a.pl?"+urllib.parse.urlencode(params)
+            try:
+              with urllib.request.urlopen(urllib.request.Request(url,headers={"User-Agent":"KFS-METEO GRIB verification"}),timeout=70) as resp:
+                data=resp.read()
+              print("STEP",step,"bytes",len(data),"prefix",repr(data[:12]),flush=True)
+              with tempfile.TemporaryFile() as f:
+                f.write(data);f.seek(0)
+                while (h:=codes_grib_new_from_file(f)) is not None:
+                  try:
+                    def field(k):
+                      try:return codes_get(h,k)
+                      except Exception:return "NONE"
+                    print("FIELD",{k:field(k) for k in ["shortName","name","typeOfLevel","level","startStep","endStep","stepRange","stepType","typeOfStatisticalProcessing","units","number","dataDate","dataTime"]},flush=True)
+                  finally:codes_release(h)
+            except Exception as e:print("ERROR",step,type(e).__name__,str(e)[:250],flush=True)
+          PY
