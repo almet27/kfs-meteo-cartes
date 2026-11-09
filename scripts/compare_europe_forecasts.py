@@ -32,10 +32,14 @@ for step in STEPS:
             tile=Image.new("RGB",(TILE_W,TILE_H),"white")
             d=ImageDraw.Draw(tile)
             run=source.get("runs_utc",{}).get(model,{}).get(str(step),source.get("run_utc",""))
-            date=run[:16].replace("T"," ") if run else "inconnu"
+            try:
+                when=datetime.fromisoformat(run.replace("Z","+00:00"))
+                cycle="RUN "+when.strftime("%HZ du %d/%m/%Y")
+            except (ValueError,TypeError):
+                cycle="RUN indisponible"
             d.rectangle((0,0,TILE_W,TITLE_H),fill="#172c48")
             d.text((15,10),f"{name} • +{step} h",font=header,fill="white")
-            d.text((TILE_W-268,16),f"Run modèle : {date} UTC",font=font,fill="#d9e2ed")
+            d.text((TILE_W-340,16),cycle,font=font,fill="#d9e2ed")
             if path and (ROOT/Path(path).name).is_file():
                 try:
                     with Image.open(ROOT/Path(path).name) as im:
@@ -55,7 +59,7 @@ for step in STEPS:
         d=ImageDraw.Draw(comparison)
         d.rectangle((0,0,TILE_W*2,84),fill="#f4f7fa")
         d.text((25,12),f"KFS MÉTÉO | Atlantique Nord · Groenland · Europe | +{step} h | {label}",font=header,fill="#182f4b")
-        d.text((25,47),("GFS/AIGFS : cumuls pluie + neige indifférenciés. Choisir Pluie ou Neige pour IFS/AIFS." if field=="precip6h" else "GFS : répartition indicative via CPOFP instantané. IFS/AIFS : cumuls séparés. AIGFS : non disponible." if field in ("rain6h","snow6h") else "Run modèle (UTC) indiqué séparément pour chaque panneau — et non heure de fabrication de l’image."),font=font,fill="#37506c")
+        d.text((25,47),("GFS/AIGFS : cumuls pluie + neige indifférenciés. Choisir Pluie ou Neige pour IFS/AIFS." if field=="precip6h" else "GFS : répartition indicative via CPOFP instantané. IFS/AIFS : cumuls séparés. AIGFS : non disponible." if field in ("rain6h","snow6h") else "RUN 00Z / 06Z / 12Z / 18Z indiqué pour chaque modèle — cycles parfois différents."),font=font,fill="#37506c")
         for i,tile in enumerate(panels):
             comparison.paste(tile,((i%2)*TILE_W,84+(i//2)*TILE_H))
         filename=f"compare-h{step:03}-{field}.png"
