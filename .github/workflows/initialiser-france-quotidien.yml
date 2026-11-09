@@ -1,4 +1,4 @@
-name: KFS France - initialiser les cartes quotidiennes
+name: KFS France - publier le quotidien alternatif AIGFS
 
 on:
   push:
@@ -14,15 +14,12 @@ jobs:
   lancer:
     runs-on: ubuntu-latest
     steps:
-      - name: Déclencher AIFS et AIGFS +72 h pour compléter les cartes quotidiennes
+      - name: Publier AIGFS du cycle antérieur sans écraser les cartes horaires
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
-          for model in aifs-single aigfs; do
-            echo "Lancement KFS France +72h $model sur main"
-            gh workflow run france-h72.yml --repo "$GH_REPO" --ref main \
-              -f modele="$model" -f horizon=72
-          done
-          echo "IFS et GFS déjà générés, compléter AIFS et AIGFS."
+          gh workflow run publier-france-releases.yml --repo "$GH_REPO" --ref main \
+            -f source_run_id=42539017242
+          echo "Publication quotidienne AIGFS demandée"
