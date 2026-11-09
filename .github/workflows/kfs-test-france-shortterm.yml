@@ -51,7 +51,7 @@ jobs:
           import json
           from urllib.request import Request,urlopen
           roots=("https://data.open-meteo.com/data","https://api.open-meteo.com/data")
-          models=("meteofrance_arome_france","icon_eu","dwd_icon_eu")
+          models=("meteofrance_arome_france","meteofrance_arome_france0025","meteofrance_arome_france_hd","meteofrance_arome_france_15min","icon_eu","dwd_icon_eu")
           for model in models:
             for root in roots:
               u=root+"/"+model+"/static/meta.json"
