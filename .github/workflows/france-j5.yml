@@ -1,0 +1,58 @@
+name: KFS France - J+4 et J+5 IFS GFS
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - scripts/generate_france_extended_daily.py
+      - .github/workflows/france-j5.yml
+  schedule:
+    - cron: '42 7,19 * * *'
+permissions:
+  contents: write
+concurrency:
+  group: kfs-france-j5-maps
+  cancel-in-progress: false
+jobs:
+  cartes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Synchroniser le dépôt
+        run: |
+          git fetch origin main
+          git checkout -B main origin/main
+      - name: Installer les outils graphiques
+        run: python -m pip install 'numpy>=1.26,<3' 'matplotlib>=3.8' 'cartopy>=0.23' 'Pillow>=10,<13'
+      - name: Valider le code avant appel API
+        run: python -m py_compile scripts/generate_france_shortterm_risks.py scripts/generate_france_extended_daily.py
+      - name: Préparer les cartes quotidiennes J+4 et J+5
+        run: python scripts/generate_france_extended_daily.py
+      - name: Sauvegarder les cartes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kfs-france-j5-maps
+          path: forecast-maps/france/daily-extended/
+          retention-days: 3
+          if-no-files-found: warn
+      - name: Publier les cartes et leur catalogue
+        if: success()
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add forecast-maps/france/daily-extended/
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Actualiser cartes France J+4 et J+5'
+          for attempt in 1 2 3 4 5; do
+            if ! git pull --rebase origin main; then
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:main; then exit 0; fi
+            sleep 5
+          done
+          exit 1
