@@ -305,19 +305,23 @@ async function kfsProbaComplete(interaction,phenom,zone,jour,seuil){
   const points=kfsProbaSamples(features,zone!=="FR");
   if(points.length<2)throw Error("Échantillonnage spatial insuffisant.");
   const day=kfsProbaDay(jour),available=[],failures=[];
-  // Un appel par modèle, toujours à partir des véritables membres de l'ensemble.
-  // Exécution séquentielle : évite de saturer l'API gratuite sur une demande.
-  for(const model of KFS_PROBA_MODELS){
-   try{
-    const r=await kfsProbaModel(model,points,day,phenom,seuil);
-    let count=0;
-    for(let i=0;i<points.length;i++){
-     const v=r.values[i];
-     if(v){points[i].models.push(v.pct);count++;}
-    }
-    if(count)available.push(r.name);
-    else failures.push(r.name+" : variable indisponible");
-   }catch(e){failures.push(model[0]+" : "+String(e.message||e).slice(0,80));}
+  // Les 7 ensembles sont interrogés en parallèle pour respecter le délai
+  // de réponse différée de Discord (max 30 s côté Worker après l'ACK).
+  const settled=await Promise.allSettled(KFS_PROBA_MODELS.map(m=>kfsProbaModel(m,points,day,phenom,seuil)));
+  for(let j=0;j<settled.length;j++){
+   const outcome=settled[j],model=KFS_PROBA_MODELS[j];
+   if(outcome.status==="rejected"){
+    failures.push(model[0]+" : "+String(outcome.reason).slice(0,80));
+    continue;
+   }
+   const r=outcome.value;
+   let count=0;
+   for(let i=0;i<points.length;i++){
+    const v=r.values[i];
+    if(v){points[i].models.push(v.pct);count++;}
+   }
+   if(count)available.push(r.name);
+   else failures.push(r.name+" : variable indisponible");
   }
   for(const p of points)if(p.models.length)p.value=p.models.reduce((a,b)=>a+b,0)/p.models.length;
   const counted=points.filter(p=>Number.isFinite(p.value));
