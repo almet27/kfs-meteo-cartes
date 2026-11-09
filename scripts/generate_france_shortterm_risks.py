@@ -36,8 +36,8 @@ COMMON=("temperature_2m","wet_bulb_temperature_2m","cape","snowfall",
 EXTRA={"arome":(),"icon_eu":("showers","snow_depth",
   "soil_temperature_0cm","snowfall_height")}
 CODES={"arome":"meteofrance_arome_france","icon_eu":"icon_eu"}
-LEVELS=("non_evalue","faible","possible","marque")
-COLORS=["#8196aa","#86d8bd","#f8c666","#df4058"]
+LEVELS=("indisponible","sans_signal","faible","possible","marque")
+COLORS={-1:"#8196aa",0:"#86d8bd",1:"#b9e39d",2:"#f8c666",3:"#df4058"}
 LABELS={"orage":"Potentiel orageux","neige_sol":"Neige au sol / tenue possible"}
 
 def isnum(x):
@@ -62,7 +62,7 @@ def thunder_potential(h,i,model):
     precip=at(h,"showers",i) if model=="icon_eu" else at(h,"precipitation",i)
     sh=shear_kmh(h,i)
     if not all(isnum(x) for x in (cape,precip,sh)):
-        return 0
+        return -1
     # Indice qualitatif multi-critères : CAPE, cisaillement 850-500 hPa,
     # précipitations convectives ICON ou totales AROME (substitut imparfait).
     if cape>=1200 and sh>=45 and precip>=0.3:
@@ -78,16 +78,16 @@ def snow_ground_potential(h,i,model,previous_depth):
     twb=at(h,"wet_bulb_temperature_2m",i)
     t2m=at(h,"temperature_2m",i)
     if not all(isnum(x) for x in (snow,twb,t2m)):
-        return 0
+        return -1
     if model=="arome":
         # ARÔME ne fournit pas ici de neige AU SOL : ne pas la confirmer.
-        if snow>=0.6 and twb<=0.0 and t2m<=1.0:return 3
+        if snow>=0.6 and twb<=0.0 and t2m<=1.0:return 2
         if snow>=0.2 and twb<=0.8 and t2m<=2.5:return 2
         return 1 if snow>0.05 and twb<=1.8 else 0
     depth=at(h,"snow_depth",i)
     soil=at(h,"soil_temperature_0cm",i)
     if not isnum(depth) or not isnum(soil):
-        return 0
+        return -1
     increment=depth-previous_depth if isnum(previous_depth) else 0.0
     if (depth>=0.015 and soil<=1.5 and twb<=0.8 and
         increment>=0.005):
@@ -190,7 +190,7 @@ def plot(model,variable,period,coords,values,issued):
     ax.add_feature(cfeature.LAND,facecolor="#d9e5dd",zorder=0)
     ax.coastlines("110m",linewidth=.65,color="#283f4d")
     ax.add_feature(cfeature.BORDERS,linewidth=.7,edgecolor="#354d58")
-    for grade in (0,1,2,3):
+    for grade in (-1,0,1,2,3):
         xs=[coords[i][1] for i,x in enumerate(values) if x==grade]
         ys=[coords[i][0] for i,x in enumerate(values) if x==grade]
         if xs:
@@ -203,7 +203,7 @@ def plot(model,variable,period,coords,values,issued):
              color="#62d5f0",fontsize=15,weight="bold")
     fig.text(.05,.873,"Échantillon de "+str(len(coords))+" points sur le territoire",
              color="#bbdaee",fontsize=10)
-    legend="     ".join(["● "+name for name in ("Non évalué","Faible","Possible","Marqué")])
+    legend="   ".join(["● "+name for name in ("Donnée absente","Pas de signal","Faible","Possible","Marqué")])
     fig.text(.07,.091,legend,color="#f1f8ff",fontsize=11)
     fig.text(.06,.056,"Cartographie indicative, maillage ~25–35 km : cellules convectives plus fines possibles.",
              color="#c4d3e6",fontsize=9.7)
@@ -221,7 +221,7 @@ def plot(model,variable,period,coords,values,issued):
     if path.stat().st_size<15000:raise RuntimeError("Image vide "+fname)
     return {"filename":fname,"url":"https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/risques/"+fname,
             "size_bytes":path.stat().st_size,
-            "classes":{"non_evalue":values.count(0),"faible":values.count(1),
+            "classes":{"indisponible":values.count(-1),"sans_signal":values.count(0),"faible":values.count(1),
                        "possible":values.count(2),"marque":values.count(3)},
             "start_h":lo,"end_h":hi}
 
