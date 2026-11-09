@@ -8,7 +8,8 @@ from __future__ import annotations
 from datetime import datetime,timezone,timedelta
 from pathlib import Path
 from urllib.request import Request,urlopen
-import json,os
+from urllib.error import URLError,HTTPError
+import json,os,time
 
 META={
  "arome":"meteofrance_arome_france0025",
@@ -24,8 +25,21 @@ def stamp(unix):
 def get_run(model,code):
     url=BASE+code+"/static/meta.json"
     request=Request(url,headers={"User-Agent":"KFS-Meteo-Run-Watcher/1.0"})
-    with urlopen(request,timeout=16) as r:
-        j=json.load(r)
+    error=None
+    for attempt in range(4):
+        try:
+            with urlopen(request,timeout=20) as r:
+                j=json.load(r)
+            error=None
+            break
+        except (URLError,HTTPError,TimeoutError,OSError,ValueError) as exc:
+            error=exc
+            if isinstance(exc,HTTPError) and exc.code in (400,401,403,404):
+                raise
+            print("KFS_RUN_META_RETRY",model,attempt+1,str(exc)[:130],flush=True)
+            if attempt<3:time.sleep(2*(attempt+1))
+    if error is not None:
+        raise RuntimeError("Métadonnées Open-Meteo momentanément indisponibles : "+str(error)[:150])
     init=stamp(j["last_run_initialisation_time"])
     available=stamp(j["last_run_availability_time"])
     now=datetime.now(timezone.utc)
