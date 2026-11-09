@@ -183,10 +183,9 @@ def import_gfs(data):
             raise ValueError("diagnostic GFS périmé")
         if abs((created-published).total_seconds())>3600:
             raise ValueError("métadonnées et champs GFS désynchronisés")
-        if snapshot["source_run_utc"]!=reference["run_utc"]:
-            raise ValueError("cycle GFS différent du catalogue NOAA")
-        if not timedelta(hours=0)<=created-source_run<=timedelta(hours=48):
-            raise ValueError("run NOAA invalide")
+        # Le catalogue NOAA peut agréger des cycles GFS/AIGFS différents.
+        # Vérifier chaque échéance contre runs_utc.gfs[step], pas contre le
+        # champ global run_utc ni l'ancien source_run_utc du diagnostic.
         candidates=snapshot.get("models",{}).get("gfs",{})
         accepted={}
         for step in (72,168,240,360):
@@ -198,7 +197,7 @@ def import_gfs(data):
             issue=datetime.fromisoformat(record["run_utc"].replace("Z","+00:00"))
             listed=datetime.fromisoformat(reference["runs_utc"]["gfs"][key].replace("Z","+00:00"))
             valid=datetime.fromisoformat(record["valid_utc"].replace("Z","+00:00"))
-            if issue!=source_run or issue!=listed or abs((valid-issue-timedelta(hours=step)).total_seconds())>60:
+            if issue!=listed or abs((valid-issue-timedelta(hours=step)).total_seconds())>60:
                 warnings.append("GFS +%s h : cycle ou validité incohérents"%key)
                 continue
             fields=record.get("fields",{})
@@ -214,7 +213,7 @@ def import_gfs(data):
             warnings.append("GFS : aucune échéance chiffrée validée")
             return
         data["models"]["gfs"]=accepted
-        data["gfs_source"]={"name":"NOAA NCEP GFS", "run_utc":snapshot["source_run_utc"],
+        data["gfs_source"]={"name":"NOAA NCEP GFS", "run_utc":max(x["run_utc"] for x in accepted.values()),
                             "generated_utc":snapshot["generated_utc"],
                             "source_path":"forecast-maps/europe/noaa-diagnostics.json",
                             "steps_available_h":sorted(int(k) for k in accepted),
