@@ -1,4 +1,4 @@
-name: KFS France - detection des nouveaux cycles (10 minutes)
+name: KFS France - surveillance des nouveaux runs (5 minutes)
 
 on:
   workflow_dispatch:
@@ -7,7 +7,7 @@ on:
       - 'scripts/check_france_cycles.py'
       - '.github/workflows/watch-france-cycles.yml'
   schedule:
-    - cron: '03,13,23,33,43,53 * * * *' # controle chaque 10 min, publication progressive
+    - cron: '02,07,12,17,22,27,32,37,42,47,52,57 * * * *' # contrôle toutes les 5 min, déclenchement à disponibilité
 
 permissions:
   contents: write
@@ -59,33 +59,59 @@ jobs:
             done
             exit 1
           fi
-      - name: Actualiser uniquement la France aux premieres échéances disponibles
-        if: ${{ steps.poll.outputs.ready_models != '' || steps.poll.outputs.early_models != '' }}
+      - name: Déclencher les derniers runs encore non publiés et réessayer les échecs
         env:
           GH_TOKEN: ${{ github.token }}
-          COMPLETE: ${{ steps.poll.outputs.ready_models }}
-          EARLY: ${{ steps.poll.outputs.early_models }}
+          GH_REPO: ${{ github.repository }}
         run: |
-          # Aucune commande ne touche aux workflows ni aux cartes Europe.
-          if [ -n "$EARLY" ]; then
-            IFS=',' read -ra EARLY_ARRAY <<< "$EARLY"
-            for model in "${EARLY_ARRAY[@]}"; do
-              case "$model" in
-                ifs|aifs-single|gfs|aigfs)
-                  echo "Premieres echeances disponibles : +12 h $model"
-                  gh workflow run france-h72.yml --ref main -f modele="$model" -f horizon=12
-                  ;;
-              esac
-            done
+          set -euo pipefail
+          state="forecast-maps/france/latest-cycles.json"
+          if [ ! -s "$state" ]; then
+            echo "Pas de fichier d'état NOAA/ECMWF : aucun run inventé."
+            exit 0
           fi
-          if [ -n "$COMPLETE" ]; then
-            IFS=',' read -ra FULL_ARRAY <<< "$COMPLETE"
-            for model in "${FULL_ARRAY[@]}"; do
-              case "$model" in
-                ifs|aifs-single|gfs|aigfs)
-                  echo "Nouveau cycle complet France : +72 h $model"
-                  gh workflow run france-h72.yml --ref main -f modele="$model" -f horizon=72
-                  ;;
-              esac
-            done
-          fi
+          published_cycle() {
+            local tag="$1"
+            local folder
+            folder="$(mktemp -d)"
+            local cycle=""
+            if gh release download "$tag" --repo "$GH_REPO" \
+                --pattern metadata.json --dir "$folder" --clobber >/dev/null 2>&1; then
+              cycle="$(jq -r '.run_utc // ""' "$folder/metadata.json" 2>/dev/null || true)"
+            fi
+            rm -rf "$folder"
+            printf '%s' "$cycle"
+          }
+          for model in ifs gfs aifs-single aigfs; do
+            latest="$(jq -r --arg model "$model" \
+              '.models[$model].latest_first_step_utc // ""' "$state")"
+            early="$(jq -r --arg model "$model" \
+              'if .models[$model].early_12h_available_for_latest_run then .models[$model].latest_12h_temperature_step_utc else "" end // ""' "$state")"
+            full="$(jq -r --arg model "$model" \
+              'if .models[$model].temperature_72h_available_for_latest_run then .models[$model].latest_72h_temperature_step_utc else "" end // ""' "$state")"
+            if [ -z "$latest" ]; then
+              echo "SKIP $model : source non confirmée."
+              continue
+            fi
+            if [ -n "$full" ] && [ "$full" = "$latest" ]; then
+              previous="$(published_cycle "france-$model")"
+              if [ -z "$previous" ] || [[ "$full" > "$previous" ]]; then
+                echo "Nouveau run COMPLET $model : $full ; publié: $previous"
+                gh workflow run france-h72.yml --repo "$GH_REPO" --ref main \
+                  -f modele="$model" -f horizon=72
+              else
+                echo "Complet $model déjà publié ($previous)"
+              fi
+            elif [ -n "$early" ] && [ "$early" = "$latest" ]; then
+              previous="$(published_cycle "france-$model-early")"
+              if [ -z "$previous" ] || [[ "$early" > "$previous" ]]; then
+                echo "Nouveau run PRÉCOCE $model : $early (+12 h), complet non disponible"
+                gh workflow run france-h72.yml --repo "$GH_REPO" --ref main \
+                  -f modele="$model" -f horizon=12
+              else
+                echo "Précoce $model déjà publié ($previous)"
+              fi
+            else
+              echo "Run $model $latest détecté, fichiers +12 h encore incomplets."
+            fi
+          done
