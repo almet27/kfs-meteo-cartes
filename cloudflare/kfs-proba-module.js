@@ -134,6 +134,22 @@ async function kfsProbaFeatures(){
  if(feats.length!==13)throw Error("Contours régionaux incomplets ("+feats.length+"/13)");
  return feats;
 }
+const KFS_PROBA_DEPTS={"11":["75","77","78","91","92","93","94","95"],"24":["18","28","36","37","41","45"],"27":["21","25","39","58","70","71","89","90"],"28":["14","27","50","61","76"],"32":["02","59","60","62","80"],"44":["08","10","51","52","54","55","57","67","68","88"],"52":["44","49","53","72","85"],"53":["22","29","35","56"],"75":["16","17","19","23","24","33","40","47","64","79","86","87"],"76":["09","11","12","30","31","32","34","46","48","65","66","81","82"],"84":["01","03","07","15","26","38","42","43","63","69","73","74"],"93":["04","05","06","13","83","84"],"94":["2A","2B"]};
+const KFS_PROBA_CITIES={"11":[["Paris",2.3522,48.8566],["Versailles",2.1301,48.8014],["Cergy",2.0767,49.036],["Meaux",2.888,48.96]],"24":[["Orleans",1.9093,47.9029],["Tours",0.6848,47.3941],["Chartres",1.489,48.4469],["Bourges",2.396,47.082],["Chateauroux",1.693,46.81]],"27":[["Dijon",5.0415,47.322],["Besancon",6.0256,47.2378],["Auxerre",3.568,47.799],["Belfort",6.86,47.638]],"28":[["Rouen",1.0993,49.4431],["Caen",-0.3707,49.1829],["Le Havre",0.1079,49.4944],["Cherbourg",-1.622,49.64],["Evreux",1.1516,49.024]],"32":[["Lille",3.0573,50.6292],["Amiens",2.2957,49.8942],["Arras",2.7782,50.291],["Beauvais",2.081,49.43],["Dunkerque",2.377,51.034]],"44":[["Strasbourg",7.752,48.5734],["Reims",4.0317,49.2583],["Metz",6.1757,49.1193],["Nancy",6.184,48.692],["Troyes",4.073,48.297]],"52":[["Nantes",-1.5536,47.2184],["Angers",-0.5632,47.4784],["Le Mans",0.199,48.006],["La Roche-sur-Yon",-1.426,46.67],["Laval",-0.77,48.07]],"53":[["Rennes",-1.6778,48.1173],["Brest",-4.486,48.39],["Quimper",-4.096,47.996],["Lorient",-3.37,47.75],["Saint-Brieuc",-2.763,48.514]],"75":[["Bordeaux",-0.5792,44.8378],["Limoges",1.2611,45.8336],["Poitiers",0.34,46.58],["La Rochelle",-1.152,46.16],["Bayonne",-1.475,43.49]],"76":[["Toulouse",1.4442,43.6047],["Montpellier",3.8767,43.6108],["Nimes",4.36,43.837],["Perpignan",2.897,42.698],["Tarbes",0.074,43.233]],"84":[["Lyon",4.8357,45.764],["Grenoble",5.724,45.1885],["Saint-Etienne",4.387,45.4397],["Clermont-Ferrand",3.088,45.777],["Annecy",6.13,45.899]],"93":[["Marseille",5.3698,43.2965],["Nice",7.262,43.71],["Toulon",5.93,43.125],["Avignon",4.8055,43.949],["Gap",6.078,44.559]],"94":[["Ajaccio",8.74,41.93],["Bastia",9.451,42.697],["Porto-Vecchio",9.28,41.59],["Corte",9.152,42.305]]};
+async function kfsProbaDepartments(zone){
+ if(zone==="FR")return [];
+ const wanted=new Set(KFS_PROBA_DEPTS[zone]||[]);
+ if(!wanted.size)throw Error("Code de région non reconnu pour les départements.");
+ const url="https://raw.githubusercontent.com/gregoiredavid/france-geojson/master/departements-version-simplifiee.geojson";
+ const r=await fetch(url,{cf:{cacheTtl:86400,cacheEverything:true},signal:AbortSignal.timeout(12000)});
+ if(!r.ok)throw Error("Contours départementaux non disponibles (HTTP "+r.status+").");
+ const data=await r.json();
+ const found=(data.features||[]).filter(f=>wanted.has(String(f.properties?.code)));
+ if(new Set(found.map(f=>f.properties.code)).size!==wanted.size)
+  throw Error("Départements incomplets ("+found.length+"/"+wanted.size+").");
+ return found;
+}
+
 function kfsProbaDay(day){
  const today=new Intl.DateTimeFormat("sv-SE",{timeZone:"Europe/Paris",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
  const [y,m,d]=today.split("-").map(Number);
@@ -202,26 +218,32 @@ function kfsProbaAmountPalette(amount,type){
  }
  return colors[colors.length-1];
 }
-function kfsProbaRender(features,samples,zone,type){
- const W=900,H=615,P={x:24,y:26,w:852,h:515};
+function kfsProbaRender(features,samples,zone,type,departments=[]){
+ const W=900,H=760,P={x:32,y:28,w:836,h:624};
  const rgba=new Uint8Array(W*H*4);
  for(let i=0;i<rgba.length;i+=4){rgba[i]=9;rgba[i+1]=20;rgba[i+2]=38;rgba[i+3]=255;}
  const bbox=zone==="FR"?[-5.8,41.15,10.0,51.65]:(()=>{
   const a=kfsProbaBBox(features),dx=a[2]-a[0],dy=a[3]-a[1];
   return [a[0]-.12*dx,a[1]-.12*dy,a[2]+.12*dx,a[3]+.12*dy];
  })();
- const lonToX=lon=>P.x+(lon-bbox[0])/(bbox[2]-bbox[0])*P.w;
- const latToY=lat=>P.y+(bbox[3]-lat)/(bbox[3]-bbox[1])*P.h;
- const GW=100,GH=64,field=new Float32Array(GW*GH);
- const scale=Math.cos((bbox[1]+bbox[3])*Math.PI/360);
+ // Projection locale avec conservation du ratio géographique.
+ const centerLon=(bbox[0]+bbox[2])/2,centerLat=(bbox[1]+bbox[3])/2;
+ const cosLat=Math.cos(centerLat*Math.PI/180);
+ const scale=Math.min(P.w/((bbox[2]-bbox[0])*cosLat),P.h/(bbox[3]-bbox[1]));
+ const centerX=P.x+P.w/2,centerY=P.y+P.h/2;
+ const lonToX=lon=>centerX+(lon-centerLon)*cosLat*scale;
+ const latToY=lat=>centerY-(lat-centerLat)*scale;
+ const xToLon=x=>centerLon+(x-centerX)/(cosLat*scale);
+ const yToLat=y=>centerLat-(y-centerY)/scale;
+ const GW=100,GH=82,field=new Float32Array(GW*GH);
  const maxDist=zone==="FR"?3.4:Math.max(.9,(bbox[2]-bbox[0])*.62);
  const valid=samples.filter(s=>Number.isFinite(s.value)&&Number.isFinite(s.amount));
  for(let gy=0;gy<GH;gy++)for(let gx=0;gx<GW;gx++){
-  const lon=bbox[0]+(bbox[2]-bbox[0])*gx/(GW-1);
-  const lat=bbox[3]-(bbox[3]-bbox[1])*gy/(GH-1);
+  const lon=xToLon(P.x+P.w*gx/(GW-1));
+  const lat=yToLat(P.y+P.h*gy/(GH-1));
   let num=0,den=0,nearest=Infinity;
   for(const p of valid){
-   const dx=(p.lon-lon)*scale,dy=p.lat-lat,d2=dx*dx+dy*dy;
+   const dx=(p.lon-lon)*cosLat,dy=p.lat-lat,d2=dx*dx+dy*dy;
    nearest=Math.min(nearest,Math.sqrt(d2));
    const w=1/(d2+.01);num+=p.amount*w;den+=w;
   }
@@ -322,7 +344,7 @@ function kfsProbaRender(features,samples,zone,type){
   if(marked.length>=maxMarks)break;
  }
  // Légende des quantités en unités physiques propres au phénomène.
- const legend=KFS_PROBA_SCALE[type],ly=552,left=104,right=794;
+ const legend=KFS_PROBA_SCALE[type],ly=679,left=104,right=794;
  const high=legend.ticks[legend.ticks.length-1];
  for(let x=left;x<=right;x++){
   const c=kfsProbaAmountPalette(high*(x-left)/(right-left),type);
@@ -332,9 +354,9 @@ function kfsProbaRender(features,samples,zone,type){
   const x=Math.round(left+(right-left)*v/high);
   for(let y=ly-5;y<ly+20;y++)put(x,y,246,250,254);
   const label=String(v);
-  txt(label,x-label.length*6,577,2);
+  txt(label,x-label.length*6,704,2);
  }
- txt(legend.unit,right-legend.unit.length*12+6,600,2,[197,228,249]);
+ txt(legend.unit,right-legend.unit.length*12+6,731,2,[197,228,249]);
  return {rgba,W,H};
 }
 function kfsProbaCrc(a){
@@ -395,7 +417,8 @@ async function kfsProbaComplete(interaction,phenom,zone,jour,seuil){
   for(const p of points){if(p.models.length)p.value=p.models.reduce((a,b)=>a+b,0)/p.models.length;if(p.amountModels?.length)p.amount=p.amountModels.reduce((a,b)=>a+b,0)/p.amountModels.length;if(p.wetModels?.length)p.wetValue=p.wetModels.reduce((a,b)=>a+b,0)/p.wetModels.length;}
   const counted=points.filter(p=>Number.isFinite(p.value));
   if(!counted.length)throw Error("Aucun membre d'ensemble exploitable pour ce paramètre. Aucune probabilité affichée.");
-  const frame=kfsProbaRender(features,points,zone,phenom),png=await kfsProbaPng(frame);
+  const departments=zone==="FR"?[]:await kfsProbaDepartments(zone);
+  const frame=kfsProbaRender(features,points,zone,phenom,departments),png=await kfsProbaPng(frame);
   const name=zone==="FR"?"France métropolitaine":KFS_PROBA_REGIONS.find(r=>r[0]===zone)?.[1]||zone;
   const label=phenom==="neige"?"épaisseur de neige présente au sol ≥ "+seuil+" cm":
    phenom==="pluie"?"cumul de pluie ≥ "+seuil+" mm sur le jour":
@@ -417,6 +440,7 @@ async function kfsProbaComplete(interaction,phenom,zone,jour,seuil){
    "📊 **Modèles exploités :** "+available.join(", ")+" ("+available.length+" familles).\n"+
    "**Carte :** couleurs = quantité moyenne (en "+unit+") ; chiffre blanc = probabilité d’atteindre le seuil ; chiffre bleu = quantité moyenne.\n"+
    "**Échelle des quantités :** "+KFS_PROBA_SCALE[phenom].ticks.join(" · ")+" "+unit+".\n"+
+   (zone!=="FR"?"**Repères :** limites départementales et grandes villes.\n":"")+
    (minAmount!==null?"**Quantité moyenne :** "+(Math.round(minAmount*10)/10)+" à "+(Math.round(maxAmount*10)/10)+" "+unit+" sur les points étudiés.\n":"")+wetRange+caution+
    (phenom==="neige"?"🏔️ Les points situés au-dessus de 800 m sont écartés ; neige au sol modélisée, pas chute fraîche.\n":"")+
    "ℹ️ Estimation **non calibrée**, issue des proportions de membres (poids égal par modèle), et non une probabilité officielle de vigilance. "+
