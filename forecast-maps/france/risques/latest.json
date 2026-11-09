@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated_utc": "2026-11-09T16:52:55.771636+00:00",
+  "generated_utc": "2026-11-09T17:03:16.239929+00:00",
   "model_runs": {
     "arome": {
       "run_utc": "2026-11-09T12:00:00+00:00",
@@ -8,8 +8,8 @@
       "model_code": "meteofrance_arome_france0025"
     },
     "icon_eu": {
-      "run_utc": "2026-11-09T09:00:00+00:00",
-      "available_utc": "2026-11-09T11:56:10+00:00",
+      "run_utc": "2026-11-09T12:00:00+00:00",
+      "available_utc": "2026-11-09T15:59:25+00:00",
       "model_code": "dwd_icon_eu"
     }
   },
@@ -44,11 +44,11 @@
         "orage_h6": {
           "filename": "risk-arome-orage-h006.png",
           "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/risques/risk-arome-orage-h006.png",
-          "size_bytes": 202741,
+          "size_bytes": 202842,
           "classes": {
             "indisponible": 0,
-            "sans_signal": 492,
-            "faible": 51,
+            "sans_signal": 480,
+            "faible": 63,
             "possible": 0,
             "marque": 0
           },
@@ -58,7 +58,7 @@
         "neige_sol_h6": {
           "filename": "risk-arome-neige_sol-h006.png",
           "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/risques/risk-arome-neige_sol-h006.png",
-          "size_bytes": 198167,
+          "size_bytes": 198082,
           "classes": {
             "indisponible": 0,
             "sans_signal": 543,
@@ -72,11 +72,11 @@
         "orage_h12": {
           "filename": "risk-arome-orage-h012.png",
           "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/risques/risk-arome-orage-h012.png",
-          "size_bytes": 204569,
+          "size_bytes": 204189,
           "classes": {
             "indisponible": 0,
-            "sans_signal": 456,
-            "faible": 87,
+            "sans_signal": 462,
+            "faible": 81,
             "possible": 0,
             "marque": 0
           },
@@ -86,7 +86,7 @@
         "neige_sol_h12": {
           "filename": "risk-arome-neige_sol-h012.png",
           "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/risques/risk-arome-neige_sol-h012.png",
-          "size_bytes": 199519,
+          "size_bytes": 199343,
           "classes": {
             "indisponible": 0,
             "sans_signal": 543,
@@ -100,11 +100,11 @@
         "orage_h24": {
           "filename": "risk-arome-orage-h024.png",
           "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/risques/risk-arome-orage-h024.png",
-          "size_bytes": 207514,
+          "size_bytes": 207408,
           "classes": {
             "indisponible": 0,
-            "sans_signal": 359,
-            "faible": 181,
+            "sans_signal": 336,
+            "faible": 204,
             "possible": 3,
             "marque": 0
           },
@@ -114,7 +114,7 @@
         "neige_sol_h24": {
           "filename": "risk-arome-neige_sol-h024.png",
           "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/risques/risk-arome-neige_sol-h024.png",
-          "size_bytes": 200804,
+          "size_bytes": 200596,
           "classes": {
             "indisponible": 0,
             "sans_signal": 543,
@@ -128,12 +128,12 @@
         "orage_h36": {
           "filename": "risk-arome-orage-h036.png",
           "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/risques/risk-arome-orage-h036.png",
-          "size_bytes": 208925,
+          "size_bytes": 209126,
           "classes": {
             "indisponible": 0,
-            "sans_signal": 190,
-            "faible": 350,
-            "possible": 3,
+            "sans_signal": 206,
+            "faible": 333,
+            "possible": 4,
             "marque": 0
           },
           "start_h": 24,
@@ -142,7 +142,7 @@
         "neige_sol_h36": {
           "filename": "risk-arome-neige_sol-h036.png",
           "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/risques/risk-arome-neige_sol-h036.png",
-          "size_bytes": 200892,
+          "size_bytes": 200819,
           "classes": {
             "indisponible": 0,
             "sans_signal": 543,
@@ -156,12 +156,12 @@
         "orage_h48": {
           "filename": "risk-arome-orage-h048.png",
           "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/risques/risk-arome-orage-h048.png",
-          "size_bytes": 210205,
+          "size_bytes": 209879,
           "classes": {
             "indisponible": 0,
-            "sans_signal": 299,
-            "faible": 220,
-            "possible": 24,
+            "sans_signal": 316,
+            "faible": 204,
+            "possible": 23,
             "marque": 0
           },
           "start_h": 36,
@@ -170,7 +170,7 @@
         "neige_sol_h48": {
           "filename": "risk-arome-neige_sol-h048.png",
           "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/risques/risk-arome-neige_sol-h048.png",
-          "size_bytes": 201070,
+          "size_bytes": 201000,
           "classes": {
             "indisponible": 0,
             "sans_signal": 543,
@@ -206,7 +206,7 @@
         "orage_h6": {
           "filename": "risk-icon_eu-orage-h006.png",
           "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/risques/risk-icon_eu-orage-h006.png",
-          "size_bytes": 200826,
+          "size_bytes": 200629,
           "classes": {
             "indisponible": 0,
             "sans_signal": 543,
@@ -220,7 +220,7 @@
         "neige_sol_h6": {
           "filename": "risk-icon_eu-neige_sol-h006.png",
           "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/risques/risk-icon_eu-neige_sol-h006.png",
-          "size_bytes": 197932,
+          "size_bytes": 197745,
           "classes": {
             "indisponible": 0,
             "sans_signal": 542,
@@ -234,11 +234,11 @@
         "orage_h12": {
           "filename": "risk-icon_eu-orage-h012.png",
           "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/risques/risk-icon_eu-orage-h012.png",
-          "size_bytes": 201716,
+          "size_bytes": 201241,
           "classes": {
             "indisponible": 0,
-            "sans_signal": 541,
-            "faible": 2,
+            "sans_signal": 543,
+            "faible": 0,
             "possible": 0,
             "marque": 0
           },
@@ -248,12 +248,12 @@
         "neige_sol_h12": {
           "filename": "risk-icon_eu-neige_sol-h012.png",
           "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/risques/risk-icon_eu-neige_sol-h012.png",
-          "size_bytes": 198589,
+          "size_bytes": 198116,
           "classes": {
             "indisponible": 0,
-            "sans_signal": 542,
+            "sans_signal": 543,
             "faible": 0,
-            "possible": 1,
+            "possible": 0,
             "marque": 0
           },
           "start_h": 6,
@@ -262,11 +262,11 @@
         "orage_h24": {
           "filename": "risk-icon_eu-orage-h024.png",
           "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/risques/risk-icon_eu-orage-h024.png",
-          "size_bytes": 205003,
+          "size_bytes": 204699,
           "classes": {
             "indisponible": 0,
-            "sans_signal": 501,
-            "faible": 42,
+            "sans_signal": 494,
+            "faible": 49,
             "possible": 0,
             "marque": 0
           },
@@ -276,7 +276,7 @@
         "neige_sol_h24": {
           "filename": "risk-icon_eu-neige_sol-h024.png",
           "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/risques/risk-icon_eu-neige_sol-h024.png",
-          "size_bytes": 198854,
+          "size_bytes": 198137,
           "classes": {
             "indisponible": 0,
             "sans_signal": 543,
@@ -290,11 +290,11 @@
         "orage_h36": {
           "filename": "risk-icon_eu-orage-h036.png",
           "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/risques/risk-icon_eu-orage-h036.png",
-          "size_bytes": 204063,
+          "size_bytes": 202938,
           "classes": {
             "indisponible": 0,
-            "sans_signal": 510,
-            "faible": 33,
+            "sans_signal": 525,
+            "faible": 18,
             "possible": 0,
             "marque": 0
           },
@@ -304,7 +304,7 @@
         "neige_sol_h36": {
           "filename": "risk-icon_eu-neige_sol-h036.png",
           "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/risques/risk-icon_eu-neige_sol-h036.png",
-          "size_bytes": 198257,
+          "size_bytes": 198238,
           "classes": {
             "indisponible": 0,
             "sans_signal": 543,
@@ -318,12 +318,12 @@
         "orage_h48": {
           "filename": "risk-icon_eu-orage-h048.png",
           "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/risques/risk-icon_eu-orage-h048.png",
-          "size_bytes": 205937,
+          "size_bytes": 206312,
           "classes": {
             "indisponible": 0,
-            "sans_signal": 470,
-            "faible": 71,
-            "possible": 2,
+            "sans_signal": 463,
+            "faible": 77,
+            "possible": 3,
             "marque": 0
           },
           "start_h": 36,
@@ -332,7 +332,7 @@
         "neige_sol_h48": {
           "filename": "risk-icon_eu-neige_sol-h048.png",
           "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/risques/risk-icon_eu-neige_sol-h048.png",
-          "size_bytes": 199059,
+          "size_bytes": 199072,
           "classes": {
             "indisponible": 0,
             "sans_signal": 543,
