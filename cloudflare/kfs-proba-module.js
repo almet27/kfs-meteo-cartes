@@ -23,8 +23,8 @@ const KFS_PROBA_REGIONS = [
 ];
 const KFS_PROBA_RULES = {
  neige:{unit:"cm",defaults:1,allowed:[1,3,5,10],variable:"snow_depth",title:"Neige présente au sol"},
- pluie:{unit:"mm / 24 h",defaults:0.1,allowed:[0.1,1,5,10,20,40],variable:"rain",title:"Cumul de pluie"},
- vent:{unit:"km/h",defaults:80,allowed:[60,80,100,120],variable:"wind_gusts_10m",title:"Rafales maximales"},
+ pluie:{unit:"mm / 24 h",defaults:1,allowed:[0.1,1,5,10,20,40],variable:"rain",title:"Cumul de pluie"},
+ vent:{unit:"km/h",defaults:90,allowed:[54,60,80,90,100,120],variable:"wind_gusts_10m",title:"Rafales maximales"},
  orage:{unit:"niveau",defaults:3,allowed:[1,2,3,4,5],variable:"cape",title:"Potentiel orageux"}
 };
 let KFS_PROBA_LAST_REGISTER=0;
@@ -37,7 +37,7 @@ async function kfsProbaRegister(env){
    choices:[{name:"France métropolitaine",value:"FR"},...KFS_PROBA_REGIONS.map(([code,name])=>({name,value:code}))]},
   {name:"jour",type:4,description:"De J+0 à J+3",required:false,
    choices:[0,1,2,3].map(i=>({name:"J+"+i,value:i}))},
-  {name:"seuil",type:10,description:"Seuil pluie/neige/rafales (non utilisé pour orage)",required:false,min_value:0.1,max_value:120},
+  {name:"seuil",type:10,description:"Pluie 1/5/10/20 mm · Rafales 54/90 km/h (ECMWF) · autres seuils si disponibles",required:false,min_value:0.1,max_value:120},
   {name:"niveau",type:3,description:"Orages : niveau minimum à évaluer (défaut : modéré)",required:false,
    choices:[{name:"Faible",value:"faible"},{name:"Moyen",value:"moyen"},{name:"Modéré",value:"modere"},{name:"Fort",value:"fort"},{name:"Extrême",value:"extreme"}]}
  ]};
@@ -374,7 +374,9 @@ const KFS_PROBA_SCALE={
  vent:{unit:"km/h",ticks:[0,30,50,70,90,110,130],
   colors:[[24,53,90],[45,109,164],[62,161,169],[197,193,76],[243,154,65],[234,92,65],[201,50,111]]},
  orage:{unit:"niveau",ticks:[0,1,2,3,4,5],
-  colors:[[19,35,58],[35,96,157],[62,170,180],[229,198,70],[242,111,53],[190,42,87]]}
+  colors:[[19,35,58],[35,96,157],[62,170,180],[229,198,70],[242,111,53],[190,42,87]]},
+ probabilite:{unit:"%",ticks:[0,10,25,40,60,80,100],
+  colors:[[23,54,94],[36,116,173],[56,180,201],[206,208,88],[248,168,58],[231,78,67],[174,32,90]]}
 };
 function kfsProbaClassIndex(amount,type){
  const ticks=KFS_PROBA_SCALE[type].ticks;
@@ -552,9 +554,9 @@ function kfsProbaRender(features,samples,zone,type,departments=[]){
   if(cityGuardRadius>0&&cityAnchors.some(q=>
      Math.abs(q.x-x)<cityGuardRadius&&Math.abs(q.y-y)<cityGuardRadius*.7))continue;
   const score=Math.round(p.value),unit=KFS_PROBA_SCALE[type].unit;
-  const qty=type==="orage"?KFS_STORM_NAMES[kfsProbaClassIndex(p.amount,"orage")]:
+  const qty=type==="probabilite"?"":type==="orage"?KFS_STORM_NAMES[kfsProbaClassIndex(p.amount,"orage")]:
    (type==="vent"?Math.round(p.amount):Math.round(p.amount*10)/10)+unit;
-  const proba=score+"%",lw=Math.max(proba.length,qty.length)*12+14,h=39;
+  const proba=score+"%",lw=Math.max(proba.length,qty.length)*12+14,h=type==="probabilite"?23:39;
   const candidates=[[x-lw/2,y-22],[x-lw/2,y+10],[x-lw/2,y-52],
     [x+12,y-22],[x-lw-12,y-22]];
   let chosen=null;
@@ -570,7 +572,7 @@ function kfsProbaRender(features,samples,zone,type,departments=[]){
   rect(chosen.x-1,chosen.y-1,lw+2,h,[228,241,252]);
   rect(chosen.x,chosen.y,lw,h-2,[10,29,50]);
   txt(proba,chosen.x+7,chosen.y+3,2,score>=50?[255,225,133]:[255,255,255]);
-  txt(qty,chosen.x+7,chosen.y+21,2,[134,220,255]);
+  if(type!=="probabilite")txt(qty,chosen.x+7,chosen.y+21,2,[134,220,255]);
   if(marked.length>=maxMarks)break;
  }
  // Grandes villes : marqueurs géoréférencés, noms non superposés aux chiffres.
@@ -602,7 +604,7 @@ function kfsProbaRender(features,samples,zone,type,departments=[]){
  const names=type==="orage"?KFS_STORM_NAMES:
   legend.ticks.map((start,i)=>{
    const end=legend.ticks[i+1];
-   return end===undefined?String(start)+"+":String(start)+"-"+String(end);
+   return end===undefined?(type==="probabilite"?"100":String(start)+"+"):String(start)+"-"+String(end);
   });
  const width=(right-left)/names.length;
  for(let i=0;i<names.length;i++){
@@ -642,6 +644,38 @@ async function kfsProbaPng(frame){
  let pos=0;for(const chunk of chunks){res.set(chunk,pos);pos+=chunk.length;}
  return res;
 }
+// ECMWF Open Data : probabilities already calculated by the real IFS ENS.
+// No quota Open-Meteo, no on-demand large GRIB downloads. GitHub Action
+// precomputes them from type=ep products and publishes a compact JSON.
+const KFS_PROBA_ECMWF_FIELDS={
+ pluie:{"1":"tpg1","5":"tpg5","10":"tpg10","20":"tpg20"},
+ vent:{"54":"10fgg15","90":"10fgg25"}
+};
+async function kfsProbaEcmwfRead(type,threshold,zone,day,points){
+ const field=KFS_PROBA_ECMWF_FIELDS[type]?.[String(threshold)];
+ if(!field)return null;
+ const url="https://almet27.github.io/kfs-meteo-cartes/proba/ecmwf-probabilities.json";
+ let resp;
+ try{
+  resp=await fetch(url,{signal:AbortSignal.timeout(6500),
+   headers:{accept:"application/json"},cf:{cacheTtl:900,cacheEverything:true}});
+  if(!resp.ok)throw Error("ECMWF publié : HTTP "+resp.status);
+  const j=await resp.json();
+  if(j.schema!==1||j.provider!=="ECMWF IFS ENS Open Data")throw Error("Fichier ECMWF mal formé.");
+  const age=Date.now()-Date.parse(j.run_utc);
+  if(!Number.isFinite(age)||age<0||age>48*3600000)throw Error("Run ECMWF trop ancien (>48h).");
+  const d=j.days?.[day],vals=d?.fields?.[field]?.[zone];
+  if(!Array.isArray(vals)||vals.length!==points.length)
+   throw Error("Carte ECMWF absente pour cette échéance ou cette région.");
+  if(vals.some(v=>!Number.isFinite(v)||v<0||v>100))
+   throw Error("Données de probabilité ECMWF invalides.");
+  if(j.zone_point_counts?.[zone]!==points.length)
+   throw Error("Échantillonnage des points ECMWF incompatible.");
+  return {source:"ECMWF",field,values:vals,run:j.run_utc,period_start:d.valid_from_utc,
+   period_end:d.valid_to_utc,age_hours:Math.round(age/3600000)};
+ }catch(e){console.error("KFS_PROBA_ECMWF_OPEN",String(e));return null;}
+}
+
 async function kfsProbaComplete(interaction,phenom,zone,jour,seuil){
  try{
   const rules=KFS_PROBA_RULES[phenom];
@@ -656,6 +690,37 @@ async function kfsProbaComplete(interaction,phenom,zone,jour,seuil){
   const points=kfsProbaSamples(features,zone!=="FR");
   if(points.length<2)throw Error("Échantillonnage spatial insuffisant.");
   const day=kfsProbaDay(jour),available=[],failures=[];
+  const ecmwf=await kfsProbaEcmwfRead(phenom,seuil,zone,day,points);
+  if(ecmwf){
+   for(let i=0;i<points.length;i++){
+    points[i].value=ecmwf.values[i];
+    points[i].amount=ecmwf.values[i]; // palette = probabilités %, jamais mm/km/h
+   }
+   const departments=await departmentsPromise;
+   const frame=kfsProbaRender(features,points,zone,"probabilite",departments);
+   const png=await kfsProbaPng(frame);
+   const name=zone==="FR"?"France métropolitaine":KFS_PROBA_REGIONS.find(r=>r[0]===zone)?.[1]||zone;
+   const min=Math.round(Math.min(...ecmwf.values)),max=Math.round(Math.max(...ecmwf.values));
+   const what=phenom==="pluie"?"précipitations totales (pluie ou neige) ≥ "+seuil+" mm":
+     "rafales de vent ≥ "+seuil+" km/h";
+   const content="**KFS MÉTÉO · /proba · "+name+" · J+"+jour+" ("+day+")**\n"+
+    "**Événement ECMWF ENS :** "+what+".\n"+
+    "🗺️ **Probabilité :** "+min+" à "+max+" % aux points étudiés. La couleur et les étiquettes indiquent les probabilités.\n"+
+    "📊 **Source indépendante d’Open-Meteo :** ECMWF IFS ENS Open Data (probabilités natives).\n"+
+    "🕓 **Validité des prévisions :** "+ecmwf.period_start+" → "+ecmwf.period_end+
+    " (période de 24 h UTC, pas exactement le jour civil français).\n"+
+    "**Modèle :** IFS ENS run "+ecmwf.run+" · dernières données consultées à la génération.\n"+
+    (zone!=="FR"?"**Repères :** départements et grandes villes.\n":"")+
+    "ℹ️ Probabilité d'ensemble ECMWF à la maille la plus proche (0,25°), non une probabilité officielle de vigilance.\n"+
+    "_Source : ECMWF Open Data, CC BY 4.0, www.ecmwf.int. Redistribution KFS MÉTÉO._";
+   try{await kfsProbaEdit(interaction,{content,allowed_mentions:{parse:[]}},png);}
+   catch(e){
+    console.error("KFS_PROBA_ECMWF_IMAGE",String(e));
+    await kfsProbaEdit(interaction,{content:content+"\n⚠️ Carte PNG indisponible : "+String(e.message||e).slice(0,180),
+     allowed_mentions:{parse:[]}});
+   }
+   return;
+  }
   // Quatre familles variées maximum par carte, deux appels simultanés
   // (Open-Meteo limite la concurrence et facture les coordonnées).
   const selected=[KFS_PROBA_MODELS[0],KFS_PROBA_MODELS[2],
