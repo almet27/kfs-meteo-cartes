@@ -80,7 +80,7 @@ function kfsEnsembleSummarize(values){
 function kfsEnsembleCollect(hourly,variable){
   const re=new RegExp("^"+variable+"_member[0-9]+$");
   return Object.entries(hourly).filter(([key,value])=>
-    re.test(key)&&Array.isArray(value)&&value.length===hourly.time.length)
+    (key===variable||re.test(key))&&Array.isArray(value)&&value.length===hourly.time.length)
     .map(([key,value])=>({key,value}));
 }
 function kfsEnsembleSeries(hourly,params){
