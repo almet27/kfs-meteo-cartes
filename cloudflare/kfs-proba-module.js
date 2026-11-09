@@ -205,18 +205,24 @@ async function kfsProbaModel(model,samples,day,type,threshold){
 }
 function kfsProbaClamp(x,lo,hi){return Math.max(lo,Math.min(hi,x));}
 // Seule la quantité moyenne est codée par la couleur, pas le %.
+// ZONAGES : quantité moyenne en mm / cm / km/h, indépendamment des % de risque.
 const KFS_PROBA_SCALE={
- pluie:{unit:"mm",ticks:[0,1,5,10,20,40],colors:[[17,35,62],[33,96,154],[48,164,218],[40,191,160],[237,184,63],[223,72,76]]},
- neige:{unit:"cm",ticks:[0,0.5,1,3,5,10],colors:[[17,35,62],[32,91,150],[71,169,222],[105,151,235],[148,105,207],[221,84,158]]},
- vent:{unit:"km/h",ticks:[0,30,60,80,100,120],colors:[[17,35,62],[38,106,159],[61,188,166],[236,188,66],[242,123,63],[224,56,80]]}
+ pluie:{unit:"mm",ticks:[0,1,3,5,10,20,40],
+  colors:[[20,49,83],[35,91,151],[50,150,200],[48,189,164],[208,198,76],[241,143,58],[222,66,83]]},
+ neige:{unit:"cm",ticks:[0,0.5,1,3,5,10,20],
+  colors:[[26,52,91],[45,94,160],[76,148,209],[105,172,230],[135,138,221],[168,98,210],[224,67,157]]},
+ vent:{unit:"km/h",ticks:[0,30,50,70,90,110,130],
+  colors:[[24,53,90],[45,109,164],[62,161,169],[197,193,76],[243,154,65],[234,92,65],[201,50,111]]}
 };
+function kfsProbaClassIndex(amount,type){
+ const ticks=KFS_PROBA_SCALE[type].ticks;
+ if(!Number.isFinite(amount))return -1;
+ for(let i=1;i<ticks.length;i++)if(amount<ticks[i])return i-1;
+ return ticks.length-1;
+}
 function kfsProbaAmountPalette(amount,type){
- const {ticks,colors}=KFS_PROBA_SCALE[type],v=kfsProbaClamp(amount,ticks[0],ticks[ticks.length-1]);
- for(let k=0;k<ticks.length-1;k++)if(v<=ticks[k+1]){
-  const t=(v-ticks[k])/(ticks[k+1]-ticks[k]);
-  return colors[k].map((ch,j)=>Math.round(ch+(colors[k+1][j]-ch)*t));
- }
- return colors[colors.length-1];
+ const index=kfsProbaClassIndex(amount,type);
+ return index<0?[63,77,89]:KFS_PROBA_SCALE[type].colors[index];
 }
 function kfsProbaRender(features,samples,zone,type,departments=[]){
  const W=900,H=760,P={x:32,y:28,w:836,h:624};
@@ -357,25 +363,47 @@ function kfsProbaRender(features,samples,zone,type,departments=[]){
    px+=6*scale;
   }
  }
- // Étiquettes : probabilité du seuil en blanc, quantité moyenne en bleu.
- const sorted=[...valid].sort((a,b)=>b.value-a.value),marked=[];
- const maxMarks=zone==="FR"?12:8;
- for(const p of sorted){
+ // Distribution spatiale homogène des valeurs : premier point au nord,
+ // ensuite les points les plus éloignés de ceux déjà retenus.
+ // Les points échantillonnés et les appels API restent inchangés (pas de 429 accru).
+ const pending=[...valid].sort((a,b)=>b.lat-a.lat||b.value-a.value);
+ const ordered=[],marked=[],placedBoxes=[];
+ if(pending.length)ordered.push(pending.shift());
+ while(pending.length){
+  let best=0,bestScore=-Infinity;
+  for(let i=0;i<pending.length;i++){
+   const p=pending[i],x=lonToX(p.lon),y=latToY(p.lat);
+   const nearest=Math.min(...ordered.map(q=>Math.hypot(lonToX(q.lon)-x,latToY(q.lat)-y)));
+   const score=nearest+p.value*.025;
+   if(score>bestScore){bestScore=score;best=i;}
+  }
+  ordered.push(pending.splice(best,1)[0]);
+ }
+ const maxMarks=zone==="FR"?12:10;
+ for(const p of ordered){
   const x=lonToX(p.lon),y=latToY(p.lat);
-  if(x<P.x+15||x>P.x+P.w-60||y<P.y+22||y>P.y+P.h-24)continue;
-  if(marked.some(q=>Math.abs(q.x-x)<112&&Math.abs(q.y-y)<62))continue;
-  marked.push({x,y});
+  if(!Number.isFinite(x)||!Number.isFinite(y))continue;
   const score=Math.round(p.value),unit=KFS_PROBA_SCALE[type].unit;
   const qty=(type==="vent"?Math.round(p.amount):Math.round(p.amount*10)/10)+unit;
-  const proba=score+"%",lw=Math.max(proba.length,qty.length)*12+14;
-  const bx=Math.round(x-lw/2),by=Math.round(y-22);
-  rect(bx-1,by-1,lw+2,39,[228,241,252]);
-  rect(bx,by,lw,37,[10,29,50]);
-  txt(proba,bx+7,by+3,2,score>=50?[255,225,133]:[255,255,255]);
-  txt(qty,bx+7,by+21,2,[134,220,255]);
+  const proba=score+"%",lw=Math.max(proba.length,qty.length)*12+14,h=39;
+  const candidates=[[x-lw/2,y-22],[x-lw/2,y+10],[x-lw/2,y-52],
+    [x+12,y-22],[x-lw-12,y-22]];
+  let chosen=null;
+  for(const [xx,yy] of candidates){
+   const bx=Math.round(kfsProbaClamp(xx,P.x+2,P.x+P.w-lw-3));
+   const by=Math.round(kfsProbaClamp(yy,P.y+2,P.y+P.h-h-3));
+   if(placedBoxes.some(q=>!(bx+lw+8<q.x||bx>q.x+q.w+8||by+h+8<q.y||by>q.y+q.h+8)))continue;
+   chosen={x:bx,y:by,w:lw,h};break;
+  }
+  if(!chosen)continue;
+  placedBoxes.push(chosen);
+  marked.push({x,y});
+  rect(chosen.x-1,chosen.y-1,lw+2,h,[228,241,252]);
+  rect(chosen.x,chosen.y,lw,h-2,[10,29,50]);
+  txt(proba,chosen.x+7,chosen.y+3,2,score>=50?[255,225,133]:[255,255,255]);
+  txt(qty,chosen.x+7,chosen.y+21,2,[134,220,255]);
   if(marked.length>=maxMarks)break;
  }
-
  // Grandes villes : marqueurs géoréférencés, noms non superposés aux chiffres.
  if(zone!=="FR"){
   const boxes=[];
@@ -400,20 +428,22 @@ function kfsProbaRender(features,samples,zone,type,departments=[]){
    }
   }
  }
- // Légende des quantités en unités physiques propres au phénomène.
- const legend=KFS_PROBA_SCALE[type],ly=679,left=104,right=794;
- const high=legend.ticks[legend.ticks.length-1];
- for(let x=left;x<=right;x++){
-  const c=kfsProbaAmountPalette(high*(x-left)/(right-left),type);
-  for(let y=ly;y<ly+15;y++)put(x,y,...c);
+ // Légende en classes de quantité, réparties en bandes de même largeur.
+ const legend=KFS_PROBA_SCALE[type],ly=679,left=64,right=834;
+ const names=legend.ticks.map((start,i)=>{
+  const end=legend.ticks[i+1];
+  return end===undefined?String(start)+"+":String(start)+"-"+String(end);
+ });
+ const width=(right-left)/names.length;
+ for(let i=0;i<names.length;i++){
+  const l=Math.round(left+i*width),r=Math.round(left+(i+1)*width);
+  const color=legend.colors[i];
+  for(let x=l;x<r;x++)for(let y=ly;y<ly+18;y++)put(x,y,...color);
+  for(let y=ly-3;y<ly+22;y++)put(l,y,246,250,254);
+  txt(names[i],Math.round((l+r-names[i].length*12)/2),710,2,[241,246,250]);
  }
- for(const v of legend.ticks){
-  const x=Math.round(left+(right-left)*v/high);
-  for(let y=ly-5;y<ly+20;y++)put(x,y,246,250,254);
-  const label=String(v);
-  txt(label,x-label.length*6,704,2);
- }
- txt(legend.unit,right-legend.unit.length*12+6,731,2,[197,228,249]);
+ for(let y=ly-3;y<ly+22;y++)put(right,y,246,250,254);
+ txt(legend.unit,right-legend.unit.length*12,738,2,[197,228,249]);
  return {rgba,W,H};
 }
 function kfsProbaCrc(a){
@@ -496,7 +526,7 @@ async function kfsProbaComplete(interaction,phenom,zone,jour,seuil){
    "🗺️ **Probabilité estimée :** "+min+" à "+max+" % sur les points échantillonnés.\n"+
    "📊 **Modèles exploités :** "+available.join(", ")+" ("+available.length+" familles).\n"+
    "**Carte :** couleurs = quantité moyenne (en "+unit+") ; chiffre blanc = probabilité d’atteindre le seuil ; chiffre bleu = quantité moyenne.\n"+
-   "**Échelle des quantités :** "+KFS_PROBA_SCALE[phenom].ticks.join(" · ")+" "+unit+".\n"+
+   "**Échelle des quantités (classes) :** "+KFS_PROBA_SCALE[phenom].ticks.map((v,i,arr)=>i===arr.length-1?v+" et +":v+"-"+arr[i+1]).join(" · ")+" "+unit+".\n"+
    (zone!=="FR"?"**Repères :** limites départementales et grandes villes.\n":"")+
    (minAmount!==null?"**Quantité moyenne :** "+(Math.round(minAmount*10)/10)+" à "+(Math.round(maxAmount*10)/10)+" "+unit+" sur les points étudiés.\n":"")+wetRange+caution+
    (phenom==="neige"?"🏔️ Les points situés au-dessus de 800 m sont écartés ; neige au sol modélisée, pas chute fraîche.\n":"")+
