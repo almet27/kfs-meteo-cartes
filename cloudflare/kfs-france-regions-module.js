@@ -178,7 +178,7 @@ function kfsFranceRegionalRender(features,depts,samples,zone,metric,subtitle){
   for(const [tx,ty] of [[px+9,py-18],[px-w-10,py-18],[px-w/2,py-37],[px-w/2,py+11]]){
    const a={x:Math.round(tx),y:Math.round(ty),w,h};
    if(a.x<P.x||a.y<P.y||a.x+w>P.x+P.w||a.y+h>P.y+P.h)continue;
-   if(occupied.some(t=>!(a.x>w+t.x+5||a.x+a.w+5<t.x||a.y>t.y+t.h+6||a.y+a.h+6<t.y)))continue;
+   if(occupied.some(t=>!(a.x>t.x+t.w+5||a.x+a.w+5<t.x||a.y>t.y+t.h+6||a.y+a.h+6<t.y)))continue;
    rect(a.x,a.y,a.w,a.h,[9,30,50]);txt(title,a.x+6,a.y+5,2,[244,249,255]);
    occupied.push(a);cityPlaces.push({x:px,y:py});break;
   }
