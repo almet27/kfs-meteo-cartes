@@ -219,9 +219,13 @@ async function kfsStratoComplete(interaction, level, kind, hours) {
         " UTC**\n" +
         "🔎 **" + String(diagnosis.label).slice(0,100) + "**\n" +
         "🌬️ Vent zonal 10 hPa / 60°N : inversion prévue **" + firstInverse + "**\n" +
-        "📉 Décélération maximale sur 5 j : **" + fmt(decel) + " m/s**\n" +
-        "🌡️ Hausse maximale de T polaire (60–90°N) sur 5 j : **" +
-        fmt(warming) + " °C**\n" +
+        (Number(decel) < 0 ? "📉 Décélération maximale" : "📉 Variation U la plus faible") +
+        " sur 5 j : **" + fmt(decel) + " m/s**" +
+        (Number(decel) >= 0 ? " (pas de décélération sur cette fenêtre)" : "") + "\n" +
+        (Number(warming) > 0 ? "🌡️ Hausse maximale de T polaire" :
+          "🌡️ Variation thermique maximale") +
+        " (60–90°N) sur 5 j : **" + fmt(warming) + " °C**" +
+        (Number(warming) <= 0 ? " (pas de réchauffement polaire rapide)" : "") + "\n" +
         "〰️ Activité ondulatoire 100 hPa : flux v′T′ positif sur " +
         positiveFluxDays + "/15 échéances calculées (sans seuil climatologique).\n" +
         "⚠️ **Ce sont des signaux issus d'un seul modèle, pas une probabilité SSW.** " +
