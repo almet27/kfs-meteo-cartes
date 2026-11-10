@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - scripts/build_ecmwf_snow_storm.py
+      - tests/test_kfs_convective.py
       - .github/workflows/kfs-proba-ecmwf-snow-storm.yml
   schedule:
     - cron: '30 12,16 * * *'
@@ -33,6 +34,8 @@ jobs:
           python -m pip install -r scripts/requirements-ecmwf-proba.txt
       - name: Check Python syntax
         run: python -m py_compile scripts/build_ecmwf_snow_storm.py
+      - name: Test convective-diagnostic thresholds
+        run: python -m unittest discover -s tests -p 'test_kfs_convective.py' -v
       - name: Download selected ENS members and calculate indicative risk
         env:
           ECMWF_SOURCE: ecmwf
