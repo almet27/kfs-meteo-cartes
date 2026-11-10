@@ -441,7 +441,7 @@ function kfsProbaRender(features,samples,zone,type,departments=[]){
    nearest=Math.min(nearest,Math.sqrt(d2));
    const w=1/(d2+.01);num+=p.amount*w;den+=w;
   }
-  field[gy*GW+gx]=(den&&nearest<=maxDist)?num/den:-1;
+  field[gy*GW+gx]=(den&&nearest<=maxDist)?num/den:NaN;
  }
  function put(x,y,r,g,b){
   if(x<0||y<0||x>=W||y>=H)return;
@@ -476,9 +476,9 @@ function kfsProbaRender(features,samples,zone,type,departments=[]){
      const x0=Math.floor(xx),y0=Math.floor(yy),x1=Math.min(GW-1,x0+1),y1=Math.min(GH-1,y0+1);
      const fx=xx-x0,fy=yy-y0;
      let v1=field[y0*GW+x0],v2=field[y0*GW+x1],v3=field[y1*GW+x0],v4=field[y1*GW+x1];
-     const all=[v1,v2,v3,v4].filter(v=>v>=0);
-     const p=all.length===4?((v1*(1-fx)+v2*fx)*(1-fy)+(v3*(1-fx)+v4*fx)*fy):(all.length?all.reduce((a,b)=>a+b,0)/all.length:-1);
-     put(x,y,...(p<0?[63,77,89]:kfsProbaAmountPalette(p,type)));
+     const all=[v1,v2,v3,v4].filter(Number.isFinite);
+     const p=all.length===4?((v1*(1-fx)+v2*fx)*(1-fy)+(v3*(1-fx)+v4*fx)*fy):(all.length?all.reduce((a,b)=>a+b,0)/all.length:NaN);
+     put(x,y,...(!Number.isFinite(p)?[63,77,89]:kfsProbaAmountPalette(p,type)));
     }
    }
   }
@@ -537,7 +537,9 @@ function kfsProbaRender(features,samples,zone,type,departments=[]){
   "k":["10000","10000","10100","11000","10100","10010","10001"],
   "h":["10000","10000","10110","11001","10001","10001","10001"],
   "/":["00001","00001","00010","00100","01000","10000","10000"],
-  "-":["00000","00000","00000","11111","00000","00000","00000"]
+  "-":["00000","00000","00000","11111","00000","00000","00000"],
+  "+":["00000","00100","00100","11111","00100","00100","00000"],
+  "°":["01100","10010","01100","00000","00000","00000","00000"]
  };
  function rect(x,y,w,h,color){
   for(let a=Math.max(0,Math.round(y));a<Math.min(H,y+h);a++)for(let b=Math.max(0,Math.round(x));b<Math.min(W,x+w);b++)put(b,a,...color);
