@@ -23,7 +23,13 @@ async function kfsFranceMinMaxOverview(interaction,model,zone){
    if(!seen.has(key)){seen.add(key);samples.push({lon:Number(lon),lat:Number(lat)});}
   };
   for(const f of features){
-   for(const p of kfsProbaSamples([f],true).slice(0,zone==="FR"?6:15))add(p.lon,p.lat);
+   const grid=kfsProbaSamples([f],true);
+   // Six points répartis dans toute la région, plutôt que les six premiers
+   // (qui favorisaient une portion de la région, notamment au nord).
+   const chosen=zone==="FR"?
+    [...new Set([0,.2,.4,.6,.8,1].map(f=>Math.round((grid.length-1)*f)))].map(i=>grid[i]):
+    grid.slice(0,15);
+   for(const p of chosen)add(p.lon,p.lat);
    if(zone==="FR"){
     for(const [,lon,lat] of (KFS_PROBA_CITIES[f.properties.code]||[]).slice(0,2))
      if(kfsProbaInFeature(lon,lat,f))add(lon,lat);
