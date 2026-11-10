@@ -25,7 +25,7 @@ const KFS_PROBA_RULES = {
  neige:{unit:"cm",defaults:1,allowed:[1,3,5,10],variable:"snow_depth",title:"Neige présente au sol"},
  pluie:{unit:"mm / 24 h",defaults:1,allowed:[0.1,1,5,10,20,40],variable:"rain",title:"Cumul de pluie"},
  vent:{unit:"km/h",defaults:90,allowed:[54,60,80,90,100,120],variable:"wind_gusts_10m",title:"Rafales maximales"},
- orage:{unit:"niveau",defaults:3,allowed:[1,2,3,4,5],variable:"cape",title:"Potentiel orageux"}
+ orage:{unit:"niveau",defaults:2,allowed:[1,2,3,4,5],variable:"cape",title:"Potentiel orageux"}
 };
 let KFS_PROBA_LAST_REGISTER=0;
 async function kfsProbaRegister(env){
@@ -38,7 +38,7 @@ async function kfsProbaRegister(env){
   {name:"jour",type:4,description:"De J+0 à J+3",required:false,
    choices:[0,1,2,3].map(i=>({name:"J+"+i,value:i}))},
   {name:"seuil",type:10,description:"Pluie 1/5/10/20 mm · Rafales 54/90 km/h (ECMWF) · autres seuils si disponibles",required:false,min_value:0.1,max_value:120},
-  {name:"niveau",type:3,description:"Orages : niveau minimum à évaluer (défaut : modéré)",required:false,
+  {name:"niveau",type:3,description:"Orages : niveau minimum à évaluer (défaut : moyen)",required:false,
    choices:[{name:"Faible",value:"faible"},{name:"Moyen",value:"moyen"},{name:"Modéré",value:"modere"},{name:"Fort",value:"fort"},{name:"Extrême",value:"extreme"}]}
  ]};
  const endpoint="https://discord.com/api/v10/applications/"+APPLICATION_ID+"/commands";
@@ -187,25 +187,38 @@ const KFS_STORM_NAMES=["AUCUN","FAIBLE","MOYEN","MODERE","FORT","EXTREME"];
 const KFS_STORM_LEVELS={faible:1,moyen:2,modere:3,fort:4,extreme:5};
 const KFS_STORM_TEMPO="hourly_3";
 // Ne jamais utiliser la CAPE seule comme certitude d'orage ou de sévérité.
-function kfsProbaStormTier(cape,rain,gust,weatherCode,cin){
- const convective=[95,96,99].includes(weatherCode);
+function kfsProbaStormTier(cape,rain,gust,weatherCode,cin,dewpoint){
+ // Indice NON calibre. Deux signaux : convection prevue et environnement favorable.
+ const thunder=[95,96,99].includes(weatherCode);
  const cp=Number.isFinite(cape)?cape:null;
  const pr=Number.isFinite(rain)?rain:null;
  const gu=Number.isFinite(gust)?gust:null;
- if(cp===null && !convective)return 0;
- let level=convective?1:0;
- // Pluie et instabilité doivent coexister au même pas de temps.
- if(cp!==null && pr!==null && cp>=150 && pr>=0.2)level=Math.max(level,1);
- if(cp!==null && pr!==null && cp>=400 && pr>=0.5)level=Math.max(level,2);
- if(cp!==null && pr!==null && gu!==null && cp>=900 && pr>=1 && gu>=40)
-  level=Math.max(level,3);
- if(cp!==null && pr!==null && gu!==null && cp>=1600 && pr>=2.5 && gu>=60)
-  level=Math.max(level,4);
- if(cp!==null && pr!==null && gu!==null && cp>=3000 && pr>=5 && gu>=90)
-  level=Math.max(level,5);
- // CIN négative très marquée : réduit l'indice lorsque le modèle ne
- // prévoit pas explicitement d'orage (évite CAPE brute => signal abusif).
- if(!convective && Number.isFinite(cin) && cin<=-200)level=Math.max(0,level-1);
+ const td=Number.isFinite(dewpoint)?dewpoint:null;
+ const inhibition=Number.isFinite(cin)?cin:null;
+ if(cp===null&&!thunder)return 0;
+ const moist=td!==null&&td>=8;
+ const capOpen=inhibition===null||inhibition>-125;
+ let level=thunder?1:0;
+ if(cp!==null){
+  // La CAPE + l'humidite peuvent signaler un risque AVANT les pluies prevues.
+  if((cp>=100&&pr!==null&&pr>=0.1)||(cp>=225&&moist&&capOpen))
+   level=Math.max(level,1);
+  if((cp>=300&&pr!==null&&pr>=0.25)||(cp>=500&&moist&&capOpen))
+   level=Math.max(level,2);
+  // Modere exige une precipitation modelisee, pas seulement de la CAPE.
+  if(cp>=650&&pr!==null&&pr>=0.7&&((gu!==null&&gu>=30)||moist))
+   level=Math.max(level,3);
+  if(cp>=950&&pr!==null&&pr>=1&&gu!==null&&gu>=35)
+   level=Math.max(level,3);
+  // Niveaux fort et extreme : criteres combines stricts.
+  if(cp>=1500&&pr!==null&&pr>=2&&gu!==null&&gu>=55)
+   level=Math.max(level,4);
+  if(cp>=2800&&pr!==null&&pr>=4&&gu!==null&&gu>=85)
+   level=Math.max(level,5);
+ }
+ // Un CIN absent n'est pas traite comme nul.
+ if(!thunder&&inhibition!==null&&inhibition<=-200)
+  level=Math.max(0,level-1);
  return level;
 }
 function kfsProbaStormMembers(hourly,day,minimum){
@@ -231,7 +244,7 @@ function kfsProbaStormMembers(hourly,day,minimum){
    if(cape===null && wc===null)continue;
    observed++;
    const l=kfsProbaStormTier(cape,get("precipitation",i),
-     get("wind_gusts_10m",i),wc,get("convective_inhibition",i));
+     get("wind_gusts_10m",i),wc,get("convective_inhibition",i),get("dew_point_2m",i));
    level=Math.max(level,l);
   }
   if(observed<Math.ceil(ids.length*.6))continue;
@@ -324,10 +337,11 @@ async function kfsProbaStormModel(model,samples,day,minimum){
   longitude:samples.map(p=>p.lon).join(","),models:model[1],
   start_date:day,end_date:day,timezone:"Europe/Paris",temporal_resolution:KFS_STORM_TEMPO};
  const variants=[
-  ["cape","precipitation","wind_gusts_10m","weather_code"],
+  ["cape","precipitation","wind_gusts_10m","weather_code","dew_point_2m","convective_inhibition"],
+  ["cape","precipitation","wind_gusts_10m","weather_code","dew_point_2m"],
   ["cape","precipitation","wind_gusts_10m"]
  ];
- const deadline=Date.now()+12000;
+ const deadline=Date.now()+14000;
  let error="";
  for(const fields of variants){
   const left=Math.min(8000,deadline-Date.now());
@@ -786,7 +800,7 @@ async function kfsProbaComplete(interaction,phenom,zone,jour,seuil){
     "**Run :** "+subset.run+" · **période UTC :** "+subset.period_start+" → "+subset.period_end+".\n"+
     (zone!=="FR"?"**Repères :** départements et grandes villes.\n":"")+
     (phenom==="neige"?"🏔️ Le relief montagneux est inclus ; le modèle représente les zones naturelles, pas la tenue sur les routes.\n":
-     "⛈️ Indice heuristique CAPE, pluie convective et rafales ; ne prévoit pas directement l'occurrence ni la sévérité d'un orage.\n")+
+     "⛈️ Indice heuristique CAPE, précipitations convectives, humidité (point de rosée) et rafales ; ne prévoit pas directement l'occurrence ni la sévérité d'un orage.\n")+
     "⚠️ **Probabilités expérimentales non calibrées.** Échantillon de 8 membres et deux échéances par 24 h, à maille 0,25°. Ne remplace pas une vigilance officielle.\n"+
     "_ECMWF Open Data, licence CC BY 4.0._";
    try{await kfsProbaEdit(interaction,{content,allowed_mentions:{parse:[]}},png);}
@@ -904,7 +918,7 @@ async function kfsProbaComplete(interaction,phenom,zone,jour,seuil){
       "**Quantité moyenne :** "+(Math.round(minAmount*10)/10)+" à "+(Math.round(maxAmount*10)/10)+" "+unit+" sur les points étudiés.\n"):"")+
      stormRange+wetRange+caution+
    (phenom==="neige"?"🏔️ Les points situés au-dessus de 800 m sont écartés ; neige au sol modélisée, pas chute fraîche.\n":"")+
-   (phenom==="orage"?"⚠️ **Indice orageux expérimental**, fondé sur CAPE, pluie, rafales et codes météo disponibles. Fort/extrême = potentiel convectif, pas prévision certaine de grêle, tornade ou rafales destructrices. **Aucune équivalence avec la vigilance Météo-France.**\n":"")+
+   (phenom==="orage"?"⚠️ **Indice orageux expérimental**, fondé sur CAPE, pluie, point de rosée, CIN (si disponible), rafales et codes météo. Signal précurseur possible sans pluie prévue : déclenchement non garanti. Fort/extrême ne signifie pas grêle, tornade ou rafales destructrices certaines. **Aucune équivalence avec la vigilance Météo-France.**\n":"")+
    "ℹ️ Estimation **non calibrée**, issue des proportions de membres (poids égal par modèle), et non une probabilité officielle de vigilance. "+
    "Échantillonnage régional : ne remplace pas une prévision locale fine.\n"+
    "_Sources : ensembles Open-Meteo ; contours IGN/INSEE. Données consultées le "+new Date().toISOString().slice(0,16).replace("T"," ")+" UTC._";
