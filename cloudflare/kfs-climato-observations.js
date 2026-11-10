@@ -271,7 +271,9 @@ async function kfsClimatoHandleV2(interaction,appId) {
     const rubrique=String(get("rubrique")||"bilan");
     const month=String(get("mois")||"annee");
     const record=String(get("record")||"");
-    if(record){
+    if(!record && ["orages","neige"].includes(rubrique)){
+      payload=await kfsPReport(city,kfsQInputYear(get("annee")),kfsQMonth(month),rubrique);
+    } else if(record){
       payload=await kfsClimatoRecordResponse(city,record,month,get("annee")!==undefined);
     } else {
       const selected=await kfsClimStationForCity(city);
@@ -314,6 +316,8 @@ async function kfsClimatoRegisterV2(botToken,appId,guildId){
           {name:"Température, chaleur et gel",value:"temperature"},
           {name:"Pluies et cumuls",value:"pluie"},
           {name:"Vent et rafales",value:"vent"},
+          {name:"⛈️ Orages (jours observés)",value:"orages"},
+          {name:"❄️ Neige (chutes et au sol)",value:"neige"},
           {name:"Épisodes chauds",value:"episodes"},
           {name:"Normales 1991–2020",value:"normales"},
           {name:"Records historiques de la station",value:"records"}
