@@ -2,7 +2,7 @@
   "schema": 1,
   "model": "ifs",
   "source": "ECMWF IFS Open Data · CC BY 4.0",
-  "generated_utc": "2026-11-10T11:24:52.004518+00:00",
+  "generated_utc": "2026-11-10T11:30:22.899538+00:00",
   "run_utc": "2026-11-10T00:00:00Z",
   "description": "Vortex et température. Vent U 10 hPa à 60°N diagnostique ; valeur négative ponctuelle ≠ événement SSW confirmé.",
   "levels_hpa": [
@@ -194,6 +194,7 @@
   ],
   "zonal_wind_definition": "Moyenne zonale de U sur toutes les longitudes, latitude 60°N. Valeurs positives = vents d'ouest, négatives = vents d'est.",
   "overview_10hpa": {
+    "layout_version": 2,
     "image": "strato/ifs-10hpa-vortex-overview.png",
     "run_utc": "2026-11-10T00:00:00Z",
     "level_hpa": 10,
