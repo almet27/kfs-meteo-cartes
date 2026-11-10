@@ -4,6 +4,8 @@ on:
   push:
     paths:
       - .github/workflows/diag-climato-pheno.yml
+      - tests/test-climato-phenomenes.mjs
+      - cloudflare/kfs-climato-phenomenes.js
 permissions:
   contents: read
 jobs:
@@ -43,3 +45,7 @@ jobs:
               for id,x in sorted(stats.items(),key=lambda p:-(p[1]["orag"].get("1",0)+p[1]["neig"].get("1",0)))[:30]:
                   print("STATION",id,x["name"],"jours",x["rows"],"orage",x["orag"].most_common(6),"neige",x["neig"].most_common(6),"Qorage",x["qorag"].most_common(6),"Qneige",x["qneig"].most_common(6),"sol",x["sol"].most_common(4),"range",x["first"],x["last"])
           PY
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Tester le module réel sur les archives officielles
+        run: node tests/test-climato-phenomenes.mjs
