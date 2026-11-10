@@ -6,7 +6,9 @@
 const KFS_P_FIELDS=["ORAG","NEIG","SOLNEIGE","HNEIGEF","NEIGETOTX","NEIGETOT06"];
 function kfsPValid(raw,quality) {
   const n=kfsQNumber(raw),q=kfsQNumber(quality);
-  if(n===null||(q!==null&&q!==0&&q!==1))return null;
+  // Q=9 : premier niveau de contrôle climatologique passé (donnée filtrée).
+  // Exclure les codes douteux comme Q=2 ; Q=0 et Q=1 restent admis.
+  if(n===null||(q!==null&&!([0,1,9].includes(q))))return null;
   return n;
 }
 async function kfsPArchive(stations,year) {
@@ -81,13 +83,26 @@ async function kfsPArchive(stations,year) {
   return result;
 }
 function kfsPStats(days,field) {
-  const observed=days.filter(d=>d[field]!==null&&Number.isFinite(d[field]));
+  // Indicateurs d'occurrence binaires : ne pas traiter une valeur inconnue comme un zéro.
+  const occurrence=["orage","neige","neigeSol"].includes(field);
+  const observed=days.filter(d=>occurrence?(d[field]===0||d[field]===1):(d[field]!==null&&Number.isFinite(d[field])));
   return {valid:observed.length,jours:observed.filter(d=>d[field]===1).length,
     dates:observed.filter(d=>d[field]===1).map(d=>d.date)};
 }
+function kfsPExpectedDays(year,month) {
+  const today=new Date();
+  const endOfObservations=new Date(Date.UTC(today.getUTCFullYear(),today.getUTCMonth(),today.getUTCDate()-1));
+  const start=new Date(Date.UTC(year,month?month-1:0,1));
+  const end=new Date(Date.UTC(year,month||12,0));
+  const effectiveEnd=new Date(Math.min(end.getTime(),endOfObservations.getTime()));
+  return Math.max(0,Math.round((effectiveEnd.getTime()-start.getTime())/86400000)+1);
+}
 async function kfsPSelect(city,year,month,rubrique) {
+  const expected=kfsPExpectedDays(year,month);
+  if(!expected)throw Error("Cette période n'a pas encore commencé : aucune observation possible.");
   const all=(await kfsClimStations()).map(s=>({...s,km:kfsClimDistance(city.lat,city.lon,s.lat,s.lon)}))
-    .sort((a,b)=>a.km-b.km).slice(0,18);
+    // Une station lointaine ne doit pas être présentée comme le climat de la commune.
+    .filter(s=>s.km<=80).sort((a,b)=>a.km-b.km).slice(0,24);
   const groups=new Map();
   for(const s of all){
     const dep=/^(97|98)/.test(s.id)?s.id.slice(0,3):s.id.slice(0,2);
@@ -105,15 +120,17 @@ async function kfsPSelect(city,year,month,rubrique) {
       }
     }catch(e){errors.push(String(e?.message||e));}
   }
-  if(!choices.length)throw Error("Aucun relevé d'"+(rubrique==="orages"?"orage":"occurrence de neige")+
-    " disponible dans les stations voisines pour cette période."+
-    (errors.length?" "+errors[0]:"")+" Les données absentes ne valent pas zéro.");
-  const total=month?new Date(Date.UTC(year,month,0)).getUTCDate():
-    (Date.UTC(year+1,0,1)-Date.UTC(year,0,1))/86400000;
-  const complete=choices.filter(x=>x.valid>=Math.ceil(total*.65));
-  const pool=complete.length?complete:choices;
-  pool.sort((a,b)=>a.station.km-b.station.km||b.valid-a.valid);
-  return pool[0];
+  if(!choices.length)throw Error("Aucune station à moins de 80 km ne publie des relevés d'"+
+    (rubrique==="orages"?"orage":"occurrence de neige")+" pour cette période."+
+    (errors.length?" "+errors[0]:"")+" Les absences ne valent pas zéro.");
+  const complete=choices.filter(x=>x.valid>=Math.ceil(expected*.85));
+  if(!complete.length) {
+    const top=choices.sort((a,b)=>b.valid-a.valid)[0];
+    throw Error("Couverture insuffisante pour un bilan fiable : au mieux "+top.valid+" jours observés sur "+
+      expected+" attendus ("+top.station.name+"). Aucun total trompeur n'est affiché.");
+  }
+  complete.sort((a,b)=>a.station.km-b.station.km||b.valid-a.valid);
+  return {...complete[0],expected};
 }
 async function kfsPReport(city,year,month,rubrique) {
   const chosen=await kfsPSelect(city,year,month,rubrique);
@@ -158,15 +175,14 @@ async function kfsPReport(city,year,month,rubrique) {
       value:"**"+kfsQR(normal," jour(s)")+"** · période "+(row.period||"indiquée par Météo-France"),
       inline:false});
   }catch(_){}
-  const total=month?new Date(Date.UTC(year,month,0)).getUTCDate():
-    (Date.UTC(year+1,0,1)-Date.UTC(year,0,1))/86400000;
+  const total=chosen.expected;
   const cautions=[];
-  if(main.valid<total*.9)cautions.push("⚠️ Couverture incomplète : aucun décompte n'est extrapolé aux jours non observés.");
+  if(main.valid<total*.95)cautions.push("⚠️ Couverture partielle ("+main.valid+"/"+total+" jours attendus) : aucun décompte n'est extrapolé.");
   if(chosen.station.km>30)cautions.push("⚠️ Station éloignée : le résultat n'est pas propre au microclimat exact de la ville.");
   if(year===new Date().getUTCFullYear())cautions.push("Année en cours : relevés partiels.");
   return {embeds:[{title:"KFS MÉTÉO — "+(rubrique==="orages"?"⛈️ Orages":"❄️ Neige")+" · "+period,
     color:0x1975b8,description:"📍 **"+city.name+"** · Station **"+chosen.station.name+"** (n° "+chosen.station.id+") · "+kfsQR(chosen.station.km," km")+
       (cautions.length?"\n"+cautions.join("\n"):""),
-    fields,footer:{text:"Source : Météo-France, observations quotidiennes officielles · "+chosen.filename+" · absences non comptées comme zéro"}}],
+    fields,footer:{text:"Source : Météo-France · "+chosen.filename+" · qualité 0/1 (validée), 9 (premier contrôle) · jours sans mesure exclus"}}],
     allowed_mentions:{parse:[]}};
 }
