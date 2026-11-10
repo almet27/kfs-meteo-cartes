@@ -1,0 +1,69 @@
+name: KFS PROBA - ECMWF ENS frost six-hour minima
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - scripts/build_ecmwf_frost.py
+      - tests/test_kfs_frost.py
+      - .github/workflows/kfs-proba-ecmwf-frost.yml
+  schedule:
+    - cron: '50 13,17 * * *'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: kfs-ecmwf-frost
+  cancel-in-progress: false
+
+jobs:
+  frost:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: scripts/requirements-ecmwf-proba.txt
+      - name: Install native ECMWF tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libeccodes0 libeccodes-data
+          python -m pip install -r scripts/requirements-ecmwf-proba.txt
+      - name: Check syntax and frost calculations
+        run: |
+          python -m py_compile scripts/build_ecmwf_frost.py
+          PYTHONPATH=scripts python -m unittest discover -s tests -p 'test_kfs_frost.py' -v
+      - name: Download native ECMWF ENS 6-hour minimum temperature
+        env:
+          ECMWF_SOURCE: ecmwf
+        run: python scripts/build_ecmwf_frost.py
+      - name: Publish validated frost probabilities only
+        run: |
+          git config user.name "KFS METEO Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add proba/ecmwf-frost-probabilities.json
+          if git diff --cached --quiet; then
+            echo "No new frost probabilities"
+            exit 0
+          fi
+          git commit -m "KFS: ECMWF frost six-hour minima probabilities"
+          for attempt in 1 2 3 4 5; do
+            git fetch origin main
+            if ! git rebase origin/main; then
+              git rebase --abort
+              echo "Rebase failed; do not overwrite other publications"
+              exit 1
+            fi
+            if git push origin HEAD:main; then
+              echo "Frost data published"
+              exit 0
+            fi
+            sleep 4
+          done
+          echo "Git push failed after five attempts"
+          exit 1
