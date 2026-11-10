@@ -1,4 +1,3 @@
-
 // KFS /proba — prévisions multi-ensembles, J+0 à J+3, France / régions.
 // Pas de taux de confiance inventé : décompte des membres, puis moyenne
 // à poids égaux entre familles d'ensembles effectivement disponibles.
@@ -23,7 +22,9 @@ const KFS_PROBA_REGIONS = [
 ];
 const KFS_PROBA_RULES = {
  neige:{unit:"cm",defaults:1,allowed:[1,3,5,10],variable:"snow_depth",title:"Neige présente au sol"},
+ neige_chutes:{unit:"mm équiv.-eau",defaults:0.1,allowed:[0.1,1,3,5],variable:"snowfall",title:"Précipitations sous forme de neige"},
  pluie:{unit:"mm / 24 h",defaults:1,allowed:[0.1,1,5,10,20,40],variable:"rain",title:"Cumul de pluie"},
+ gel:{unit:"°C",defaults:0,allowed:[0,-2,-5,-10],variable:"temperature_2m",title:"Température minimale à 2 m"},
  vent:{unit:"km/h",defaults:90,allowed:[54,60,80,90,100,120],variable:"wind_gusts_10m",title:"Rafales maximales"},
  orage:{unit:"niveau",defaults:2,allowed:[1,2,3,4,5],variable:"cape",title:"Potentiel orageux"}
 };
@@ -31,13 +32,15 @@ let KFS_PROBA_LAST_REGISTER=0;
 async function kfsProbaRegister(env){
  if(!env.DISCORD_BOT_TOKEN)throw Error("Jeton Discord absent");
  const cmd={name:"proba",type:1,description:"Probabilités météo jusqu'à J+3 · France et régions",options:[
-  {name:"phenomene",type:3,description:"Pluie, neige, rafales et orages",required:true,
-   choices:[{name:"🌨️ Neige au sol",value:"neige"},{name:"🌧️ Pluie",value:"pluie"},{name:"💨 Rafales",value:"vent"},{name:"🌩️ Orages",value:"orage"}]},
+  {name:"phenomene",type:3,description:"Pluie, neige, gelées, rafales et orages",required:true,
+   choices:[{name:"🌨️ Neige au sol",value:"neige"},
+    {name:"❄️ Précipitations neigeuses (même sans tenue)",value:"neige_chutes"},
+    {name:"🌧️ Pluie",value:"pluie"},{name:"🥶 Gelées (Tmin 2 m)",value:"gel"},{name:"💨 Rafales",value:"vent"},{name:"🌩️ Orages",value:"orage"}]},
   {name:"zone",type:3,description:"France entière ou région",required:false,
    choices:[{name:"France métropolitaine",value:"FR"},...KFS_PROBA_REGIONS.map(([code,name])=>({name,value:code}))]},
   {name:"jour",type:4,description:"De J+0 à J+3",required:false,
    choices:[0,1,2,3].map(i=>({name:"J+"+i,value:i}))},
-  {name:"seuil",type:10,description:"Pluie 1/5/10/20 mm · Rafales 54/90 km/h (ECMWF) · autres seuils si disponibles",required:false,min_value:0.1,max_value:120},
+  {name:"seuil",type:10,description:"Gel 0/-2/-5/-10°C · neige 1/3/5/10cm · neige fraîche · pluie · vent",required:false,min_value:-10,max_value:120},
   {name:"niveau",type:3,description:"Orages : niveau minimum à évaluer (défaut : moyen)",required:false,
    choices:[{name:"Faible",value:"faible"},{name:"Moyen",value:"moyen"},{name:"Modéré",value:"modere"},{name:"Fort",value:"fort"},{name:"Extrême",value:"extreme"}]}
  ]};
@@ -171,10 +174,13 @@ function kfsProbaMemberProbability(hourly,day,type,threshold){
   const nums=ids.map(i=>arr[i]).filter(v=>typeof v==="number"&&Number.isFinite(v));
   if(nums.length<Math.ceil(ids.length*0.85))continue;
   const amount=type==="pluie"?Math.max(0,nums.reduce((a,b)=>a+b,0)):
-   type==="vent"?Math.max(0,...nums):Math.max(0,...nums)*100;
+   // Open-Meteo 'snowfall' est un cumul horaire de neige fraiche en cm.
+   // 7 cm = 10 mm eau selon sa documentation ; ne pas confondre avec neige au sol.
+   type==="neige_chutes"?Math.max(0,nums.reduce((a,b)=>a+b,0))*10/7:
+   type==="vent"?Math.max(0,...nums):type==="gel"?Math.min(...nums):Math.max(0,...nums)*100;
   if(!Number.isFinite(amount))continue;
   valid++;amountSum+=amount;
-  if(amount>=threshold)pass++;
+  if(type==="gel"?amount<=threshold:amount>=threshold)pass++;
   if(type==="pluie"&&amount>=0.1)anyRain++;
  }
  return valid>=2?{pct:100*pass/valid,amount:amountSum/valid,members:valid,
@@ -385,6 +391,10 @@ const KFS_PROBA_SCALE={
   colors:[[20,49,83],[35,91,151],[50,150,200],[48,189,164],[208,198,76],[241,143,58],[222,66,83]]},
  neige:{unit:"cm",ticks:[0,0.5,1,3,5,10,20],
   colors:[[26,52,91],[45,94,160],[76,148,209],[105,172,230],[135,138,221],[168,98,210],[224,67,157]]},
+ neige_chutes:{unit:"mm équiv.-eau",ticks:[0,0.1,0.5,1,3,5,10],
+  colors:[[26,48,76],[43,89,147],[61,139,192],[103,195,225],[143,177,228],[154,126,216],[211,83,190]]},
+ gel:{unit:"°C",ticks:[-15,-10,-7,-5,-3,-1,0,3],
+  colors:[[91,41,128],[82,69,164],[57,105,183],[57,142,204],[69,179,208],[98,198,196],[153,188,179],[200,188,148]]},
  vent:{unit:"km/h",ticks:[0,30,50,70,90,110,130],
   colors:[[24,53,90],[45,109,164],[62,161,169],[197,193,76],[243,154,65],[234,92,65],[201,50,111]]},
  orage:{unit:"niveau",ticks:[0,1,2,3,4,5],
@@ -618,7 +628,7 @@ function kfsProbaRender(features,samples,zone,type,departments=[]){
  const names=type==="orage"?KFS_STORM_NAMES:
   legend.ticks.map((start,i)=>{
    const end=legend.ticks[i+1];
-   return end===undefined?(type==="probabilite"?"100":String(start)+"+"):String(start)+"-"+String(end);
+   return end===undefined?(type==="probabilite"?"100":String(start)+"+"):String(start)+(type==="gel"?"/":"-")+String(end);
   });
  const width=(right-left)/names.length;
  for(let i=0;i<names.length;i++){
@@ -703,6 +713,9 @@ async function kfsProbaEcmwfRead(type,threshold,zone,day,points){
 // Sans fichier valide, ne jamais inventer une carte.
 const KFS_PROBA_ECMWF_SUBSET_FIELDS={
  neige:{"1":"snow1","3":"snow3","5":"snow5","10":"snow10"},
+ pluie:{"0.1":"rain_liquid0p1","1":"rain_liquid1","5":"rain_liquid5",
+        "10":"rain_liquid10","20":"rain_liquid20","40":"rain_liquid40"},
+ neige_chutes:{"0.1":"snowfall0p1","1":"snowfall1","3":"snowfall3","5":"snowfall5"},
  orage:{"1":"storm1","2":"storm2","3":"storm3","4":"storm4","5":"storm5"}
 };
 async function kfsProbaEcmwfSubsetRead(type,threshold,zone,day,points){
@@ -729,7 +742,7 @@ async function kfsProbaEcmwfSubsetRead(type,threshold,zone,day,points){
   if(!Number.isFinite(age)||age<0||age>48*3600000)
    throw Error("Run ECMWF ENS échantillonné trop ancien.");
   const d=j.days?.[day],pct=d?.fields?.[field]?.[zone];
-  const meanKey=type==="neige"?"snow_mean_cm":"storm_mean_level";
+  const meanKey=type==="neige"?"snow_mean_cm":type==="neige_chutes"?"snowfall_mean_mmwe":type==="pluie"?"rain_liquid_mean_mm":"storm_mean_level";
   const amounts=d?.fields?.[meanKey]?.[zone];
   if(!Array.isArray(pct)||pct.length!==points.length||!Array.isArray(amounts)||
     amounts.length!==points.length||j.zone_point_counts?.[zone]!==points.length)
@@ -748,9 +761,6 @@ async function kfsProbaEcmwfSubsetRead(type,threshold,zone,day,points){
    ascent:optional("storm_ascent_support_pct",100),
    shear:optional("shear_850_500_mean_ms",150)
   }:null;
-  // Un seuil élevé donne souvent 0 % plusieurs jours d'affilée.
-  // Conserver l'évolution d'un signal orageux faible (même run et même zone)
-  // pour distinguer « rien au seuil demandé » de « aucune convection ».
   const stormTrend=type==="orage"?Object.keys(j.days).sort().map(date=>{
    const fieldSet=j.days[date]?.fields||{};
    const maxField=key=>{
@@ -759,8 +769,7 @@ async function kfsProbaEcmwfSubsetRead(type,threshold,zone,day,points){
       a.every(v=>Number.isFinite(v)&&v>=0&&v<=100)?Math.max(...a):null;
    };
    return {date,requested:maxField(field),weak:maxField("storm1")};
-  }).filter(x=>x.requested!==null&&x.weak!==null):null;
-  return {source:"ECMWF-8",values:pct,amounts,run:j.run_utc,diagnostics,stormTrend,
+  }).filter(x=>x.requested!==null&&x.weak!==null):null;  return {source:"ECMWF-8",values:pct,amounts,run:j.run_utc,diagnostics,stormTrend,
     members:j.ensemble_members.length,period_start:d.valid_from_utc,period_end:d.valid_to_utc};
  }catch(e){console.error("KFS_PROBA_ECMWF_SUBSET",String(e));return null;}
 }
@@ -796,7 +805,7 @@ async function kfsProbaComplete(interaction,phenom,zone,jour,seuil){
  try{
   const rules=KFS_PROBA_RULES[phenom];
   if(!rules||![0,1,2,3].includes(jour)||!rules.allowed.includes(seuil))throw Error(
-   "Paramètres invalides. Seuils autorisés : neige 1/3/5/10 cm, pluie 0,1/1/5/10/20/40 mm, rafales 60/80/100/120 km/h."
+   "Paramètres invalides. Seuils : gel 0/-2/-5/-10 °C ; chutes de neige 0,1/1/3/5 mm équiv.-eau ; neige au sol 1/3/5/10 cm ; pluie 0,1/1/5/10/20/40 mm ; rafales 54/60/80/90/100/120 km/h."
   );
   const all=await kfsProbaFeatures(),features=zone==="FR"?all:all.filter(f=>String(f.properties.code)===zone);
   if(!features.length)throw Error("Région non reconnue.");
@@ -814,8 +823,10 @@ async function kfsProbaComplete(interaction,phenom,zone,jour,seuil){
    const name=zone==="FR"?"France métropolitaine":KFS_PROBA_REGIONS.find(r=>r[0]===zone)?.[1]||zone;
    const minimum=Math.round(Math.min(...subset.values)),maximum=Math.round(Math.max(...subset.values));
    const label=phenom==="neige"?"neige présente au sol ≥ "+seuil+" cm":
+    phenom==="pluie"?"pluie liquide cumulée ≥ "+seuil+" mm sur 24 h":
+    phenom==="neige_chutes"?"précipitations sous forme de neige ≥ "+seuil+" mm d'équivalent-eau sur 24 h":
     "potentiel orageux au moins "+KFS_STORM_NAMES[seuil].toLowerCase();
-   const valueType=phenom==="neige"?"épaisseur moyenne de neige au sol (cm)":"indice moyen de potentiel convectif (0–5)";
+   const valueType=phenom==="neige"?"épaisseur moyenne de neige au sol (cm)":phenom==="neige_chutes"?"cumul moyen de neige fraîche (mm équiv.-eau sur 24 h)":phenom==="pluie"?"cumul moyen de pluie liquide (mm sur 24 h)":"indice moyen de potentiel convectif (0–5)";
    const maxValue=(arr)=>arr?.filter(Number.isFinite).length?
     Math.max(...arr.filter(Number.isFinite)):null;
    const orgMax=maxValue(subset.diagnostics?.organized);
@@ -838,11 +849,16 @@ async function kfsProbaComplete(interaction,phenom,zone,jour,seuil){
     "**Événement :** "+label+".\n"+
     "🗺️ **Probabilité indicative :** "+minimum+" à "+maximum+" % sur les points échantillonnés.\n"+
     "📊 **Source sans Open-Meteo :** "+subset.members+" membres sélectionnés de l'IFS ENS ouvert d'ECMWF.\n"+
-    "**Carte :** chiffres % = fraction des membres dépassant le seuil ; couleur = "+valueType+".\n"+
+    "**Carte :** chiffres % = fraction des membres dépassant le seuil ; couleur = "+valueType+" ; chiffres bleus = quantité moyenne.\n"+
+    (phenom==="pluie"?"💧 **Cumul moyen de pluie :** "+
+      Math.min(...subset.amounts).toFixed(1)+" à "+Math.max(...subset.amounts).toFixed(1)+
+      " mm sur 24 h, calculé sur les mêmes 8 membres et le même run que les probabilités.\n":"")+
     stormTrend+stormDiagnostics+
     "**Run :** "+subset.run+" · **période UTC :** "+subset.period_start+" → "+subset.period_end+".\n"+
     (zone!=="FR"?"**Repères :** départements et grandes villes.\n":"")+
     (phenom==="neige"?"🏔️ Le relief montagneux est inclus ; le modèle représente les zones naturelles, pas la tenue sur les routes.\n":
+     phenom==="neige_chutes"?"❄️ Neige tombant durant la période, avec ou sans tenue au sol ; mm équivalent-eau, pas épaisseur au sol. Le relief est inclus.\n":
+     phenom==="pluie"?"💧 Pluie liquide calculée par TP − SF (précipitations totales moins neige fraîche en équivalent-eau). **Les périodes et runs sont identiques.**\n":
      "⛈️ Indice heuristique CAPE, précipitations convectives, humidité (point de rosée) et rafales ; ne prévoit pas directement l'occurrence ni la sévérité d'un orage.\n")+
     "⚠️ **Probabilités expérimentales non calibrées.** Échantillon de 8 membres et deux échéances par 24 h, à maille 0,25°. Ne remplace pas une vigilance officielle.\n"+
     "_ECMWF Open Data, licence CC BY 4.0._";
@@ -929,7 +945,9 @@ async function kfsProbaComplete(interaction,phenom,zone,jour,seuil){
   const name=zone==="FR"?"France métropolitaine":KFS_PROBA_REGIONS.find(r=>r[0]===zone)?.[1]||zone;
   const label=phenom==="orage"?"potentiel orageux au moins "+KFS_STORM_NAMES[seuil].toLowerCase():
     phenom==="neige"?"épaisseur de neige présente au sol ≥ "+seuil+" cm":
+    phenom==="neige_chutes"?"précipitations sous forme de neige ≥ "+seuil+" mm équiv.-eau sur le jour (même sans tenue au sol)":
    phenom==="pluie"?"cumul de pluie ≥ "+seuil+" mm sur le jour":
+   phenom==="gel"?"température minimale à 2 m ≤ "+seuil+" °C sur la journée":
    "rafale maximale ≥ "+seuil+" km/h sur le jour";
   const values=counted.map(p=>p.value);
   const amounts=counted.map(p=>p.amount).filter(Number.isFinite);
@@ -950,17 +968,24 @@ async function kfsProbaComplete(interaction,phenom,zone,jour,seuil){
    "**Événement :** "+label+"\n"+
    "🗺️ **Probabilité estimée :** "+min+" à "+max+" % sur les points échantillonnés.\n"+
    "📊 **Modèles exploités :** "+available.join(", ")+" ("+available.length+" familles).\n"+
-   (phenom==="orage"?
+   (phenom==="gel"?
+     "**Carte :** couleurs = température minimale moyenne à 2 m en °C ; blanc = fraction des membres sous le seuil ; bleu = Tmin moyenne.\n":
+    phenom==="orage"?
      "**Carte :** couleurs = catégorie moyenne indicative de potentiel convectif ; blanc = proportion des membres atteignant le niveau demandé ; bleu = niveau moyen.\n":
      "**Carte :** couleurs = quantité moyenne (en "+unit+") ; chiffre blanc = probabilité d’atteindre le seuil ; chiffre bleu = quantité moyenne.\n")+
-   (phenom==="orage"?"**Échelle orage :** aucun · faible · moyen · modéré · fort · extrême.\n":
+   (phenom==="gel"?"**Échelle Tmin :** classes de température en °C, de −15 °C à +3 °C et au-delà.\n":
+    phenom==="orage"?"**Échelle orage :** aucun · faible · moyen · modéré · fort · extrême.\n":
      "**Échelle des quantités (classes) :** "+KFS_PROBA_SCALE[phenom].ticks.map((v,i,arr)=>i===arr.length-1?v+" et +":v+"-"+arr[i+1]).join(" · ")+" "+unit+".\n")+
    (zone!=="FR"?"**Repères :** limites départementales et grandes villes.\n":"")+
-   (minAmount!==null?(phenom==="orage"?
+   (minAmount!==null?(phenom==="gel"?
+      "**Tmin moyenne des membres :** "+minAmount.toFixed(1)+" à "+maxAmount.toFixed(1)+" °C sur les points étudiés.\n":
+     phenom==="orage"?
       "**Indice convectif moyen :** "+minAmount.toFixed(1)+" à "+maxAmount.toFixed(1)+" / 5.\n":
       "**Quantité moyenne :** "+(Math.round(minAmount*10)/10)+" à "+(Math.round(maxAmount*10)/10)+" "+unit+" sur les points étudiés.\n"):"")+
      stormRange+wetRange+caution+
-   (phenom==="neige"?"🏔️ Les points situés au-dessus de 800 m sont écartés ; neige au sol modélisée, pas chute fraîche.\n":"")+
+   (phenom==="neige"?"🏔️ Les points situés au-dessus de 800 m sont écartés ; neige au sol modélisée, pas chute fraîche.\n":
+    phenom==="neige_chutes"?"❄️ **Neige qui tombe, sans exigence de tenue au sol.** Cumul en mm équiv.-eau, pas en cm de neige sur les routes. En secours Open-Meteo, équivalent-eau approximatif obtenu à partir de chutes en cm (conversion 7 cm ≈ 10 mm d’eau).\n":"")+
+   (phenom==="gel"?"❄️ Gel estimé à 2 m sous abri, pas une mesure de gel au sol ou de verglas ; les microclimats et fonds de vallée peuvent être plus froids.\n":"")+
    (phenom==="orage"?"⚠️ **Indice orageux expérimental**, fondé sur CAPE, pluie, point de rosée, CIN (si disponible), rafales et codes météo. Signal précurseur possible sans pluie prévue : déclenchement non garanti. Fort/extrême ne signifie pas grêle, tornade ou rafales destructrices certaines. **Aucune équivalence avec la vigilance Météo-France.**\n":"")+
    "ℹ️ Estimation **non calibrée**, issue des proportions de membres (poids égal par modèle), et non une probabilité officielle de vigilance. "+
    "Échantillonnage régional : ne remplace pas une prévision locale fine.\n"+
@@ -979,3 +1004,5 @@ async function kfsProbaComplete(interaction,phenom,zone,jour,seuil){
   catch(err){console.error("KFS_PROBA_DISCORD_ERROR",String(err));}
  }
 }
+
+
