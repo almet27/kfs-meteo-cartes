@@ -302,7 +302,7 @@ function kfsFranceRegionalRender(features,depts,samples,zone,metric,subtitle){
  }
  function wordWidth(str,size=2){return String(str).normalize("NFD").replace(/[\u0300-\u036f]/g,"").length*6*size;}
  const occupied=[],cityPlaces=[];
- for(const [name,x,y] of (KFS_PROBA_CITIES[zone]||[])){
+ for(const [name,x,y] of (zone==="FR"?Object.values(KFS_PROBA_CITIES).flatMap(cities=>cities.slice(0,1)):(KFS_PROBA_CITIES[zone]||[]))){
   if(!features.some(f=>kfsProbaInFeature(x,y,f)))continue;
   const px=xx(x),py=yy(y),title=name.toUpperCase();
   const w=wordWidth(title)+12,h=24;
@@ -317,22 +317,24 @@ function kfsFranceRegionalRender(features,depts,samples,zone,metric,subtitle){
  }
  // Labels quantitatifs sur des mailles distinctes, espacés des principales villes.
  const ordered=[...valid].sort((a,b)=>b.lat-a.lat),shown=[];
- const maxMarks=zone==="94"?4:zone==="11"?5:9;
+ const maxMarks=zone==="FR"?15:zone==="94"?4:zone==="11"?5:9;
  for(const p of ordered){
   const x=xx(p.lon),y=yy(p.lat),label=kfsFranceRegionDisplayValue(p.value,metric);
   if(label.length>11)continue;
-  const w=wordWidth(label)+14,h=24;
+  const time=typeof p.extremeWhen==="string"?p.extremeWhen:"";
+  const w=Math.max(wordWidth(label)+14,time?wordWidth(time)+14:0),h=time?45:24;
   if(cityPlaces.some(c=>Math.abs(c.x-x)<45&&Math.abs(c.y-y)<30))continue;
   const a={x:Math.round(x-w/2),y:Math.round(y-17),w,h};
   if(a.x<P.x||a.x+w>P.x+P.w||a.y<P.y||a.y+h>P.y+P.h)continue;
   if(occupied.some(t=>!(a.x>t.x+t.w+6||a.x+a.w+6<t.x||a.y>t.y+t.h+6||a.y+a.h+6<t.y)))continue;
   if(shown.some(q=>Math.hypot(x-q[0],y-q[1])<105))continue;
   rect(a.x,a.y,w,h,[9,30,50]);txt(label,a.x+7,a.y+5,2,[247,251,255]);
+  if(time)txt(time,a.x+7,a.y+26,2,[177,225,250]);
   occupied.push(a); // Réserver aussi la boîte de chaque valeur, pas seulement celle des villes.
   shown.push([x,y]);
   if(shown.length>=maxMarks)break;
  }
- const zoneName=KFS_PROBA_REGIONS.find(r=>r[0]===zone)?.[1]||"REGION";
+ const zoneName=zone==="FR"?"FRANCE METROPOLITAINE":(KFS_PROBA_REGIONS.find(r=>r[0]===zone)?.[1]||"REGION");
  txt("KFS METEO FRANCE",40,14,3,[239,247,255]);
  txt(zoneName,385,20,2,[200,233,250]);
  txt(KFS_FRANCE_REGION_METRICS[metric][0],40,40,2,[112,216,244]);
