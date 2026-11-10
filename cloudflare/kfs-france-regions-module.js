@@ -302,37 +302,122 @@ function kfsFranceRegionalRender(features,depts,samples,zone,metric,subtitle){
  }
  function wordWidth(str,size=2){return String(str).normalize("NFD").replace(/[\u0300-\u036f]/g,"").length*6*size;}
  const occupied=[],cityPlaces=[];
- for(const [name,x,y] of (zone==="FR"?Object.values(KFS_PROBA_CITIES).flatMap(cities=>cities.slice(0,1)):(KFS_PROBA_CITIES[zone]||[]))){
-  if(!features.some(f=>kfsProbaInFeature(x,y,f)))continue;
-  const px=xx(x),py=yy(y),title=name.toUpperCase();
-  const w=wordWidth(title)+12,h=24;
-  for(const [tx,ty] of [[px+9,py-18],[px-w-10,py-18],[px-w/2,py-37],[px-w/2,py+11]]){
-   const a={x:Math.round(tx),y:Math.round(ty),w,h};
-   if(a.x<P.x||a.y<P.y||a.x+w>P.x+P.w||a.y+h>P.y+P.h)continue;
-   if(occupied.some(t=>!(a.x>t.x+t.w+5||a.x+a.w+5<t.x||a.y>t.y+t.h+6||a.y+a.h+6<t.y)))continue;
-   rect(a.x,a.y,a.w,a.h,[9,30,50]);txt(title,a.x+6,a.y+5,2,[244,249,255]);
-   occupied.push(a);cityPlaces.push({x:px,y:py});break;
+ const extremaMode=samples.some(p=>typeof p.extremeWhen==="string");
+ if(extremaMode){
+  // Priorité aux valeurs nationales représentatives. Les heures exactes du
+  // minimum/maximum sont différentes d'une ville à l'autre.
+  const targets=[];
+  const addCity=(name,lon,lat,priority)=>{
+   const sample=valid.find(p=>Math.abs(p.lon-lon)<.003&&Math.abs(p.lat-lat)<.003&&
+     typeof p.extremeWhen==="string");
+   if(sample&&Number.isFinite(sample.value))
+    targets.push({name,lon,lat,sample,priority});
+  };
+  if(zone==="FR"){
+   for(const [code,cities] of Object.entries(KFS_PROBA_CITIES)){
+    const [city,lon,lat]=cities[0]||[];
+    if(city)addCity(city,lon,lat,0);
+   }
+   // Repères supplémentaires pour le Nord, le Nord-Ouest et le Nord-Est.
+   for(const code of ["32","28","44","11","53"]){
+    const [city,lon,lat]=KFS_PROBA_CITIES[code]?.[1]||[];
+    if(city)addCity(city,lon,lat,1);
+   }
+  }else{
+   for(const [name,lon,lat] of KFS_PROBA_CITIES[zone]||[])
+    addCity(name,lon,lat,0);
   }
-  rect(px-2,py-2,5,5,[250,250,255]);rect(px-1,py-1,3,3,[13,43,64]);
- }
- // Labels quantitatifs sur des mailles distinctes, espacés des principales villes.
- const ordered=[...valid].sort((a,b)=>b.lat-a.lat),shown=[];
- const maxMarks=zone==="FR"?15:zone==="94"?4:zone==="11"?5:9;
- for(const p of ordered){
-  const x=xx(p.lon),y=yy(p.lat),label=kfsFranceRegionDisplayValue(p.value,metric);
-  if(label.length>11)continue;
-  const time=typeof p.extremeWhen==="string"?p.extremeWhen:"";
-  const w=Math.max(wordWidth(label)+14,time?wordWidth(time)+14:0),h=time?45:24;
-  if(cityPlaces.some(c=>Math.abs(c.x-x)<45&&Math.abs(c.y-y)<30))continue;
-  const a={x:Math.round(x-w/2),y:Math.round(y-17),w,h};
-  if(a.x<P.x||a.x+w>P.x+P.w||a.y<P.y||a.y+h>P.y+P.h)continue;
-  if(occupied.some(t=>!(a.x>t.x+t.w+6||a.x+a.w+6<t.x||a.y>t.y+t.h+6||a.y+a.h+6<t.y)))continue;
-  if(shown.some(q=>Math.hypot(x-q[0],y-q[1])<105))continue;
-  rect(a.x,a.y,w,h,[9,30,50]);txt(label,a.x+7,a.y+5,2,[247,251,255]);
-  if(time)txt(time,a.x+7,a.y+26,2,[177,225,250]);
-  occupied.push(a); // Réserver aussi la boîte de chaque valeur, pas seulement celle des villes.
-  shown.push([x,y]);
-  if(shown.length>=maxMarks)break;
+  // Repères prioritaires d'abord, puis nord vers sud : tous les secteurs
+  // sont servis avant d'ajouter des valeurs de confort.
+  targets.sort((a,b)=>a.priority-b.priority||b.lat-a.lat);
+  const placed=[];
+  const collides=a=>occupied.some(b=>
+    !(a.x>a2(b)||a.x+a.w+5<b.x||a.y>b2(b)||a.y+a.h+5<b.y));
+  function a2(b){return b.x+b.w+5;}
+  function b2(b){return b.y+b.h+5;}
+  const inside=a=>a.x>=8&&a.y>=72&&a.x+a.w<=W-8&&a.y+a.h<=681;
+  const offer=(p,px,py,w,h,x,y)=>{
+   const box={x:Math.round(x),y:Math.round(y),w,h};
+   if(!inside(box)||collides(box))return null;
+   const bx=Math.max(box.x,Math.min(px,box.x+w));
+   const by=Math.max(box.y,Math.min(py,box.y+h));
+   const dist=Math.hypot(px-bx,py-by);
+   const mapCenterPenalty=Math.max(0,Math.hypot(px-(box.x+w/2),py-(box.y+h/2))-50)*.05;
+   return {box,score:dist+mapCenterPenalty};
+  };
+  for(const t of targets){
+   const px=xx(t.lon),py=yy(t.lat),v=kfsFranceRegionDisplayValue(t.sample.value,metric);
+   const text1=t.name.toUpperCase()+" "+v;
+   const text2=t.sample.extremeWhen;
+   const w=Math.max(wordWidth(text1),wordWidth(text2))+14,h=42;
+   const positions=[
+     [px-w/2,py-h-15],[px-w/2,py+15],
+     [px-w-18,py-h/2],[px+18,py-h/2],
+     [px-w-17,py-h-13],[px+17,py-h-13],
+     [px-w-17,py+12],[px+17,py+12],
+     [px-w/2,py-h-45],[px-w/2,py+48],
+     [px-w-48,py-h/2],[px+48,py-h/2],
+     [px-w-60,py-h-36],[px+60,py-h-36],
+     [px-w-60,py+30],[px+60,py+30]
+   ];
+   let best=null;
+   for(const [x,y] of positions){
+    const candidate=offer(t,px,py,w,h,x,y);
+    if(candidate&&(!best||candidate.score<best.score))best=candidate;
+   }
+   // Recherche globale de secours : place l'étiquette en mer plutôt que de
+   // masquer la valeur, avec un trait de rappel au point d'origine.
+   if(!best){
+    for(let y=76;y<681-h;y+=12)
+     for(let x=9;x<W-w-9;x+=12){
+      const candidate=offer(t,px,py,w,h,x,y);
+      if(candidate&&(!best||candidate.score<best.score))best=candidate;
+     }
+   }
+   if(!best){console.warn("KFS_FRANCE_EXTREME_LABEL_SKIPPED",t.name);continue;}
+   occupied.push(best.box);
+   placed.push({...best.box,px,py,text1,text2});
+  }
+  for(const t of placed){
+   const cx=Math.max(t.x,Math.min(t.px,t.x+t.w));
+   const cy=Math.max(t.y,Math.min(t.py,t.y+t.h));
+   line(t.px,t.py,cx,cy,[232,239,246]);
+   rect(t.px-2,t.py-2,5,5,[240,248,255]);
+  }
+  for(const t of placed){
+   rect(t.x,t.y,t.w,t.h,[10,30,51]);
+   txt(t.text1,t.x+7,t.y+4,2,[246,251,255]);
+   txt(t.text2,t.x+7,t.y+23,2,[158,222,248]);
+  }
+ }else{
+  for(const [name,x,y] of (zone==="FR"?Object.values(KFS_PROBA_CITIES).flatMap(cities=>cities.slice(0,1)):(KFS_PROBA_CITIES[zone]||[]))){
+   if(!features.some(f=>kfsProbaInFeature(x,y,f)))continue;
+   const px=xx(x),py=yy(y),title=name.toUpperCase();
+   const w=wordWidth(title)+12,h=24;
+   for(const [tx,ty] of [[px+9,py-18],[px-w-10,py-18],[px-w/2,py-37],[px-w/2,py+11]]){
+    const a={x:Math.round(tx),y:Math.round(ty),w,h};
+    if(a.x<P.x||a.y<P.y||a.x+w>P.x+P.w||a.y+a.h>P.y+P.h)continue;
+    if(occupied.some(t=>!(a.x>t.x+t.w+5||a.x+a.w+5<t.x||a.y>t.y+t.h+6||a.y+a.h+6<t.y)))continue;
+    rect(a.x,a.y,a.w,a.h,[9,30,50]);txt(title,a.x+6,a.y+5,2,[244,249,255]);
+    occupied.push(a);cityPlaces.push({x:px,y:py});break;
+   }
+   rect(px-2,py-2,5,5,[250,250,255]);rect(px-1,py-1,3,3,[13,43,64]);
+  }
+  const ordered=[...valid].sort((a,b)=>b.lat-a.lat),shown=[];
+  const maxMarks=zone==="FR"?15:zone==="94"?4:zone==="11"?5:9;
+  for(const p of ordered){
+   const x=xx(p.lon),y=yy(p.lat),label=kfsFranceRegionDisplayValue(p.value,metric);
+   if(label.length>11)continue;
+   const w=wordWidth(label)+14,h=24;
+   if(cityPlaces.some(c=>Math.abs(c.x-x)<45&&Math.abs(c.y-y)<30))continue;
+   const a={x:Math.round(x-w/2),y:Math.round(y-17),w,h};
+   if(a.x<P.x||a.x+a.w>P.x+P.w||a.y<P.y||a.y+a.h>P.y+P.h)continue;
+   if(occupied.some(t=>!(a.x>t.x+t.w+6||a.x+a.w+6<t.x||a.y>t.y+t.h+6||a.y+a.h+6<t.y)))continue;
+   if(shown.some(q=>Math.hypot(x-q[0],y-q[1])<105))continue;
+   rect(a.x,a.y,w,h,[9,30,50]);txt(label,a.x+7,a.y+5,2,[247,251,255]);
+   occupied.push(a);shown.push([x,y]);
+   if(shown.length>=maxMarks)break;
+  }
  }
  const zoneName=zone==="FR"?"FRANCE METROPOLITAINE":(KFS_PROBA_REGIONS.find(r=>r[0]===zone)?.[1]||"REGION");
  txt("KFS METEO FRANCE",40,14,3,[239,247,255]);
