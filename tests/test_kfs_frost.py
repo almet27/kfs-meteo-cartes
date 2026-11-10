@@ -1,4 +1,4 @@
-"""Unit checks for frost event thresholds and complete 6-hour day coverage."""
+"""Unit checks for frost event thresholds and complete 3-hour day coverage."""
 import unittest
 
 import numpy as np
@@ -19,7 +19,7 @@ class FrostProbabilityTests(unittest.TestCase):
     def test_every_six_hour_period_is_required(self):
         values = {}
         for member in MEMBERS:
-            for hour in (6, 12, 18, 24):
+            for hour in (3, 6, 9, 12, 15, 18, 21, 24):
                 values[(hour, member)] = np.array([1.0 if hour != 18 else -4.0])
         a = daily_minima(values, 0, 1)
         self.assertEqual(a.shape, (8, 1))
@@ -32,9 +32,9 @@ class FrostProbabilityTests(unittest.TestCase):
     def test_second_utc_day_uses_its_own_periods(self):
         values = {}
         for member in MEMBERS:
-            for hour in (6, 12, 18, 24):
+            for hour in (3, 6, 9, 12, 15, 18, 21, 24):
                 values[(hour, member)] = np.array([-8.0])
-            for hour in (30, 36, 42, 48):
+            for hour in (27, 30, 33, 36, 39, 42, 45, 48):
                 values[(hour, member)] = np.array([2.0])
         self.assertEqual(float(daily_minima(values, 0, 1)[0, 0]), -8.0)
         self.assertEqual(float(daily_minima(values, 1, 1)[0, 0]), 2.0)
