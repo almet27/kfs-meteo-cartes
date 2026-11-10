@@ -88,9 +88,20 @@ def main():
                 complete=noaa_latest(model,72)
             if initial is None:
                 warnings[model]="Le nouveau run n'a pas ete confirme par la source NOAA"
+            # Horodatage de la PREMIERE observation réelle du cycle.
+            # Ne jamais horodater rétroactivement un run déjà connu :
+            # cela déclencherait des annonces Discord tardives au redémarrage.
+            previous=old.get("models",{}).get(model,{})
+            if initial and initial!=previous.get("latest_first_step_utc"):
+                first_detected=iso(datetime.now(timezone.utc))
+            elif initial:
+                first_detected=previous.get("first_detected_utc")
+            else:
+                first_detected=None
             models[model]={
                 "source":info["source"],"native_step_h":interval,
                 "latest_first_step_utc":initial,
+                "first_detected_utc":first_detected,
                 "latest_12h_temperature_step_utc":early,
                 "early_12h_available_for_latest_run":bool(initial and early and initial==early),
                 "latest_72h_temperature_step_utc":complete,
