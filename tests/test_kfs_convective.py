@@ -35,5 +35,20 @@ class ConvectivePotentialTests(unittest.TestCase):
         self.assertIsNone(convective_tier(1000, math.nan, 50, 12))
 
 
+
+class FreshSnowfallAccumulationTests(unittest.TestCase):
+    def test_water_equivalent_accumulations_are_not_snow_depth(self):
+        import numpy as np
+        from scripts.build_ecmwf_snow_storm import daily_rain_mm
+        # Direct SF accumulation from 24h to 48h, stored as metres.
+        vals={("sf",48,3):np.array([.004,.0004])}
+        starts={(48,3):24}
+        result=daily_rain_mm(vals,starts,3,24,2,param="sf")
+        self.assertTrue(np.allclose(result,[4.0,0.4]))
+
+    def test_missing_snowfall_cannot_be_replaced_by_zero(self):
+        from scripts.build_ecmwf_snow_storm import daily_rain_mm
+        self.assertIsNone(daily_rain_mm({}, {},3,24,2,param="sf"))
+
 if __name__ == "__main__":
     unittest.main()
