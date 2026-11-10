@@ -295,7 +295,10 @@ def main():
     ) and all(
         (ROOT / f"ifs-zonal-wind-{suffix}.png").is_file()
         for suffix in ("10hpa", "50hpa", "100hpa", "comparison")
-    ) and len(previous.get("zonal_wind_series_60n", {}).get("10", {})) >= 12
+    ) and len(previous.get("zonal_wind_series_60n", {}).get("10", {})) >= 12 and (
+        previous.get("overview_10hpa", {}).get("image") ==
+        "strato/ifs-10hpa-vortex-overview.png"
+    ) and (ROOT / "ifs-10hpa-vortex-overview.png").is_file()
     if ready and not os.getenv("KFS_FORCE_STRATO"):
         print("STRATO : cartes déjà à jour pour", stamp, flush=True)
         return
@@ -314,6 +317,8 @@ def main():
         "zonal_wind_definition": "Moyenne zonale de U sur toutes les longitudes, latitude 60°N. Valeurs positives = vents d'ouest, négatives = vents d'est.",
     }
     zonal = {level: {} for level in LEVELS}
+    height_fields = {}  # 10 hPa GH, pour la planche sans second téléchargement ECMWF
+    overview_lon = overview_lat = None
     for step in STEPS:
         target = ROOT / f".strato-h{step:03}.grib2"
         try:
@@ -323,6 +328,8 @@ def main():
                 levtype="pl", param=list(PARAMS), levelist=list(LEVELS),
                 target=str(target))
             x, y, all_levels = read_grib(target)
+            height_fields[step] = all_levels[10]["gh"].astype(np.float32).copy()
+            overview_lon, overview_lat = x.copy(), y.copy()
             try:
                 sample = extract_u_60n_from_full(y, all_levels)
                 for zlevel, value in sample.items():
@@ -397,6 +404,20 @@ def main():
         except Exception as exc:
             current["errors"]["chart-" + key] = str(exc)[:250]
             print("STRATO CHART ÉCHEC", key, exc, flush=True)
+
+    # Carte récapitulative : uniquement les véritables anomalies vs NOAA 1991–2020.
+    # Échec NOAA ou champ absent => pas de planche, anciennes cartes conservées.
+    if len(height_fields) == len(STEPS) and len(zonal[10]) >= 12:
+        try:
+            from generate_strato_overview import build_overview
+            current["overview_10hpa"] = build_overview(
+                cycle, overview_lon, overview_lat, height_fields, zonal[10], ROOT)
+            print("STRATO OVERVIEW OK", current["overview_10hpa"]["image"], flush=True)
+        except Exception as exc:
+            current["errors"]["overview_10hpa"] = str(exc)[:350]
+            print("STRATO OVERVIEW indisponible", exc, flush=True)
+    else:
+        current["errors"]["overview_10hpa"] = "Six échéances GH et 12 vents zonaux requis"
 
     # En cas de rupture du flux météo, garder le précédent catalogue valide.
     count = sum(len(slots) for slots in current["maps"].values())
