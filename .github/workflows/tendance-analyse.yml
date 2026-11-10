@@ -10,17 +10,51 @@ on:
       - 'scripts/generate_tendance_analysis.py'
       - '.github/workflows/tendance-analyse.yml'
   schedule:
-    # Deux actualisations par jour du lundi au samedi, après la diffusion des runs 00Z/12Z.
-    # Le dimanche, conserver la génération dédiée avant le bulletin hebdomadaire.
-    - cron: '10 9,21 * * 1-6' # 09:10 et 21:10 UTC, lundi-samedi
-    - cron: '07 16 * * 0' # dimanche 16:07 UTC, bulletin hebdomadaire
+    # Paris 08:30 toute l'annee : 06:30 UTC en ete, 07:30 UTC en hiver.
+    # GitHub utilise UTC; le filtre ci-dessous exclut le doublon hors saison.
+    - cron: '30 6 * * *'
+    - cron: '30 7 * * *'
+    # Paris 21:00 du lundi au samedi : 19:00 UTC en ete, 20:00 UTC en hiver.
+    - cron: '0 19 * * 1-6'
+    - cron: '0 20 * * 1-6'
+    # Dimanche : generation speciale avant le bulletin hebdomadaire (conservee).
+    - cron: '07 16 * * 0'
 permissions:
   contents: write
 concurrency:
   group: kfs-tendance-analyse
   cancel-in-progress: false
 jobs:
+  verifier-horaire:
+    runs-on: ubuntu-latest
+    outputs:
+      lancer: ${{ steps.filtre.outputs.lancer }}
+    steps:
+      - name: Selectionner l'heure de Paris (ete / hiver)
+        id: filtre
+        shell: bash
+        env:
+          KFS_EVENT: ${{ github.event_name }}
+          KFS_CRON: ${{ github.event.schedule }}
+        run: |
+          lancer=false
+          if [[ "$KFS_EVENT" != "schedule" ]]; then
+            lancer=true
+          elif [[ "$KFS_CRON" == "07 16 * * 0" ]]; then
+            lancer=true
+          else
+            offset="$(TZ=Europe/Paris date +%z)"
+            if [[ "$offset" == "+0200" && ( "$KFS_CRON" == "30 6 * * *" || "$KFS_CRON" == "0 19 * * 1-6" ) ]]; then
+              lancer=true
+            elif [[ "$offset" == "+0100" && ( "$KFS_CRON" == "30 7 * * *" || "$KFS_CRON" == "0 20 * * 1-6" ) ]]; then
+              lancer=true
+            fi
+          fi
+          echo "lancer=$lancer" >> "$GITHUB_OUTPUT"
+          echo "Filtre /tendance: evenement=$KFS_EVENT cron=$KFS_CRON lancer=$lancer"
   analyse-et-cartes:
+    needs: verifier-horaire
+    if: needs.verifier-horaire.outputs.lancer == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 95
     steps:
