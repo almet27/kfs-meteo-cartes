@@ -1,4 +1,4 @@
-name: KFS PROBA - ECMWF ENS frost six-hour minima
+name: KFS PROBA - ECMWF ENS frost three-hour minima
 on:
   workflow_dispatch:
   push:
@@ -38,7 +38,7 @@ jobs:
         run: |
           python -m py_compile scripts/build_ecmwf_frost.py
           PYTHONPATH=scripts python -m unittest discover -s tests -p 'test_kfs_frost.py' -v
-      - name: Download native ECMWF ENS 6-hour minimum temperature
+      - name: Download native ECMWF ENS 3-hour minimum temperature
         env:
           ECMWF_SOURCE: ecmwf
         run: python scripts/build_ecmwf_frost.py
@@ -51,7 +51,7 @@ jobs:
             echo "No new frost probabilities"
             exit 0
           fi
-          git commit -m "KFS: ECMWF frost six-hour minima probabilities"
+          git commit -m "KFS: ECMWF frost three-hour minima probabilities"
           for attempt in 1 2 3 4 5; do
             git fetch origin main
             if ! git rebase origin/main; then
