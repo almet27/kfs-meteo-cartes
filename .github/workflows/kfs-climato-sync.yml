@@ -4,6 +4,7 @@ on:
     paths:
       - .github/workflows/kfs-climato-sync.yml
       - cloudflare/kfs-climato-observations.js
+      - cloudflare/kfs-climato-phenomenes.js
   workflow_dispatch:
 permissions:
   contents: read
