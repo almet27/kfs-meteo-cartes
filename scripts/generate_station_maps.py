@@ -485,7 +485,8 @@ def test():
                    (6, 43, 20), (-1, 43, 5), (2, 46, 12)]
     rain = station_surface("fr", ZONES["fr"][1], rain_sample, fake_land, "pluie")
     assert rain is not None and rain.count() > 1000
-    assert 0 <= rain.min() < rain.max() <= 20
+    # Lissage numérique : tolérer les erreurs d'arrondi flottant infimes.
+    assert -1e-6 <= rain.min() < rain.max() <= 20 + 1e-6
     # La pluie est interpolée sur une aire plus restreinte que la température.
     assert rain.count() < field.count()
     print("Self-test: 7 mesures + dégradés IDW température et pluie sur terres OK")
