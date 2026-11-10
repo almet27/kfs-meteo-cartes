@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""KFS /proba frost: ECMWF IFS ENS 8 members, 6-hour minimum 2 m temperature.
+"""KFS /proba frost: ECMWF IFS ENS 8 members, 3-hour minimum 2 m temperature.
 
 A frost event is a UTC day's lowest 2 m temperature <= a threshold. Every
-member must have four *consecutive* native mn2t6 windows. Missing input is
+member must have eight *consecutive* native mn2t3 windows. Missing input is
 never silently replaced with zero or a warmer 2 m instantaneous sample.
 """
 from __future__ import annotations
@@ -21,24 +21,24 @@ from build_ecmwf_snow_storm import MEMBERS, indexed_points, nearest
 ROOT = Path(__file__).resolve().parents[1]
 POINTS = ROOT / "proba" / "points-ecmwf.json"
 OUT = ROOT / "proba" / "ecmwf-frost-probabilities.json"
-STEPS = list(range(6, 97, 6))
+STEPS = list(range(3, 97, 3))
 THRESHOLDS = (0, -2, -5, -10)
 MIN_MEMBERS = 5
 
 
 def load_minimum_fields(path, points):
-    """Read native minimum of previous 6 hours, converted from kelvin to °C."""
+    """Read native minimum of previous 3 hours, converted from kelvin to °C."""
     fields, index, grid_size = {}, None, 0
     with open(path, "rb") as stream:
         while (msg := codes_grib_new_from_file(stream)) is not None:
             try:
                 short = str(codes_get(msg, "shortName"))
-                if short != "mn2t6":
+                if short != "mn2t3":
                     continue
                 end = int(codes_get(msg, "endStep"))
                 start = int(codes_get(msg, "startStep"))
                 member = int(codes_get(msg, "number"))
-                if end not in STEPS or member not in MEMBERS or start != end - 6:
+                if end not in STEPS or member not in MEMBERS or start != end - 3:
                     continue
                 if (end, member) in fields:
                     raise RuntimeError("Duplicate ECMWF frost field")
@@ -59,16 +59,16 @@ def load_minimum_fields(path, points):
 
 
 def daily_minima(fields, lead, npoints):
-    """One Tmin per ensemble member over exactly four 6h periods (UTC)."""
+    """One Tmin per ensemble member over exactly eight 3h periods (UTC)."""
     result = []
     for member in MEMBERS:
         periods = [fields.get((lead * 24 + hour, member))
-                   for hour in (6, 12, 18, 24)]
+                   for hour in (3, 6, 9, 12, 15, 18, 21, 24)]
         if any(v is None for v in periods):
             result.append(np.full(npoints, np.nan))
             continue
         matrix = np.stack(periods)
-        if matrix.shape != (4, npoints):
+        if matrix.shape != (8, npoints):
             raise RuntimeError("Frost point count mismatch")
         good = np.all(np.isfinite(matrix), axis=0)
         result.append(np.where(good, np.min(matrix, axis=0), np.nan))
@@ -99,7 +99,7 @@ def main():
                         model="ifs", resol="0p25")
         path = Path(tmp) / "ecmwf-ens-frost.grib2"
         response = client.retrieve(time=0, stream="enfo", type="pf",
-                                   number=MEMBERS, step=STEPS, param="mn2t6",
+                                   number=MEMBERS, step=STEPS, param="mn2t3",
                                    target=str(path))
         run = response.datetime
         if run.tzinfo is None:
@@ -128,8 +128,8 @@ def main():
         "run_utc": run.isoformat().replace("+00:00", "Z"),
         "generated_at_utc": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "ensemble_members": MEMBERS,
-        "sampling_interval_hours": 6,
-        "method": "Native ECMWF mn2t6: 4 non-overlapping 6h windows per UTC day; minimum over each 24h member; fraction <= threshold",
+        "sampling_interval_hours": 3,
+        "method": "Native ECMWF mn2t3: 8 non-overlapping 3h windows per UTC day; minimum over each 24h member; fraction <= threshold",
         "warning": "Indicative 8-member, 0.25 degree ensemble fraction; UTC days (not local calendar days), not ground frost or official warning",
         "zone_point_counts": {zone: b - a for zone, (a, b) in zones.items()},
         "days": days,
