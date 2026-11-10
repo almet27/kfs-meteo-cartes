@@ -142,6 +142,7 @@ async function kfsPReport(city,year,month,rubrique) {
   if(rubrique==="neige"){
     const sol=kfsPStats(days,"neigeSol");
     if(sol.valid)fields.push({name:"⛄ Sol couvert de neige",value:"**"+sol.jours+" jour(s)** · "+sol.valid+" jours renseignés",inline:true});
+    else fields.push({name:"⛄ Sol couvert de neige",value:"Non mesuré à cette station (ne signifie pas absence de neige).",inline:true});
     const deep=days.filter(d=>d.neigeEpaisseur!==null&&Number.isFinite(d.neigeEpaisseur));
     if(deep.length){
       const max=deep.reduce((a,b)=>b.neigeEpaisseur>a.neigeEpaisseur?b:a);
