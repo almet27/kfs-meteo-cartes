@@ -1,0 +1,23 @@
+name: Verify KFS Discord proba command endpoint
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/kfs-proba-healthcheck.yml
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Trigger /proba command registration and check Worker response
+        run: |
+          set -euo pipefail
+          curl --retry 3 --retry-delay 2 --connect-timeout 10 --max-time 20 -fSs \
+            'https://kfs-meteo-ia.alain-leprevost.workers.dev/proba-status' \
+            | tee /tmp/kfs-proba-response.json
+          jq -e '.ok == true and .command == "proba" and .regions == 13' \
+            /tmp/kfs-proba-response.json
