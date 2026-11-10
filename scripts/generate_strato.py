@@ -296,6 +296,7 @@ def main():
         (ROOT / f"ifs-zonal-wind-{suffix}.png").is_file()
         for suffix in ("10hpa", "50hpa", "100hpa", "comparison")
     ) and len(previous.get("zonal_wind_series_60n", {}).get("10", {})) >= 12 and (
+        previous.get("overview_10hpa", {}).get("layout_version") == 2 and
         previous.get("overview_10hpa", {}).get("image") ==
         "strato/ifs-10hpa-vortex-overview.png"
     ) and (ROOT / "ifs-10hpa-vortex-overview.png").is_file()
