@@ -5,6 +5,7 @@ on:
     paths:
       - scripts/generate_strato.py
       - scripts/generate_strato_signals.py
+      - scripts/generate_strato_overview.py
       - .github/workflows/strato-ifs.yml
   schedule:
     # Après publication habituelle des runs longs 00Z et 12Z.
@@ -32,10 +33,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libeccodes-dev
           python -m pip install --upgrade pip
-          pip install ecmwf-opendata cfgrib eccodes xarray numpy matplotlib cartopy
+          pip install ecmwf-opendata cfgrib eccodes xarray numpy matplotlib cartopy netCDF4 scipy
       - name: Générer cartes 10, 50, 100 hPa et catalogue
         run: |
-          python -m py_compile scripts/generate_strato.py
+          python -m py_compile scripts/generate_strato.py scripts/generate_strato_overview.py
           python scripts/generate_strato.py
       - name: Générer le diagnostic précurseur SSW à partir des champs réels
         continue-on-error: true
