@@ -748,7 +748,19 @@ async function kfsProbaEcmwfSubsetRead(type,threshold,zone,day,points){
    ascent:optional("storm_ascent_support_pct",100),
    shear:optional("shear_850_500_mean_ms",150)
   }:null;
-  return {source:"ECMWF-8",values:pct,amounts,run:j.run_utc,diagnostics,
+  // Un seuil élevé donne souvent 0 % plusieurs jours d'affilée.
+  // Conserver l'évolution d'un signal orageux faible (même run et même zone)
+  // pour distinguer « rien au seuil demandé » de « aucune convection ».
+  const stormTrend=type==="orage"?Object.keys(j.days).sort().map(date=>{
+   const fieldSet=j.days[date]?.fields||{};
+   const maxField=key=>{
+    const a=fieldSet[key]?.[zone];
+    return Array.isArray(a)&&a.length===points.length&&
+      a.every(v=>Number.isFinite(v)&&v>=0&&v<=100)?Math.max(...a):null;
+   };
+   return {date,requested:maxField(field),weak:maxField("storm1")};
+  }).filter(x=>x.requested!==null&&x.weak!==null):null;
+  return {source:"ECMWF-8",values:pct,amounts,run:j.run_utc,diagnostics,stormTrend,
     members:j.ensemble_members.length,period_start:d.valid_from_utc,period_end:d.valid_to_utc};
  }catch(e){console.error("KFS_PROBA_ECMWF_SUBSET",String(e));return null;}
 }
@@ -809,6 +821,12 @@ async function kfsProbaComplete(interaction,phenom,zone,jour,seuil){
    const orgMax=maxValue(subset.diagnostics?.organized);
    const liftMax=maxValue(subset.diagnostics?.ascent);
    const shearMax=maxValue(subset.diagnostics?.shear);
+   const stormTrend=phenom==="orage"&&subset.stormTrend?.length?
+    "🗓️ **Évolution "+KFS_STORM_NAMES[seuil].toLowerCase()+" (maximum local par jour) :** "+
+      subset.stormTrend.map(x=>x.date.slice(8,10)+"/"+x.date.slice(5,7)+" "+x.requested.toFixed(1).replace(".0","")+" %").join(" · ")+".\n"+
+    "🔎 **Signal orageux faible, même run :** "+
+      subset.stormTrend.map(x=>x.date.slice(8,10)+"/"+x.date.slice(5,7)+" "+x.weak.toFixed(1).replace(".0","")+" %").join(" · ")+".\n"+
+    (subset.stormTrend.every(x=>x.requested===0)?"💡 Aucun des 8 membres n'atteint le niveau demandé aux points analysés ; des variations existent parfois au niveau faible.\n":""):"";
    const stormDiagnostics=phenom==="orage"?
     (orgMax!==null?"🌪️ **Potentiel d'organisation convective :** jusqu'à "+Math.round(orgMax)+" % des membres aux points échantillonnés (niveau ≥ moyen et cisaillement 850–500 hPa ≥ 15 m/s).\n":"")+
     (shearMax!==null?"💨 **Cisaillement 850–500 hPa :** jusqu'à "+shearMax.toFixed(1)+" m/s (maximum quotidien moyen d'ensemble local).\n":"")+
@@ -821,7 +839,7 @@ async function kfsProbaComplete(interaction,phenom,zone,jour,seuil){
     "🗺️ **Probabilité indicative :** "+minimum+" à "+maximum+" % sur les points échantillonnés.\n"+
     "📊 **Source sans Open-Meteo :** "+subset.members+" membres sélectionnés de l'IFS ENS ouvert d'ECMWF.\n"+
     "**Carte :** chiffres % = fraction des membres dépassant le seuil ; couleur = "+valueType+".\n"+
-    stormDiagnostics+
+    stormTrend+stormDiagnostics+
     "**Run :** "+subset.run+" · **période UTC :** "+subset.period_start+" → "+subset.period_end+".\n"+
     (zone!=="FR"?"**Repères :** départements et grandes villes.\n":"")+
     (phenom==="neige"?"🏔️ Le relief montagneux est inclus ; le modèle représente les zones naturelles, pas la tenue sur les routes.\n":
