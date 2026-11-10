@@ -803,6 +803,38 @@ async function kfsProbaEcmwfRainMeanRead(zone,day,points,run,validFrom,validTo){
  return null;
 }
 
+// ECMWF IFS ENS: native minimum temperature over four consecutive 6-hour UTC windows.
+// The GitHub Actions dataset avoids /proba gel requests to Open-Meteo.
+async function kfsProbaEcmwfFrostRead(threshold,zone,day,points){
+ const field="frost"+Math.abs(threshold);
+ if(!["frost0","frost2","frost5","frost10"].includes(field))return null;
+ const urls=[
+  "https://raw.githubusercontent.com/almet27/kfs-meteo-cartes/main/proba/ecmwf-frost-probabilities.json",
+  "https://almet27.github.io/kfs-meteo-cartes/proba/ecmwf-frost-probabilities.json"
+ ];
+ for(const url of urls){
+  try{
+   const resp=await fetch(url,{signal:AbortSignal.timeout(3500),
+    headers:{accept:"application/json"},cf:{cacheTtl:900,cacheEverything:true}});
+   if(!resp.ok)continue;
+   const j=await resp.json(),d=j?.days?.[day];
+   if(j?.schema!==1||j?.provider!=="ECMWF IFS ENS 8-member frost subset"||
+    j?.ensemble_members?.length!==8||j?.sampling_interval_hours!==6||
+    j?.zone_point_counts?.[zone]!==points.length)continue;
+   const age=Date.now()-Date.parse(j.run_utc);
+   if(!Number.isFinite(age)||age<0||age>48*3600000)continue;
+   const values=d?.fields?.[field]?.[zone],amounts=d?.fields?.frost_mean_c?.[zone];
+   if(!Array.isArray(values)||!Array.isArray(amounts)||
+    values.length!==points.length||amounts.length!==points.length||
+    values.some(v=>!Number.isFinite(v)||v<0||v>100)||
+    amounts.some(v=>!Number.isFinite(v)||v< -90||v>60))continue;
+   return {values,amounts,run:j.run_utc,period_start:d.valid_from_utc,
+    period_end:d.valid_to_utc,members:8};
+  }catch(e){console.error("KFS_PROBA_FROST_ECMWF",String(e).slice(0,160));}
+ }
+ return null;
+}
+
 async function kfsProbaComplete(interaction,phenom,zone,jour,seuil){
  try{
   const rules=KFS_PROBA_RULES[phenom];
@@ -817,6 +849,30 @@ async function kfsProbaComplete(interaction,phenom,zone,jour,seuil){
   const points=kfsProbaSamples(features,zone!=="FR");
   if(points.length<2)throw Error("Échantillonnage spatial insuffisant.");
   const day=kfsProbaDay(jour),available=[],failures=[];
+  // Gelées : l'IFS ENS gratuit fonctionne indépendamment du quota Open-Meteo.
+  const frost=phenom==="gel"?await kfsProbaEcmwfFrostRead(seuil,zone,day,points):null;
+  if(frost){
+   for(let i=0;i<points.length;i++){points[i].value=frost.values[i];points[i].amount=frost.amounts[i];}
+   const departments=await departmentsPromise;
+   const frame=kfsProbaRender(features,points,zone,"gel",departments),png=await kfsProbaPng(frame);
+   const name=zone==="FR"?"France métropolitaine":KFS_PROBA_REGIONS.find(r=>r[0]===zone)?.[1]||zone;
+   const min=Math.round(Math.min(...frost.values)),max=Math.round(Math.max(...frost.values));
+   const minT=Math.min(...frost.amounts).toFixed(1),maxT=Math.max(...frost.amounts).toFixed(1);
+   const content="**KFS MÉTÉO · /proba gelées · "+name+" · J+"+jour+" ("+day+")**\n"+
+    "🥶 **Gel à 2 m :** température minimale ≤ "+seuil+" °C sur 24 h UTC.\n"+
+    "🗺️ **Fraction des membres :** "+min+" à "+max+" % aux points étudiés.\n"+
+    "🌡️ **Température minimale moyenne :** "+minT+" à "+maxT+" °C.\n"+
+    "**Carte :** couleurs = Tmin moyenne ; blanc = % de membres sous le seuil ; bleu = Tmin en °C.\n"+
+    "📊 **Source :** IFS ENS ECMWF, 8 membres, minimum des quatre fenêtres successives de 6 h (mn2t6).\n"+
+    "🕓 **Période :** "+frost.period_start+" → "+frost.period_end+" (UTC, pas exactement le jour civil français).\n"+
+    "**Run :** "+frost.run+".\n"+
+    (zone!=="FR"?"**Repères :** limites départementales et grandes villes.\n":"")+
+    "⚠️ Ensemble limité à 8 membres à 0,25°, fraction non calibrée ; gel sous abri à 2 m, pas gel au sol, microclimat ni vigilance officielle.\n"+
+    "_Données ECMWF Open Data, licence CC BY 4.0._";
+   try{await kfsProbaEdit(interaction,{content,allowed_mentions:{parse:[]}},png);}
+   catch(e){await kfsProbaEdit(interaction,{content:content+"\n⚠️ Carte indisponible : "+String(e.message||e).slice(0,150),allowed_mentions:{parse:[]}});}
+   return;
+  }
   const subset=await kfsProbaEcmwfSubsetRead(phenom,seuil,zone,day,points);
   if(subset){
    for(let i=0;i<points.length;i++){points[i].value=subset.values[i];points[i].amount=subset.amounts[i];}
