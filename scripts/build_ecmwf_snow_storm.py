@@ -275,6 +275,21 @@ def load_optional_snowfall(path, points):
     return values, starts
 
 
+def liquid_precip_mm(total_mm, snowfall_mm):
+    """Liquid rainfall in mm from TP minus native snowfall water equivalent SF.
+
+    Both arrays MUST be obtained from the same ENS member, run and 24h window.
+    Missing values and impossible phase totals are not replaced by zero.
+    """
+    total = np.asarray(total_mm, dtype=np.float64)
+    snow = np.asarray(snowfall_mm, dtype=np.float64)
+    if total.shape != snow.shape or not np.all(np.isfinite(total)) or not np.all(np.isfinite(snow)):
+        return None
+    if np.any(total < 0) or np.any(snow < 0) or np.any(snow > total + 0.5):
+        return None
+    return np.maximum(0, total - snow)
+
+
 def produce(fields, tp_starts, npoints, run, sf_fields=None, sf_starts=None, synoptic=None):
     synoptic = synoptic or {}
     by_day = {}
@@ -284,18 +299,25 @@ def produce(fields, tp_starts, npoints, run, sf_fields=None, sf_starts=None, syn
         snow_by_member, storm_by_member = [], []
         org_by_member, lift_by_member, shear_by_member = [], [], []
         rain_by_member = []
+        liquid_by_member = []
         # Falling snow: daily new snowfall, not instantaneous snow depth.
         falling_by_member = []
+        sf_by_member = {}
         if sf_fields and sf_starts:
             for member in MEMBERS:
                 daily_sf = daily_rain_mm(sf_fields, sf_starts, member,
                                          lead*24, npoints, param="sf")
                 if daily_sf is not None:
                     falling_by_member.append(daily_sf)
+                    sf_by_member[member] = daily_sf
         for member in MEMBERS:
             rainfall = daily_rain_mm(fields, tp_starts, member, lead*24, npoints)
             if rainfall is not None:
                 rain_by_member.append(rainfall)
+                if member in sf_by_member:
+                    liquid = liquid_precip_mm(rainfall, sf_by_member[member])
+                    if liquid is not None:
+                        liquid_by_member.append(liquid)
             snow_at_steps, storm_at_steps = [], []
             org_at_steps, lift_at_steps, shear_at_steps = [], [], []
             previous_cp = np.zeros(npoints, dtype=np.float64) if lead == 0 else fields.get(
@@ -397,6 +419,20 @@ def produce(fields, tp_starts, npoints, run, sf_fields=None, sf_starts=None, syn
         else:
             print("WARNING: falling snowfall unavailable",day,
                   len(falling_by_member),"/",len(MEMBERS))
+        if len(liquid_by_member) == len(MEMBERS):
+            liquid = np.vstack(liquid_by_member)
+            if np.all(np.isfinite(liquid)):
+                fields_out["rain_liquid_mean_mm"] = np.mean(liquid, axis=0)
+                for threshold, slug in ((0.1, "0p1"), (1, "1"), (5, "5"),
+                                        (10, "10"), (20, "20"), (40, "40")):
+                    fields_out["rain_liquid"+slug] = np.mean(liquid >= threshold, axis=0)*100
+                print("ECMWF liquid rain 24h", day, "8 members,",
+                      f"mean {np.min(fields_out['rain_liquid_mean_mm']):.2f}–"
+                      f"{np.max(fields_out['rain_liquid_mean_mm']):.2f} mm")
+        else:
+            print("WARNING: liquid rain unavailable",day,
+                  len(liquid_by_member),"/",len(MEMBERS),
+                  "(requires valid TP and SF from the same member and window)")
         if len(rain_by_member) == len(MEMBERS):
             rain = np.vstack(rain_by_member)
             if np.all(np.isfinite(rain)):
@@ -491,7 +527,7 @@ def main():
         "generated_at_utc":datetime.now(timezone.utc).isoformat().replace("+00:00","Z"),
         "ensemble_members":MEMBERS,
         "sampling_interval_hours":12,
-        "method":"8-member storm CAPE+CP+dewpoint+gust; optional 850-500hPa wind shear and omega700; snow cover and native snowfall SF",
+        "method":"8-member storm CAPE+CP+dewpoint+gust; optional 850-500hPa wind shear and omega700; snow cover and native snowfall SF; liquid rain TP-SF per same member/run/24h window",
         "warning":"8-member 12h subset, 0.25 degree grid; shear is 850-500hPa (NOT 0-6km), omega is 700hPa; NOT calibrated storm-severity probabilities",
         "zone_point_counts":{z:b-a for z,(a,b) in zones.items()},
         "days":data
