@@ -736,7 +736,19 @@ async function kfsProbaEcmwfSubsetRead(type,threshold,zone,day,points){
    throw Error("Points ECMWF ENS incomplets.");
   if(pct.some(v=>!Number.isFinite(v)||v<0||v>100)||amounts.some(v=>!Number.isFinite(v)||v<0))
    throw Error("Probabilités/quantités expérimentales invalides ou incomplètes.");
-  return {source:"ECMWF-8",values:pct,amounts,run:j.run_utc,
+  // Optional synoptic diagnostics: missing fields are never treated as zero.
+  const optional=(key,max)=>{
+   const arr=d?.fields?.[key]?.[zone];
+   return Array.isArray(arr)&&arr.length===points.length&&
+    arr.every(x=>x===null||(Number.isFinite(x)&&x>=0&&x<=max))&&
+    arr.some(Number.isFinite)?arr:null;
+  };
+  const diagnostics=type==="orage"?{
+   organized:optional("storm_organized_pct",100),
+   ascent:optional("storm_ascent_support_pct",100),
+   shear:optional("shear_850_500_mean_ms",150)
+  }:null;
+  return {source:"ECMWF-8",values:pct,amounts,run:j.run_utc,diagnostics,
     members:j.ensemble_members.length,period_start:d.valid_from_utc,period_end:d.valid_to_utc};
  }catch(e){console.error("KFS_PROBA_ECMWF_SUBSET",String(e));return null;}
 }
@@ -792,11 +804,24 @@ async function kfsProbaComplete(interaction,phenom,zone,jour,seuil){
    const label=phenom==="neige"?"neige présente au sol ≥ "+seuil+" cm":
     "potentiel orageux au moins "+KFS_STORM_NAMES[seuil].toLowerCase();
    const valueType=phenom==="neige"?"épaisseur moyenne de neige au sol (cm)":"indice moyen de potentiel convectif (0–5)";
+   const maxValue=(arr)=>arr?.filter(Number.isFinite).length?
+    Math.max(...arr.filter(Number.isFinite)):null;
+   const orgMax=maxValue(subset.diagnostics?.organized);
+   const liftMax=maxValue(subset.diagnostics?.ascent);
+   const shearMax=maxValue(subset.diagnostics?.shear);
+   const stormDiagnostics=phenom==="orage"?
+    (orgMax!==null?"🌪️ **Potentiel d'organisation convective :** jusqu'à "+Math.round(orgMax)+" % des membres aux points échantillonnés (niveau ≥ moyen et cisaillement 850–500 hPa ≥ 15 m/s).\n":"")+
+    (shearMax!==null?"💨 **Cisaillement 850–500 hPa :** jusqu'à "+shearMax.toFixed(1)+" m/s (maximum quotidien moyen d'ensemble local).\n":"")+
+    (liftMax!==null?"↗️ **Convection avec ascendance 700 hPa :** jusqu'à "+Math.round(liftMax)+" % des membres (ω ≤ −0,05 Pa/s).\n":"")+
+    ((orgMax!==null||shearMax!==null||liftMax!==null)?
+     "ℹ️ Ces diagnostics décrivent l'environnement, pas des orages violents certains. Cisaillement 850–500 ≠ 0–6 km ; ascendance synoptique ≠ courant ascendant de la cellule.\n":""):
+    "";
    const content="**KFS MÉTÉO · /proba · "+name+" · J+"+jour+" ("+day+")**\n"+
     "**Événement :** "+label+".\n"+
     "🗺️ **Probabilité indicative :** "+minimum+" à "+maximum+" % sur les points échantillonnés.\n"+
     "📊 **Source sans Open-Meteo :** "+subset.members+" membres sélectionnés de l'IFS ENS ouvert d'ECMWF.\n"+
     "**Carte :** chiffres % = fraction des membres dépassant le seuil ; couleur = "+valueType+".\n"+
+    stormDiagnostics+
     "**Run :** "+subset.run+" · **période UTC :** "+subset.period_start+" → "+subset.period_end+".\n"+
     (zone!=="FR"?"**Repères :** départements et grandes villes.\n":"")+
     (phenom==="neige"?"🏔️ Le relief montagneux est inclus ; le modèle représente les zones naturelles, pas la tenue sur les routes.\n":
