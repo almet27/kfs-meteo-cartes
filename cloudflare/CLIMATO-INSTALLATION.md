@@ -1,3 +1,22 @@
+# /climato — Orages et neige (11 novembre 2026)
+
+Deux rubriques nouvelles ont été ajoutées à la commande Discord existante :
+- `rubrique: Orages (jours observés)` (`orages`) : nombre de jours avec orage observé par mois/année, dates si un mois est ciblé et détail des 12 mois.
+- `rubrique: Neige (chutes et au sol)` (`neige`) : jours avec chute de neige ; si disponibles, jours de sol enneigé, épaisseur maximale au sol et neige fraîche maximale sur 24 h.
+
+**Source** : Météo-France, archives quotidiennes `Q_<département>_<période>_autres-parametres.csv.gz`, colonnes `ORAG`, `NEIG`, `SOLNEIGE`, `NEIGETOTX`, `NEIGETOT06`, `HNEIGEF` et indicateurs de qualité. La couverture réelle des observations et la station sélectionnée sont indiquées. Les valeurs manquantes ne sont **jamais** comptées comme zéro. Le modèle des journées avec orage indique une occurrence observée : pas un nombre d'impacts de foudre ni un nombre de cellules orageuses.
+
+Le module autonome se trouve dans [kfs-climato-phenomenes.js](./kfs-climato-phenomenes.js). Son code est inséré avant `kfsClimatoHandleV2` dans le Worker Cloudflare `kfs-meteo-ia` ; `kfsClimatoHandleV2` route ces deux rubriques vers `kfsPReport`, et `kfsClimatoRegisterV2` enregistre leurs choix Discord. Conserver les autres branches du handler, notamment anomalies et records, lors des redéploiements.
+
+**Déploiement** : API Cloudflare `PUT /workers/scripts/kfs-meteo-ia/content` réussie ; nouvelle version relue et vérifiée. Le workflow GitHub `kfs-climato-sync.yml` a accédé au Worker avec HTTP 200 après déploiement. L'enregistrement effectif de l'option dans l'interface Discord et les valeurs d'une consultation réelle restent à valider avec une commande Discord.
+
+Exemples :
+- `/climato ville: Évreux annee: 2025 rubrique: Orages (jours observés)`
+- `/climato ville: Bourth annee: 2024 rubrique: Neige (chutes et au sol)`
+- `/climato ville: Rouen annee: 2025 mois: janvier rubrique: Neige (chutes et au sol)`
+
+---
+
 # /climato — option « record » (novembre 2026)
 
 La commande Discord `/climato` dispose maintenant d'un champ optionnel **record**. Les choix sont :
