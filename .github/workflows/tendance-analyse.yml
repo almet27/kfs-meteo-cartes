@@ -10,7 +10,10 @@ on:
       - 'scripts/generate_tendance_analysis.py'
       - '.github/workflows/tendance-analyse.yml'
   schedule:
-    - cron: '07 16 * * 0' # dimanche 16:07 UTC, sorties alignees sur les cartes disponibles
+    # Deux actualisations par jour du lundi au samedi, après la diffusion des runs 00Z/12Z.
+    # Le dimanche, conserver la génération dédiée avant le bulletin hebdomadaire.
+    - cron: '10 9,21 * * 1-6' # 09:10 et 21:10 UTC, lundi-samedi
+    - cron: '07 16 * * 0' # dimanche 16:07 UTC, bulletin hebdomadaire
 permissions:
   contents: write
 concurrency:
