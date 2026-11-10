@@ -91,5 +91,21 @@ class OrganizationAndLiftTests(unittest.TestCase):
         np.testing.assert_array_equal(values[1:], [1, 1])
 
 
+
+class LiquidPrecipitationTests(unittest.TestCase):
+    def test_rain_is_total_minus_snowfall_water_equivalent(self):
+        import numpy as np
+        from scripts.build_ecmwf_snow_storm import liquid_precip_mm
+        liquid=liquid_precip_mm(np.array([12.5,2.0,0.0]),np.array([2.5,2.0,0.0]))
+        self.assertTrue(np.allclose(liquid,[10.0,0.0,0.0]))
+
+    def test_missing_sf_is_not_treated_as_zero(self):
+        from scripts.build_ecmwf_snow_storm import liquid_precip_mm
+        self.assertIsNone(liquid_precip_mm([5,6],[float("nan"),2]))
+
+    def test_unphysical_sf_greater_than_total_is_rejected(self):
+        from scripts.build_ecmwf_snow_storm import liquid_precip_mm
+        self.assertIsNone(liquid_precip_mm([2],[4]))
+
 if __name__ == "__main__":
     unittest.main()
