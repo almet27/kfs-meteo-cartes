@@ -5,7 +5,7 @@ NOT official event probabilities. Uses 8 fixed, dispersed ensemble members and
 two snapshots per UTC day (12-hourly); lower-resolution sampling than full ENS.
 Snow height comes from ECMWF SD water equivalent and RSN density:
   snow_depth_cm = 100000 * sd_m_water_equivalent / rsn_kg_m3.
-Convective tiers use MU-CAPE, convective rain, 2m dewpoint and gusts on each member.
+Convective tiers use MU-CAPE, convective rain, dewpoint and gusts; optional 850-500hPa shear and omega700 provide separate context.
 Falling snow uses the *daily accumulation of SF snowfall water equivalent*,\nnot snow already present on the ground. Do not infer road snow cover.
 """
 from __future__ import annotations
@@ -27,6 +27,10 @@ OUT = ROOT / "proba" / "ecmwf-subset-probabilities.json"
 MEMBERS = [3, 9, 15, 21, 27, 33, 39, 45]
 STEPS = list(range(12, 97, 12))
 PARAMS = ["sd", "rsn", "mucape", "cp", "10fg", "tp", "2d"]
+# Optional ECMWF open-data pressure levels; they cannot block the base forecasts.
+SYNOPTIC_LEVELS = {("u", 850), ("v", 850), ("u", 500), ("v", 500), ("w", 700)}
+ORGANIZATION_SHEAR_MS = 15.0
+ASCENT_OMEGA_PA_S = -0.05
 
 
 def indexed_points(zones):
@@ -95,6 +99,73 @@ def load_fields(path, points):
     if missing:
         print("Warn: optional ECMWF gust fields missing (not treated as zero):", missing)
     return values, tp_start_steps
+
+
+def load_synoptic_fields(path, points):
+    """Sample optional pressure-level GRIB; preserve absence as missing."""
+    sampled, index, ngrid = {}, None, 0
+    with open(path, "rb") as stream:
+        while (msg := codes_grib_new_from_file(stream)) is not None:
+            try:
+                short = str(codes_get(msg, "shortName"))
+                if short not in ("u", "v", "w"):
+                    continue
+                level = int(codes_get(msg, "level"))
+                if (short, level) not in SYNOPTIC_LEVELS:
+                    continue
+                step = int(codes_get(msg, "endStep"))
+                number = int(codes_get(msg, "number"))
+                if step not in STEPS or number not in MEMBERS:
+                    continue
+                values = np.asarray(codes_get_array(msg, "values"), dtype=np.float64)
+                if index is None:
+                    index, ngrid = nearest(msg, points)
+                if len(values) != ngrid:
+                    raise RuntimeError("ECMWF synoptic pressure-level grid mismatch")
+                sample = values[index]
+                sampled[(short, level, step, number)] = np.where(
+                    np.isfinite(sample), sample, np.nan)
+            finally:
+                codes_release(msg)
+    if not sampled:
+        raise RuntimeError("No usable pressure-level GRIB records")
+    return sampled
+
+
+def shear_850_500_ms(u850, v850, u500, v500):
+    """Bulk vector shear between 850 and 500 hPa; NOT 0-6 km shear."""
+    return np.hypot(np.asarray(u500) - np.asarray(u850),
+                    np.asarray(v500) - np.asarray(v850))
+
+
+def organization_and_ascent(level, shear_ms, omega700):
+    """Separate environment diagnostics, with missing fields as NaN."""
+    level, shear_ms, omega700 = (
+        np.asarray(v, dtype=np.float64) for v in (level, shear_ms, omega700))
+    org = np.where(
+        np.isfinite(level) & np.isfinite(shear_ms),
+        ((level >= 2) & (shear_ms >= ORGANIZATION_SHEAR_MS)).astype(float), np.nan)
+    lift = np.where(
+        np.isfinite(level) & np.isfinite(omega700),
+        ((level >= 1) & (omega700 <= ASCENT_OMEGA_PA_S)).astype(float), np.nan)
+    return org, lift
+
+
+def max_available(values):
+    """Max over daily samples without mistaking missing for zero."""
+    arr = np.stack(values)
+    m = np.max(np.where(np.isfinite(arr), arr, -np.inf), axis=0)
+    return np.where(np.isfinite(m), m, np.nan)
+
+
+def optional_ensemble_stat(members, probability=False):
+    """Require five genuine members per grid point before publishing."""
+    a = np.asarray(members, dtype=np.float64)
+    n = np.sum(np.isfinite(a), axis=0)
+    if not np.any(n >= 5):
+        return None
+    mean = np.nansum(a, axis=0) / np.maximum(n, 1)
+    return np.where(n >= 5, mean * (100 if probability else 1), np.nan)
 
 
 def convective_tier(cape, precipitation_mm, gust_kmh, dewpoint_c=math.nan):
@@ -204,12 +275,14 @@ def load_optional_snowfall(path, points):
     return values, starts
 
 
-def produce(fields, tp_starts, npoints, run, sf_fields=None, sf_starts=None):
+def produce(fields, tp_starts, npoints, run, sf_fields=None, sf_starts=None, synoptic=None):
+    synoptic = synoptic or {}
     by_day = {}
     for lead in range(4):
         day = (run + timedelta(days=lead)).strftime("%Y-%m-%d")
         steps = [lead * 24 + 12, lead * 24 + 24]
         snow_by_member, storm_by_member = [], []
+        org_by_member, lift_by_member, shear_by_member = [], [], []
         rain_by_member = []
         # Falling snow: daily new snowfall, not instantaneous snow depth.
         falling_by_member = []
@@ -224,6 +297,7 @@ def produce(fields, tp_starts, npoints, run, sf_fields=None, sf_starts=None):
             if rainfall is not None:
                 rain_by_member.append(rainfall)
             snow_at_steps, storm_at_steps = [], []
+            org_at_steps, lift_at_steps, shear_at_steps = [], [], []
             previous_cp = np.zeros(npoints, dtype=np.float64) if lead == 0 else fields.get(
                 ("cp", lead * 24, member), np.full(npoints, np.nan))
             for step in steps:
@@ -259,6 +333,18 @@ def produce(fields, tp_starts, npoints, run, sf_fields=None, sf_starts=None):
                 missing = ~np.isfinite(cape) | ~np.isfinite(accum)
                 idx[missing] = np.nan
                 storm_at_steps.append(idx)
+                # Pressure levels, not geometric 0-6 km: 850-500 hPa shear.
+                winds = [synoptic.get((p, lev, step, member)) for p, lev in
+                         (("u", 850), ("v", 850), ("u", 500), ("v", 500))]
+                shear = (shear_850_500_ms(*winds) if all(w is not None for w in winds)
+                         else np.full(npoints, np.nan))
+                omega = synoptic.get(("w", 700, step, member))
+                if omega is None:
+                    omega = np.full(npoints, np.nan)
+                organized, lifted = organization_and_ascent(idx, shear, omega)
+                org_at_steps.append(organized)
+                lift_at_steps.append(lifted)
+                shear_at_steps.append(shear)
                 previous_cp = cp
             with np.errstate(all="ignore"):
                 snow_max = np.where(np.all(np.isnan(snow_at_steps), axis=0), np.nan,
@@ -267,6 +353,9 @@ def produce(fields, tp_starts, npoints, run, sf_fields=None, sf_starts=None):
                                      np.nanmax(storm_at_steps, axis=0))
             snow_by_member.append(snow_max)
             storm_by_member.append(storm_max)
+            org_by_member.append(max_available(org_at_steps))
+            lift_by_member.append(max_available(lift_at_steps))
+            shear_by_member.append(max_available(shear_at_steps))
 
         snow = np.vstack(snow_by_member)
         storm = np.vstack(storm_by_member)
@@ -286,6 +375,15 @@ def produce(fields, tp_starts, npoints, run, sf_fields=None, sf_starts=None):
         with np.errstate(invalid="ignore"):
             fields_out["snow_mean_cm"] = np.nanmean(snow,axis=0)
             fields_out["storm_mean_level"] = np.nanmean(storm,axis=0)
+        # Do not publish optional diagnostics unless >=5 real members exist.
+        for field, matrix, pct in (
+            ("storm_organized_pct", org_by_member, True),
+            ("storm_ascent_support_pct", lift_by_member, True),
+            ("shear_850_500_mean_ms", shear_by_member, False),
+        ):
+            summary = optional_ensemble_stat(np.stack(matrix), probability=pct)
+            if summary is not None:
+                fields_out[field] = summary
         if len(falling_by_member) == len(MEMBERS):
             falling = np.vstack(falling_by_member)
             if np.all(np.isfinite(falling)):
@@ -343,10 +441,34 @@ def main():
             sf_fields, sf_starts = load_optional_snowfall(sf_file, coords)
         except Exception as exc:
             print("WARNING: ECMWF SF unavailable; keep snow depth and storm:",str(exc)[:250])
+        # The synoptic diagnostics are optional and pinned to the base 00Z.
+        # If they fail, the existing snow/rain/storm forecast remains valid.
+        synoptic = {}
+        for label, params, levels in (
+            ("wind-850-500", ["u", "v"], [850, 500]),
+            ("omega-700", ["w"], [700]),
+        ):
+            try:
+                aux_file = Path(tmp) / ("synoptic-" + label + ".grib2")
+                diag = client.retrieve(
+                    date=run.strftime("%Y-%m-%d"), time=run.hour,
+                    stream="enfo", type="pf", levtype="pl", levelist=levels,
+                    step=STEPS, number=MEMBERS, param=params, target=str(aux_file))
+                diag_run = diag.datetime
+                if diag_run.tzinfo is None:
+                    diag_run = diag_run.replace(tzinfo=timezone.utc)
+                if diag_run.astimezone(timezone.utc) != run:
+                    raise RuntimeError("Pressure-level run does not match base ENS run")
+                loaded = load_synoptic_fields(aux_file, coords)
+                synoptic.update(loaded)
+                aux_file.unlink(missing_ok=True)
+                print("ECMWF synoptic", label, len(loaded), "fields")
+            except Exception as exc:
+                print("WARNING optional synoptic field unavailable", label, str(exc)[:220])
         print("ECMWF TP stepRange:", 
               [(step, member, tp_starts.get((step,member))) 
                for step in (12,24,36,48,72,96) for member in MEMBERS[:1]])
-    products = produce(fields,tp_starts,len(coords),run,sf_fields,sf_starts)
+    products = produce(fields,tp_starts,len(coords),run,sf_fields,sf_starts,synoptic)
     data = {}
     for day, fields in products.items():
         data[day] = {
@@ -369,8 +491,8 @@ def main():
         "generated_at_utc":datetime.now(timezone.utc).isoformat().replace("+00:00","Z"),
         "ensemble_members":MEMBERS,
         "sampling_interval_hours":12,
-        "method":"Indicative 8-member risk: SD+RSN snow cover; native SF daily water-equivalent snowfall; MU-CAPE+CP+2m dewpoint+gust convective diagnostic",
-        "warning":"Approximate subset and 12h sampling; not official thunderstorm or snow risk; grid 0.25 degrees",
+        "method":"8-member storm CAPE+CP+dewpoint+gust; optional 850-500hPa wind shear and omega700; snow cover and native snowfall SF",
+        "warning":"8-member 12h subset, 0.25 degree grid; shear is 850-500hPa (NOT 0-6km), omega is 700hPa; NOT calibrated storm-severity probabilities",
         "zone_point_counts":{z:b-a for z,(a,b) in zones.items()},
         "days":data
     }
