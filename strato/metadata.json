@@ -2,7 +2,7 @@
   "schema": 1,
   "model": "ifs",
   "source": "ECMWF IFS Open Data · CC BY 4.0",
-  "generated_utc": "2026-11-10T11:20:59.976562+00:00",
+  "generated_utc": "2026-11-10T11:24:52.004518+00:00",
   "run_utc": "2026-11-10T00:00:00Z",
   "description": "Vortex et température. Vent U 10 hPa à 60°N diagnostique ; valeur négative ponctuelle ≠ événement SSW confirmé.",
   "levels_hpa": [
@@ -115,9 +115,7 @@
     "312": 27.4,
     "336": 32.0
   },
-  "errors": {
-    "overview_10hpa": "No module named 'netCDF4'"
-  },
+  "errors": {},
   "zonal_wind_series_60n": {
     "10": {
       "24": -1.77,
@@ -194,5 +192,23 @@
     336,
     360
   ],
-  "zonal_wind_definition": "Moyenne zonale de U sur toutes les longitudes, latitude 60°N. Valeurs positives = vents d'ouest, négatives = vents d'est."
+  "zonal_wind_definition": "Moyenne zonale de U sur toutes les longitudes, latitude 60°N. Valeurs positives = vents d'ouest, négatives = vents d'est.",
+  "overview_10hpa": {
+    "image": "strato/ifs-10hpa-vortex-overview.png",
+    "run_utc": "2026-11-10T00:00:00Z",
+    "level_hpa": 10,
+    "forecast_hours": [
+      24,
+      72,
+      120,
+      168,
+      240,
+      360
+    ],
+    "anomaly_variable": "geopotential height 10 hPa",
+    "anomaly_unit": "dam",
+    "reference": "NOAA NCEP/NCAR Reanalysis 1, daily mean 1991-2020",
+    "reference_url": "https://psl.noaa.gov/thredds/dodsC/Datasets/ncep.reanalysis.derived/pressure/hgt.day.ltm.1991-2020.nc",
+    "diagnostic": "Inversion prévue dès J+1 · signal à surveiller, SSW non confirmé"
+  }
 }
