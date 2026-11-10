@@ -92,11 +92,14 @@ def main():
             # Ne jamais horodater rétroactivement un run déjà connu :
             # cela déclencherait des annonces Discord tardives au redémarrage.
             previous=old.get("models",{}).get(model,{})
-            if initial and initial!=previous.get("latest_first_step_utc"):
+            previous_run=previous.get("latest_first_step_utc")
+            if initial and previous_run and initial>previous_run:
+                # Un cycle strictement PLUS RÉCENT : événement de démarrage.
                 first_detected=iso(datetime.now(timezone.utc))
-            elif initial:
+            elif initial and initial==previous_run:
                 first_detected=previous.get("first_detected_utc")
             else:
+                # Redémarrage, perte de source ou retour en arrière : pas d'alerte.
                 first_detected=None
             models[model]={
                 "source":info["source"],"native_step_h":interval,
