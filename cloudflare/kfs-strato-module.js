@@ -49,12 +49,13 @@ async function kfsStratoRead(path, version, format) {
 // En cas de catalogue Raw obsolète après une publication, consulte le dernier
 // contenu via l'API GitHub. Uniquement pour les nouveaux graphiques, jamais
 // pour les cartes ordinaires : on préserve le quota GitHub.
-async function kfsStratoMetadata(requireWindCharts=false) {
+async function kfsStratoMetadata(requireWindCharts=false, requireOverview=false) {
   const m = await kfsStratoRead("strato/metadata.json",
     Math.floor(Date.now() / 300000), "json");
-  if (!requireWindCharts ||
-      (m.zonal_wind_charts?.comparison &&
-       m.zonal_wind_series_60n?.["10"]))
+  if ((!requireWindCharts ||
+       (m.zonal_wind_charts?.comparison && m.zonal_wind_series_60n?.["10"])) &&
+      (!requireOverview || (m.overview_10hpa?.image &&
+        m.overview_10hpa?.run_utc === m.run_utc)))
     return m;
   const endpoint = "https://api.github.com/repos/almet27/kfs-meteo-cartes" +
     "/contents/strato/metadata.json?ref=main";
@@ -75,10 +76,12 @@ async function kfsStratoMetadata(requireWindCharts=false) {
   const bytes = Uint8Array.from(
     atob(payload.content.replace(/\s/g, "")), c => c.charCodeAt(0));
   const fresh = JSON.parse(new TextDecoder().decode(bytes));
-  if (!fresh.zonal_wind_charts?.comparison ||
-      !fresh.zonal_wind_series_60n?.["10"] ||
-      fresh.model !== "ifs")
-    throw Error("Le catalogue actuel n'inclut pas encore les courbes zonales.");
+  if (fresh.model !== "ifs" ||
+      (requireWindCharts && (!fresh.zonal_wind_charts?.comparison ||
+       !fresh.zonal_wind_series_60n?.["10"])) ||
+      (requireOverview && (!fresh.overview_10hpa?.image ||
+       fresh.overview_10hpa?.run_utc !== fresh.run_utc)))
+    throw Error("Le dernier run IFS n'a pas encore sa synthèse /strato.");
   return fresh;
 }
 
@@ -196,7 +199,8 @@ async function kfsStratoRegister(env) {
           {name: "Température stratosphérique", value: "temperature"},
           {name: "Vent zonal · courbe du niveau sélectionné", value: "vent_zonal"},
           {name: "Vent zonal · comparaison 10/50/100 hPa", value: "vent_zonal_comparaison"},
-          {name: "Signaux de stratwarm · vent / T polaire / ondes", value: "signaux_stratwarm"}
+          {name: "Signaux de stratwarm · vent / T polaire / ondes", value: "signaux_stratwarm"},
+          {name: "Synthèse vortex 10 hPa · 6 cartes + courbe", value: "synthese_10hpa"}
         ]
       },
       {
@@ -220,7 +224,7 @@ async function kfsStratoRegister(env) {
   const existingOptions = existing?.options || [];
   const carte = existingOptions.find(o => o.name === "carte");
   const choices = carte?.choices?.map(c => c.value) || [];
-  if (existing && ["vent_zonal", "vent_zonal_comparaison", "signaux_stratwarm"].every(x => choices.includes(x)))
+  if (existing && ["vent_zonal", "vent_zonal_comparaison", "signaux_stratwarm", "synthese_10hpa"].every(x => choices.includes(x)))
     return {registered: true, changed: false};
   const url = existing ? endpoint + "/" + existing.id : endpoint;
   const post = await fetch(url, {
@@ -264,14 +268,36 @@ async function kfsStratoComplete(interaction, level, kind, hours) {
   try {
     const isZonalChart = ["vent_zonal", "vent_zonal_comparaison"].includes(kind);
     if (!KFS_STRATO_LEVELS.includes(level) ||
-        !["temperature", "vortex", "vent_zonal", "vent_zonal_comparaison", "signaux_stratwarm"].includes(kind) ||
+        !["temperature", "vortex", "vent_zonal", "vent_zonal_comparaison", "signaux_stratwarm", "synthese_10hpa"].includes(kind) ||
         !KFS_STRATO_HOURS.includes(hours))
       throw Error("Paramètres /strato invalides");
-    const m = await kfsStratoMetadata(isZonalChart);
+    const m = await kfsStratoMetadata(isZonalChart, kind === "synthese_10hpa");
     const stamp = Date.parse(m.run_utc || "");
     if (m.model !== "ifs" || !Number.isFinite(stamp) ||
         stamp > Date.now() + 3600000 || Date.now() - stamp > 48 * 3600000)
       throw Error("Run stratosphérique absent, ancien ou non vérifié.");
+    if (kind === "synthese_10hpa") {
+      const overview = m.overview_10hpa;
+      if (!overview || overview.run_utc !== m.run_utc ||
+          overview.level_hpa !== 10 ||
+          overview.image !== "strato/ifs-10hpa-vortex-overview.png")
+        throw Error("Synthèse 10 hPa pas encore générée pour ce run.");
+      const imageBytes = await kfsStratoRead(overview.image, m.run_utc, "png");
+      let content = "🌀 **KFS MÉTÉO — SYNTHÈSE DU VORTEX POLAIRE**\n" +
+        "🗺️ **Six cartes à 10 hPa** · J+1, J+3, J+5, J+7, J+10, J+15\n" +
+        "📊 Anomalies de hauteur géopotentielle (dam) " +
+        "vs climatologie NOAA 1991–2020 et vents zonaux 60°N.\n" +
+        "🔄 **ECMWF IFS " + new Date(stamp).toISOString().slice(0,16).replace("T"," ") +
+        " UTC**\n" +
+        "🧭 " + String(overview.diagnostic || "Situation à surveiller").slice(0,220) +
+        "\n⚠️ Les anomalies de hauteur ne sont pas des anomalies de température. " +
+        "Une inversion prévue ne confirme pas à elle seule un SSW majeur " +
+        "ni une vague de froid en France.\n" +
+        "*ECMWF Open Data CC BY 4.0 · référence NOAA NCEP/NCAR R1 1991–2020.*";
+      await kfsStratoEdit(interaction, {content, allowed_mentions:{parse:[]}},
+        {name:"kfs-strato-synthese-vortex-10hpa.png", bytes:imageBytes});
+      return;
+    }
     if (kind === "signaux_stratwarm") {
       const data = await kfsStratoRead("strato/signals.json",
         Math.floor(Date.now() / 300000), "signals");
