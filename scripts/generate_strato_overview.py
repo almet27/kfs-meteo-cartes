@@ -100,7 +100,7 @@ def build_overview(cycle, lon, lat, gh_fields, zonal, root=Path("strato")):
     root.mkdir(parents=True, exist_ok=True)
     fig = plt.figure(figsize=(14.0, 17.5), dpi=145, facecolor="#0b1220")
     gs = fig.add_gridspec(
-        3, 3, left=.06, right=.96, bottom=.105, top=.835,
+        3, 3, left=.06, right=.96, bottom=.105, top=.805,
         wspace=.12, hspace=.30, height_ratios=[1.0, 1.0, .76])
     fig.text(.06, .960, "KFS MÉTÉO  /  VORTEX POLAIRE", fontsize=25,
              color="white", fontweight="bold")
@@ -199,6 +199,7 @@ def build_overview(cycle, lon, lat, gh_fields, zonal, root=Path("strato")):
         output.unlink(missing_ok=True)
         raise ValueError("Taille de la planche incompatible Discord")
     return {
+        "layout_version": 2,
         "image": "strato/" + output.name,
         "run_utc": cycle.strftime("%Y-%m-%dT%H:%M:%SZ"),
         "level_hpa": 10,
