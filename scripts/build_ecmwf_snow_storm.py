@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""KFS /proba free ECMWF IFS ENS: indicative snow cover and convective potential.
+"""KFS /proba free ECMWF IFS ENS: snow cover, falling snow and convective potential.
 
 NOT official event probabilities. Uses 8 fixed, dispersed ensemble members and
 two snapshots per UTC day (12-hourly); lower-resolution sampling than full ENS.
 Snow height comes from ECMWF SD water equivalent and RSN density:
   snow_depth_cm = 100000 * sd_m_water_equivalent / rsn_kg_m3.
 Convective tiers use MU-CAPE, convective rain, 2m dewpoint and gusts on each member.
-Do not infer thunderstorm severity or road snow cover from this output.
+Falling snow uses the *daily accumulation of SF snowfall water equivalent*,\nnot snow already present on the ground. Do not infer road snow cover.
 """
 from __future__ import annotations
 import json
@@ -123,7 +123,7 @@ def convective_tier(cape, precipitation_mm, gust_kmh, dewpoint_c=math.nan):
         level = 5
     return level
 
-def daily_rain_mm(values, tp_starts, member, day_start, npoints):
+def daily_rain_mm(values, tp_starts, member, day_start, npoints, param="tp"):
     """Extract actual 24h TP (m -> mm) using GRIB startStep, not probability thresholds.
 
     Supports cumulative 0..T forecasts, adjacent 12h increments, or a direct
@@ -131,14 +131,14 @@ def daily_rain_mm(values, tp_starts, member, day_start, npoints):
     """
     day_end = day_start + 24
     middle = day_start + 12
-    end = values.get(("tp", day_end, member))
+    end = values.get((param, day_end, member))
     if end is None:
         return None
     end_start = tp_starts.get((day_end, member))
     if end_start == day_start:
         rainfall_m = end
     elif end_start == middle:
-        first = values.get(("tp", middle, member))
+        first = values.get((param, middle, member))
         first_start = tp_starts.get((middle, member))
         if first is None:
             return None
@@ -147,14 +147,14 @@ def daily_rain_mm(values, tp_starts, member, day_start, npoints):
         elif first_start == 0 and day_start > 0:
             # The first interval is the difference between run-cumulative
             # middle and dayStart, then add the final 12-hour increment.
-            previous = values.get(("tp", day_start, member))
+            previous = values.get((param, day_start, member))
             if previous is None or tp_starts.get((day_start, member)) != 0:
                 return None
             rainfall_m = first - previous + end
         else:
             return None
     elif end_start == 0 and day_start > 0:
-        previous = values.get(("tp", day_start, member))
+        previous = values.get((param, day_start, member))
         if previous is None or tp_starts.get((day_start, member)) != 0:
             return None
         rainfall_m = end - previous
@@ -171,14 +171,54 @@ def daily_rain_mm(values, tp_starts, member, day_start, npoints):
         return None
     return mm
 
+def load_optional_snowfall(path, points):
+    """Sample native ECMWF SF (m water equivalent) and preserve GRIB startStep.
 
-def produce(fields, tp_starts, npoints, run):
+    Separate from the existing compulsory download: unavailability of SF must
+    never interrupt the snow-cover or convective products.
+    """
+    values, starts, index, ngrid = {}, {}, None, 0
+    with open(path, "rb") as stream:
+        while (msg := codes_grib_new_from_file(stream)) is not None:
+            try:
+                if str(codes_get(msg, "shortName")) != "sf":
+                    continue
+                step, member = int(codes_get(msg, "endStep")), int(codes_get(msg, "number"))
+                if step not in STEPS or member not in MEMBERS:
+                    continue
+                units = str(codes_get(msg, "units")).lower()
+                if units not in ("m", "m of water equivalent", "m of water equivalent(s)"):
+                    raise RuntimeError("Unexpected ECMWF SF units: "+units)
+                field = np.asarray(codes_get_array(msg, "values"), dtype=np.float64)
+                if index is None:
+                    index, ngrid = nearest(msg, points)
+                if len(field) != ngrid:
+                    raise RuntimeError("Inconsistent ECMWF SF grid")
+                values[("sf", step, member)] = field[index]
+                starts[(step, member)] = int(codes_get(msg, "startStep"))
+            finally:
+                codes_release(msg)
+    if not values:
+        raise RuntimeError("No ECMWF ensemble SF fields found")
+    print("ECMWF snowfall SF records", len(values), "of", len(MEMBERS)*len(STEPS))
+    return values, starts
+
+
+def produce(fields, tp_starts, npoints, run, sf_fields=None, sf_starts=None):
     by_day = {}
     for lead in range(4):
         day = (run + timedelta(days=lead)).strftime("%Y-%m-%d")
         steps = [lead * 24 + 12, lead * 24 + 24]
         snow_by_member, storm_by_member = [], []
         rain_by_member = []
+        # Falling snow: daily new snowfall, not instantaneous snow depth.
+        falling_by_member = []
+        if sf_fields and sf_starts:
+            for member in MEMBERS:
+                daily_sf = daily_rain_mm(sf_fields, sf_starts, member,
+                                         lead*24, npoints, param="sf")
+                if daily_sf is not None:
+                    falling_by_member.append(daily_sf)
         for member in MEMBERS:
             rainfall = daily_rain_mm(fields, tp_starts, member, lead*24, npoints)
             if rainfall is not None:
@@ -246,6 +286,19 @@ def produce(fields, tp_starts, npoints, run):
         with np.errstate(invalid="ignore"):
             fields_out["snow_mean_cm"] = np.nanmean(snow,axis=0)
             fields_out["storm_mean_level"] = np.nanmean(storm,axis=0)
+        if len(falling_by_member) == len(MEMBERS):
+            falling = np.vstack(falling_by_member)
+            if np.all(np.isfinite(falling)):
+                # mm of water-equivalent snowfall over 24h. No snow-depth conversion.
+                fields_out["snowfall_mean_mmwe"] = np.mean(falling, axis=0)
+                for threshold, slug in ((0.1, "0p1"), (1, "1"), (3, "3"), (5, "5")):
+                    fields_out["snowfall"+slug] = np.mean(falling >= threshold, axis=0) * 100
+                print("ECMWF falling snowfall SF", day, "8 members,",
+                      f"mean {np.min(fields_out['snowfall_mean_mmwe']):.2f}–"
+                      f"{np.max(fields_out['snowfall_mean_mmwe']):.2f} mm water eq")
+        else:
+            print("WARNING: falling snowfall unavailable",day,
+                  len(falling_by_member),"/",len(MEMBERS))
         if len(rain_by_member) == len(MEMBERS):
             rain = np.vstack(rain_by_member)
             if np.all(np.isfinite(rain)):
@@ -275,10 +328,25 @@ def main():
         if run.hour!=0 or datetime.now(timezone.utc)-run>timedelta(hours=40):
             raise RuntimeError("Ensemble run is stale or not 00Z")
         fields, tp_starts = load_fields(file, coords)
+        sf_fields, sf_starts = {}, {}
+        try:
+            sf_file = Path(tmp)/"snowfall-pf.grib2"
+            sf_result = client.retrieve(
+                date=run.strftime("%Y-%m-%d"), time=run.hour, stream="enfo",
+                type="pf", step=STEPS, number=MEMBERS, param="sf",
+                target=str(sf_file))
+            sf_run = sf_result.datetime
+            if sf_run.tzinfo is None:
+                sf_run = sf_run.replace(tzinfo=timezone.utc)
+            if sf_run.astimezone(timezone.utc) != run:
+                raise RuntimeError("SF snowfall and other ENS fields from different runs")
+            sf_fields, sf_starts = load_optional_snowfall(sf_file, coords)
+        except Exception as exc:
+            print("WARNING: ECMWF SF unavailable; keep snow depth and storm:",str(exc)[:250])
         print("ECMWF TP stepRange:", 
               [(step, member, tp_starts.get((step,member))) 
                for step in (12,24,36,48,72,96) for member in MEMBERS[:1]])
-    products = produce(fields,tp_starts,len(coords),run)
+    products = produce(fields,tp_starts,len(coords),run,sf_fields,sf_starts)
     data = {}
     for day, fields in products.items():
         data[day] = {
@@ -301,7 +369,7 @@ def main():
         "generated_at_utc":datetime.now(timezone.utc).isoformat().replace("+00:00","Z"),
         "ensemble_members":MEMBERS,
         "sampling_interval_hours":12,
-        "method":"Indicative 8-member ensemble risk: SD+RSN snow; MU-CAPE+CP+2m dewpoint+gust pre-convective diagnostic",
+        "method":"Indicative 8-member risk: SD+RSN snow cover; native SF daily water-equivalent snowfall; MU-CAPE+CP+2m dewpoint+gust convective diagnostic",
         "warning":"Approximate subset and 12h sampling; not official thunderstorm or snow risk; grid 0.25 degrees",
         "zone_point_counts":{z:b-a for z,(a,b) in zones.items()},
         "days":data
