@@ -1,0 +1,45 @@
+name: Diagnostiquer les occurrences climato (orages/neige)
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/diag-climato-pheno.yml
+permissions:
+  contents: read
+jobs:
+  diagnosis:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Inspecter colonnes officielles et stations voisines d'Evreux
+        shell: bash
+        run: |
+          python - <<'PY'
+          import csv, gzip, io, urllib.request, json, collections, math, datetime
+          base="https://meteofrance.s3.sbg.io.cloud.ovh.net/data/synchro_ftp/"
+          def fetch(url):
+              req=urllib.request.Request(url,headers={"User-Agent":"KFS-METEO-diagnostic/1.0"})
+              with urllib.request.urlopen(req,timeout=50) as r: return r.read()
+          for year,period in [(2025,"latest-2025-2026"),(2024,"previous-1950-2024")]:
+              url=base+f"BASE/QUOT/Q_27_{period}_autres-parametres.csv.gz"
+              data=fetch(url)
+              print("ARCHIVE",year,url,"compressed",len(data))
+              buf=io.StringIO(gzip.decompress(data).decode("utf-8-sig"))
+              rows=csv.DictReader(buf,delimiter=";")
+              print("FIELDS",rows.fieldnames)
+              for key in ["ORAG","QORAG","NEIG","QNEIG","SOLNEIGE","QSOLNEIGE","HNEIGEF","QHNEIGEF","NEIGETOTX","QNEIGETOTX"]:
+                  print("COLUMN",key,"present",key in rows.fieldnames)
+              stats=collections.defaultdict(lambda: {"name":"","orag":collections.Counter(),"neig":collections.Counter(),"qorag":collections.Counter(),"qneig":collections.Counter(),"sol":collections.Counter(),"rows":0,"first":None,"last":None})
+              for row in rows:
+                  d=row.get("AAAAMMJJ","")
+                  if not d.startswith(str(year)): continue
+                  id=row["NUM_POSTE"]
+                  x=stats[id];x["name"]=row.get("NOM_USUEL","");x["rows"]+=1
+                  for code,k in [("ORAG","orag"),("NEIG","neig"),("QORAG","qorag"),("QNEIG","qneig"),("SOLNEIGE","sol")]:
+                      x[k][row.get(code,"")]+=1
+                  if not x["first"]:x["first"]=d
+                  x["last"]=d
+              print("STATIONS",len(stats))
+              for id,x in sorted(stats.items(),key=lambda p:-(p[1]["orag"].get("1",0)+p[1]["neig"].get("1",0)))[:30]:
+                  print("STATION",id,x["name"],"jours",x["rows"],"orage",x["orag"].most_common(6),"neige",x["neig"].most_common(6),"Qorage",x["qorag"].most_common(6),"Qneige",x["qneig"].most_common(6),"sol",x["sol"].most_common(4),"range",x["first"],x["last"])
+          PY
