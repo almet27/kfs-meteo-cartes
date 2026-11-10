@@ -803,7 +803,7 @@ async function kfsProbaEcmwfRainMeanRead(zone,day,points,run,validFrom,validTo){
  return null;
 }
 
-// ECMWF IFS ENS: native minimum temperature over four consecutive 6-hour UTC windows.
+// ECMWF IFS ENS: native minimum temperature over eight consecutive 3-hour UTC windows.
 // The GitHub Actions dataset avoids /proba gel requests to Open-Meteo.
 async function kfsProbaEcmwfFrostRead(threshold,zone,day,points){
  const field="frost"+Math.abs(threshold);
@@ -819,7 +819,7 @@ async function kfsProbaEcmwfFrostRead(threshold,zone,day,points){
    if(!resp.ok)continue;
    const j=await resp.json(),d=j?.days?.[day];
    if(j?.schema!==1||j?.provider!=="ECMWF IFS ENS 8-member frost subset"||
-    j?.ensemble_members?.length!==8||j?.sampling_interval_hours!==6||
+    j?.ensemble_members?.length!==8||j?.sampling_interval_hours!==3||
     j?.zone_point_counts?.[zone]!==points.length)continue;
    const age=Date.now()-Date.parse(j.run_utc);
    if(!Number.isFinite(age)||age<0||age>48*3600000)continue;
@@ -863,7 +863,7 @@ async function kfsProbaComplete(interaction,phenom,zone,jour,seuil){
     "🗺️ **Fraction des membres :** "+min+" à "+max+" % aux points étudiés.\n"+
     "🌡️ **Température minimale moyenne :** "+minT+" à "+maxT+" °C.\n"+
     "**Carte :** couleurs = Tmin moyenne ; blanc = % de membres sous le seuil ; bleu = Tmin en °C.\n"+
-    "📊 **Source :** IFS ENS ECMWF, 8 membres, minimum des quatre fenêtres successives de 6 h (mn2t6).\n"+
+    "📊 **Source :** IFS ENS ECMWF, 8 membres, minimum des huit fenêtres successives de 3 h (mn2t3).\n"+
     "🕓 **Période :** "+frost.period_start+" → "+frost.period_end+" (UTC, pas exactement le jour civil français).\n"+
     "**Run :** "+frost.run+".\n"+
     (zone!=="FR"?"**Repères :** limites départementales et grandes villes.\n":"")+
