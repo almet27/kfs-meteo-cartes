@@ -8,8 +8,8 @@ const KFS_STRATO_DAILY_FILE = "strato/ifs-10hpa-vortex-overview.png";
 function kfsStratoDailySlot(scheduledTime) {
   const t = kfsParisTime(new Date(scheduledTime));
   const h = Number(t.hour), minute = Number(t.minute);
-  if (!Number.isInteger(h) || h < 11 || h > 18 ||
-      ![0, 30].includes(minute) || (h === 11 && minute < 30))
+  // Une seule tentative par jour : 11 h 30, heure de Paris.
+  if (h !== 11 || minute !== 30)
     return null;
   return t.year + "-" + t.month + "-" + t.day;
 }
