@@ -217,14 +217,15 @@ def polygons(geojson):
 # les trois cartes de température. Aucune interpolation ne colore la mer.
 LAND_MASK_CACHE = {}
 TEMPERATURE_METRICS = frozenset(("temperature", "tmax", "tmin"))
+SURFACE_METRICS = TEMPERATURE_METRICS | {"pluie"}
 
 
-def temperature_surface(zone, bounds, records, shapes):
-    """Interpolation spatiale IDW des stations, limitée à la France.
+def station_surface(zone, bounds, records, shapes, metric="temperature"):
+    """Interpolation IDW terrestre : estimation entre stations, pas radar.
 
-    Ce champ est une ESTIMATION entre stations, non un relevé sur chaque pixel.
-    Les mailles maritimes et éloignées de plus de 160 km d'une station
-    restent transparentes.
+    Pour les cumuls de pluie, la portée est plus courte pour ne pas lisser
+    des averses locales sur des régions entières. Hors couverture fiable,
+    la carte reste transparente.
     """
     import numpy as np
     from matplotlib.path import Path
@@ -271,25 +272,34 @@ def temperature_surface(zone, bounds, records, shapes):
     # Interpolation IDW a 8 voisins : un fond continu, meme sur les franges
     # littorales que la triangulation initiale laissait blanches.
     # La couleur reste une estimation, jamais une mesure sur chaque pixel.
-    k = min(8, len(xy_obs))
+    is_rain = metric == "pluie"
+    k = min(6 if is_rain else 8, len(xy_obs))
     distances, nearest = cKDTree(xy_obs).query(xy_grid, k=k)
     distances = np.asarray(distances)
     nearest = np.asarray(nearest)
     if k == 1:
         distances = distances[:, None]
         nearest = nearest[:, None]
-    weights = 1.0 / np.maximum(distances, 0.004) ** 2.0
-    values = np.sum(obs[nearest, 2] * weights, axis=1) / weights.sum(axis=1)
-    # Aucune coloration au large ni dans les secteurs sans station proche.
-    # 160 km laissent un champ homogene sans extrapolation excessive.
-    valid = land & np.isfinite(values) & (distances[:, 0] * 111.2 <= 160)
+    weights = 1.0 / np.maximum(distances, 0.004) ** (2.8 if is_rain else 2.0)
+    if is_rain:
+        # Pour une variable très locale, ne pas faire contribuer des stations
+        # éloignées de plus de 125 km à un même pixel.
+        weights = np.where(distances * 111.2 <= 125, weights, 0.0)
+    sum_weights = weights.sum(axis=1)
+    values = np.divide(np.sum(obs[nearest, 2] * weights, axis=1),
+                       sum_weights, out=np.zeros(len(grid)),
+                       where=sum_weights > 0)
+    # Couverture plus prudente pour la pluie : 105 km au lieu de 160 km.
+    radius = 105 if is_rain else 160
+    valid = land & (sum_weights > 0) & np.isfinite(values) & (distances[:, 0] * 111.2 <= radius)
     if not valid.any():
         return None
     data = np.where(valid, values, 0.0).reshape(ny, nx)
     weight = valid.astype(float).reshape(ny, nx)
     # Flou léger sans traverser les zones sans données ni la mer.
-    smooth_data = gaussian_filter(data, sigma=1.6, mode="nearest")
-    smooth_weight = gaussian_filter(weight, sigma=1.6, mode="nearest")
+    smooth_sigma = 1.1 if is_rain else 1.6
+    smooth_data = gaussian_filter(data, sigma=smooth_sigma, mode="nearest")
+    smooth_weight = gaussian_filter(weight, sigma=smooth_sigma, mode="nearest")
     result = np.divide(smooth_data, smooth_weight,
                        out=np.zeros_like(smooth_data),
                        where=smooth_weight > 1e-6)
@@ -300,7 +310,7 @@ def render(metric, zone, records, shapes, timestamp, hours):
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
-    from matplotlib.colors import Normalize
+    from matplotlib.colors import Normalize, LinearSegmentedColormap
     from PIL import Image
     title, unit, palette = METRICS[metric]
     area, bounds = ZONES[zone]
@@ -323,8 +333,8 @@ def render(metric, zone, records, shapes, timestamp, hours):
     # des etiquettes legerement reduites evitent la superposition.
     wide_zone = zone in ("fr", "no", "ne", "so", "se", "eur2")
     label_size = 11.0 if wide_zone else 13.5
-    if metric in TEMPERATURE_METRICS:
-        # Moins d'etiquettes : le fond bleu-jaune-rouge reste visible.
+    if metric in SURFACE_METRICS:
+        # Moins d'etiquettes : le fond continu reste lisible.
         grid_cols, grid_rows = ((14, 10) if wide_zone else (13, 9))
         label_size = 9.5 if wide_zone else 11.0
     else:
@@ -335,11 +345,22 @@ def render(metric, zone, records, shapes, timestamp, hours):
         if low == high:
             low -= 1
             high += 1
-        colors = plt.get_cmap(palette).copy()
+        if metric == "pluie":
+            # Échelle stable entre toutes les zones, avec des détails dès 1 mm.
+            stops = [(0, "#21354a"), (1, "#27629d"), (2, "#269dc2"),
+                     (5, "#33c9af"), (10, "#8cda72"), (20, "#f1d457"),
+                     (30, "#f5a64b"), (40, "#eb6452"), (50, "#cf4566"),
+                     (60, "#ad58ce")]
+            colors = LinearSegmentedColormap.from_list(
+                "kfs_pluie_24h", [(mm / 60, color) for mm, color in stops], N=256)
+            colors.set_over("#e2a2f4")
+            normalized = Normalize(vmin=0, vmax=60)
+        else:
+            colors = plt.get_cmap(palette).copy()
+            normalized = Normalize(vmin=low, vmax=high)
         colors.set_bad((0, 0, 0, 0))
-        normalized = Normalize(vmin=low, vmax=high)
-        if metric in TEMPERATURE_METRICS:
-            surface = temperature_surface(zone, bounds, records, shapes)
+        if metric in SURFACE_METRICS:
+            surface = station_surface(zone, bounds, records, shapes, metric)
             if surface is not None:
                 ax.imshow(surface, extent=(x0, x1, y0, y1),
                           origin="lower", interpolation="bicubic",
@@ -355,6 +376,8 @@ def render(metric, zone, records, shapes, timestamp, hours):
                        norm=normalized, alpha=.76, linewidths=0, zorder=2)
         occupied = set()
         for lon, lat, val in sorted(points, key=lambda x: abs(x[2]), reverse=True):
+            if metric == "pluie" and val < 0.5:
+                continue  # Éviter une forêt de valeurs 0.0 sur fond sec.
             cell = (int((lon - x0) / (x1 - x0) * grid_cols),
                     int((lat - y0) / (y1 - y0) * grid_rows))
             if cell in occupied:
@@ -366,11 +389,14 @@ def render(metric, zone, records, shapes, timestamp, hours):
                     bbox={"boxstyle":"round,pad=0.18",
                           "facecolor":"#0b1524","edgecolor":"#495b6c",
                           "linewidth":.4,
-                          "alpha":.72 if metric in TEMPERATURE_METRICS else .96})
+                          "alpha":.72 if metric in SURFACE_METRICS else .96})
         cb = fig.colorbar(plt.cm.ScalarMappable(norm=normalized, cmap=colors),
                           ax=ax, orientation="horizontal", fraction=.047, pad=.07,
                           aspect=35)
         cb.set_label(unit, color="#dee7f5", fontsize=13)
+        if metric == "pluie":
+            cb.set_ticks([0, 1, 2, 5, 10, 20, 40, 60])
+            cb.set_ticklabels(["0", "1", "2", "5", "10", "20", "40", "60+"])
         cb.ax.tick_params(colors="#bfc8d9", labelsize=11)
     else:
         ax.text(.5, .5, "Aucune mesure disponible sur cette zone",
@@ -395,6 +421,10 @@ def render(metric, zone, records, shapes, timestamp, hours):
         fig.text(.5, .073, "Bleu : plus froid   ·   Rouge : plus chaud   ·   "
                  "Dégradé estimé par interpolation entre stations",
                  ha="center", color="#c6d4e4", fontsize=9.5)
+    elif metric == "pluie":
+        fig.text(.5, .073, "Cumul 24 h (mm) · Dégradé estimé entre les stations "
+                 "· Ne représente pas un relevé radar",
+                 ha="center", color="#c6d4e4", fontsize=9.5)
     if quadrant_zone or france_zone:
         # Maximiser la carte sans rogner le bandeau ni le pied.
         fig.subplots_adjust(left=.035, right=.975, top=.86, bottom=.105)
@@ -415,7 +445,7 @@ def render(metric, zone, records, shapes, timestamp, hours):
     plt.close(fig)
     # Palette PNG : alléger l'actualisation sans dégrader les valeurs textuelles.
     with Image.open(dest) as img:
-        if metric in TEMPERATURE_METRICS:
+        if metric in SURFACE_METRICS:
             # Préserver la subtilité du dégradé : 128 couleurs créeraient
             # des bandes visibles, surtout sur les cartes ouvertes dans Discord.
             img.convert("RGB").save(dest, format="PNG", optimize=True)
@@ -447,11 +477,18 @@ def test():
                  (6, 43, 25), (-1, 43, 21), (2, 46, 13)]
     fake_land = [[(-5.7, 41.2), (9.8, 41.2),
                   (9.8, 51.4), (-5.7, 51.4), (-5.7, 41.2)]]
-    field = temperature_surface("fr", ZONES["fr"][1], synthetic, fake_land)
+    field = station_surface("fr", ZONES["fr"][1], synthetic, fake_land)
     assert field is not None and field.count() > 1000
     assert 2 <= field.min() < field.max() <= 25
     assert field.count() / field.size > .30  # 6 stations fictives : couverture partielle attendue.
-    print("Self-test: 7 mesures + dégradé continu IDW limité aux terres OK")
+    rain_sample = [(-4, 48, 0), (0, 50, 1), (7, 48, 8),
+                   (6, 43, 20), (-1, 43, 5), (2, 46, 12)]
+    rain = station_surface("fr", ZONES["fr"][1], rain_sample, fake_land, "pluie")
+    assert rain is not None and rain.count() > 1000
+    assert 0 <= rain.min() < rain.max() <= 20
+    # La pluie est interpolée sur une aire plus restreinte que la température.
+    assert rain.count() < field.count()
+    print("Self-test: 7 mesures + dégradés IDW température et pluie sur terres OK")
 
 
 def main():
