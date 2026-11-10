@@ -15,7 +15,8 @@ on:
   schedule:
     - cron: '7,22,37,52 * * * *'
     # Relances prioritaires avant 10 h et 21 h 30 en Europe/Paris (été/hiver).
-    - cron: '43 7,8,19,20 * * *'
+    - cron: '43 7,8 * * *'   # matin : 17 min avant 10 h Paris
+    - cron: '13 19,20 * * *' # soir : 17 min avant 21 h 30 Paris
 
 permissions:
   contents: write
