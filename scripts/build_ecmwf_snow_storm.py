@@ -5,7 +5,7 @@ NOT official event probabilities. Uses 8 fixed, dispersed ensemble members and
 two snapshots per UTC day (12-hourly); lower-resolution sampling than full ENS.
 Snow height comes from ECMWF SD water equivalent and RSN density:
   snow_depth_cm = 100000 * sd_m_water_equivalent / rsn_kg_m3.
-Convective tiers use CAPE + convective-precip increment + gusts on each member.
+Convective tiers use MU-CAPE, convective rain, 2m dewpoint and gusts on each member.
 Do not infer thunderstorm severity or road snow cover from this output.
 """
 from __future__ import annotations
@@ -26,7 +26,7 @@ POINTS = ROOT / "proba" / "points-ecmwf.json"
 OUT = ROOT / "proba" / "ecmwf-subset-probabilities.json"
 MEMBERS = [3, 9, 15, 21, 27, 33, 39, 45]
 STEPS = list(range(12, 97, 12))
-PARAMS = ["sd", "rsn", "mucape", "cp", "10fg", "tp"]
+PARAMS = ["sd", "rsn", "mucape", "cp", "10fg", "tp", "2d"]
 
 
 def indexed_points(zones):
@@ -97,21 +97,31 @@ def load_fields(path, points):
     return values, tp_start_steps
 
 
-def convective_tier(cape, precipitation_mm, gust_kmh):
-    if not np.isfinite(cape) or not np.isfinite(precipitation_mm) or not np.isfinite(gust_kmh):
-        return None
-    if cape >= 3000 and precipitation_mm >= 5 and gust_kmh >= 90:
-        return 5
-    if cape >= 1600 and precipitation_mm >= 2.5 and gust_kmh >= 60:
-        return 4
-    if cape >= 900 and precipitation_mm >= 1 and gust_kmh >= 40:
-        return 3
-    if cape >= 400 and precipitation_mm >= 0.5:
-        return 2
-    if cape >= 150 and precipitation_mm >= 0.2:
-        return 1
-    return 0
+def convective_tier(cape, precipitation_mm, gust_kmh, dewpoint_c=math.nan):
+    """Experimental convective potential (0-5), not a calibrated thunderstorm probability.
 
+    CP supports diagnosed convection; most-unstable CAPE + 2m dewpoint detect
+    pre-convective environments even if the forecast hasn't triggered showers.
+    A moist unstable environment alone is capped at level 2 (no forcing known).
+    Gusts are needed for levels 4-5, not to acknowledge weak convection.
+    """
+    if not np.isfinite(cape) or not np.isfinite(precipitation_mm):
+        return None
+    moist = np.isfinite(dewpoint_c) and dewpoint_c >= 8
+    level = 0
+    if (cape >= 100 and precipitation_mm >= 0.1) or (cape >= 225 and moist):
+        level = 1
+    if (cape >= 300 and precipitation_mm >= 0.25) or (cape >= 500 and moist):
+        level = 2
+    if cape >= 650 and precipitation_mm >= 0.7 and (moist or (np.isfinite(gust_kmh) and gust_kmh >= 30)):
+        level = 3
+    if cape >= 950 and precipitation_mm >= 1 and np.isfinite(gust_kmh) and gust_kmh >= 35:
+        level = 3
+    if cape >= 1500 and precipitation_mm >= 2 and np.isfinite(gust_kmh) and gust_kmh >= 55:
+        level = 4
+    if cape >= 2800 and precipitation_mm >= 4 and np.isfinite(gust_kmh) and gust_kmh >= 85:
+        level = 5
+    return level
 
 def daily_rain_mm(values, tp_starts, member, day_start, npoints):
     """Extract actual 24h TP (m -> mm) using GRIB startStep, not probability thresholds.
@@ -194,14 +204,19 @@ def produce(fields, tp_starts, npoints, run):
                 gusts = (gust_raw * 3.6 if gust_raw is not None
                          else np.full(npoints, np.nan))
                 cape = fields[("mucape", step, member)]
+                # Surface dewpoint in Kelvin; missing values stay unavailable.
+                dewpoint = fields.get(("2d", step, member))
+                dewpoint_c = (dewpoint - 273.15 if dewpoint is not None
+                              else np.full(npoints, np.nan))
                 idx = np.fromiter(
-                    (convective_tier(cape[i], accum[i], gusts[i]) or 0
+                    (convective_tier(cape[i], accum[i], gusts[i], dewpoint_c[i]) or 0
                      for i in range(npoints)),
                     dtype=np.float64,
                     count=npoints
                 )
-                # Unknown values are never treated as zero.
-                missing = ~np.isfinite(cape) | ~np.isfinite(accum) | ~np.isfinite(gusts)
+                # CAPE and convective rain must be known; gust and dewpoint
+                # are not prerequisites to lower-level convective signals.
+                missing = ~np.isfinite(cape) | ~np.isfinite(accum)
                 idx[missing] = np.nan
                 storm_at_steps.append(idx)
                 previous_cp = cp
@@ -286,7 +301,7 @@ def main():
         "generated_at_utc":datetime.now(timezone.utc).isoformat().replace("+00:00","Z"),
         "ensemble_members":MEMBERS,
         "sampling_interval_hours":12,
-        "method":"Indicative 8-member ensemble risk: SD+RSN snow depth; MU-CAPE+CP+gust convective potential",
+        "method":"Indicative 8-member ensemble risk: SD+RSN snow; MU-CAPE+CP+2m dewpoint+gust pre-convective diagnostic",
         "warning":"Approximate subset and 12h sampling; not official thunderstorm or snow risk; grid 0.25 degrees",
         "zone_point_counts":{z:b-a for z,(a,b) in zones.items()},
         "days":data
