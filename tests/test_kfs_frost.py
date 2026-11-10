@@ -29,6 +29,16 @@ class FrostProbabilityTests(unittest.TestCase):
         self.assertTrue(np.isnan(a[0, 0]))
         self.assertTrue(np.isfinite(a[1, 0]))
 
+    def test_second_utc_day_uses_its_own_periods(self):
+        values = {}
+        for member in MEMBERS:
+            for hour in (6, 12, 18, 24):
+                values[(hour, member)] = np.array([-8.0])
+            for hour in (30, 36, 42, 48):
+                values[(hour, member)] = np.array([2.0])
+        self.assertEqual(float(daily_minima(values, 0, 1)[0, 0]), -8.0)
+        self.assertEqual(float(daily_minima(values, 1, 1)[0, 0]), 2.0)
+
     def test_missing_majority_rejected(self):
         a = np.array([[np.nan], [np.nan], [np.nan], [np.nan],
                       [-2.0], [-3.0], [-4.0], [-5.0]])
