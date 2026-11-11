@@ -46,3 +46,28 @@ jobs:
             except urllib.error.HTTPError as e: print('BROWSE',p,'HTTP',e.code,flush=True)
             except Exception as e: print('BROWSE',p,'ERROR',repr(e)[:160],flush=True)
           PY
+
+      - name: Tester la liste des produits et la restriction de téléchargement
+        run: |
+          python - <<'PY'
+          import urllib.request,urllib.error,json,urllib.parse
+          root='https://api.eumetsat.int/data/browse/1.0.0/collections/EO%3AEUM%3ADAT%3A0691/dates/2025/07/12/products?format=json'
+          try:
+            with urllib.request.urlopen(urllib.request.Request(root,headers={'User-Agent':'KFS-METEO/1.0'}),timeout=18) as r: obj=json.load(r)
+            print('PRODUCT_LIST',list(obj)[:12],str(obj)[:1200],flush=True)
+            product_items=obj.get('products')
+            items=product_items if isinstance(product_items,list) else obj.get('links',[])
+            if not items:raise ValueError('No product items found')
+            first=items[0]
+            prodid=first.get('id') or first.get('identifier') or first.get('properties',{}).get('identifier')
+            if not prodid and isinstance(first,dict):
+              prodid=first.get('title')
+            print('FIRST_ID',prodid,flush=True)
+            if prodid:
+              path='https://api.eumetsat.int/data/download/1.0.0/collections/EO%3AEUM%3ADAT%3A0691/products/'+urllib.parse.quote(prodid,safe='')
+              req=urllib.request.Request(path,headers={'User-Agent':'KFS-METEO/1.0','Range':'bytes=0-0'})
+              try:
+                with urllib.request.urlopen(req,timeout=20) as r:print('DOWNLOAD_HTTP',r.status,'len',r.headers.get('content-length'),repr(r.read(64)),flush=True)
+              except urllib.error.HTTPError as e:print('DOWNLOAD_HTTP',e.code,repr(e.read(150)),flush=True)
+          except Exception as e:print('PROBE_ERROR',repr(e)[:300],flush=True)
+          PY
