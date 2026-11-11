@@ -1055,7 +1055,7 @@ async function foudreImage(city,pulses){
   }
   return {png:await foudrePng(c),shown};
 }
-async function foudreMessage(interaction,content,png){
+async function foudreMessage(interaction,content,png,mapTitle="KFS MÉTÉO · Foudre en direct"){
   const url="https://discord.com/api/v10/webhooks/"+APPLICATION_ID+
             "/"+interaction.token+"/messages/@original";
   let options;
@@ -1063,7 +1063,7 @@ async function foudreMessage(interaction,content,png){
     const filename="foudre-kfs.png",form=new FormData();
     form.append("payload_json",JSON.stringify({
       content,allowed_mentions:{parse:[]},
-      embeds:[{title:"KFS MÉTÉO · Foudre en direct",
+      embeds:[{title:mapTitle,
                image:{url:"attachment://"+filename}}],
       attachments:[{id:0,filename}]
     }));
@@ -1284,20 +1284,19 @@ async function completeFoudre(interaction,rawCity,env,rawPeriode=30){
         message+="⚠️ Positions écartées : horaire "+foudreNombre(strikes.diagnostic.écartéesTemps)+
           ", coordonnées "+foudreNombre(strikes.diagnostic.écartéesPosition)+".\n";
     }else{
-      message+="⚠️ **Carte 5 min indisponible** : "+mapError+
-        ". Les statistiques ne sont pas une carte historique.\n";
+      message+="⚠️ **Données foudre 5 min indisponibles** : "+mapError+
+        ". Le fond de carte du secteur reste affiché.\n";
     }
     message+="_[Powered by Vaisala Xweather](https://www.xweather.com/)"+
       " · 30 min à 24 h : statistiques, sans positions historiques._";
     if(message.length>1950)message=message.slice(0,1940);
-    // Ne pas envoyer un fond vide présenté comme une carte de foudre en direct.
-    if(!strikes?.pulses.length){
-      await foudreMessage(interaction,message,null);
-      return;
-    }
+    // Toujours afficher le secteur, avec un titre explicite si la source ne fournit aucun point.
+    const mapTitle=strikes?.pulses.length?"KFS MÉTÉO · Foudre en direct · 5 min":
+      strikes?"KFS MÉTÉO · Secteur · aucun point fourni sur 5 min":
+      "KFS MÉTÉO · Secteur · source foudre indisponible";
     try{
       const {png}=await foudreImage(city,strikes?.pulses||[]);
-      await foudreMessage(interaction,message,png);
+      await foudreMessage(interaction,message,png,mapTitle);
       return;
     }catch(e){
       console.error("KFS /foudre PNG/envoi",String(e));
@@ -8787,3 +8786,4 @@ export default {
   }
 
 };
+
