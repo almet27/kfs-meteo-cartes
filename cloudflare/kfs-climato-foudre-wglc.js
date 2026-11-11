@@ -3,6 +3,7 @@
    Jed O. Kaplan, processed lightning stroke density (not exact CG flash counts).
    Source files: data/wglc/wglc_france_YYYY.json.gz.
 */
+const kfsWglcFmt=value=>Number(value).toLocaleString("fr-FR",{maximumFractionDigits:6});
 async function kfsWglcArchive(year){
   if(year<2010||year>2025)return null;
   const url="https://raw.githubusercontent.com/almet27/kfs-meteo-cartes/main/data/wglc/wglc_france_"+
@@ -61,11 +62,11 @@ async function kfsWglcStormReport(city,year,month){
       fields.push({name:"⚡ Activité de foudre locale (réseau WWLLN)",
         value:"Densité reconstituée sur la maille de **"+city.name+"** (≈ 5–10 km).\n"+
           (month?"Indice mensuel brut : ":"Somme des indices mensuels : ")+
-          "**"+kfsQR(sum," coups/km²")+"**\n"+
+          "**"+kfsWglcFmt(sum)+" coups/km²"+"**\n"+
           "Mesures corrigées de l'efficacité de détection ; **ce n'est pas un décompte exact d'impacts au sol**.",inline:false});
       if(!month){
         const lines=KFS_Q_MONTHS.map((name,i)=>name.slice(0,4).padEnd(5," ")+
-          (w.series[i]!==null?kfsQR(w.series[i]," /km²"):"non disponible"));
+          (w.series[i]!==null?kfsWglcFmt(w.series[i])+" /km²":"non disponible"));
         fields.push({name:"📅 Activité électrique par mois — maillage WWLLN",
           value:"\x60\x60\x60\n"+lines.join("\n")+"\n\x60\x60\x60",inline:false});
       }
