@@ -1,0 +1,48 @@
+name: KFS PROBA - Five-day member trajectories
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - scripts/build_proba_5days.cjs
+      - cloudflare/kfs-proba-module.js
+      - tests/test-proba-5days.cjs
+      - .github/workflows/kfs-proba-5days.yml
+  schedule:
+    - cron: '10 23 * * *'
+permissions:
+  contents: write
+concurrency:
+  group: kfs-proba-5days
+  cancel-in-progress: false
+jobs:
+  probabilities:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test five-day aggregation
+        run: node --test tests/test-proba-5days.cjs
+      - name: Calculate five complete Paris days
+        if: github.event_name != 'push'
+        run: node scripts/build_proba_5days.cjs
+      - name: Publish validated dataset
+        if: github.event_name != 'push'
+        run: |
+          git config user.name "KFS METEO Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add proba/five-day-probabilities.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "KFS: five-day ensemble probabilities"
+          for attempt in 1 2 3 4 5; do
+            git fetch origin main
+            if ! git rebase origin/main; then
+              git rebase --abort
+              exit 1
+            fi
+            if git push origin HEAD:main; then exit 0; fi
+            sleep 4
+          done
+          exit 1

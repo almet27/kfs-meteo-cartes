@@ -1,4 +1,4 @@
-// KFS /proba — prévisions multi-ensembles, J+0 à J+3, France / régions.
+// KFS /proba — prévisions multi-ensembles, J+0 à J+3 et cinq jours cumulés, France / régions.
 // Pas de taux de confiance inventé : décompte des membres, puis moyenne
 // à poids égaux entre familles d'ensembles effectivement disponibles.
 // Source données : Open-Meteo Ensemble API ; contours : IGN / INSEE (geojson).
@@ -31,15 +31,16 @@ const KFS_PROBA_RULES = {
 let KFS_PROBA_LAST_REGISTER=0;
 async function kfsProbaRegister(env){
  if(!env.DISCORD_BOT_TOKEN)throw Error("Jeton Discord absent");
- const cmd={name:"proba",type:1,description:"Probabilités météo jusqu'à J+3 · France et régions",options:[
+ const cmd={name:"proba",type:1,description:"Probabilités météo par jour ou sur 5 jours cumulés",options:[
   {name:"phenomene",type:3,description:"Pluie, neige, gelées, rafales et orages",required:true,
    choices:[{name:"🌨️ Neige au sol",value:"neige"},
     {name:"❄️ Précipitations neigeuses (même sans tenue)",value:"neige_chutes"},
     {name:"🌧️ Pluie",value:"pluie"},{name:"🥶 Gelées (Tmin 2 m)",value:"gel"},{name:"💨 Rafales",value:"vent"},{name:"🌩️ Orages",value:"orage"}]},
   {name:"zone",type:3,description:"France entière ou région",required:false,
    choices:[{name:"France métropolitaine",value:"FR"},...KFS_PROBA_REGIONS.map(([code,name])=>({name,value:code}))]},
-  {name:"jour",type:4,description:"De J+0 à J+3",required:false,
-   choices:[0,1,2,3].map(i=>({name:"J+"+i,value:i}))},
+  {name:"jour",type:4,description:"Une journée ou cinq jours cumulés (J+1 à J+5)",required:false,
+   choices:[...[0,1,2,3].map(i=>({name:"J+"+i,value:i})),
+    {name:"5 jours cumulés (J+1 à J+5)",value:5}]},
   {name:"seuil",type:10,description:"Gel 0/-2/-5/-10°C · neige 1/3/5/10cm · neige fraîche · pluie · vent",required:false,min_value:-10,max_value:120},
   {name:"niveau",type:3,description:"Orages : niveau minimum à évaluer (défaut : moyen)",required:false,
    choices:[{name:"Faible",value:"faible"},{name:"Moyen",value:"moyen"},{name:"Modéré",value:"modere"},{name:"Fort",value:"fort"},{name:"Extrême",value:"extreme"}]}
@@ -162,17 +163,17 @@ function kfsProbaDay(day){
  const target=new Date(Date.UTC(y,m-1,d+day,12));
  return target.toISOString().slice(0,10);
 }
-function kfsProbaMemberProbability(hourly,day,type,threshold){
+function kfsProbaMemberProbability(hourly,day,type,threshold,endDay=day){
  if(!hourly?.time?.length)return null;
  const ids=[];
- for(let i=0;i<hourly.time.length;i++)if(String(hourly.time[i]).startsWith(day))ids.push(i);
- if(!ids.length)return null;
+ for(let i=0;i<hourly.time.length;i++)if(String(hourly.time[i]).slice(0,10)>=day && String(hourly.time[i]).slice(0,10)<=endDay)ids.push(i);
+ if(!ids.length || (endDay!==day&&!kfsProbaPeriodComplete(hourly.time,ids,day,endDay,1)))return null;
  let pass=0,valid=0,anyRain=0,amountSum=0;
  const keys=Object.keys(hourly).filter(k=>k.startsWith(KFS_PROBA_RULES[type].variable+"_")&&/member\d+/.test(k));
  for(const key of keys){
   const arr=hourly[key];if(!Array.isArray(arr))continue;
   const nums=ids.map(i=>arr[i]).filter(v=>typeof v==="number"&&Number.isFinite(v));
-  if(nums.length<Math.ceil(ids.length*0.85))continue;
+  if(nums.length<(endDay!==day?ids.length:Math.ceil(ids.length*0.85)))continue;
   const amount=type==="pluie"?Math.max(0,nums.reduce((a,b)=>a+b,0)):
    // Open-Meteo 'snowfall' est un cumul horaire de neige fraiche en cm.
    // 7 cm = 10 mm eau selon sa documentation ; ne pas confondre avec neige au sol.
@@ -227,11 +228,11 @@ function kfsProbaStormTier(cape,rain,gust,weatherCode,cin,dewpoint){
   level=Math.max(0,level-1);
  return level;
 }
-function kfsProbaStormMembers(hourly,day,minimum){
+function kfsProbaStormMembers(hourly,day,minimum,endDay=day){
  if(!Array.isArray(hourly?.time))return null;
  const ids=[];
- for(let i=0;i<hourly.time.length;i++)if(String(hourly.time[i]).startsWith(day))ids.push(i);
- if(ids.length<3)return null;
+ for(let i=0;i<hourly.time.length;i++)if(String(hourly.time[i]).slice(0,10)>=day && String(hourly.time[i]).slice(0,10)<=endDay)ids.push(i);
+ if(ids.length<3 || (endDay!==day&&!kfsProbaPeriodComplete(hourly.time,ids,day,endDay)))return null;
  const suffixes=new Set();
  for(const key of Object.keys(hourly))
   {const match=key.match(/^(?:cape|weather_code)_member(\d+)$/);if(match)suffixes.add(match[1]);}
@@ -253,7 +254,7 @@ function kfsProbaStormMembers(hourly,day,minimum){
      get("wind_gusts_10m",i),wc,get("convective_inhibition",i),get("dew_point_2m",i));
    level=Math.max(level,l);
   }
-  if(observed<Math.ceil(ids.length*.6))continue;
+  if(observed<(endDay!==day?ids.length:Math.ceil(ids.length*.6)))continue;
   valid++;meet+=Number(level>=minimum);active+=Number(level>=1);sum+=level;
  }
  return valid>=2?{pct:100*meet/valid,amount:sum/valid,stormPct:100*active/valid,members:valid}:null;
@@ -338,10 +339,10 @@ async function kfsProbaReadEnsemble(params){
  try{return await action;}finally{KFS_PROBA_INFLIGHT.delete(key);}
 }
 
-async function kfsProbaStormModel(model,samples,day,minimum){
+async function kfsProbaStormModel(model,samples,day,minimum,endDay=day){
  const base={latitude:samples.map(p=>p.lat).join(","),
   longitude:samples.map(p=>p.lon).join(","),models:model[1],
-  start_date:day,end_date:day,timezone:"Europe/Paris",temporal_resolution:KFS_STORM_TEMPO};
+  start_date:day,end_date:endDay,timezone:"Europe/Paris",temporal_resolution:KFS_STORM_TEMPO};
  const variants=[
   ["cape","precipitation","wind_gusts_10m","weather_code","dew_point_2m","convective_inhibition"],
   ["cape","precipitation","wind_gusts_10m","weather_code","dew_point_2m"],
@@ -356,7 +357,7 @@ async function kfsProbaStormModel(model,samples,day,minimum){
   try{
    const data0=await kfsProbaReadEnsemble(params),data=Array.isArray(data0)?data0:[data0];
    if(data.length!==samples.length){error="Nombre de points inattendu";continue;}
-   const values=data.map(x=>kfsProbaStormMembers(x.hourly,day,minimum));
+   const values=data.map(x=>kfsProbaStormMembers(x.hourly,day,minimum,endDay));
    if(values.some(Boolean))return {name:model[0],values,fields};
    error="Aucun membre valide";
   }catch(e){
@@ -366,20 +367,20 @@ async function kfsProbaStormModel(model,samples,day,minimum){
  }
  throw Error("Orage "+model[0]+": "+error);
 }
-async function kfsProbaModel(model,samples,day,type,threshold){
+async function kfsProbaModel(model,samples,day,type,threshold,endDay=day){
  const varName=KFS_PROBA_RULES[type].variable;
  const params=new URLSearchParams({
   latitude:samples.map(p=>p.lat).join(","),
   longitude:samples.map(p=>p.lon).join(","),
-  models:model[1],hourly:varName,start_date:day,end_date:day,
+  models:model[1],hourly:varName,start_date:day,end_date:endDay,
   timezone:"Europe/Paris",temporal_resolution:"hourly_1"
  });
  const result=await kfsProbaReadEnsemble(params);
  const arr=Array.isArray(result)?result:[result];
  if(arr.length!==samples.length)throw Error("Nombre de points inattendu");
  const values=arr.map(p=>{
-  if(type==="neige"&&typeof p.elevation==="number"&&p.elevation>800)return null;
-  return kfsProbaMemberProbability(p.hourly,day,type,threshold);
+  if(endDay===day&&type==="neige"&&typeof p.elevation==="number"&&p.elevation>800)return null;
+  return kfsProbaMemberProbability(p.hourly,day,type,threshold,endDay);
  });
  return {name:model[0],values};
 }
@@ -837,6 +838,7 @@ async function kfsProbaEcmwfFrostRead(threshold,zone,day,points){
 
 async function kfsProbaComplete(interaction,phenom,zone,jour,seuil){
  try{
+  if(jour===5)return await kfsProbaFiveDayComplete(interaction,phenom,zone,seuil);
   const rules=KFS_PROBA_RULES[phenom];
   if(!rules||![0,1,2,3].includes(jour)||!rules.allowed.includes(seuil))throw Error(
    "Paramètres invalides. Seuils : gel 0/-2/-5/-10 °C ; chutes de neige 0,1/1/3/5 mm équiv.-eau ; neige au sol 1/3/5/10 cm ; pluie 0,1/1/5/10/20/40 mm ; rafales 54/60/80/90/100/120 km/h."
@@ -1064,3 +1066,97 @@ async function kfsProbaComplete(interaction,phenom,zone,jour,seuil){
 }
 
 
+
+
+// Five-day probabilities follow each member across the entire period.
+// Daily percentages are never summed or treated as independent events.
+function kfsProbaPeriodComplete(times,ids,start,end,interval=0){
+ if(!interval)interval=(Date.parse(times[ids[1]])-Date.parse(times[ids[0]]))/3600000;
+ if(![1,3].includes(interval))return false;
+ const days=new Map();
+ for(const i of ids){const date=String(times[i]).slice(0,10);if(!days.has(date))days.set(date,[]);days.get(date).push(times[i]);}
+ const offset=date=>{
+  const parts=new Intl.DateTimeFormat("en-US",{timeZone:"Europe/Paris",timeZoneName:"longOffset"}).formatToParts(new Date(date+"T12:00:00Z"));
+  const text=parts.find(p=>p.type==="timeZoneName").value;
+  const match=text.match(/GMT([+-])(\d{2}):(\d{2})/);
+  return match?(match[1]==="-"?-1:1)*(Number(match[2])*60+Number(match[3])):0;
+ };
+ for(let d=start;d<=end;d=new Date(Date.parse(d+"T12:00:00Z")+86400000).toISOString().slice(0,10)){
+  const previous=new Date(Date.parse(d+"T12:00:00Z")-86400000).toISOString().slice(0,10);
+  const expected=Math.ceil((24-(offset(d)-offset(previous))/60)/interval);
+  const samples=days.get(d)||[];
+  if(samples.length!==expected)return false;
+  const hours=samples.map(t=>Number(String(t).slice(11,13)));
+  if(Math.min(...hours)!==0 || Math.max(...hours)<24-interval)return false;
+ }
+ return true;
+}
+async function kfsProbaFiveDayRead(type,threshold,zone,start,end,points){
+ const url="https://raw.githubusercontent.com/almet27/kfs-meteo-cartes/main/proba/five-day-probabilities.json";
+ try{
+  const r=await fetch(url,{signal:AbortSignal.timeout(5000),cf:{cacheTtl:600,cacheEverything:true}});
+  if(!r.ok)return null;
+  const j=await r.json(),age=Date.now()-Date.parse(j.generated_at_utc);
+  const p=j.zones?.[zone]?.[type]?.[String(threshold)];
+  if(j.schema!==1 || j.provider!=="Open-Meteo ECMWF IFS ENS five-day members" ||
+   j.start_day!==start || j.end_day!==end || j.duration_days!==5 ||
+   !Number.isFinite(age)||age<0||age>28*3600000 ||
+   JSON.stringify(j.zone_points?.[zone])!==JSON.stringify(points.map(p=>[p.lat,p.lon])))return null;
+  if(!Array.isArray(p)||p.length!==points.length || p.some(v=>!v ||
+   !Number.isFinite(v.pct)||v.pct<0||v.pct>100||!Number.isFinite(v.amount)||
+   !Number.isInteger(v.members)||v.members<2))return null;
+  return {values:p,source:"ECMWF IFS ENS via Open-Meteo",consulted:j.generated_at_utc};
+ }catch(e){console.error("KFS_PROBA_FIVE_DAY_READ",String(e));return null;}
+}
+async function kfsProbaFiveDayComplete(interaction,type,zone,threshold){
+ const rules=KFS_PROBA_RULES[type];
+ if(!rules||!rules.allowed.includes(threshold))throw Error("Seuil ou phénomène invalide pour les cinq jours cumulés.");
+ const start=kfsProbaDay(1),end=kfsProbaDay(5);
+ const all=await kfsProbaFeatures(),features=zone==="FR"?all:all.filter(f=>String(f.properties.code)===zone);
+ if(!features.length)throw Error("Région non reconnue.");
+ const departments=await kfsProbaDepartments(zone).catch(()=>[]);
+ const points=kfsProbaSamples(features,zone!=="FR");
+ let result=await kfsProbaFiveDayRead(type,threshold,zone,start,end,points);
+ if(!result){
+  // One request for all five days, using actual member trajectories.
+  const model=KFS_PROBA_MODELS[0];
+  const r=type==="orage"?await kfsProbaStormModel(model,points,start,threshold,end):
+   await kfsProbaModel(model,points,start,type,threshold,end);
+  result={values:r.values,source:r.name+" via Open-Meteo",consulted:new Date().toISOString()};
+ }
+ for(let i=0;i<points.length;i++){
+  const v=result.values[i];if(v){points[i].value=v.pct;points[i].amount=v.amount;}
+ }
+ const counted=points.filter(p=>Number.isFinite(p.value)&&Number.isFinite(p.amount));
+ if(!counted.length)throw Error("Les membres ne couvrent pas encore les cinq jours complets. Réessaie après l'actualisation des données.");
+ const name=zone==="FR"?"France métropolitaine":KFS_PROBA_REGIONS.find(r=>r[0]===zone)?.[1]||zone;
+ const label=type==="pluie"?"cumul de pluie sur les cinq jours ≥ "+threshold+" mm":
+  type==="neige_chutes"?"cumul des chutes de neige sur les cinq jours ≥ "+threshold+" mm équiv.-eau":
+  type==="gel"?"température à 2 m ≤ "+threshold+" °C au moins une fois":
+  type==="neige"?"épaisseur de neige au sol ≥ "+threshold+" cm au moins une fois":
+  type==="vent"?"rafale ≥ "+threshold+" km/h au moins une fois":
+  "potentiel orageux au moins "+KFS_STORM_NAMES[threshold].toLowerCase()+" au moins une fois";
+ const quantity=type==="pluie"||type==="neige_chutes"?"cumul sur les cinq jours":
+  type==="gel"?"minimum sur les cinq jours":type==="neige"?"épaisseur maximale sur les cinq jours":
+  type==="vent"?"rafale maximale sur les cinq jours":"niveau maximal sur les cinq jours";
+ const members=result.values.filter(Boolean).map(v=>v.members);
+ const memberText=Math.min(...members)===Math.max(...members)?String(Math.min(...members)):
+  Math.min(...members)+" à "+Math.max(...members);
+ const content="**KFS MÉTÉO · /proba · "+name+" · 5 JOURS CUMULÉS (J+1 à J+5)**\n"+
+  "🗓️ **Période :** du "+start+" à 00 h au "+end+" à 24 h (heure de Paris).\n"+
+  "**Événement :** "+label+".\n"+
+  "🗺️ **Probabilité indicative :** "+Math.round(Math.min(...counted.map(p=>p.value)))+" à "+
+   Math.round(Math.max(...counted.map(p=>p.value)))+" % aux points étudiés.\n"+
+  "**Carte :** chiffres blancs = % de membres atteignant le seuil ; couleurs et chiffres bleus = moyenne du "+quantity+" ("+KFS_PROBA_SCALE[type].unit+").\n"+
+  "**Calcul :** "+memberText+" membres suivis sur toute la période ; un membre est compté une seule fois.\n"+
+  (type==="pluie"||type==="neige_chutes"?"Les quantités sont additionnées pour chaque membre avant de tester le seuil.\n":
+   "Le seuil doit être atteint au moins une fois au cours des cinq jours.\n")+
+  (counted.length<points.length?"⚠️ Données complètes sur "+counted.length+"/"+points.length+" points échantillonnés.\n":"")+
+  (type==="orage"?"⚠️ Potentiel convectif expérimental ; ce pourcentage ne mesure pas une probabilité calibrée d'orage violent.\n":"")+
+  (type==="neige"?"❄️ Épaisseur maximale de neige présente au sol ; les épaisseurs quotidiennes ne sont pas additionnées.\n":"")+
+  "📊 **Source :** "+result.source+" · consultée le "+result.consulted+".\n"+
+  "_Fraction d'ensemble non calibrée, à la maille du modèle ; ne remplace pas une vigilance officielle._";
+ const frame=kfsProbaRender(features,points,zone,type,departments),png=await kfsProbaPng(frame);
+ try{await kfsProbaEdit(interaction,{content,allowed_mentions:{parse:[]}},png);}
+ catch(e){await kfsProbaEdit(interaction,{content:content+"\n⚠️ Carte indisponible : "+String(e.message||e).slice(0,150),allowed_mentions:{parse:[]}});}
+}
