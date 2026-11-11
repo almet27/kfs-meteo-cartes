@@ -131,6 +131,28 @@ def kmh(value):
     return round(n * 3.6, 1) if n is not None and 0 <= n < 150 else None
 
 
+def wind_bearing(value):
+    """Azimut météorologique du vent venant de (0/360=N, 90=E)."""
+    n = as_number(value)
+    return n % 360 if n is not None and 0 <= n <= 360 else None
+
+
+def hourly_gust(props):
+    """Rafale horaire et direction du même phénomène, jamais une moyenne empruntée."""
+    for speed_key, direction_keys in (
+        ("fxi", ("dxi", "ddraf")),
+        ("raf", ("ddraf", "dxi")),
+        ("fxy", ("dxy",)),
+    ):
+        speed = kmh(props.get(speed_key))
+        if speed is None:
+            continue
+        bearing = next((angle for key in direction_keys
+                        if (angle := wind_bearing(props.get(key))) is not None), None)
+        return speed, bearing
+    return None, None
+
+
 def station_id(feature):
     p = feature["properties"]
     coords = feature["geometry"]["coordinates"]
@@ -157,7 +179,7 @@ def aggregate_hourly(samples):
     for snapshot in samples:
         for key, (_, _, props) in stations(snapshot).items():
             s = data.setdefault(key, {
-                "tx": None, "tn": None, "gust": None,
+                "tx": None, "tn": None, "gust": None, "gust_dir": None,
                 "rain": 0.0, "rain_count": 0, "temp_count": 0
             })
             t = kelvin(props.get("t"))
@@ -165,9 +187,10 @@ def aggregate_hourly(samples):
                 s["tx"] = t if s["tx"] is None else max(t, s["tx"])
                 s["tn"] = t if s["tn"] is None else min(t, s["tn"])
                 s["temp_count"] += 1
-            gust = kmh(props.get("fxi", props.get("fxy")))
-            if gust is not None:
-                s["gust"] = gust if s["gust"] is None else max(gust, s["gust"])
+            gust, gust_dir = hourly_gust(props)
+            if gust is not None and (s["gust"] is None or gust > s["gust"]):
+                s["gust"] = gust
+                s["gust_dir"] = gust_dir
             rain = as_number(props.get("rr1"))
             if rain is not None and 0 <= rain <= 400:
                 s["rain"] += rain
@@ -184,8 +207,9 @@ def map_values(current, hourly, latest_hourly=None):
         recent_hour = latest_hourly.get(sid, (None, None, {}))[2]
         # Le paquet 6 minutes n'offre pas toujours de rafale ; utilise la dernière heure mesurée.
         gust = kmh(p.get("fxi10"))
+        gust_dir = wind_bearing(p.get("dxi10")) if gust is not None else None
         if gust is None:
-            gust = kmh(recent_hour.get("fxi", recent_hour.get("fxy")))
+            gust, gust_dir = hourly_gust(recent_hour)
         day = hourly.get(sid, {})
         entries = {
             "temperature": temp, "vent": wind, "rafales": gust,
@@ -194,9 +218,18 @@ def map_values(current, hourly, latest_hourly=None):
             "rafalesmax": day.get("gust") if day.get("temp_count", 0) >= 16 else None,
             "pluie": round(day["rain"], 1) if day.get("rain_count", 0) >= 20 else None,
         }
+        wind_dirs = {
+            "vent": wind_bearing(p.get("dd")),
+            "rafales": gust_dir,
+            "rafalesmax": day.get("gust_dir"),
+        }
         for metric, val in entries.items():
             if val is not None:
-                values[metric].append((lon, lat, val))
+                # La direction reste liée à la vitesse réellement mesurée.
+                # Si elle est absente, conserver la valeur sans inventer de flèche.
+                point = ((lon, lat, val, wind_dirs[metric])
+                         if metric in WIND_METRICS else (lon, lat, val))
+                values[metric].append(point)
     return values
 
 
@@ -217,6 +250,7 @@ def polygons(geojson):
 # les trois cartes de température. Aucune interpolation ne colore la mer.
 LAND_MASK_CACHE = {}
 TEMPERATURE_METRICS = frozenset(("temperature", "tmax", "tmin"))
+WIND_METRICS = frozenset(("vent", "rafales", "rafalesmax"))
 SURFACE_METRICS = TEMPERATURE_METRICS | {"pluie"}
 
 
@@ -340,7 +374,7 @@ def render(metric, zone, records, shapes, timestamp, hours):
     else:
         grid_cols, grid_rows = (27, 18) if wide_zone else (19, 13)
     if points:
-        xs, ys, nums = list(zip(*points))
+        xs, ys, nums = list(zip(*(p[:3] for p in points)))
         low, high = min(nums), max(nums)
         if low == high:
             low -= 1
@@ -375,7 +409,8 @@ def render(metric, zone, records, shapes, timestamp, hours):
             ax.scatter(xs, ys, c=nums, s=24, cmap=colors,
                        norm=normalized, alpha=.76, linewidths=0, zorder=2)
         occupied = set()
-        for lon, lat, val in sorted(points, key=lambda x: abs(x[2]), reverse=True):
+        for record in sorted(points, key=lambda x: abs(x[2]), reverse=True):
+            lon, lat, val = record[:3]
             if metric == "pluie" and val < 0.5:
                 continue  # Éviter une forêt de valeurs 0.0 sur fond sec.
             cell = (int((lon - x0) / (x1 - x0) * grid_cols),
@@ -384,12 +419,26 @@ def render(metric, zone, records, shapes, timestamp, hours):
                 continue
             occupied.add(cell)
             label = f"{val:.0f}" if metric != "pluie" else f"{val:.1f}"
-            ax.text(lon, lat, label, color="white", fontsize=label_size, fontweight="bold",
-                    ha="center", va="center", zorder=4,
-                    bbox={"boxstyle":"round,pad=0.18",
-                          "facecolor":"#0b1524","edgecolor":"#495b6c",
-                          "linewidth":.4,
-                          "alpha":.72 if metric in SURFACE_METRICS else .96})
+            label_box = {"boxstyle":"round,pad=0.18",
+                         "facecolor":"#0b1524","edgecolor":"#495b6c",
+                         "linewidth":.4,
+                         "alpha":.72 if metric in SURFACE_METRICS else .96}
+            if metric in WIND_METRICS and len(record) > 3 and record[3] is not None and val >= 3:
+                # La flèche montre où le vent SOUFFLE. L'API donne d'où il VIENT :
+                # 270° (vent d'ouest) se dessine donc vers l'est (droite).
+                ax.annotate(label, (lon, lat), xytext=(-5, 0),
+                            textcoords="offset points", color="white",
+                            fontsize=label_size, fontweight="bold",
+                            ha="right", va="center", zorder=4, bbox=label_box)
+                ax.annotate("↑", (lon, lat), xytext=(3, 0),
+                            textcoords="offset points", color="#b9edff",
+                            rotation=-((record[3] + 180) % 360),
+                            rotation_mode="anchor", fontsize=label_size + 4,
+                            fontweight="bold", ha="left", va="center", zorder=5)
+            else:
+                ax.text(lon, lat, label, color="white", fontsize=label_size,
+                        fontweight="bold", ha="center", va="center",
+                        zorder=4, bbox=label_box)
         cb = fig.colorbar(plt.cm.ScalarMappable(norm=normalized, cmap=colors),
                           ax=ax, orientation="horizontal", fraction=.047, pad=.07,
                           aspect=35)
@@ -424,6 +473,10 @@ def render(metric, zone, records, shapes, timestamp, hours):
     elif metric == "pluie":
         fig.text(.5, .073, "Cumul 24 h (mm) · Dégradé estimé entre les stations "
                  "· Ne représente pas un relevé radar",
+                 ha="center", color="#c6d4e4", fontsize=9.5)
+    elif metric in WIND_METRICS:
+        fig.text(.5, .073, "Nombre : km/h · Flèche : sens où souffle le vent · "
+                 "Sans flèche = direction non mesurée ou vent très faible",
                  ha="center", color="#c6d4e4", fontsize=9.5)
     if quadrant_zone or france_zone:
         # Maximiser la carte sans rogner le bandeau ni le pied.
@@ -460,7 +513,8 @@ def test():
         "type": "Feature",
         "geometry": {"type":"Point","coordinates":[1.2,49.2]},
         "properties": {"geo_id_insee":"27000001","t":282.15,"ff":2.5,
-                       "fxi10":7,"fxi":9,"rr1":1.5}
+                       "dd":90,"fxi10":7,"dxi10":270,
+                       "fxi":9,"dxi":110,"rr1":1.5}
     }]
     s = stations(sample)
     assert len(s) == 1 and kelvin(282.15) == 9
@@ -472,6 +526,16 @@ def test():
     assert values["tmax"][0][2] == 9
     assert values["rafales"][0][2] == 25.2
     assert values["rafalesmax"][0][2] == 32.4
+    assert values["vent"][0][3] == 90
+    assert values["rafales"][0][3] == 270
+    assert values["rafalesmax"][0][3] == 110
+    assert wind_bearing(360) == 0 and wind_bearing(-10) is None
+    assert hourly_gust({"raf": 12, "ddraf": 225}) == (43.2, 225)
+    assert hourly_gust({"fxy": 4, "dxy": 135}) == (14.4, 135)
+    # Une direction manquante ne doit jamais être substituée par le vent moyen.
+    missing = stations([{**sample[0], "properties": {
+        **sample[0]["properties"], "dxi10": None, "dd": 180}}])
+    assert map_values(missing, hourly, s)["rafales"][0][3] is None
     # Test local du dégradé, sans réseau ni données météo fictives publiées.
     synthetic = [(-4, 48, 2), (0, 50, 8), (7, 48, 17),
                  (6, 43, 25), (-1, 43, 21), (2, 46, 13)]
@@ -489,7 +553,7 @@ def test():
     assert -1e-6 <= rain.min() < rain.max() <= 20 + 1e-6
     # La pluie est interpolée sur une aire plus restreinte que la température.
     assert rain.count() < field.count()
-    print("Self-test: 7 mesures + dégradés IDW température et pluie sur terres OK")
+    print("Self-test: mesures + directions vent/rafales + dégradés IDW OK")
 
 
 def main():
