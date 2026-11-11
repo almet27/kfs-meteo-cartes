@@ -17,7 +17,7 @@ const summary = () => ({success:true,response:[{summary:{
 const pulse = (type, age) => ({loc:{lat:46.8,long:1.69},ob:{
   timestamp:sec()-age,pulse:{type,peakamp:type==='ic'?8000:-10000}}});
 const context = vm.createContext({console,Date:Clock,URL,URLSearchParams,Request,Response,
-  Blob,FormData,TextEncoder,TextDecoder,Uint8Array,Uint32Array,ArrayBuffer,Intl,
+  Blob,FormData,TextEncoder,TextDecoder,Uint8Array,Uint32Array,ArrayBuffer,Intl,CompressionStream,
   caches:{default:cache},async fetch(url) {
     const u = new URL(url); queries.push(u);
     assert.equal(u.searchParams.get('filter'),'all');
@@ -48,6 +48,10 @@ const run = code => vm.runInContext(code,context);
   const lines = run('foudreSummaryLines(total,30)');
   assert.match(lines,/01:44:41/);
   assert.match(lines,/intranuageux \(IC\) : \*\*7\*\*/);
+  run('foudreFond=async()=>{}');
+  const png = await run('foudreImage(city,[])');
+  assert.deepEqual(Array.from(png.png.slice(0,8)),[137,80,78,71,13,10,26,10]);
+  assert.ok(png.png.length>1000,'empty sector map must still be a real PNG');
   let sent, images = 0;
   context.capture = (...args) => {sent=args;};
   context.image = () => {images++; return {png:new Uint8Array([1])};};
@@ -58,20 +62,23 @@ const run = code => vm.runInContext(code,context);
     foudreMessage=async(...args)=>capture(...args);
   `);
   await run('completeFoudre({},"Châteauroux",env,30)');
-  assert.equal(images,0,'no empty map when source returns no positions');
-  assert.equal(sent[2],null);
+  assert.equal(images,1,'sector map remains visible without recent positions');
+  assert.ok(sent[2]);
+  assert.match(sent[3],/aucun point fourni/);
   assert.match(sent[1],/Activité électrique détectée sur 30 minutes/);
   assert.match(sent[1],/01:44:41/);
   assert.ok(sent[1].length<1950);
   await run('foudreData=async()=>{throw Error("Quota Xweather atteint (429)");}');
   await run('completeFoudre({},"Châteauroux",env,30)');
-  assert.equal(images,0);
-  assert.match(sent[1],/Carte 5 min indisponible/);
+  assert.equal(images,2,'sector map remains visible during source outage');
+  assert.match(sent[3],/source foudre indisponible/);
+  assert.match(sent[1],/Données foudre 5 min indisponibles/);
   assert.match(sent[1],/8/,'summary survives map outage');
   await run(`foudreData=async()=>({pulses:[{type:'ic',amp:8000,lat:46.8,lon:1.69,time:Date.now()/1000}],collecte:Date.now()});`);
   await run('completeFoudre({},"Châteauroux",env,5)');
-  assert.equal(images,1);
+  assert.equal(images,3);
+  assert.match(sent[3],/Foudre en direct/);
   assert.match(sent[1],/intranuageux \(IC\) : \*\*1\*\*/);
   assert.ok(sent[2]);
-  console.log('PASS: all-type queries, strict 5-min window, cache expiry, 8-pulse summary, last detection, empty/error handling, IC map.');
+  console.log('PASS: CG/IC queries, 5-min timestamps, summary, sector PNG, map present with points / no points / source outage.');
 })().catch(e=>{console.error(e);process.exitCode=1;});
