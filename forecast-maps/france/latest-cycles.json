@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated_utc": "2026-11-11T12:32:08Z",
+  "generated_utc": "2026-11-11T15:36:40Z",
   "models": {
     "ifs": {
       "source": "ECMWF IFS Open Data",
@@ -27,12 +27,12 @@
     "gfs": {
       "source": "NOAA NCEP GFS",
       "native_step_h": 3,
-      "latest_first_step_utc": "2026-11-11T06:00:00Z",
-      "first_detected_utc": "2026-11-11T09:36:49Z",
-      "latest_12h_temperature_step_utc": "2026-11-11T06:00:00Z",
+      "latest_first_step_utc": "2026-11-11T12:00:00Z",
+      "first_detected_utc": "2026-11-11T15:36:40Z",
+      "latest_12h_temperature_step_utc": "2026-11-11T12:00:00Z",
       "early_12h_available_for_latest_run": true,
       "latest_72h_temperature_step_utc": "2026-11-11T06:00:00Z",
-      "temperature_72h_available_for_latest_run": true,
+      "temperature_72h_available_for_latest_run": false,
       "all_required_fields_verified": false
     },
     "aigfs": {
