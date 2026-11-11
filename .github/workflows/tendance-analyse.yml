@@ -56,6 +56,37 @@ jobs:
               lancer=true
             fi
           fi
+          # Le secours ne regénère pas un bulletin déjà publié par le créneau principal.
+          if [[ "$lancer" == true && "$KFS_EVENT" == schedule && \
+                ( "$KFS_CRON" == "43 6 * * *" || "$KFS_CRON" == "43 7 * * *" || \
+                  "$KFS_CRON" == "13 19 * * 1-6" || "$KFS_CRON" == "13 20 * * 1-6" ) ]]; then
+            url="https://raw.githubusercontent.com/almet27/kfs-meteo-cartes/main/forecast-maps/tendance/tendance-cartes.json?check=$(date +%s)"
+            if curl -fsSL --max-time 15 "$url" -o /tmp/kfs-tendance-latest.json; then
+              if python - "$KFS_CRON" <<'PY'
+          import json,sys
+          from datetime import datetime, timezone
+          from zoneinfo import ZoneInfo
+          cron=sys.argv[1]
+          evening=cron.startswith("13 ")
+          now=datetime.now(ZoneInfo("Europe/Paris"))
+          try:
+              with open("/tmp/kfs-tendance-latest.json") as f:
+                  data=json.load(f)
+              created=datetime.fromisoformat(data["generated_utc"]).astimezone(ZoneInfo("Europe/Paris"))
+              gate=now.replace(hour=20 if evening else 8,minute=50 if evening else 20,second=0,microsecond=0)
+              if data.get("schema_version")==1 and created.date()==now.date() and created>=gate:
+                  print("Créneau /tendance déjà généré : "+created.isoformat())
+                  sys.exit(0)
+          except Exception as e:
+              print("Contrôle de secours non concluant : "+str(e)[:160])
+          sys.exit(1)
+          PY
+              then
+                lancer=false
+                echo "Secours /tendance ignoré : génération déjà actualisée pour le créneau."
+              fi
+            fi
+          fi
           echo "lancer=$lancer" >> "$GITHUB_OUTPUT"
           echo "Filtre /tendance: evenement=$KFS_EVENT cron=$KFS_CRON lancer=$lancer"
   analyse-et-cartes:
