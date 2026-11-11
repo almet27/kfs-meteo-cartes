@@ -143,34 +143,38 @@ async function kfsPLocalSnowArchive(city,year){
   const end=year===nowYear?new Date(Date.now()-7*86400000).toISOString().slice(0,10):year+"-12-31";
   if(end<start)throw Error("Pas encore d'archives ERA5-Land pour l'année en cours.");
   const lat=Number(city.lat.toFixed(3)),lon=Number(city.lon.toFixed(3));
-  const key=new Request("https://kfs-meteo-ia.alain-leprevost.workers.dev/_clim_neige_local_v1/"+year+"/"+lat+"/"+lon);
-  try{
-    const res=await caches.default.match(key);
-    if(res){
-      const data=await res.json();
-      if(data?.year===year&&Array.isArray(data.depth)&&Array.isArray(data.fall))return data;
-    }
-  }catch(_){}
-  const sourceFall=year>=2017?"ecmwf_ifs":"era5";
-  function url(model,variable){
-    return "https://archive-api.open-meteo.com/v1/archive?"+
-      new URLSearchParams({latitude:String(lat),longitude:String(lon),start_date:start,end_date:end,
-        hourly:variable,models:model,timezone:"Europe/Paris"}).toString();
+  const base="https://kfs-meteo-ia.alain-leprevost.workers.dev";
+  const key=new Request(base+"/_clim_neige_local_v2/"+year+"/"+lat+"/"+lon);
+  const oldKey=new Request(base+"/_clim_neige_local_v1/"+year+"/"+lat+"/"+lon);
+  // Ne jamais refaire une requête si une copie valide est déjà en cache.
+  for(const cacheKey of [key,oldKey]){
+    try{
+      const res=await caches.default.match(cacheKey);
+      if(res){
+        const data=await res.json();
+        if(data?.year===year&&Array.isArray(data.depth)&&Array.isArray(data.fall))return data;
+      }
+    }catch(_){}
   }
-  async function get(model,variable){
-    const r=await fetch(url(model,variable),{cf:{cacheEverything:true,cacheTtl:year===nowYear?21600:604800}});
-    if(!r.ok)throw Error("Archive de réanalyse "+model+" indisponible : HTTP "+r.status);
-    const j=await r.json();
-    if(j.error||!Array.isArray(j.hourly?.time)||!Array.isArray(j.hourly?.[variable]))
-      throw Error("La réanalyse "+model+" n'a pas retourné de série "+variable+" exploitable.");
-    return j;
+  // Une seule requête pour deux paramètres : l'ancien code faisait un second
+  // appel ECMWF IFS dont les HTTP 429 bloquaient tout le bulletin.
+  const endpoint="https://archive-api.open-meteo.com/v1/archive?"+
+    new URLSearchParams({latitude:String(lat),longitude:String(lon),start_date:start,end_date:end,
+      hourly:"snow_depth,snowfall",models:"era5_land",timezone:"Europe/Paris"}).toString();
+  const r=await fetch(endpoint,{cf:{cacheEverything:true,cacheTtl:year===nowYear?21600:604800}});
+  if(!r.ok){
+    if(r.status===429)throw Error("L'API historique Open-Meteo est temporairement limitée (HTTP 429). "+
+      "Les estimations ne peuvent pas être actualisées maintenant ; aucune valeur n'est inventée.");
+    throw Error("Archive ERA5-Land indisponible : HTTP "+r.status);
   }
-  const [depth,fall]=await Promise.all([get("era5_land","snow_depth"),get(sourceFall,"snowfall")]);
-  if(depth.hourly_units?.snow_depth!=="m"||fall.hourly_units?.snowfall!=="cm")
-    throw Error("Unité d'enneigement inattendue dans les données historiques.");
-  function aggregate(data,key,mode){
+  const j=await r.json();
+  if(j.error||!Array.isArray(j.hourly?.time)||!Array.isArray(j.hourly?.snow_depth)||
+    !Array.isArray(j.hourly?.snowfall)||
+    j.hourly_units?.snow_depth!=="m"||j.hourly_units?.snowfall!=="cm")
+    throw Error("L'archive ERA5-Land ne renvoie pas les deux séries et unités attendues.");
+  function aggregate(key,mode){
     const days=new Map();
-    const times=data.hourly.time,values=data.hourly[key];
+    const times=j.hourly.time,values=j.hourly[key];
     for(let i=0;i<times.length;i++){
       const val=values[i],date=String(times[i]||"").slice(0,10);
       if(val===null||!Number.isFinite(Number(val))||!/^\d{4}-\d{2}-\d{2}$/.test(date))continue;
@@ -182,16 +186,17 @@ async function kfsPLocalSnowArchive(city,year){
     }
     return [...days.values()].sort((a,b)=>a.date.localeCompare(b.date));
   }
-  const result={year,sourceFall,depth:aggregate(depth,"snow_depth","max"),fall:aggregate(fall,"snowfall","sum"),
-    depthLat:depth.latitude,depthLon:depth.longitude};
+  const result={year,sourceFall:"era5_land",depth:aggregate("snow_depth","max"),
+    fall:aggregate("snowfall","sum"),depthLat:j.latitude,depthLon:j.longitude};
   if(result.depth.length<100&&year!==nowYear)throw Error("Historique d'épaisseur de neige trop incomplet.");
   try{
     await caches.default.put(key,new Response(JSON.stringify(result),{
-      headers:{"content-type":"application/json","Cache-Control":"public,max-age="+(year===nowYear?21600:604800)}
+      headers:{"content-type":"application/json","Cache-Control":"public,max-age="+(year===nowYear?21600:2592000)}
     }));
-  }catch(_){}
+  }catch(e){console.warn("KFS_NEIGE_CACHE",String(e).slice(0,100));}
   return result;
 }
+
 async function kfsPLocalSnowObservations(city,year,month){
   // Ne jamais présenter une station à 60 km comme une mesure locale d'enneigement.
   const all=(await kfsClimStations()).map(s=>({...s,km:kfsClimDistance(city.lat,city.lon,s.lat,s.lon)}))
@@ -273,7 +278,7 @@ async function kfsPLocalSnowReport(city,year,month){
         value:"**"+obs.station.name+"** à "+kfsQR(obs.station.km," km")+"\n"+parts.join("\n"),inline:false});
     }
   }catch(e){console.warn("KFS_NEIGE_LOCAL_STATION_FAIL",String(e).slice(0,120));}
-  const label=model.sourceFall==="ecmwf_ifs"?"ECMWF IFS ~9 km":"ERA5 ~25 km";
+  const label=model.sourceFall==="era5_land"?"ERA5-Land ~9–11 km":model.sourceFall==="ecmwf_ifs"?"ECMWF IFS ~9 km":"ERA5 ~25 km";
   const cautions=["🔎 **Estimation locale par réanalyse** : les valeurs ne sont pas des mesures exactes à "+city.name+".",
     "ERA5-Land (environ 9–11 km) peut surestimer la neige au sol. Ne pas confondre chute et épaisseur."];
   if(year===new Date().getUTCFullYear())cautions.push("Année en cours : réanalyse publiée avec décalage.");
