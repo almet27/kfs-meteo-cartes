@@ -31,3 +31,18 @@ jobs:
             except Exception as e:
               print(label,'ERROR',str(e)[:220],flush=True)
           PY
+      - name: Examiner l'arborescence officielle de produits disponibles
+        run: |
+          python - <<'PY'
+          import urllib.request,urllib.error,json
+          base='https://api.eumetsat.int/data/browse/1.0.0/collections/EO%3AEUM%3ADAT%3A0691'
+          endpoints=['/dates','/dates/2024','/dates/2025','/dates/2025/07','/dates/2025/07/12','/dates/2026/11/09']
+          for p in endpoints:
+            try:
+              with urllib.request.urlopen(urllib.request.Request(base+p+'?format=json',headers={'User-Agent':'KFS-METEO-Probe/1.0'}),timeout=15) as r:
+                d=json.loads(r.read(500000))
+              keys=list(d)
+              print('BROWSE',p,'200','keys',keys,'counts',{k:v for k,v in d.items() if 'number' in k.lower() or 'count' in k.lower()},'head',str(d)[:350],flush=True)
+            except urllib.error.HTTPError as e: print('BROWSE',p,'HTTP',e.code,flush=True)
+            except Exception as e: print('BROWSE',p,'ERROR',repr(e)[:160],flush=True)
+          PY
