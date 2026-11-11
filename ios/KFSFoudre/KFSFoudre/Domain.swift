@@ -81,7 +81,7 @@ struct LightningHistory: Codable {
         windows.append(SourceWindow(start: end - 300, end: end, partial: feed.partial))
         var byID = Dictionary(events.map { ($0.id, $0) }, uniquingKeysWith: { _, new in new })
         for event in feed.strikes {
-            guard valid(event), event.timestamp >= feed.collectedAt - 300,
+            guard Self.valid(event), event.timestamp >= feed.collectedAt - 300,
                   event.timestamp <= now.timeIntervalSince1970 + 10 else { continue }
             byID[event.id] = event
         }
@@ -92,7 +92,7 @@ struct LightningHistory: Codable {
 
     mutating func prune(now: Date) {
         let cutoff = now.timeIntervalSince1970 - Self.retention
-        events.removeAll { !valid($0) || $0.timestamp < cutoff || $0.timestamp > now.timeIntervalSince1970 + 10 }
+        events.removeAll { !Self.valid($0) || $0.timestamp < cutoff || $0.timestamp > now.timeIntervalSince1970 + 10 }
         windows.removeAll { !$0.start.isFinite || !$0.end.isFinite || $0.end < cutoff || $0.end > now.timeIntervalSince1970 + 10 }
         if windows.isEmpty { truncated = false }
     }
@@ -100,7 +100,7 @@ struct LightningHistory: Codable {
     func visible(minutes: Int, center: HistoryZone, now: Date) -> [LightningStrike] {
         let cutoff = now.timeIntervalSince1970 - Double(min(60, max(5, minutes))) * 60
         return events.compactMap { event in
-            guard valid(event), event.timestamp >= cutoff, event.timestamp <= now.timeIntervalSince1970 + 10 else { return nil }
+            guard Self.valid(event), event.timestamp >= cutoff, event.timestamp <= now.timeIntervalSince1970 + 10 else { return nil }
             let distance = Self.distance(center.latitude, center.longitude, event.latitude, event.longitude)
             guard distance <= Double(center.radius) else { return nil }
             return LightningStrike(id: event.id, latitude: event.latitude, longitude: event.longitude,
@@ -125,7 +125,7 @@ struct LightningHistory: Codable {
             partial: truncated || windows.contains { $0.partial && $0.end > start && $0.start < end })
     }
 
-    private func valid(_ event: LightningStrike) -> Bool {
+    private static func valid(_ event: LightningStrike) -> Bool {
         !event.id.isEmpty && event.timestamp.isFinite && event.latitude.isFinite && event.longitude.isFinite &&
         abs(event.latitude) <= 90 && abs(event.longitude) <= 180 && ["cg", "ic"].contains(event.type) &&
         (event.peakCurrentKA == nil || event.peakCurrentKA!.isFinite)
