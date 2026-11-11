@@ -1102,9 +1102,9 @@ function kfsProbaPeriodComplete(times,ids,start,end,interval=0){
  return true;
 }
 async function kfsProbaFiveDayRead(type,threshold,zone,start,end,points){
- const url="https://raw.githubusercontent.com/almet27/kfs-meteo-cartes/main/proba/five-day-probabilities.json";
+ const url="https://raw.githubusercontent.com/almet27/kfs-meteo-cartes/main/proba/five-day-probabilities.json?period="+start;
  try{
-  const r=await fetch(url,{signal:AbortSignal.timeout(5000),cf:{cacheTtl:600,cacheEverything:true}});
+  const r=await fetch(url,{signal:AbortSignal.timeout(5000),cf:{cacheTtl:600,cacheEverything:true,cacheTtlByStatus:{"400-599":-1}}});
   if(!r.ok)return null;
   const j=await r.json(),age=Date.now()-Date.parse(j.generated_at_utc);
   const p=j.zones?.[zone]?.[type]?.[String(threshold)];
