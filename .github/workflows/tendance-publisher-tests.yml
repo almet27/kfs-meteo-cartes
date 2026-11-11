@@ -1,0 +1,17 @@
+name: KFS tests diffusion quotidienne /tendance
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/tendance-publisher-tests.yml
+      - cloudflare/kfs-tendance-daily-publisher.js
+      - tests/test-tendance-daily-publisher.mjs
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - run: node tests/test-tendance-daily-publisher.mjs
