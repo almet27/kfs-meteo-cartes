@@ -55,5 +55,15 @@ jobs:
           git add data/wglc
           if ! git diff --cached --quiet; then
             git commit -m 'Publish CC BY-SA WGLC 2010-2025 monthly lightning densities for France'
-            git push
+            for attempt in 1 2 3 4; do
+              git fetch origin main
+              git rebase origin/main
+              if git push origin HEAD:main; then
+                echo "Archives de foudre disponibles dans GitHub"
+                exit 0
+              fi
+              sleep 3
+            done
+            echo "Échec de publication après 4 tentatives"
+            exit 1
           fi
