@@ -1,5 +1,5 @@
 /* KFS METEO — publication quotidienne de /tendance en complément du dimanche.
-   Fonction appelée uniquement par le cron Cloudflare */5 * * * * existant.
+   Fonction appelée par le déclenchement récurrent Cloudflare toutes les cinq minutes.
    Une publication par période matin (après 08:30 Paris) / soir (après 21:00 Paris),
    et seulement pour les cartes fraîchement produites par GitHub Actions.
 */
