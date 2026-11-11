@@ -1,0 +1,18 @@
+name: KFS tests climatologie foudre WWLLN
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/kfs-wglc-tests.yml
+      - tests/test-wglc-storm.mjs
+      - cloudflare/kfs-climato-foudre-wglc.js
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tester archives foudre WWLLN sur L'Aigle et stations
+        run: node tests/test-wglc-storm.mjs
