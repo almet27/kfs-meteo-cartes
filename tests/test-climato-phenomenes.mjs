@@ -59,4 +59,17 @@ for(const [year,minimum,maximum] of [[2024,8.8,9.1],[2025,2.8,3.1]]){
   console.log(JSON.stringify({city:"L'Aigle",year,depth:field.value,fields:embed.fields.length}));
 }
 assert.equal(snowApiCalls,2,"One Open-Meteo request per historical year is required");
+const throttled=vm.createContext({...sandbox,
+  fetch:async(input)=>String(input).includes("open-meteo.com")
+    ?new Response("quota exceeded",{status:429})
+    :fetch(input)
+});
+vm.runInContext(code,throttled);
+const fallback=await vm.runInContext("kfsPLocalSnowReport({name:'L\\'Aigle',lat:48.765,lon:0.626},2024,0)",throttled);
+assert.ok(fallback.embeds[0].description.includes("temporairement indisponible"));
+assert.ok(fallback.embeds[0].description.includes("429"));
+assert.ok(!fallback.embeds[0].description.includes("station sélectionnée"));
+assert.ok(fallback.embeds[0].fields[0].value.includes("Aucune station distante"));
+console.log("ERA5-Land HTTP 429 handled without false snow values");
+
 console.log("KFS CLIMATO PHENOMENES: TESTS PASSED");
