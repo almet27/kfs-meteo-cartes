@@ -1,0 +1,27 @@
+name: KFS - verification publication Discord tendance
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/tendance-discord-verify.yml
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Lire le statut reel du bulletin sur le Worker
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail-with-body -fsSL --retry 3 --retry-delay 2 --max-time 35 \
+            'https://kfs-meteo-ia.alain-leprevost.workers.dev/tendance-health' \
+            -o /tmp/tendance-health.json
+          python - <<'PY'
+          import json
+          d=json.load(open('/tmp/tendance-health.json'))
+          print("KFS_TENDANCE_HEALTH",json.dumps(d,ensure_ascii=False))
+          assert d["discord_check"]=="ok","Discord verification unavailable"
+          assert d["maps_generated_utc"] is not None,"Map generation unavailable"
+          PY
