@@ -92,7 +92,7 @@ with Dataset(sys.argv[1], "r") as ds:
                  "lat":la,"lon":lo,"monthly":[mo.get(i) for i in range(1,13)]}
         path=DEST/f"wglc_france_{year}.json.gz"
         contents=json.dumps(payload,separators=(",",":"),ensure_ascii=False,allow_nan=False).encode()
-        with gzip.open(path,"wb",compresslevel=8,mtime=None) as f: f.write(contents)
+        with gzip.GzipFile(filename=str(path),mode="wb",compresslevel=8,mtime=0) as f: f.write(contents)
         print("OUTPUT",year,path.relative_to(ROOT),path.stat().st_size,"bytes",
               "L'Aigle sample",next((mo[m][(min(range(len(la)),key=lambda i:abs(la[i]-48.765))*len(lo)+
                   min(range(len(lo)),key=lambda i:abs(lo[i]-0.626)))] for m in range(1,13) if m in mo),None),flush=True)
