@@ -1,3 +1,17 @@
+# /climato — Enneigement local sans attribuer Évreux à L'Aigle (11 novembre 2026)
+
+Correction déployée sur `kfs-meteo-ia` : la rubrique `neige` appelle maintenant `kfsPLocalSnowReport`.
+
+- **Couche locale de réanalyse** : neige au sol horaire **ERA5-Land** (m → cm), fonte et jours de couverture (seuil ≥1 cm), maximum et date, jours de neige et cumul de neige tombée dans la journée depuis **ECMWF IFS** (2017+) ou ERA5 (avant 2017) par l'API historique Open-Meteo. La requête utilise les coordonnées de la **commune**, pas la station météorologique la plus éloignée. Affichage explicite « estimation locale par réanalyse », maille, sources et avertissement ERA5-Land (surestimation possible).
+- **Relevés officiels en supplément** : uniquement stations Météo-France avec mesures dans un rayon de **25 km**. Le bot nomme la station et sa distance et refuse un total observé quand la couverture est insuffisante. **Aucun relevé d'Évreux ne peut être attribué à L'Aigle**.
+- Ce produit ne peut **pas donner une mesure exacte en centimètres** pour une commune sans poste d'enneigement. Les séries reconstituées servent à contextualiser des événements.
+- Cache Open-Meteo pour limiter les appels ; aucune clé API ajoutée ; commandes Discord autres que `/climato neige` inchangées.
+- Tests en direct sur archives 2024 et 2025 de L'Aigle : maximum de réanalyse **9 cm le 22/11/2024** et **3 cm le 22/11/2025**. Ces nombres ne sont pas des mesures au sol à L'Aigle.
+
+Documentation source : https://open-meteo.com/en/docs/historical-weather-api ; https://cds.climate.copernicus.eu/datasets/reanalysis-era5-land
+
+---
+
 # /climato — Orages et neige (11 novembre 2026)
 
 Deux rubriques nouvelles ont été ajoutées à la commande Discord existante :
