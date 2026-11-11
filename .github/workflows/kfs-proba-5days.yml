@@ -1,15 +1,17 @@
-name: KFS PROBA - Five-day member trajectories
+name: KFS PROBA - ECMWF ENS and GEFS probabilities
 on:
   workflow_dispatch:
   push:
     paths:
-      - scripts/build_proba_5days.cjs
+      - scripts/build_proba_ensembles.cjs
+      - scripts/merge_proba_ensembles.cjs
       - cloudflare/kfs-proba-module.js
       - tests/test-proba-5days.cjs
       - tests/test-proba-build-resume.cjs
+      - tests/test-proba-ensembles.cjs
       - .github/workflows/kfs-proba-5days.yml
   schedule:
-    - cron: '10 23 * * *'
+    - cron: '10 5,11,17,23 * * *'
 permissions:
   contents: write
 concurrency:
@@ -19,30 +21,63 @@ jobs:
   probabilities:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        model: [ecmwf_ifs025_ensemble, ncep_gefs025]
+        shard: [0, 1]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Test five-day aggregation
-        run: node --test tests/test-proba-5days.cjs tests/test-proba-build-resume.cjs
+      - name: Test probabilities and equal model weights
+        run: node --test tests/test-proba-5days.cjs tests/test-proba-build-resume.cjs tests/test-proba-ensembles.cjs
       - uses: actions/cache/restore@v4
-        if: github.event_name != 'push' || contains(github.event.head_commit.message, '[build-proba]')
         with:
-          path: proba/five-day-checkpoint.json
-          key: kfs-proba-five-day-v1-${{ github.run_id }}-${{ github.run_attempt }}
-          restore-keys: kfs-proba-five-day-v1-
-      - name: Calculate five complete Paris days
-        if: github.event_name != 'push' || contains(github.event.head_commit.message, '[build-proba]')
-        run: node scripts/build_proba_5days.cjs
+          path: proba/ensemble-checkpoint-${{ matrix.model }}-${{ matrix.shard }}.json
+          key: kfs-proba-v2-${{ matrix.model }}-${{ matrix.shard }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: kfs-proba-v2-${{ matrix.model }}-${{ matrix.shard }}-
+      - name: Calculate daily and five-day member probabilities
+        env:
+          PROBA_MODEL: ${{ matrix.model }}
+          PROBA_SHARD_TOTAL: '2'
+          PROBA_SHARD_INDEX: ${{ matrix.shard }}
+        run: node scripts/build_proba_ensembles.cjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: proba-ensemble-${{ matrix.model }}-${{ matrix.shard }}
+          path: proba/ensemble-shard-${{ matrix.model }}-${{ matrix.shard }}.json
+          if-no-files-found: error
+          retention-days: 2
+      - uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: proba/ensemble-checkpoint-${{ matrix.model }}-${{ matrix.shard }}.json
+          key: kfs-proba-v2-${{ matrix.model }}-${{ matrix.shard }}-${{ github.run_id }}-${{ github.run_attempt }}
+  publish:
+    needs: probabilities
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: proba-ensemble-*
+          path: ensemble-shards
+          merge-multiple: true
+      - name: Validate and merge all source points
+        run: node scripts/merge_proba_ensembles.cjs ensemble-shards
       - name: Publish validated dataset
-        if: github.event_name != 'push' || contains(github.event.head_commit.message, '[build-proba]')
         run: |
           git config user.name "KFS METEO Bot"
           git config user.email "actions@users.noreply.github.com"
-          git add proba/five-day-probabilities.json
+          git add proba/ensemble-probabilities.json
           if git diff --cached --quiet; then exit 0; fi
-          git commit -m "KFS: five-day ensemble probabilities"
+          git commit -m "KFS: ECMWF ENS and GEFS probabilities"
           for attempt in 1 2 3 4 5; do
             git fetch origin main
             if ! git rebase origin/main; then
@@ -53,8 +88,3 @@ jobs:
             sleep 4
           done
           exit 1
-      - uses: actions/cache/save@v4
-        if: always() && (github.event_name != 'push' || contains(github.event.head_commit.message, '[build-proba]'))
-        with:
-          path: proba/five-day-checkpoint.json
-          key: kfs-proba-five-day-v1-${{ github.run_id }}-${{ github.run_attempt }}
