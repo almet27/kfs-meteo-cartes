@@ -223,7 +223,41 @@ async function kfsPLocalSnowObservations(city,year,month){
   return choices[0]||null;
 }
 async function kfsPLocalSnowReport(city,year,month){
-  const model=await kfsPLocalSnowArchive(city,year);
+  let model;
+  try{
+    model=await kfsPLocalSnowArchive(city,year);
+  }catch(e){
+    const reason=String(e?.message||e);
+    // Une limite du fournisseur ne doit pas provoquer l'erreur générique
+    // « la station sélectionnée peut ne pas disposer ... » : cela n'a aucun rapport.
+    if(!/HTTP 429|indisponible|trop incomplet|pas encore d'archives/i.test(reason))throw e;
+    const period=month?KFS_Q_MONTHS[month-1]+" "+year:"année "+year;
+    const fields=[];
+    try{
+      const obs=await kfsPLocalSnowObservations(city,year,month);
+      if(obs){
+        const coverage=kfsPExpectedDays(year,month),parts=[];
+        if(obs.snow.valid>=Math.ceil(coverage*.85))
+          parts.push("Jours avec chute de neige observés : **"+obs.snow.jours+"** ("+obs.snow.valid+"/"+coverage+" jours mesurés).");
+        else if(obs.snow.valid)
+          parts.push("Chutes : seulement "+obs.snow.valid+"/"+coverage+" jours renseignés — pas de total annuel fiable.");
+        if(obs.depth.length>=Math.ceil(coverage*.8)){
+          const max=obs.depth.reduce((a,b)=>b.neigeEpaisseur>a.neigeEpaisseur?b:a);
+          parts.push("Hauteur maximale mesurée : **"+kfsQR(max.neigeEpaisseur," cm")+"** le "+kfsQCalendarDate(max.date)+".");
+        }else if(obs.depth.length)
+          parts.push("Hauteur : seulement "+obs.depth.length+"/"+coverage+" jours renseignés — pas de maximum annuel fiable.");
+        if(parts.length)fields.push({name:"📍 Mesures locales disponibles",
+          value:"Station **"+obs.station.name+"** à "+kfsQR(obs.station.km," km")+"\n"+parts.join("\n"),inline:false});
+      }
+    }catch(stationError){console.warn("KFS_NEIGE_SAUVEGARDE",String(stationError).slice(0,120));}
+    if(!fields.length)fields.push({name:"📍 Stations locales",
+      value:"Aucune série de neige exploitable à moins de 25 km. Aucune station distante, notamment Évreux, n'est substituée.",inline:false});
+    return {embeds:[{title:"KFS MÉTÉO — ❄️ Neige · "+period,color:0xd99429,
+      description:"📍 **"+city.name+"**\n⚠️ **Archive de réanalyse temporairement indisponible.** "+
+        reason+"\nL'épaisseur et les jours de neige au sol ne sont pas inventés.",
+      fields,footer:{text:"Source locale : Météo-France si disponible · estimation ERA5-Land en attente de disponibilité"}}],
+      allowed_mentions:{parse:[]}};
+  }
   const yearDays=kfsPExpectedDays(year,month);
   const period=month?KFS_Q_MONTHS[month-1]+" "+year:"année "+year;
   const select=xs=>xs.filter(d=>!month||Number(d.date.slice(5,7))===month);
