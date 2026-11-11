@@ -273,9 +273,9 @@ struct RemoteTestView: View {
                 let query = city.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !query.isEmpty else { throw LightningError.message("Indique une ville avec son pays, ou des coordonnées.", 0) }
                 let matches = try await geocoder.geocodeAddressString(query)
-                guard let fix = matches?.first?.location else { throw LightningError.message("Ville introuvable. Essaie les coordonnées.", 0) }
+                guard let fix = matches.first?.location else { throw LightningError.message("Ville introuvable. Essaie les coordonnées.", 0) }
                 center = fix.coordinate
-                testedName = [matches?.first?.locality, matches?.first?.country].compactMap { $0 }.joined(separator: ", ")
+                testedName = [matches.first?.locality, matches.first?.country].compactMap { $0 }.joined(separator: ", ")
                 if testedName.isEmpty { testedName = query }
             }
             guard center.latitude.isFinite, center.longitude.isFinite,
