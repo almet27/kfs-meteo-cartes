@@ -1,9 +1,9 @@
 {
-  "generated_utc": "2026-11-10T23:13:45.570344+00:00",
-  "run_utc": "2026-11-10T18:00:00+00:00",
+  "generated_utc": "2026-11-11T03:43:44.971847+00:00",
+  "run_utc": "2026-11-11T00:00:00+00:00",
   "runs_utc": {
     "gfs": {
-      "24": "2026-11-10T18:00:00+00:00",
+      "24": "2026-11-11T00:00:00+00:00",
       "48": "2026-11-10T18:00:00+00:00",
       "72": "2026-11-10T18:00:00+00:00",
       "120": "2026-11-10T18:00:00+00:00",
@@ -132,8 +132,8 @@
         "rain6h": "APCP_6h*(1-CPOFP_at_valid_time/100)",
         "snow6h": "APCP_6h*CPOFP_at_valid_time/100",
         "warning": "ESTIMATION. CPOFP est instantané en fin d'intervalle. Le champ snow6h contient les précipitations gelées (dont neige, potentiellement grésil), et non un cumul neige natif.",
-        "wet_cells_with_valid_phase": 12620,
-        "wet_cells_total": 48349
+        "wet_cells_with_valid_phase": 14025,
+        "wet_cells_total": 50149
       },
       "48": {
         "rain6h": "APCP_6h*(1-CPOFP_at_valid_time/100)",
