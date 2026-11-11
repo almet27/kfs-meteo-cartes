@@ -72,13 +72,14 @@ node Backend/test-mobile-api.cjs
 
 Depuis l’accueil, arrêter la chasse puis ouvrir **Tester une zone d’Europe**.
 Indiquer une ville avec son pays, ou une latitude et une longitude (prioritaires),
-choisir un rayon et toucher **Consulter cette zone**. La source est interrogée
-une seule fois. Attendre au moins une minute avant une nouvelle consultation.
+choisir un rayon et toucher **Consulter cette zone**. Chaque consultation alimente l’historique local de cette zone. Attendre au moins
+une minute entre les consultations, ou activer **Collecter chaque minute**.
 La zone de consultation couvre latitude 30–72°, longitude −25–45°.
 
 Cet écran montre les données réelles des cinq dernières minutes, CG et IC,
 avec les kA disponibles, sans appliquer le seuil des alertes. Il ne change pas
-le GPS, ne produit aucune notification et ne suit pas une zone en arrière-plan.
+le GPS et ne produit aucune notification. La collecte automatique distante
+s’arrête si l’écran est fermé ou si l’app passe en arrière-plan.
 Fermer cet écran puis démarrer une chasse pour reprendre le suivi GPS personnel.
 La consultation n’exige pas l’autorisation de localisation de l’iPhone.
 Les limites locales de consultations restent partagées avec les chasses.
@@ -95,3 +96,36 @@ projet. Ouvrir son KFSFoudre.xcodeproj, sélectionner la même Personal Team dan
 Signing & Capabilities puis l’iPhone physique et lancer ▶. Garder le Bundle
 Identifier fr.alainleprevost.kfsfoudre : l’app existante est mise à jour.
 Le code personnel reste dans le trousseau de l’iPhone.
+
+
+## Historique glissant 5 min / 30 min / 1 h — version 1.2
+
+L’accueil et les essais à distance proposent trois durées d’affichage. Chaque
+réponse réussie ajoute les événements réellement reçus, avec positions, heures,
+types et kA signés disponibles. Les doublons sont supprimés. Les événements de
+plus d’une heure sont retirés au prochain traitement. L’historique reste sur
+l’iPhone, dans un fichier protégé et exclu de la sauvegarde iCloud.
+Aucun nouveau stockage sur le serveur ni collecte permanente n’est ajouté.
+
+- **En chasse GPS** : la collecte suit la séance déjà existante. Les distances
+  des événements archivés sont recalculées depuis la position courante et les
+  points hors rayon sont masqués. La zone d’un déplacement n’a pas nécessairement
+  été intégralement couverte auparavant.
+- **En essai distant** : consulter une ville puis toucher **Collecter chaque
+  minute**. Garder cet écran ouvert et l’iPhone déverrouillé. Fermer l’écran,
+  verrouiller l’iPhone ou passer l’app en arrière-plan arrête cette collecte.
+  Revenir affiche les données conservées ; relancer la collecte si nécessaire.
+  Changer de zone ou de rayon démarre un nouvel historique d’essai, séparé du GPS.
+- **Période réellement collectée** : l’indicateur additionne les fenêtres sources
+  reçues, y compris les réponses vides. Il indique le remplissage, les interruptions
+  et les réponses limitées. Il ne mesure pas l’efficacité de détection du réseau.
+- **Alertes** : seuls les impacts récents fournis par la dernière consultation
+  sont évalués. Afficher une heure d’historique ne renvoie pas d’anciennes alertes.
+
+Une heure d’archives se construit progressivement. Aucun bilan statistique
+Xweather n’est transformé en positions inventées. Les événements absents des
+réponses source ou manqués pendant une interruption ne peuvent être récupérés.
+Plafond local : 60 000 événements ; carte limitée aux 5 000 plus récents en cas
+de forte activité, avec indication visible, sans supprimer la liste conservée.
+Le bouton **Effacer l’historique** des réglages réinitialise les deux historiques.
+Les plafonds d’appels quotidiens et mensuels sont inchangés.

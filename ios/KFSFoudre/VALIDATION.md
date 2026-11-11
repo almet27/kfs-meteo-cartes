@@ -25,3 +25,16 @@ Le service météo personnel est déjà raccordé ; les requêtes n'ont lieu que
   horodatée 16:00:53 UTC, source Xweather ; route de diagnostic retirée aussitôt.
 - Essai distant isolé : affichage des données réelles sans filtre d’alerte,
   aucun appel au GPS et aucune notification, consultation ponctuelle au premier plan.
+
+
+## Historique glissant — version 1.2
+
+Tests ajoutés au programme Swift : accumulation, déduplication entre fenêtres
+successives, conservation des kA signés et des valeurs indisponibles, choix
+5/30/60 minutes, expiration par heure d’observation, sérialisation et restauration,
+distance recalculée et filtrage lors des déplacements, union des fenêtres reçues,
+trous de collecte, réponse vide réussie, liste partielle, refus d’une réponse
+périmée et absence de nouvelle alerte pour un ancien impact conservé.
+La compilation iPhone et ces tests sont contrôlés par le workflow du dépôt.
+La collecte distante et la reprise après verrouillage restent à essayer sur
+l’iPhone physique ; iOS contrôle toujours la disponibilité en arrière-plan.

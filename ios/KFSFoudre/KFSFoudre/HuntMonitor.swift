@@ -9,8 +9,16 @@ final class HuntMonitor: NSObject, ObservableObject, CLLocationManagerDelegate, 
     @Published var active = false
     @Published var status = "Prêt pour une nouvelle chasse"
     @Published var problem: String?
+    @Published private(set) var historyIssue: String?
     @Published var location: CLLocation?
-    @Published var strikes: [LightningStrike] = []
+    @Published private(set) var archive = HistoryArchive()
+    @Published var displayMinutes = 30
+    @Published private(set) var clock = Date()
+    var strikes: [LightningStrike] {
+        guard let fix = location else { return [] }
+        return archive.gps.visible(minutes: displayMinutes,
+            center: HistoryZone(latitude: fix.coordinate.latitude, longitude: fix.coordinate.longitude, radius: radius), now: clock)
+    }
     @Published var lastRefresh: Date?
     @Published var expiresAt: Date?
     @Published var radius = 50 { didSet { UserDefaults.standard.set(radius, forKey: "radius") } }
@@ -52,10 +60,11 @@ final class HuntMonitor: NSObject, ObservableObject, CLLocationManagerDelegate, 
         authorization = manager.authorizationStatus
         UNUserNotificationCenter.current().delegate = self
         refreshUsage()
+        loadHistory()
     }
 
     // Remote inspections are one-shot foreground reads, without location tracking or alerts.
-    func inspectZone(latitude: Double, longitude: Double, radius: Int) async throws -> LightningFeed {
+    func inspectZone(latitude: Double, longitude: Double, radius: Int, name: String = "") async throws -> LightningFeed {
         guard !active else {
             throw LightningError.message("Arrête la chasse avant de tester une autre zone.", 60)
         }
@@ -72,8 +81,16 @@ final class HuntMonitor: NSObject, ObservableObject, CLLocationManagerDelegate, 
         nextPoll = Date().addingTimeInterval(60)
         countRequest()
         do {
-            return try await APIClient(endpoint: endpoint, token: token).load(
+            let feed = try await APIClient(endpoint: endpoint, token: token).load(
                 latitude: latitude, longitude: longitude, radius: radius, timestamp: Date())
+            try Task.checkCancellation()
+            let zone = HistoryZone(latitude: latitude, longitude: longitude, radius: radius)
+            if archive.remoteZone?.key != zone.key { archive.remote = LightningHistory() }
+            archive.remoteZone = zone
+            archive.remoteName = name.isEmpty ? "Zone d’essai" : name
+            archive.remote.ingest(feed, now: Date())
+            saveHistory()
+            return feed
         } catch {
             nextPoll = Date().addingTimeInterval(Double(max(60, (error as? LightningError)?.retry ?? 120)))
             throw error
@@ -128,8 +145,8 @@ final class HuntMonitor: NSObject, ObservableObject, CLLocationManagerDelegate, 
         notifiedIssue = nil
         status = "Recherche d’une position GPS récente…"
         expiresAt = Date().addingTimeInterval(2 * 3600)
-        strikes = []
-        lastRefresh = nil
+        archive.gps.prune(now: Date())
+        clock = Date()
         manager.allowsBackgroundLocationUpdates = true
         manager.showsBackgroundLocationIndicator = true
         manager.startUpdatingLocation()
@@ -151,12 +168,17 @@ final class HuntMonitor: NSObject, ObservableObject, CLLocationManagerDelegate, 
     }
 
     func foreground() {
+        archive.gps.prune(now: Date())
+        archive.remote.prune(now: Date())
+        clock = Date()
+        saveHistory()
         authorization = manager.authorizationStatus
         if pendingStart { continueAuthorization() }
         if active { tick() }
     }
 
     private func tick() {
+        clock = Date()
         guard active else { return }
         if let end = expiresAt, Date() >= end {
             stop()
@@ -202,7 +224,8 @@ final class HuntMonitor: NSObject, ObservableObject, CLLocationManagerDelegate, 
                 let feed = try await client.load(latitude: fix.coordinate.latitude,
                     longitude: fix.coordinate.longitude, radius: selectedRadius, timestamp: fix.timestamp)
                 guard !Task.isCancelled, self.active else { return }
-                self.strikes = feed.strikes
+                self.archive.gps.ingest(feed, now: Date())
+                self.saveHistory()
                 self.lastRefresh = Date(timeIntervalSince1970: feed.collectedAt)
                 self.nextPoll = Date().addingTimeInterval(Double(max(60, feed.pollAfterSeconds)))
                 self.problem = feed.partial ? "Liste source limitée : décharges potentiellement manquantes." : nil
@@ -253,6 +276,39 @@ final class HuntMonitor: NSObject, ObservableObject, CLLocationManagerDelegate, 
         content.title = title; content.body = body; content.sound = .default
         try? await UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: UUID().uuidString,
             content: content, trigger: nil))
+    }
+
+    func clearHistory() {
+        archive = HistoryArchive()
+        saveHistory()
+    }
+
+    private var historyURL: URL? {
+        guard let directory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else { return nil }
+        return directory.appendingPathComponent("KFSFoudre", isDirectory: true).appendingPathComponent("history-v1.json")
+    }
+    private func loadHistory() {
+        guard let url = historyURL, let data = try? Data(contentsOf: url), data.count <= 30_000_000,
+              let saved = try? JSONDecoder().decode(HistoryArchive.self, from: data) else { return }
+        archive = saved
+        archive.gps.prune(now: Date()); archive.remote.prune(now: Date())
+        saveHistory()
+    }
+    private func saveHistory() {
+        clock = Date()
+        archive.gps.prune(now: clock); archive.remote.prune(now: clock)
+        guard let url = historyURL else { return }
+        do {
+            try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+            let data = try JSONEncoder().encode(archive)
+            try data.write(to: url, options: [.atomic, .completeUntilFirstUserAuthentication])
+            var resourceURL = url
+            var values = URLResourceValues(); values.isExcludedFromBackup = true
+            try resourceURL.setResourceValues(values)
+            historyIssue = nil
+        } catch {
+            historyIssue = "Historique visible, mais sa sauvegarde sur cet iPhone a échoué."
+        }
     }
 
     private func usageKeys() -> (String, String) {
