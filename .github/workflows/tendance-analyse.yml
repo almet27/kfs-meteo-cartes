@@ -14,9 +14,15 @@ on:
     # GitHub utilise UTC; le filtre ci-dessous exclut le doublon hors saison.
     - cron: '30 6 * * *'
     - cron: '30 7 * * *'
+    # Secours : 08:43 Paris. Les schedules GitHub peuvent être retardés ou omis.
+    - cron: '43 6 * * *'
+    - cron: '43 7 * * *'
     # Paris 21:00 du lundi au samedi : 19:00 UTC en ete, 20:00 UTC en hiver.
     - cron: '0 19 * * 1-6'
     - cron: '0 20 * * 1-6'
+    # Secours : 21:13 Paris.
+    - cron: '13 19 * * 1-6'
+    - cron: '13 20 * * 1-6'
     # Dimanche : generation speciale avant le bulletin hebdomadaire (conservee).
     - cron: '07 16 * * 0'
 permissions:
@@ -44,9 +50,9 @@ jobs:
             lancer=true
           else
             offset="$(TZ=Europe/Paris date +%z)"
-            if [[ "$offset" == "+0200" && ( "$KFS_CRON" == "30 6 * * *" || "$KFS_CRON" == "0 19 * * 1-6" ) ]]; then
+            if [[ "$offset" == "+0200" && ( "$KFS_CRON" == "30 6 * * *" || "$KFS_CRON" == "43 6 * * *" || "$KFS_CRON" == "0 19 * * 1-6" || "$KFS_CRON" == "13 19 * * 1-6" ) ]]; then
               lancer=true
-            elif [[ "$offset" == "+0100" && ( "$KFS_CRON" == "30 7 * * *" || "$KFS_CRON" == "0 20 * * 1-6" ) ]]; then
+            elif [[ "$offset" == "+0100" && ( "$KFS_CRON" == "30 7 * * *" || "$KFS_CRON" == "43 7 * * *" || "$KFS_CRON" == "0 20 * * 1-6" || "$KFS_CRON" == "13 20 * * 1-6" ) ]]; then
               lancer=true
             fi
           fi
