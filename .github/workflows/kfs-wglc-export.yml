@@ -1,0 +1,59 @@
+name: KFS importer archives WWLLN WGLC France 2010-2025
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/kfs-wglc-export.yml
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Dependencies
+        run: |
+          python -m pip -q install netCDF4 numpy
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq aria2
+      - name: Download WGLC v2026 gridded monthly data
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd /tmp
+          aria2c -x 8 -s 8 -k 8M --file-allocation=none \
+            --connect-timeout=25 --timeout=90 --retry-wait=5 --max-tries=4 \
+            -d /tmp -o wglc.nc \
+            'https://zenodo.org/records/20277101/files/wglc_timeseries_05m_monthly.nc?download=1' \
+            || curl -L -f --retry 2 --max-time 540 -o /tmp/wglc.nc \
+              'https://zenodo.org/records/20277101/files/wglc_timeseries_05m_monthly.nc?download=1'
+          ls -lh /tmp/wglc.nc
+      - name: Export all years 2010-2025 to small per-year France archives
+        run: python scripts/wglc_export_france.py /tmp/wglc.nc
+      - name: Check historical data completeness
+        run: |
+          python - <<'PY'
+          import gzip, json, pathlib
+          files=sorted(pathlib.Path('data/wglc').glob('wglc_france_*.json.gz'))
+          print("ARCHIVE_FILES",len(files))
+          assert len(files)==16
+          for f in files:
+            j=json.loads(gzip.open(f,'rb').read())
+            assert len(j['monthly'])==12
+            assert len(j['lon'])>100 and len(j['lat'])>100
+            assert all(len(v)==len(j['lon'])*len(j['lat']) for v in j['monthly'])
+            assert j['license']=='CC BY-SA 4.0'
+            print('VERIFIED',j['year'],f.stat().st_size,
+                  'grid',len(j['lat']),len(j['lon']))
+          PY
+      - name: Publish derived archives with attribution
+        run: |
+          git config user.name 'KFS METEO archive bot'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add data/wglc
+          if ! git diff --cached --quiet; then
+            git commit -m 'Publish CC BY-SA WGLC 2010-2025 monthly lightning densities for France'
+            git push
+          fi
