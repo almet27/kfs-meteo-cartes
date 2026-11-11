@@ -1165,6 +1165,7 @@ async function kfsProbaFiveDayComplete(interaction,type,zone,threshold){
   (counted.length<points.length?"⚠️ Données complètes sur "+counted.length+"/"+points.length+" points échantillonnés.\n":"")+
   (type==="orage"?"⚠️ Potentiel convectif expérimental ; ce pourcentage ne mesure pas une probabilité calibrée d'orage violent.\n":"")+
   (type==="neige"?"❄️ Épaisseur maximale de neige présente au sol ; les épaisseurs quotidiennes ne sont pas additionnées.\n":"")+
+  (type==="neige_chutes"?"❄️ Équivalent-eau approximatif converti depuis les cm Open-Meteo (7 cm ≈ 10 mm d'eau), sans exigence de tenue au sol.\n":"")+
   "📊 **Source :** "+result.source+" · consultée le "+result.consulted+".\n"+
   "_Fraction d'ensemble non calibrée, à la maille du modèle ; ne remplace pas une vigilance officielle._";
  const frame=kfsProbaRender(features,points,zone,type,departments),png=await kfsProbaPng(frame);
