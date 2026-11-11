@@ -25,11 +25,17 @@ jobs:
           node-version: '22'
       - name: Test five-day aggregation
         run: node --test tests/test-proba-5days.cjs
+      - uses: actions/cache/restore@v4
+        if: github.event_name != 'push' || contains(github.event.head_commit.message, '[build-proba]')
+        with:
+          path: proba/five-day-checkpoint.json
+          key: kfs-proba-five-day-v1-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: kfs-proba-five-day-v1-
       - name: Calculate five complete Paris days
-        if: github.event_name != 'push'
+        if: github.event_name != 'push' || contains(github.event.head_commit.message, '[build-proba]')
         run: node scripts/build_proba_5days.cjs
       - name: Publish validated dataset
-        if: github.event_name != 'push'
+        if: github.event_name != 'push' || contains(github.event.head_commit.message, '[build-proba]')
         run: |
           git config user.name "KFS METEO Bot"
           git config user.email "actions@users.noreply.github.com"
@@ -46,3 +52,8 @@ jobs:
             sleep 4
           done
           exit 1
+      - uses: actions/cache/save@v4
+        if: always() && (github.event_name != 'push' || contains(github.event.head_commit.message, '[build-proba]'))
+        with:
+          path: proba/five-day-checkpoint.json
+          key: kfs-proba-five-day-v1-${{ github.run_id }}-${{ github.run_attempt }}

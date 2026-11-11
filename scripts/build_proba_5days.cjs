@@ -12,17 +12,41 @@ const variables=['rain','snow_depth','snowfall','temperature_2m','wind_gusts_10m
 async function main(){
  const start=api.kfsProbaDay(1),end=api.kfsProbaDay(5);
  const entries=Object.entries(points).flatMap(([zone,locations])=>locations.map(([lat,lon],index)=>({zone,index,lat,lon})));
- const zones=Object.fromEntries(Object.keys(points).map(zone=>[zone,{}]));
- let consulted=null;
- for(let offset=0;offset<entries.length;offset+=24){
+ let zones=Object.fromEntries(Object.keys(points).map(zone=>[zone,{}]));
+ let consulted=null,next=0;
+ const checkpoint=path.join(root,'proba/five-day-checkpoint.json');
+ if(fs.existsSync(checkpoint)){
+  try{
+   const saved=JSON.parse(fs.readFileSync(checkpoint,'utf8'));
+   if(saved.schema===1&&saved.start===start&&saved.end===end&&saved.model==='ncep_gefs025'&&
+    Number.isInteger(saved.next)&&saved.next>=0&&saved.next<=entries.length&&saved.zones&&
+    Date.now()-Date.parse(saved.consulted)<20*3600000){
+    zones=saved.zones;consulted=saved.consulted;next=saved.next;
+    console.log('Resuming from',next,'completed points');
+   }
+  }catch(error){console.log('Ignoring incompatible checkpoint:',error.message);}
+ }
+ for(let offset=next;offset<entries.length;offset+=24){
   const batch=entries.slice(offset,offset+24);
   const params=new URLSearchParams({latitude:batch.map(p=>p.lat).join(','),longitude:batch.map(p=>p.lon).join(','),
    models:'ncep_gefs025',hourly:variables.join(','),start_date:api.kfsProbaDay(0),end_date:api.kfsProbaDay(6),timeformat:"unixtime",
    timezone:'Europe/Paris',temporal_resolution:'hourly_1'});
   let response;
   for(let attempt=0;attempt<4;attempt++){
-   response=await fetch('https://ensemble-api.open-meteo.com/v1/ensemble?'+params,
-   {signal:AbortSignal.timeout(90000)});
+   try{
+    response=await fetch('https://ensemble-api.open-meteo.com/v1/ensemble?'+params,
+     {signal:AbortSignal.timeout(90000)});
+   }catch(error){
+    if(attempt===3)throw error;
+    console.log('Temporary connection failure; retrying',attempt+1);
+    await new Promise(resolve=>setTimeout(resolve,10000));
+    continue;
+   }
+   if(response.status>=500){
+    if(attempt===3)throw Error('Ensemble HTTP '+response.status);
+    await new Promise(resolve=>setTimeout(resolve,10000));
+    continue;
+   }
    if(response.status!==429)break;
    const message=await response.text();
    if(!/Minutely|Hourly/.test(message))throw Error(message);
@@ -46,6 +70,9 @@ async function main(){
     }
    }
   });
+  fs.writeFileSync(checkpoint+'.tmp',JSON.stringify({schema:1,start,end,model:'ncep_gefs025',
+   consulted,zones,next:Math.min(offset+24,entries.length)}));
+  fs.renameSync(checkpoint+'.tmp',checkpoint);
   console.log('Five-day members:',Math.min(offset+24,entries.length)+'/'+entries.length,'points');
   if(offset+24<entries.length)await new Promise(resolve=>setTimeout(resolve,65000));
  }
