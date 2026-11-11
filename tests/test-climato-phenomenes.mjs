@@ -4,7 +4,7 @@ import vm from "node:vm";
 
 const code=fs.readFileSync("cloudflare/kfs-climato-phenomenes.js","utf8");
 const sandbox={
-  console,fetch,Request,Response,TextDecoder,DecompressionStream,Date,Math,Number,Set,Map,
+  console,fetch,Request,Response,URLSearchParams,TextDecoder,DecompressionStream,Date,Math,Number,Set,Map,
   caches:{default:{match:async()=>null,put:async()=>{}}},
   KFS_Q_BASE:"https://meteofrance.s3.sbg.io.cloud.ovh.net/data/synchro_ftp/BASE/QUOT/",
   kfsQFilename:(id,year)=>{
@@ -15,6 +15,8 @@ const sandbox={
   kfsQNumber:(x)=>x===null||x===undefined||String(x).trim()===""?null:Number(x),
   kfsQCalendarDate:x=>x,
   kfsQR:(x,s="")=>String(x)+s,
+  kfsClimStations:async()=>[],
+  kfsClimDistance:()=>0,
   KFS_Q_MONTHS:["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"]
 };
 const context=vm.createContext(sandbox);
@@ -37,5 +39,18 @@ for(const [year,expectedOrage,expectedNeige] of [[2024,20,7],[2025,14,4]]) {
   assert.equal(neige,expectedNeige);
   assert.ok(validOrage>=365,"Orage coverage insufficient");
   assert.ok(validNeige>=364,"Snow coverage insufficient");
+}
+for(const [year,minimum,maximum] of [[2024,8.8,9.1],[2025,2.8,3.1]]){
+  const report=await vm.runInContext("kfsPLocalSnowReport({name:'L\\'Aigle',lat:48.765,lon:0.626},"+year+",0)",context);
+  assert.equal(report.embeds.length,1);
+  const embed=report.embeds[0];
+  const field=embed.fields.find(f=>f.name.includes("Épaisseur maximale au sol"));
+  assert.ok(field,"Missing local snow-depth field");
+  const m=field.value.match(/([0-9.]+) cm/);
+  assert.ok(m,"Missing cm unit in model output");
+  assert.ok(Number(m[1])>=minimum&&Number(m[1])<=maximum,"Unexpected L'Aigle snow depth "+m[1]);
+  assert.ok(embed.description.includes("Estimation locale"),"Must flag model data");
+  assert.ok(!embed.description.includes("Évreux"),"Must not attribute distant measurements");
+  console.log(JSON.stringify({city:"L'Aigle",year,depth:field.value,fields:embed.fields.length}));
 }
 console.log("KFS CLIMATO PHENOMENES: TESTS PASSED");
