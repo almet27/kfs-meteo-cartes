@@ -10,8 +10,11 @@ on:
       - 'scripts/generate_tendance_analysis.py'
       - '.github/workflows/tendance-analyse.yml'
   schedule:
-    # Paris 08:30 toute l'annee : 06:30 UTC en ete, 07:30 UTC en hiver.
-    # GitHub utilise UTC; le filtre ci-dessous exclut le doublon hors saison.
+    # Générer AVANT le rendez-vous Discord de 08:30 Paris :
+    # préparation principale à 08:12 Paris, puis secours à 08:30 et 08:43.
+    # GitHub cron est en UTC; le filtre ne retient que la saison courante.
+    - cron: '12 6 * * *' # 08:12 CEST
+    - cron: '12 7 * * *' # 08:12 CET
     - cron: '30 6 * * *'
     - cron: '30 7 * * *'
     # Secours : 08:43 Paris. Les schedules GitHub peuvent être retardés ou omis.
@@ -50,15 +53,17 @@ jobs:
             lancer=true
           else
             offset="$(TZ=Europe/Paris date +%z)"
-            if [[ "$offset" == "+0200" && ( "$KFS_CRON" == "30 6 * * *" || "$KFS_CRON" == "43 6 * * *" || "$KFS_CRON" == "0 19 * * 1-6" || "$KFS_CRON" == "13 19 * * 1-6" ) ]]; then
+            if [[ "$offset" == "+0200" && ( "$KFS_CRON" == "12 6 * * *" || "$KFS_CRON" == "30 6 * * *" || "$KFS_CRON" == "43 6 * * *" || "$KFS_CRON" == "0 19 * * 1-6" || "$KFS_CRON" == "13 19 * * 1-6" ) ]]; then
               lancer=true
-            elif [[ "$offset" == "+0100" && ( "$KFS_CRON" == "30 7 * * *" || "$KFS_CRON" == "43 7 * * *" || "$KFS_CRON" == "0 20 * * 1-6" || "$KFS_CRON" == "13 20 * * 1-6" ) ]]; then
+            elif [[ "$offset" == "+0100" && ( "$KFS_CRON" == "12 7 * * *" || "$KFS_CRON" == "30 7 * * *" || "$KFS_CRON" == "43 7 * * *" || "$KFS_CRON" == "0 20 * * 1-6" || "$KFS_CRON" == "13 20 * * 1-6" ) ]]; then
               lancer=true
             fi
           fi
-          # Le secours ne regénère pas un bulletin déjà publié par le créneau principal.
+          # Les passages de 08:30 et 08:43 ne recalculent pas un manifeste
+          # déjà généré et vérifié après 07:55 heure de Paris.
           if [[ "$lancer" == true && "$KFS_EVENT" == schedule && \
-                ( "$KFS_CRON" == "43 6 * * *" || "$KFS_CRON" == "43 7 * * *" || \
+                ( "$KFS_CRON" == "30 6 * * *" || "$KFS_CRON" == "30 7 * * *" || \
+                  "$KFS_CRON" == "43 6 * * *" || "$KFS_CRON" == "43 7 * * *" || \
                   "$KFS_CRON" == "13 19 * * 1-6" || "$KFS_CRON" == "13 20 * * 1-6" ) ]]; then
             url="https://raw.githubusercontent.com/almet27/kfs-meteo-cartes/main/forecast-maps/tendance/tendance-cartes.json?check=$(date +%s)"
             if curl -fsSL --max-time 15 "$url" -o /tmp/kfs-tendance-latest.json; then
@@ -73,8 +78,11 @@ jobs:
               with open("/tmp/kfs-tendance-latest.json") as f:
                   data=json.load(f)
               created=datetime.fromisoformat(data["generated_utc"]).astimezone(ZoneInfo("Europe/Paris"))
-              gate=now.replace(hour=20 if evening else 8,minute=50 if evening else 20,second=0,microsecond=0)
-              if data.get("schema_version")==1 and created.date()==now.date() and created>=gate:
+              gate=now.replace(hour=20 if evening else 7,minute=50 if evening else 55,second=0,microsecond=0)
+              if (data.get("schema_version")==1 and data.get("status")=="illustrative_model_maps"
+                  and len(data.get("period_maps",[]))==4
+                  and {x.get("id") for x in data["period_maps"]}=={"j3","j7","j10","j15"}
+                  and created.date()==now.date() and created>=gate):
                   print("Créneau /tendance déjà généré : "+created.isoformat())
                   sys.exit(0)
           except Exception as e:
