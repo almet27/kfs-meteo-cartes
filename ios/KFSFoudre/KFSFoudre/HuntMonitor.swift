@@ -301,7 +301,7 @@ final class HuntMonitor: NSObject, ObservableObject, CLLocationManagerDelegate, 
         do {
             try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
             let data = try JSONEncoder().encode(archive)
-            try data.write(to: url, options: [.atomic, .completeUntilFirstUserAuthentication])
+            try data.write(to: url, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
             var resourceURL = url
             var values = URLResourceValues(); values.isExcludedFromBackup = true
             try resourceURL.setResourceValues(values)
