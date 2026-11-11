@@ -5,6 +5,8 @@ on:
       - .github/workflows/kfs-climato-sync.yml
       - cloudflare/kfs-climato-observations.js
       - cloudflare/kfs-climato-phenomenes.js
+      - cloudflare/kfs-climato-foudre-wglc.js
+      - data/wglc/*.json.gz
   workflow_dispatch:
 permissions:
   contents: read
@@ -13,6 +15,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
+      - name: Valider les archives de foudre publiees depuis GitHub
+        run: |
+          python - <<'PY'
+          import gzip,json,urllib.request
+          url="https://raw.githubusercontent.com/almet27/kfs-meteo-cartes/main/data/wglc/wglc_france_2024.json.gz"
+          with urllib.request.urlopen(url,timeout=25) as res:
+              obj=json.loads(gzip.decompress(res.read()))
+          assert obj["year"]==2024 and len(obj["monthly"])==12
+          assert len(obj["lat"])==138 and len(obj["lon"])==210
+          print("WGLC_PUBLIC_REMOTE_OK 2024",len(obj["monthly"][0]))
+          PY
       - name: Declencher la synchronisation Discord dans le Worker
         shell: bash
         run: |
@@ -27,4 +40,4 @@ jobs:
             exit 1
           fi
           echo "Worker joint ; synchronisation Discord déclenchée par la requête (vérifier les journaux pour confirmation)"
-          echo "Correctifs climato orages/neige : controle Q9 et couverture minimale 85%"
+          echo "Archives 2010-2025 WWLLN/WGLC et rubrique orages activées ; jours de station conservés"
