@@ -271,7 +271,9 @@ async function kfsClimatoHandleV2(interaction,appId) {
     const rubrique=String(get("rubrique")||"bilan");
     const month=String(get("mois")||"annee");
     const record=String(get("record")||"");
-    if(!record && ["orages","neige"].includes(rubrique)){
+    if(!record && rubrique==="neige"){
+      payload=await kfsPLocalSnowReport(city,kfsQInputYear(get("annee")),kfsQMonth(month));
+    } else if(!record && rubrique==="orages"){
       payload=await kfsPReport(city,kfsQInputYear(get("annee")),kfsQMonth(month),rubrique);
     } else if(record){
       payload=await kfsClimatoRecordResponse(city,record,month,get("annee")!==undefined);
