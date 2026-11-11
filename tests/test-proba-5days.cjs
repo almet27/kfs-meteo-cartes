@@ -2,7 +2,7 @@ const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const source=fs.readFileSync(require('node:path').join(__dirname,'../cloudflare/kfs-proba-module.js'),'utf8');
-const api=new Function(source+';return {kfsProbaMemberProbability,kfsProbaStormMembers,kfsProbaRegister,kfsProbaFiveDayComplete,kfsProbaFiveDayRead};')();
+const api=new Function(source+';return {kfsProbaMemberProbability,kfsProbaStormMembers,kfsProbaRegister,kfsProbaFiveDayComplete,kfsProbaFiveDayRead,kfsProbaNormalizeHourly};')();
 const start='2026-11-12',end='2026-11-16';
 function hourly(variable,values){
  const time=Array.from({length:120},(_,i)=>new Date(Date.UTC(2026,10,12,0,i*60)).toISOString().slice(0,16));
@@ -99,4 +99,18 @@ test('Discord option explicitly identifies the five-day period',async()=>{
   assert.match(day.choices.find(c=>c.value===5).name,/J\+1 à J\+5/);
   assert.deepEqual(day.choices.filter(c=>c.value!==5).map(c=>c.value),[0,1,2,3]);
  }finally{global.fetch=old;delete global.APPLICATION_ID;}
+});
+
+test('five civil days retain the 23-hour spring and 25-hour autumn days',()=>{
+ for(const [begin,finish,first,last,expected] of [
+  ['2027-03-27T23:00:00Z','2027-04-01T22:00:00Z','2027-03-28','2027-04-01',119],
+  ['2026-10-24T22:00:00Z','2026-10-29T23:00:00Z','2026-10-25','2026-10-29',121]]){
+  const time=[];
+  for(let t=Date.parse(begin);t<Date.parse(finish);t+=3600000)time.push(t/1000);
+  const data=api.kfsProbaNormalizeHourly({time,rain_member01:time.map(()=>1),rain_member02:time.map(()=>1)});
+  const result=api.kfsProbaMemberProbability(data,first,'pluie',120,last);
+  assert.ok(result);
+  assert.equal(result.amount,expected);
+  assert.equal(result.pct,expected>=120?100:0);
+ }
 });

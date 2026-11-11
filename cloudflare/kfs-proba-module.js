@@ -342,7 +342,8 @@ async function kfsProbaReadEnsemble(params){
 async function kfsProbaStormModel(model,samples,day,minimum,endDay=day){
  const base={latitude:samples.map(p=>p.lat).join(","),
   longitude:samples.map(p=>p.lon).join(","),models:model[1],
-  start_date:day,end_date:endDay,timezone:"Europe/Paris",temporal_resolution:KFS_STORM_TEMPO};
+  start_date:endDay===day?day:kfsProbaShiftDay(day,-1),
+  end_date:endDay===day?day:kfsProbaShiftDay(endDay,1),timeformat:endDay===day?"iso8601":"unixtime",timezone:"Europe/Paris",temporal_resolution:KFS_STORM_TEMPO};
  const variants=[
   ["cape","precipitation","wind_gusts_10m","weather_code","dew_point_2m","convective_inhibition"],
   ["cape","precipitation","wind_gusts_10m","weather_code","dew_point_2m"],
@@ -357,7 +358,7 @@ async function kfsProbaStormModel(model,samples,day,minimum,endDay=day){
   try{
    const data0=await kfsProbaReadEnsemble(params),data=Array.isArray(data0)?data0:[data0];
    if(data.length!==samples.length){error="Nombre de points inattendu";continue;}
-   const values=data.map(x=>kfsProbaStormMembers(x.hourly,day,minimum,endDay));
+   const values=data.map(x=>kfsProbaStormMembers(kfsProbaNormalizeHourly(x.hourly),day,minimum,endDay));
    if(values.some(Boolean))return {name:model[0],values,fields};
    error="Aucun membre valide";
   }catch(e){
@@ -372,7 +373,8 @@ async function kfsProbaModel(model,samples,day,type,threshold,endDay=day){
  const params=new URLSearchParams({
   latitude:samples.map(p=>p.lat).join(","),
   longitude:samples.map(p=>p.lon).join(","),
-  models:model[1],hourly:varName,start_date:day,end_date:endDay,
+  models:model[1],hourly:varName,start_date:endDay===day?day:kfsProbaShiftDay(day,-1),
+  end_date:endDay===day?day:kfsProbaShiftDay(endDay,1),timeformat:endDay===day?"iso8601":"unixtime",
   timezone:"Europe/Paris",temporal_resolution:"hourly_1"
  });
  const result=await kfsProbaReadEnsemble(params);
@@ -380,7 +382,7 @@ async function kfsProbaModel(model,samples,day,type,threshold,endDay=day){
  if(arr.length!==samples.length)throw Error("Nombre de points inattendu");
  const values=arr.map(p=>{
   if(endDay===day&&type==="neige"&&typeof p.elevation==="number"&&p.elevation>800)return null;
-  return kfsProbaMemberProbability(p.hourly,day,type,threshold,endDay);
+  return kfsProbaMemberProbability(kfsProbaNormalizeHourly(p.hourly),day,type,threshold,endDay);
  });
  return {name:model[0],values};
 }
@@ -1070,6 +1072,14 @@ async function kfsProbaComplete(interaction,phenom,zone,jour,seuil){
 
 // Five-day probabilities follow each member across the entire period.
 // Daily percentages are never summed or treated as independent events.
+function kfsProbaShiftDay(day,delta){
+ return new Date(Date.parse(day+"T12:00:00Z")+delta*86400000).toISOString().slice(0,10);
+}
+function kfsProbaNormalizeHourly(hourly){
+ if(!hourly?.time?.some(v=>typeof v==="number"))return hourly;
+ const f=new Intl.DateTimeFormat("sv-SE",{timeZone:"Europe/Paris",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hourCycle:"h23"});
+ return {...hourly,time:hourly.time.map(v=>typeof v==="number"?f.format(new Date(v*1000)).replace(" ","T"):v)};
+}
 function kfsProbaPeriodComplete(times,ids,start,end,interval=0){
  if(!interval)interval=(Date.parse(times[ids[1]])-Date.parse(times[ids[0]]))/3600000;
  if(![1,3].includes(interval))return false;

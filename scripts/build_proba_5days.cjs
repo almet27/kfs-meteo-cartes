@@ -5,7 +5,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 const root=path.resolve(__dirname,'..');
 const source=fs.readFileSync(path.join(root,'cloudflare/kfs-proba-module.js'),'utf8');
-const api=new Function(source+';return {KFS_PROBA_RULES,kfsProbaDay,kfsProbaMemberProbability,kfsProbaStormMembers};')();
+const api=new Function(source+';return {KFS_PROBA_RULES,kfsProbaDay,kfsProbaMemberProbability,kfsProbaStormMembers,kfsProbaNormalizeHourly};')();
 const points=JSON.parse(fs.readFileSync(path.join(root,'proba/points-ecmwf.json'),'utf8')).zones;
 const variables=['rain','snow_depth','snowfall','temperature_2m','wind_gusts_10m',
  'cape','precipitation','dew_point_2m'];
@@ -17,7 +17,7 @@ async function main(){
  for(let offset=0;offset<entries.length;offset+=24){
   const batch=entries.slice(offset,offset+24);
   const params=new URLSearchParams({latitude:batch.map(p=>p.lat).join(','),longitude:batch.map(p=>p.lon).join(','),
-   models:'ncep_gefs025',hourly:variables.join(','),start_date:start,end_date:end,
+   models:'ncep_gefs025',hourly:variables.join(','),start_date:api.kfsProbaDay(0),end_date:api.kfsProbaDay(6),timeformat:"unixtime",
    timezone:'Europe/Paris',temporal_resolution:'hourly_1'});
   let response;
   for(let attempt=0;attempt<4;attempt++){
@@ -35,12 +35,13 @@ async function main(){
   consulted=new Date().toISOString();
   data.forEach((point,i)=>{
    const {zone,index}=batch[i];
+   const hourly=api.kfsProbaNormalizeHourly(point.hourly);
    for(const [type,rule] of Object.entries(api.KFS_PROBA_RULES)){
     const fields=zones[zone][type]??={};
     for(const threshold of rule.allowed){
      const values=fields[String(threshold)]??=new Array(points[zone].length).fill(null);
-     values[index]=type==='orage'?api.kfsProbaStormMembers(point.hourly,start,threshold,end):
-      api.kfsProbaMemberProbability(point.hourly,start,type,threshold,end);
+     values[index]=type==='orage'?api.kfsProbaStormMembers(hourly,start,threshold,end):
+      api.kfsProbaMemberProbability(hourly,start,type,threshold,end);
      if(!values[index] || values[index].members<5)throw Error('Incomplete member coverage: '+zone+'/'+type+'/'+threshold);
     }
    }
