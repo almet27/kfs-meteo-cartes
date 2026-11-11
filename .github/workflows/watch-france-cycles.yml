@@ -36,6 +36,66 @@ jobs:
         run: |
           git fetch origin main
           git checkout -B main origin/main
+      - name: Secours /tendance si GitHub n'a pas lancé le cycle de 08:12 Paris
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          clock="$(TZ=Europe/Paris date +%H%M)"
+          clock=$((10#$clock))
+          if (( clock < 818 || clock > 828 )); then
+            echo "Secours /tendance hors fenêtre : rien à faire."
+            exit 0
+          fi
+          url="https://raw.githubusercontent.com/almet27/kfs-meteo-cartes/main/forecast-maps/tendance/tendance-cartes.json?rescue=$(date +%s)"
+          if curl -fsSL --max-time 12 "$url" -o /tmp/kfs-tendance-early.json; then
+            if python - <<'PY'
+          import json,sys
+          from datetime import datetime
+          from zoneinfo import ZoneInfo
+          try:
+              with open("/tmp/kfs-tendance-early.json") as fh: d=json.load(fh)
+              now=datetime.now(ZoneInfo("Europe/Paris"))
+              ts=datetime.fromisoformat(d["generated_utc"]).astimezone(ZoneInfo("Europe/Paris"))
+              recent=ts.date()==now.date() and (ts.hour*60+ts.minute)>=7*60+55
+              valid=d.get("schema_version")==1 and d.get("status")=="illustrative_model_maps"
+              complete={x.get("id") for x in d.get("period_maps",[])}=={"j3","j7","j10","j15"}
+              if recent and valid and complete:
+                  print("Secours /tendance : cartes déjà prêtes à",ts.isoformat())
+                  sys.exit(0)
+          except Exception as exc:
+              print("Secours /tendance : manifeste non vérifié",repr(exc))
+          sys.exit(1)
+          PY
+            then exit 0; fi
+          fi
+          gh run list --repo "$GH_REPO" --workflow tendance-analyse.yml --limit 20 \
+            --json createdAt,status,conclusion > /tmp/kfs-tendance-runs.json
+          if python - <<'PY'
+          import json,sys
+          from datetime import datetime
+          from zoneinfo import ZoneInfo
+          now=datetime.now(ZoneInfo("Europe/Paris"))
+          with open("/tmp/kfs-tendance-runs.json") as fh:runs=json.load(fh)
+          for r in runs:
+              started=datetime.fromisoformat(r["createdAt"].replace("Z","+00:00")).astimezone(ZoneInfo("Europe/Paris"))
+              if started.date()!=now.date() or started.hour*60+started.minute<7*60+55:
+                  continue
+              if r.get("status")!="completed" or r.get("conclusion")=="success":
+                  print("Génération /tendance déjà lancée ou réussie :",r["createdAt"],r["status"])
+                  sys.exit(0)
+              if started.hour*60+started.minute>=8*60+18:
+                  print("Un secours /tendance a déjà été tenté :",r["createdAt"])
+                  sys.exit(0)
+          sys.exit(1)
+          PY
+          then
+            exit 0
+          fi
+          gh workflow run tendance-analyse.yml --repo "$GH_REPO" --ref main
+          echo "Secours /tendance déclenché (cycle principal absent)."
       - name: Installer le client legere ECMWF
         run: python -m pip install 'ecmwf-opendata>=0.3'
       - name: Identifier les dernieres sorties disponibles
