@@ -14,7 +14,7 @@ function kfsPValid(raw,quality) {
 async function kfsPArchive(stations,year) {
   const ids=stations.map(s=>s.id).sort(),dept=/^(97|98)/.test(ids[0])?ids[0].slice(0,3):ids[0].slice(0,2);
   const filename=kfsQFilename(ids[0],year).replace("_RR-T-Vent.csv.gz","_autres-parametres.csv.gz");
-  const cacheKey=new Request("https://kfs-meteo-ia.alain-leprevost.workers.dev/_cache_climato_pheno/"+dept+"/"+year+"/"+ids.join("."));
+  const cacheKey=new Request("https://kfs-meteo-ia.alain-leprevost.workers.dev/_cache_climato_pheno/v2/"+dept+"/"+year+"/"+ids.join("."));
   try{
     const cached=await caches.default.match(cacheKey);
     if(cached){
