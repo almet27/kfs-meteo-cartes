@@ -132,6 +132,158 @@ async function kfsPSelect(city,year,month,rubrique) {
   complete.sort((a,b)=>a.station.km-b.station.km||b.valid-a.valid);
   return {...complete[0],expected};
 }
+
+/* KFS_CLIMATO_NEIGE_LOCALE_V1 : profondeur neige dans la commune via
+   ERA5-Land si aucune station locale complète. Deux sources affichées séparément.
+   ERA5-Land = réanalyse approximative, jamais une observation in situ.
+*/
+async function kfsPLocalSnowArchive(city,year){
+  if(year<1950)throw Error("La réanalyse ERA5-Land de l'enneigement est disponible à partir de 1950.");
+  const start=year+"-01-01",nowYear=new Date().getUTCFullYear();
+  const end=year===nowYear?new Date(Date.now()-7*86400000).toISOString().slice(0,10):year+"-12-31";
+  if(end<start)throw Error("Pas encore d'archives ERA5-Land pour l'année en cours.");
+  const lat=Number(city.lat.toFixed(3)),lon=Number(city.lon.toFixed(3));
+  const key=new Request("https://kfs-meteo-ia.alain-leprevost.workers.dev/_clim_neige_local_v1/"+year+"/"+lat+"/"+lon);
+  try{
+    const res=await caches.default.match(key);
+    if(res){
+      const data=await res.json();
+      if(data?.year===year&&Array.isArray(data.depth)&&Array.isArray(data.fall))return data;
+    }
+  }catch(_){}
+  const sourceFall=year>=2017?"ecmwf_ifs":"era5";
+  function url(model,variable){
+    return "https://archive-api.open-meteo.com/v1/archive?"+
+      new URLSearchParams({latitude:String(lat),longitude:String(lon),start_date:start,end_date:end,
+        hourly:variable,models:model,timezone:"Europe/Paris"}).toString();
+  }
+  async function get(model,variable){
+    const r=await fetch(url(model,variable),{cf:{cacheEverything:true,cacheTtl:year===nowYear?21600:604800}});
+    if(!r.ok)throw Error("Archive de réanalyse "+model+" indisponible : HTTP "+r.status);
+    const j=await r.json();
+    if(j.error||!Array.isArray(j.hourly?.time)||!Array.isArray(j.hourly?.[variable]))
+      throw Error("La réanalyse "+model+" n'a pas retourné de série "+variable+" exploitable.");
+    return j;
+  }
+  const [depth,fall]=await Promise.all([get("era5_land","snow_depth"),get(sourceFall,"snowfall")]);
+  if(depth.hourly_units?.snow_depth!=="m"||fall.hourly_units?.snowfall!=="cm")
+    throw Error("Unité d'enneigement inattendue dans les données historiques.");
+  function aggregate(data,key,mode){
+    const days=new Map();
+    const times=data.hourly.time,values=data.hourly[key];
+    for(let i=0;i<times.length;i++){
+      const val=values[i],date=String(times[i]||"").slice(0,10);
+      if(val===null||!Number.isFinite(Number(val))||!/^\d{4}-\d{2}-\d{2}$/.test(date))continue;
+      const x=Math.max(0,Number(val))*(key==="snow_depth"?100:1);
+      const entry=days.get(date)||{date,value:mode==="sum"?0:null,samples:0};
+      entry.samples++;
+      entry.value=mode==="sum"?entry.value+x:entry.value===null?x:Math.max(entry.value,x);
+      days.set(date,entry);
+    }
+    return [...days.values()].sort((a,b)=>a.date.localeCompare(b.date));
+  }
+  const result={year,sourceFall,depth:aggregate(depth,"snow_depth","max"),fall:aggregate(fall,"snowfall","sum"),
+    depthLat:depth.latitude,depthLon:depth.longitude};
+  if(result.depth.length<100&&year!==nowYear)throw Error("Historique d'épaisseur de neige trop incomplet.");
+  try{
+    await caches.default.put(key,new Response(JSON.stringify(result),{
+      headers:{"content-type":"application/json","Cache-Control":"public,max-age="+(year===nowYear?21600:604800)}
+    }));
+  }catch(_){}
+  return result;
+}
+async function kfsPLocalSnowObservations(city,year,month){
+  // Ne jamais présenter une station à 60 km comme une mesure locale d'enneigement.
+  const all=(await kfsClimStations()).map(s=>({...s,km:kfsClimDistance(city.lat,city.lon,s.lat,s.lon)}))
+    .filter(s=>s.km<=25).sort((a,b)=>a.km-b.km).slice(0,12);
+  const grouped=new Map();
+  for(const s of all){
+    const dep=/^(97|98)/.test(s.id)?s.id.slice(0,3):s.id.slice(0,2);
+    if(!grouped.has(dep))grouped.set(dep,[]);
+    grouped.get(dep).push(s);
+  }
+  const choices=[];
+  for(const group of [...grouped.values()]){
+    try{
+      const out=await kfsPArchive(group,year);
+      for(const station of group){
+        const days=(out.byStation[station.id]||[]).filter(d=>!month||Number(d.date.slice(5,7))===month);
+        const snow=kfsPStats(days,"neige");
+        const depth=days.filter(d=>d.neigeEpaisseur!==null&&Number.isFinite(d.neigeEpaisseur));
+        if(snow.valid||depth.length)choices.push({station,snow,depth});
+      }
+    }catch(e){console.warn("KFS_NEIGE_LOCAL_STATION",String(e).slice(0,100));}
+  }
+  choices.sort((a,b)=>a.station.km-b.station.km);
+  return choices[0]||null;
+}
+async function kfsPLocalSnowReport(city,year,month){
+  const model=await kfsPLocalSnowArchive(city,year);
+  const yearDays=kfsPExpectedDays(year,month);
+  const period=month?KFS_Q_MONTHS[month-1]+" "+year:"année "+year;
+  const select=xs=>xs.filter(d=>!month||Number(d.date.slice(5,7))===month);
+  const depth=select(model.depth),fall=select(model.fall);
+  if(!depth.length||depth.length<Math.ceil(yearDays*.8))
+    throw Error("Couverture de la réanalyse locale insuffisante ("+depth.length+"/"+yearDays+" jours).");
+  const covered=depth.filter(d=>d.value>=1);
+  const covered5=depth.filter(d=>d.value>=5);
+  const snow=fall.filter(d=>d.value>=.2),snow1=fall.filter(d=>d.value>=1);
+  const max=depth.reduce((a,b)=>!a||b.value>a.value?b:a,null);
+  const maxFall=fall.reduce((a,b)=>!a||b.value>a.value?b:a,null);
+  const fields=[
+    {name:"🌨️ Jours de neige (simulation)",value:"**"+snow.length+" j** avec au moins 0,2 cm de neige tombée calculée\n"+
+      "**"+snow1.length+" j** avec au moins 1 cm · "+fall.length+" journées renseignées",inline:true},
+    {name:"⛄ Jours avec neige au sol (simulation)",value:"**"+covered.length+" j** avec ≥1 cm\n"+
+      "**"+covered5.length+" j** avec ≥5 cm · "+depth.length+" journées renseignées",inline:true},
+    {name:"📏 Épaisseur maximale au sol (estimation)",value:"**"+kfsQR(max.value," cm")+"** · "+kfsQCalendarDate(max.date),inline:true},
+    {name:"❄️ Neige tombée maximale en 24 h (simulation)",value:"**"+kfsQR(maxFall?.value," cm")+"** · "+(maxFall?kfsQCalendarDate(maxFall.date):"n/d"),inline:true}
+  ];
+  if(month&&covered.length)
+    fields.push({name:"📆 Journées avec au moins 1 cm au sol (modèle)",
+      value:covered.slice(0,22).map(d=>kfsQCalendarDate(d.date)+" : "+kfsQR(d.value," cm")).join("\n").slice(0,1000),inline:false});
+  if(!month){
+    const list=KFS_Q_MONTHS.map((name,i)=>{
+      const mm=String(i+1).padStart(2,"0");
+      const a=depth.filter(d=>d.date.slice(5,7)===mm);
+      const b=fall.filter(d=>d.date.slice(5,7)===mm);
+      return name.slice(0,4).padEnd(5," ")+" "+String(b.filter(d=>d.value>=.2).length).padStart(2," ")+" / "+
+        String(a.filter(d=>d.value>=1).length).padStart(2," ")+" / "+
+        (a.length?kfsQR(Math.max(...a.map(d=>d.value))," cm"):"n/d");
+    });
+    fields.push({name:"📅 Par mois : jours de neige / jours neige au sol / maxi",
+      value:"\x60\x60\x60\n"+list.join("\n")+"\n\x60\x60\x60",inline:false});
+  }
+  // Bloc séparé : relevés réellement observés à moins de 25 km, s'ils existent.
+  try{
+    const obs=await kfsPLocalSnowObservations(city,year,month);
+    if(obs){
+      const coverage=yearDays;
+      const parts=[];
+      if(obs.snow.valid>=Math.ceil(coverage*.85))
+        parts.push("Chutes observées : **"+obs.snow.jours+" jours** ("+obs.snow.valid+"/"+coverage+" jours)");
+      else if(obs.snow.valid)
+        parts.push("Chutes : série incomplète ("+obs.snow.valid+"/"+coverage+" jours) — **total annuel non fiable**");
+      const vals=obs.depth;
+      if(vals.length>=Math.ceil(coverage*.8)){
+        const maxMeasured=vals.reduce((a,b)=>b.neigeEpaisseur>a.neigeEpaisseur?b:a);
+        parts.push("Hauteur maximale mesurée : **"+kfsQR(maxMeasured.neigeEpaisseur," cm")+"** le "+
+          kfsQCalendarDate(maxMeasured.date)+" ("+vals.length+"/"+coverage+" jours)");
+      }else if(vals.length)parts.push("Hauteur : "+vals.length+"/"+coverage+" jours renseignés — série incomplète");
+      if(parts.length)fields.unshift({name:"📍 Relevés de station (distincts du modèle)",
+        value:"**"+obs.station.name+"** à "+kfsQR(obs.station.km," km")+"\n"+parts.join("\n"),inline:false});
+    }
+  }catch(e){console.warn("KFS_NEIGE_LOCAL_STATION_FAIL",String(e).slice(0,120));}
+  const label=model.sourceFall==="ecmwf_ifs"?"ECMWF IFS ~9 km":"ERA5 ~25 km";
+  const cautions=["🔎 **Estimation locale par réanalyse** : les valeurs ne sont pas des mesures exactes à "+city.name+".",
+    "ERA5-Land (environ 9–11 km) peut surestimer la neige au sol. Ne pas confondre chute et épaisseur."];
+  if(year===new Date().getUTCFullYear())cautions.push("Année en cours : réanalyse publiée avec décalage.");
+  return {embeds:[{title:"KFS MÉTÉO — ❄️ Neige · "+period,url:"https://open-meteo.com/en/docs/historical-weather-api",
+    color:0x1975b8,description:"📍 **"+city.name+"** · Maillage historique centré près de "+
+      kfsQR(model.depthLat,"°N")+", "+kfsQR(model.depthLon,"°E")+"\n"+cautions.join("\n"),
+    fields,footer:{text:"Hauteur au sol : Copernicus ERA5-Land via Open-Meteo · Chutes : "+label+" via Open-Meteo · Reconstitution, non mesure de station"}}],
+    allowed_mentions:{parse:[]}};
+}
+
 async function kfsPReport(city,year,month,rubrique) {
   const chosen=await kfsPSelect(city,year,month,rubrique);
   const days=chosen.days,field=rubrique==="orages"?"orage":"neige";
