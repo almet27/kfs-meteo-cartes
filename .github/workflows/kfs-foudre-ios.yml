@@ -1,0 +1,27 @@
+name: KFS Foudre iPhone — compilation
+on:
+  push:
+    paths:
+      - 'ios/KFSFoudre/**'
+      - '.github/workflows/kfs-foudre-ios.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tests du filtrage des alertes
+        working-directory: ios/KFSFoudre
+        run: |
+          swiftc KFSFoudre/Domain.swift Tests/main.swift -o /tmp/kfs-foudre-tests
+          /tmp/kfs-foudre-tests
+      - name: Compiler l’application iPhone sans signature
+        working-directory: ios/KFSFoudre
+        run: |
+          xcodebuild -project KFSFoudre.xcodeproj -scheme KFSFoudre -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
+      - name: Tests du service mobile
+        working-directory: ios/KFSFoudre
+        run: node Backend/test-mobile-api.cjs

@@ -1,0 +1,41 @@
+// !$*UTF8*$!
+{
+archiveVersion = 1;
+classes = {};
+objectVersion = 56;
+objects = {
+0000000000000000000000C8 = {isa = PBXBuildFile; fileRef = 000000000000000000000064; };
+0000000000000000000000C9 = {isa = PBXBuildFile; fileRef = 000000000000000000000065; };
+0000000000000000000000CA = {isa = PBXBuildFile; fileRef = 000000000000000000000066; };
+0000000000000000000000CB = {isa = PBXBuildFile; fileRef = 000000000000000000000067; };
+0000000000000000000000CC = {isa = PBXBuildFile; fileRef = 000000000000000000000068; };
+0000000000000000000000CD = {isa = PBXBuildFile; fileRef = 000000000000000000000069; };
+0000000000000000000000CF = {isa = PBXBuildFile; fileRef = 00000000000000000000006B; };
+0000000000000000000000D0 = {isa = PBXBuildFile; fileRef = 00000000000000000000006C; };
+000000000000000000000064 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KFSFoudreApp.swift; sourceTree = "<group>"; };
+000000000000000000000065 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+000000000000000000000066 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HuntMonitor.swift; sourceTree = "<group>"; };
+000000000000000000000067 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Domain.swift; sourceTree = "<group>"; };
+000000000000000000000068 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
+000000000000000000000069 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureStore.swift; sourceTree = "<group>"; };
+00000000000000000000006A = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+00000000000000000000006B = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Configuration.plist; sourceTree = "<group>"; };
+00000000000000000000006C = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+000000000000000000000003 = {isa = PBXFileReference; explicitFileType = wrapper.application; path = KFSFoudre.app; sourceTree = BUILT_PRODUCTS_DIR; };
+000000000000000000000004 = {isa = PBXGroup; children = (000000000000000000000005,000000000000000000000006); sourceTree = "<group>"; };
+000000000000000000000005 = {isa = PBXGroup; children = (000000000000000000000064,000000000000000000000065,000000000000000000000066,000000000000000000000067,000000000000000000000068,000000000000000000000069,00000000000000000000006A,00000000000000000000006B,00000000000000000000006C); path = KFSFoudre; sourceTree = "<group>"; };
+000000000000000000000006 = {isa = PBXGroup; children = (000000000000000000000003); name = Products; sourceTree = "<group>"; };
+000000000000000000000007 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (0000000000000000000000C8,0000000000000000000000C9,0000000000000000000000CA,0000000000000000000000CB,0000000000000000000000CC,0000000000000000000000CD); runOnlyForDeploymentPostprocessing = 0; };
+000000000000000000000008 = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (0000000000000000000000CF,0000000000000000000000D0); runOnlyForDeploymentPostprocessing = 0; };
+000000000000000000000009 = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+000000000000000000000002 = {isa = PBXNativeTarget; buildConfigurationList = 000000000000000000000010; buildPhases = (000000000000000000000007,000000000000000000000009,000000000000000000000008); buildRules = (); dependencies = (); name = KFSFoudre; productName = KFSFoudre; productReference = 000000000000000000000003; productType = "com.apple.product-type.application"; };
+000000000000000000000001 = {isa = PBXProject; attributes = {BuildIndependentTargetsInParallel = YES; LastUpgradeCheck = 1640; TargetAttributes = {000000000000000000000002 = {CreatedOnToolsVersion = 16.4; ProvisioningStyle = Automatic; }; }; }; buildConfigurationList = 000000000000000000000011; compatibilityVersion = "Xcode 14.0"; developmentRegion = fr; hasScannedForEncodings = 0; knownRegions = (fr,Base,en); mainGroup = 000000000000000000000004; productRefGroup = 000000000000000000000006; projectDirPath = ""; projectRoot = ""; targets = (000000000000000000000002); };
+000000000000000000000010 = {isa = XCConfigurationList; buildConfigurations = (000000000000000000000012,000000000000000000000013); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+000000000000000000000011 = {isa = XCConfigurationList; buildConfigurations = (000000000000000000000014,000000000000000000000015); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+000000000000000000000012 = {isa = XCBuildConfiguration; buildSettings = {ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon; CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = 1; DEVELOPMENT_TEAM = ""; GENERATE_INFOPLIST_FILE = NO; INFOPLIST_FILE = KFSFoudre/Info.plist; IPHONEOS_DEPLOYMENT_TARGET = 17.0; MARKETING_VERSION = 1.0; PRODUCT_BUNDLE_IDENTIFIER = fr.alainleprevost.kfsfoudre; PRODUCT_NAME = "$(TARGET_NAME)"; SDKROOT = iphoneos; SUPPORTED_PLATFORMS = "iphoneos iphonesimulator"; SUPPORTS_MACCATALYST = NO; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = 1; SWIFT_OPTIMIZATION_LEVEL = "-Onone"; SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;}; name = Debug; };
+000000000000000000000013 = {isa = XCBuildConfiguration; buildSettings = {ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon; CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = 1; DEVELOPMENT_TEAM = ""; GENERATE_INFOPLIST_FILE = NO; INFOPLIST_FILE = KFSFoudre/Info.plist; IPHONEOS_DEPLOYMENT_TARGET = 17.0; MARKETING_VERSION = 1.0; PRODUCT_BUNDLE_IDENTIFIER = fr.alainleprevost.kfsfoudre; PRODUCT_NAME = "$(TARGET_NAME)"; SDKROOT = iphoneos; SUPPORTED_PLATFORMS = "iphoneos iphonesimulator"; SUPPORTS_MACCATALYST = NO; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = 1; SWIFT_OPTIMIZATION_LEVEL = "-O";}; name = Release; };
+000000000000000000000014 = {isa = XCBuildConfiguration; buildSettings = {CLANG_ENABLE_MODULES = YES; CLANG_ENABLE_OBJC_ARC = YES; ENABLE_USER_SCRIPT_SANDBOXING = YES; IPHONEOS_DEPLOYMENT_TARGET = 17.0; SDKROOT = iphoneos; }; name = Debug; };
+000000000000000000000015 = {isa = XCBuildConfiguration; buildSettings = {CLANG_ENABLE_MODULES = YES; CLANG_ENABLE_OBJC_ARC = YES; ENABLE_USER_SCRIPT_SANDBOXING = YES; IPHONEOS_DEPLOYMENT_TARGET = 17.0; SDKROOT = iphoneos; }; name = Release; };
+};
+rootObject = 000000000000000000000001;
+}
