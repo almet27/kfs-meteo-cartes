@@ -3,8 +3,13 @@ import fs from "node:fs";
 import vm from "node:vm";
 
 const code=fs.readFileSync("cloudflare/kfs-climato-phenomenes.js","utf8");
+let snowApiCalls=0;
+const countedFetch=(input,options)=>{
+  if(String(input).includes("archive-api.open-meteo.com"))snowApiCalls++;
+  return fetch(input,options);
+};
 const sandbox={
-  console,fetch,Request,Response,URLSearchParams,TextDecoder,DecompressionStream,Date,Math,Number,Set,Map,
+  console,fetch:countedFetch,Request,Response,URLSearchParams,TextDecoder,DecompressionStream,Date,Math,Number,Set,Map,
   caches:{default:{match:async()=>null,put:async()=>{}}},
   KFS_Q_BASE:"https://meteofrance.s3.sbg.io.cloud.ovh.net/data/synchro_ftp/BASE/QUOT/",
   kfsQFilename:(id,year)=>{
@@ -53,4 +58,5 @@ for(const [year,minimum,maximum] of [[2024,8.8,9.1],[2025,2.8,3.1]]){
   assert.ok(!embed.description.includes("Évreux"),"Must not attribute distant measurements");
   console.log(JSON.stringify({city:"L'Aigle",year,depth:field.value,fields:embed.fields.length}));
 }
+assert.equal(snowApiCalls,2,"One Open-Meteo request per historical year is required");
 console.log("KFS CLIMATO PHENOMENES: TESTS PASSED");
