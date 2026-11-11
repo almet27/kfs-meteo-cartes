@@ -24,21 +24,44 @@ async function kfsWglcArchive(year){
   return archive;
 }
 function kfsWglcCity(archive,city){
-  if(city.lat<40.5||city.lat>52||city.lon<(-6.5)||city.lon>11)
-    return null;
-  const closest=(grid,target)=>grid.reduce((best,current,i)=>
-    Math.abs(current-target)<Math.abs(grid[best]-target)?i:best,0);
-  const y=closest(archive.lat,city.lat),x=closest(archive.lon,city.lon),
-    lat=archive.lat[y],lon=archive.lon[x],
-    dist=kfsClimDistance(city.lat,city.lon,lat,lon);
-  if(dist>12)return null; // No invented station extension.
-  const width=archive.lon.length,idx=y*width+x;
+  if(city.lat<40.5||city.lat>52||city.lon<-6.5||city.lon>11)return null;
+  // Rayon fixe de 15 km : une maille isolée de 5' peut être à zéro
+  // même lorsque les orages passent à quelques kilomètres.
+  // Moyenne surfacique de la densité, pas un compte ponctuel d'impacts.
+  const radiusKm=15,width=archive.lon.length,grid=[];
+  const closest=(values,target)=>values.reduce((best,v,i)=>
+    Math.abs(v-target)<Math.abs(values[best]-target)?i:best,0);
+  const nearLat=archive.lat[closest(archive.lat,city.lat)];
+  const nearLon=archive.lon[closest(archive.lon,city.lon)];
+  const dist=kfsClimDistance(city.lat,city.lon,nearLat,nearLon);
+  if(dist>12)return null;
+  for(let y=0;y<archive.lat.length;y++){
+    const lat=archive.lat[y];
+    if(Math.abs(lat-city.lat)>0.16)continue;
+    const areaWeight=Math.cos(lat*Math.PI/180);
+    for(let x=0;x<archive.lon.length;x++){
+      const lon=archive.lon[x];
+      if(Math.abs(lon-city.lon)>0.25)continue;
+      if(kfsClimDistance(city.lat,city.lon,lat,lon)<=radiusKm)
+        grid.push({idx:y*width+x,weight:areaWeight});
+    }
+  }
+  if(!grid.length)return null;
   const series=archive.monthly.map(arr=>{
-    const v=arr?.[idx];
-    return typeof v==="number"&&Number.isFinite(v)&&v>=0?v:null;
+    if(!Array.isArray(arr))return null;
+    let weighted=0,totalWeight=0;
+    for(const cell of grid){
+      const v=arr[cell.idx];
+      if(typeof v!=="number"||!Number.isFinite(v)||v<0)continue;
+      weighted+=v*cell.weight;
+      totalWeight+=cell.weight;
+    }
+    return totalWeight>=grid.reduce((a,c)=>a+c.weight,0)*.85?
+      weighted/totalWeight:null;
   });
-  return {lat,lon,dist,series};
+  return {lat:nearLat,lon:nearLon,dist,series,radiusKm,nCells:grid.length};
 }
+
 async function kfsWglcStormReport(city,year,month){
   const period=month?KFS_Q_MONTHS[month-1]+" "+year:"année "+year;
   let archiveResult=null,error=null;
@@ -60,7 +83,7 @@ async function kfsWglcStormReport(city,year,month){
     if(valid.length){
       const sum=valid.reduce((a,b)=>a+b,0);
       fields.push({name:"⚡ Activité de foudre locale (réseau WWLLN)",
-        value:"Densité reconstituée sur la maille de **"+city.name+"** (≈ 5–10 km).\n"+
+        value:"Densité moyenne reconstituée dans un rayon de **15 km** autour de **"+city.name+"** (grille ≈ 5–10 km).\n"+
           (month?"Indice mensuel brut : ":"Somme des indices mensuels : ")+
           "**"+kfsWglcFmt(sum)+" coups/km²"+"**\n"+
           "Mesures corrigées de l'efficacité de détection ; **ce n'est pas un décompte exact d'impacts au sol**.",inline:false});
@@ -91,7 +114,7 @@ async function kfsWglcStormReport(city,year,month){
         (stationError||"absence de station")+" ). Aucun total n'est extrapolé.",inline:false});
   }
   const detail=archiveResult?
-    "\nMaille WWLLN utilisée : "+kfsQR(archiveResult.lat,"°N")+", "+
+    "\nMaille WWLLN la plus proche : "+kfsQR(archiveResult.lat,"°N")+", "+
       kfsQR(archiveResult.lon,"°E")+".":"";
   return {embeds:[{title:"KFS MÉTÉO — ⛈️ Orages et activité foudre · "+period,
     color:0x277f9c,
