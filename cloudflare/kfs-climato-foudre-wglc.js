@@ -78,19 +78,26 @@ async function kfsWglcStormReport(city,year,month){
   }catch(e){stationError=String(e?.message||e);}
   const fields=[];
   if(archiveResult){
-    const w=archiveResult,selected=month?[w.series[month-1]]:w.series,
-      valid=selected.filter(v=>v!==null);
+    const w=archiveResult;
+    // WGLC mensuel exprime un taux journalier (strokes/km²/day).
+    // Conversion en densité cumulée mensuelle : taux × jours calendaires.
+    const monthly=w.series.map((value,i)=>
+      value===null?null:value*new Date(Date.UTC(year,i+1,0)).getUTCDate());
+    const selected=month?[monthly[month-1]]:monthly;
+    const valid=selected.filter(v=>v!==null);
     if(valid.length){
       const sum=valid.reduce((a,b)=>a+b,0);
-      fields.push({name:"⚡ Activité de foudre locale (réseau WWLLN)",
-        value:"Densité moyenne reconstituée dans un rayon de **15 km** autour de **"+city.name+"** (grille ≈ 5–10 km).\n"+
-          (month?"Indice mensuel brut : ":"Somme des indices mensuels : ")+
-          "**"+kfsWglcFmt(sum)+" coups/km²"+"**\n"+
-          "Mesures corrigées de l'efficacité de détection ; **ce n'est pas un décompte exact d'impacts au sol**.",inline:false});
+      const complete=valid.length===(month?1:12);
+      fields.push({name:"⚡ Densité de foudre reconstituée (WWLLN)",
+        value:"Zone de **15 km** autour de **"+city.name+"** (grille ≈ 5–10 km).\n"+
+          (month?"Cumul mensuel : ":"Cumul annuel "+(complete?"":"partiel ")+": ")+
+          "**"+kfsWglcFmt(sum)+" impulsions/km²**"+
+          "\nDensité intégrée à partir du taux journalier WGLC × nombre de jours de chaque mois."+
+          "\n⚠️ Ce sont des densités corrigées, **pas des nombres exacts d'impacts nuage-sol**.",inline:false});
       if(!month){
         const lines=KFS_Q_MONTHS.map((name,i)=>name.slice(0,4).padEnd(5," ")+
-          (w.series[i]!==null?kfsWglcFmt(w.series[i])+" /km²":"non disponible"));
-        fields.push({name:"📅 Activité électrique par mois — maillage WWLLN",
+          (monthly[i]!==null?kfsWglcFmt(monthly[i])+" /km²":"non disponible"));
+        fields.push({name:"📅 Densité électrique cumulée par mois — WWLLN",
           value:"\x60\x60\x60\n"+lines.join("\n")+"\n\x60\x60\x60",inline:false});
       }
     }
