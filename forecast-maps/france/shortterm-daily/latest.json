@@ -1,54 +1,142 @@
 {
   "schema": 1,
-  "generated_utc": "2026-11-11T00:55:20.255049+00:00",
+  "generated_utc": "2026-11-11T07:42:22.211228+00:00",
   "source": "Open-Meteo, modèles explicites ARÔME France et ICON EU",
   "not_native_grid": true,
   "models": {
     "arome": {
       "name": "meteofrance_arome_france",
-      "run_utc": "2026-11-10T18:00:00+00:00",
+      "run_utc": "2026-11-11T03:00:00+00:00",
       "days": {
         "0": {
           "date": "2026-11-11",
           "coverage": "partial",
-          "start_utc": "2026-11-11T00:00:00+00:00",
+          "start_utc": "2026-11-11T07:00:00+00:00",
           "end_utc": "2026-11-11T22:00:00+00:00",
-          "hours": 23,
+          "hours": 16,
           "maps": {
             "tmin": {
               "filename": "daily-arome-tmin-d0.png",
-              "size_bytes": 143185,
+              "size_bytes": 141585,
               "date": "11/11/2026",
               "coverage": "partial",
               "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/shortterm-daily/daily-arome-tmin-d0.png"
             },
             "tmax": {
               "filename": "daily-arome-tmax-d0.png",
-              "size_bytes": 143532,
+              "size_bytes": 141490,
               "date": "11/11/2026",
               "coverage": "partial",
               "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/shortterm-daily/daily-arome-tmax-d0.png"
             },
             "gust": {
               "filename": "daily-arome-gust-d0.png",
-              "size_bytes": 138496,
+              "size_bytes": 136566,
               "date": "11/11/2026",
               "coverage": "partial",
               "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/shortterm-daily/daily-arome-gust-d0.png"
             },
             "precip": {
               "filename": "daily-arome-precip-d0.png",
-              "size_bytes": 137934,
+              "size_bytes": 137133,
               "date": "11/11/2026",
               "coverage": "partial",
               "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/shortterm-daily/daily-arome-precip-d0.png"
             },
             "rain": {
               "filename": "daily-arome-rain-d0.png",
-              "size_bytes": 136294,
+              "size_bytes": 135504,
               "date": "11/11/2026",
               "coverage": "partial",
               "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/shortterm-daily/daily-arome-rain-d0.png"
+            }
+          }
+        },
+        "1": {
+          "date": "2026-11-12",
+          "coverage": "complete",
+          "start_utc": "2026-11-11T23:00:00+00:00",
+          "end_utc": "2026-11-12T22:00:00+00:00",
+          "hours": 24,
+          "maps": {
+            "tmin": {
+              "filename": "daily-arome-tmin-d1.png",
+              "size_bytes": 142704,
+              "date": "12/11/2026",
+              "coverage": "complete",
+              "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/shortterm-daily/daily-arome-tmin-d1.png"
+            },
+            "tmax": {
+              "filename": "daily-arome-tmax-d1.png",
+              "size_bytes": 143824,
+              "date": "12/11/2026",
+              "coverage": "complete",
+              "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/shortterm-daily/daily-arome-tmax-d1.png"
+            },
+            "gust": {
+              "filename": "daily-arome-gust-d1.png",
+              "size_bytes": 139330,
+              "date": "12/11/2026",
+              "coverage": "complete",
+              "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/shortterm-daily/daily-arome-gust-d1.png"
+            },
+            "precip": {
+              "filename": "daily-arome-precip-d1.png",
+              "size_bytes": 138814,
+              "date": "12/11/2026",
+              "coverage": "complete",
+              "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/shortterm-daily/daily-arome-precip-d1.png"
+            },
+            "rain": {
+              "filename": "daily-arome-rain-d1.png",
+              "size_bytes": 137242,
+              "date": "12/11/2026",
+              "coverage": "complete",
+              "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/shortterm-daily/daily-arome-rain-d1.png"
+            }
+          }
+        },
+        "2": {
+          "date": "2026-11-13",
+          "coverage": "partial",
+          "start_utc": "2026-11-12T23:00:00+00:00",
+          "end_utc": "2026-11-13T06:00:00+00:00",
+          "hours": 8,
+          "maps": {
+            "tmin": {
+              "filename": "daily-arome-tmin-d2.png",
+              "size_bytes": 139379,
+              "date": "13/11/2026",
+              "coverage": "partial",
+              "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/shortterm-daily/daily-arome-tmin-d2.png"
+            },
+            "tmax": {
+              "filename": "daily-arome-tmax-d2.png",
+              "size_bytes": 139869,
+              "date": "13/11/2026",
+              "coverage": "partial",
+              "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/shortterm-daily/daily-arome-tmax-d2.png"
+            },
+            "gust": {
+              "filename": "daily-arome-gust-d2.png",
+              "size_bytes": 136063,
+              "date": "13/11/2026",
+              "coverage": "partial",
+              "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/shortterm-daily/daily-arome-gust-d2.png"
+            },
+            "precip": {
+              "filename": "daily-arome-precip-d2.png",
+              "size_bytes": 135988,
+              "date": "13/11/2026",
+              "coverage": "partial",
+              "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/shortterm-daily/daily-arome-precip-d2.png"
+            },
+            "rain": {
+              "filename": "daily-arome-rain-d2.png",
+              "size_bytes": 134354,
+              "date": "13/11/2026",
+              "coverage": "partial",
+              "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/shortterm-daily/daily-arome-rain-d2.png"
             }
           }
         }
@@ -56,46 +144,46 @@
     },
     "icon_eu": {
       "name": "icon_eu",
-      "run_utc": "2026-11-10T21:00:00+00:00",
+      "run_utc": "2026-11-11T03:00:00+00:00",
       "days": {
         "0": {
           "date": "2026-11-11",
           "coverage": "partial",
-          "start_utc": "2026-11-11T00:00:00+00:00",
+          "start_utc": "2026-11-11T07:00:00+00:00",
           "end_utc": "2026-11-11T22:00:00+00:00",
-          "hours": 23,
+          "hours": 16,
           "maps": {
             "tmin": {
               "filename": "daily-icon_eu-tmin-d0.png",
-              "size_bytes": 142728,
+              "size_bytes": 141464,
               "date": "11/11/2026",
               "coverage": "partial",
               "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/shortterm-daily/daily-icon_eu-tmin-d0.png"
             },
             "tmax": {
               "filename": "daily-icon_eu-tmax-d0.png",
-              "size_bytes": 143300,
+              "size_bytes": 142420,
               "date": "11/11/2026",
               "coverage": "partial",
               "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/shortterm-daily/daily-icon_eu-tmax-d0.png"
             },
             "gust": {
               "filename": "daily-icon_eu-gust-d0.png",
-              "size_bytes": 138550,
+              "size_bytes": 138304,
               "date": "11/11/2026",
               "coverage": "partial",
               "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/shortterm-daily/daily-icon_eu-gust-d0.png"
             },
             "precip": {
               "filename": "daily-icon_eu-precip-d0.png",
-              "size_bytes": 137460,
+              "size_bytes": 136238,
               "date": "11/11/2026",
               "coverage": "partial",
               "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/shortterm-daily/daily-icon_eu-precip-d0.png"
             },
             "rain": {
               "filename": "daily-icon_eu-rain-d0.png",
-              "size_bytes": 135915,
+              "size_bytes": 135459,
               "date": "11/11/2026",
               "coverage": "partial",
               "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/shortterm-daily/daily-icon_eu-rain-d0.png"
@@ -111,38 +199,82 @@
           "maps": {
             "tmin": {
               "filename": "daily-icon_eu-tmin-d1.png",
-              "size_bytes": 140828,
+              "size_bytes": 141136,
               "date": "12/11/2026",
               "coverage": "complete",
               "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/shortterm-daily/daily-icon_eu-tmin-d1.png"
             },
             "tmax": {
               "filename": "daily-icon_eu-tmax-d1.png",
-              "size_bytes": 142192,
+              "size_bytes": 142172,
               "date": "12/11/2026",
               "coverage": "complete",
               "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/shortterm-daily/daily-icon_eu-tmax-d1.png"
             },
             "gust": {
               "filename": "daily-icon_eu-gust-d1.png",
-              "size_bytes": 137972,
+              "size_bytes": 137846,
               "date": "12/11/2026",
               "coverage": "complete",
               "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/shortterm-daily/daily-icon_eu-gust-d1.png"
             },
             "precip": {
               "filename": "daily-icon_eu-precip-d1.png",
-              "size_bytes": 137719,
+              "size_bytes": 137844,
               "date": "12/11/2026",
               "coverage": "complete",
               "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/shortterm-daily/daily-icon_eu-precip-d1.png"
             },
             "rain": {
               "filename": "daily-icon_eu-rain-d1.png",
-              "size_bytes": 136140,
+              "size_bytes": 136477,
               "date": "12/11/2026",
               "coverage": "complete",
               "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/shortterm-daily/daily-icon_eu-rain-d1.png"
+            }
+          }
+        },
+        "2": {
+          "date": "2026-11-13",
+          "coverage": "partial",
+          "start_utc": "2026-11-12T23:00:00+00:00",
+          "end_utc": "2026-11-13T06:00:00+00:00",
+          "hours": 8,
+          "maps": {
+            "tmin": {
+              "filename": "daily-icon_eu-tmin-d2.png",
+              "size_bytes": 140458,
+              "date": "13/11/2026",
+              "coverage": "partial",
+              "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/shortterm-daily/daily-icon_eu-tmin-d2.png"
+            },
+            "tmax": {
+              "filename": "daily-icon_eu-tmax-d2.png",
+              "size_bytes": 140994,
+              "date": "13/11/2026",
+              "coverage": "partial",
+              "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/shortterm-daily/daily-icon_eu-tmax-d2.png"
+            },
+            "gust": {
+              "filename": "daily-icon_eu-gust-d2.png",
+              "size_bytes": 137791,
+              "date": "13/11/2026",
+              "coverage": "partial",
+              "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/shortterm-daily/daily-icon_eu-gust-d2.png"
+            },
+            "precip": {
+              "filename": "daily-icon_eu-precip-d2.png",
+              "size_bytes": 136439,
+              "date": "13/11/2026",
+              "coverage": "partial",
+              "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/shortterm-daily/daily-icon_eu-precip-d2.png"
+            },
+            "rain": {
+              "filename": "daily-icon_eu-rain-d2.png",
+              "size_bytes": 134906,
+              "date": "13/11/2026",
+              "coverage": "partial",
+              "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/shortterm-daily/daily-icon_eu-rain-d2.png"
             }
           }
         }
