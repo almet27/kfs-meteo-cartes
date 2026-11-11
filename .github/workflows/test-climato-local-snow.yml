@@ -1,0 +1,32 @@
+name: KFS test reanalyse neige locale L'Aigle
+on:
+  push:
+    paths:
+      - .github/workflows/test-climato-local-snow.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Interroger archives neige ERA5-Land et IFS
+        run: |
+          python - <<'PY'
+          import urllib.request,urllib.parse,json,collections
+          lat,lon=48.765,0.626
+          for year in (2024,2025):
+            for model,hourly in (('era5_land','snow_depth'),('ecmwf_ifs','snowfall')):
+              args=dict(latitude=lat,longitude=lon,start_date=f'{year}-01-01',end_date=f'{year}-12-31',hourly=hourly,models=model,timezone='Europe/Paris')
+              url='https://archive-api.open-meteo.com/v1/archive?'+urllib.parse.urlencode(args)
+              try:
+                with urllib.request.urlopen(urllib.request.Request(url,headers={'User-Agent':'KFS-METEO-TEST/1.0'}),timeout=50) as r: data=json.load(r)
+                hourlydata=data.get('hourly') or {}
+                vals=hourlydata.get(hourly) or []
+                nonnull=[(d,float(x)) for d,x in zip(hourlydata.get('time',[]),vals) if x is not None]
+                positive=[(d,x) for d,x in nonnull if x>0]
+                top=sorted(positive,key=lambda p:p[1],reverse=True)[:7]
+                print('RESULT',json.dumps(dict(year=year,model=model,field=hourly,unit=(data.get('hourly_units') or {}).get(hourly),days=len(set(d[:10] for d,x in positive)),samples=len(nonnull),nonzero=len(positive),max=top[:7],lat=data.get('latitude'),lon=data.get('longitude')),ensure_ascii=False),flush=True)
+              except Exception as ex: print('ERROR',year,model,repr(ex),flush=True)
+          PY
