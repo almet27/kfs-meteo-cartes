@@ -20,12 +20,17 @@ on:
     # Secours : 08:43 Paris. Les schedules GitHub peuvent être retardés ou omis.
     - cron: '43 6 * * *'
     - cron: '43 7 * * *'
-    # Paris 21:00 du lundi au samedi : 19:00 UTC en ete, 20:00 UTC en hiver.
+    # Paris 20:42 (prepare les cartes AVANT la publication de 21 h).
+    # 18:42 UTC ete / 19:42 UTC hiver, apres la mise a jour IFS/AIFS 12Z.
+    - cron: '42 18 * * 1-6'
+    - cron: '42 19 * * 1-6'
+    # Secours a 21:00, 21:13 et 21:43 heure de Paris si cartes non fraiches.
     - cron: '0 19 * * 1-6'
     - cron: '0 20 * * 1-6'
-    # Secours : 21:13 Paris.
     - cron: '13 19 * * 1-6'
     - cron: '13 20 * * 1-6'
+    - cron: '43 19 * * 1-6'
+    - cron: '43 20 * * 1-6'
     # Dimanche : generation speciale avant le bulletin hebdomadaire (conservee).
     - cron: '07 16 * * 0'
 permissions:
@@ -53,9 +58,9 @@ jobs:
             lancer=true
           else
             offset="$(TZ=Europe/Paris date +%z)"
-            if [[ "$offset" == "+0200" && ( "$KFS_CRON" == "12 6 * * *" || "$KFS_CRON" == "30 6 * * *" || "$KFS_CRON" == "43 6 * * *" || "$KFS_CRON" == "0 19 * * 1-6" || "$KFS_CRON" == "13 19 * * 1-6" ) ]]; then
+            if [[ "$offset" == "+0200" && ( "$KFS_CRON" == "12 6 * * *" || "$KFS_CRON" == "30 6 * * *" || "$KFS_CRON" == "43 6 * * *" || "$KFS_CRON" == "42 18 * * 1-6" || "$KFS_CRON" == "0 19 * * 1-6" || "$KFS_CRON" == "13 19 * * 1-6" || "$KFS_CRON" == "43 19 * * 1-6" ) ]]; then
               lancer=true
-            elif [[ "$offset" == "+0100" && ( "$KFS_CRON" == "12 7 * * *" || "$KFS_CRON" == "30 7 * * *" || "$KFS_CRON" == "43 7 * * *" || "$KFS_CRON" == "0 20 * * 1-6" || "$KFS_CRON" == "13 20 * * 1-6" ) ]]; then
+            elif [[ "$offset" == "+0100" && ( "$KFS_CRON" == "12 7 * * *" || "$KFS_CRON" == "30 7 * * *" || "$KFS_CRON" == "43 7 * * *" || "$KFS_CRON" == "42 19 * * 1-6" || "$KFS_CRON" == "0 20 * * 1-6" || "$KFS_CRON" == "13 20 * * 1-6" || "$KFS_CRON" == "43 20 * * 1-6" ) ]]; then
               lancer=true
             fi
           fi
@@ -64,7 +69,9 @@ jobs:
           if [[ "$lancer" == true && "$KFS_EVENT" == schedule && \
                 ( "$KFS_CRON" == "30 6 * * *" || "$KFS_CRON" == "30 7 * * *" || \
                   "$KFS_CRON" == "43 6 * * *" || "$KFS_CRON" == "43 7 * * *" || \
-                  "$KFS_CRON" == "13 19 * * 1-6" || "$KFS_CRON" == "13 20 * * 1-6" ) ]]; then
+                  "$KFS_CRON" == "0 19 * * 1-6" || "$KFS_CRON" == "0 20 * * 1-6" || \
+                  "$KFS_CRON" == "13 19 * * 1-6" || "$KFS_CRON" == "13 20 * * 1-6" || \
+                  "$KFS_CRON" == "43 19 * * 1-6" || "$KFS_CRON" == "43 20 * * 1-6" ) ]]; then
             url="https://raw.githubusercontent.com/almet27/kfs-meteo-cartes/main/forecast-maps/tendance/tendance-cartes.json?check=$(date +%s)"
             if curl -fsSL --max-time 15 "$url" -o /tmp/kfs-tendance-latest.json; then
               if python - "$KFS_CRON" <<'PY'
@@ -72,13 +79,15 @@ jobs:
           from datetime import datetime, timezone
           from zoneinfo import ZoneInfo
           cron=sys.argv[1]
-          evening=cron.startswith("13 ")
+          evening=cron in {"0 19 * * 1-6","0 20 * * 1-6",
+                           "13 19 * * 1-6","13 20 * * 1-6",
+                           "43 19 * * 1-6","43 20 * * 1-6"}
           now=datetime.now(ZoneInfo("Europe/Paris"))
           try:
               with open("/tmp/kfs-tendance-latest.json") as f:
                   data=json.load(f)
               created=datetime.fromisoformat(data["generated_utc"]).astimezone(ZoneInfo("Europe/Paris"))
-              gate=now.replace(hour=20 if evening else 7,minute=50 if evening else 55,second=0,microsecond=0)
+              gate=now.replace(hour=20 if evening else 7,minute=30 if evening else 55,second=0,microsecond=0)
               if (data.get("schema_version")==1 and data.get("status")=="illustrative_model_maps"
                   and len(data.get("period_maps",[]))==4
                   and {x.get("id") for x in data["period_maps"]}=={"j3","j7","j10","j15"}
