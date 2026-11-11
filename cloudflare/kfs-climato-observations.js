@@ -274,7 +274,7 @@ async function kfsClimatoHandleV2(interaction,appId) {
     if(!record && rubrique==="neige"){
       payload=await kfsPLocalSnowReport(city,kfsQInputYear(get("annee")),kfsQMonth(month));
     } else if(!record && rubrique==="orages"){
-      payload=await kfsPReport(city,kfsQInputYear(get("annee")),kfsQMonth(month),rubrique);
+      payload=await kfsWglcStormReport(city,kfsQInputYear(get("annee")),kfsQMonth(month));
     } else if(record){
       payload=await kfsClimatoRecordResponse(city,record,month,get("annee")!==undefined);
     } else {
@@ -318,7 +318,7 @@ async function kfsClimatoRegisterV2(botToken,appId,guildId){
           {name:"Température, chaleur et gel",value:"temperature"},
           {name:"Pluies et cumuls",value:"pluie"},
           {name:"Vent et rafales",value:"vent"},
-          {name:"⛈️ Orages (jours observés)",value:"orages"},
+          {name:"⛈️ Orages (foudre + jours)",value:"orages"},
           {name:"❄️ Neige (chutes et au sol)",value:"neige"},
           {name:"Épisodes chauds",value:"episodes"},
           {name:"Normales 1991–2020",value:"normales"},
