@@ -30,3 +30,13 @@ jobs:
                 print('RESULT',json.dumps(dict(year=year,model=model,field=hourly,unit=(data.get('hourly_units') or {}).get(hourly),days=len(set(d[:10] for d,x in positive)),samples=len(nonnull),nonzero=len(positive),max=top[:7],lat=data.get('latitude'),lon=data.get('longitude')),ensure_ascii=False),flush=True)
               except Exception as ex: print('ERROR',year,model,repr(ex),flush=True)
           PY
+      - name: Tester un seul appel ERA5-Land hauteur et chute
+        run: |
+          python - <<'PY'
+          import urllib.request,urllib.parse,json
+          u='https://archive-api.open-meteo.com/v1/archive?'+urllib.parse.urlencode(dict(latitude=48.765,longitude=0.626,start_date='2024-01-01',end_date='2024-12-31',hourly='snow_depth,snowfall',models='era5_land',timezone='Europe/Paris'))
+          try:
+            with urllib.request.urlopen(urllib.request.Request(u,headers={'User-Agent':'KFS-METEO/1.0'}),timeout=50) as f:j=json.load(f)
+            print('ERA5_BOTH',j.get('hourly_units'),{k:len(v) for k,v in j.get('hourly',{}).items()},flush=True)
+          except Exception as e: print('ERA5_ERROR',repr(e),flush=True)
+          PY
