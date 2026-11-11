@@ -1098,14 +1098,15 @@ async function kfsProbaFiveDayRead(type,threshold,zone,start,end,points){
   if(!r.ok)return null;
   const j=await r.json(),age=Date.now()-Date.parse(j.generated_at_utc);
   const p=j.zones?.[zone]?.[type]?.[String(threshold)];
-  if(j.schema!==1 || j.provider!=="Open-Meteo ECMWF IFS ENS five-day members" ||
+  if(j.schema!==1 || !(["Open-Meteo ECMWF IFS ENS five-day members","Open-Meteo five-day ensemble members"].includes(j.provider)) ||
+   !(["ecmwf_ifs025_ensemble","ncep_gefs025"].includes(j.model)) ||
    j.start_day!==start || j.end_day!==end || j.duration_days!==5 ||
    !Number.isFinite(age)||age<0||age>28*3600000 ||
    JSON.stringify(j.zone_points?.[zone])!==JSON.stringify(points.map(p=>[p.lat,p.lon])))return null;
   if(!Array.isArray(p)||p.length!==points.length || p.some(v=>!v ||
    !Number.isFinite(v.pct)||v.pct<0||v.pct>100||!Number.isFinite(v.amount)||
    !Number.isInteger(v.members)||v.members<2))return null;
-  return {values:p,source:"ECMWF IFS ENS via Open-Meteo",consulted:j.generated_at_utc};
+  return {values:p,source:(j.model==="ncep_gefs025"?"NOAA GEFS":"ECMWF IFS ENS")+" via Open-Meteo",consulted:j.generated_at_utc};
  }catch(e){console.error("KFS_PROBA_FIVE_DAY_READ",String(e));return null;}
 }
 async function kfsProbaFiveDayComplete(interaction,type,zone,threshold){

@@ -26,10 +26,8 @@ jobs:
       - name: Test five-day aggregation
         run: node --test tests/test-proba-5days.cjs
       - name: Calculate five complete Paris days
-        if: github.event_name != 'push'
         run: node scripts/build_proba_5days.cjs
       - name: Publish validated dataset
-        if: github.event_name != 'push'
         run: |
           git config user.name "KFS METEO Bot"
           git config user.email "actions@users.noreply.github.com"

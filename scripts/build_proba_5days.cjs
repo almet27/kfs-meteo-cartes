@@ -14,10 +14,10 @@ async function main(){
  const entries=Object.entries(points).flatMap(([zone,locations])=>locations.map(([lat,lon],index)=>({zone,index,lat,lon})));
  const zones=Object.fromEntries(Object.keys(points).map(zone=>[zone,{}]));
  let consulted=null;
- for(let offset=0;offset<entries.length;offset+=12){
-  const batch=entries.slice(offset,offset+12);
+ for(let offset=0;offset<entries.length;offset+=24){
+  const batch=entries.slice(offset,offset+24);
   const params=new URLSearchParams({latitude:batch.map(p=>p.lat).join(','),longitude:batch.map(p=>p.lon).join(','),
-   models:'ecmwf_ifs025_ensemble',hourly:variables.join(','),start_date:start,end_date:end,
+   models:'ncep_gefs025',hourly:variables.join(','),start_date:start,end_date:end,
    timezone:'Europe/Paris',temporal_resolution:'hourly_1'});
   let response;
   for(let attempt=0;attempt<4;attempt++){
@@ -41,11 +41,12 @@ async function main(){
      const values=fields[String(threshold)]??=new Array(points[zone].length).fill(null);
      values[index]=type==='orage'?api.kfsProbaStormMembers(point.hourly,start,threshold,end):
       api.kfsProbaMemberProbability(point.hourly,start,type,threshold,end);
+     if(!values[index] || values[index].members<5)throw Error('Incomplete member coverage: '+zone+'/'+type+'/'+threshold);
     }
    }
   });
-  console.log('Five-day members:',Math.min(offset+12,entries.length)+'/'+entries.length,'points');
-  if(offset+12<entries.length)await new Promise(resolve=>setTimeout(resolve,65000));
+  console.log('Five-day members:',Math.min(offset+24,entries.length)+'/'+entries.length,'points');
+  if(offset+24<entries.length)await new Promise(resolve=>setTimeout(resolve,65000));
  }
  if(start!==api.kfsProbaDay(1))throw Error('Paris date changed during generation; rerun');
  // A partial new forecast must never replace a valid published dataset.
@@ -55,12 +56,12 @@ async function main(){
     throw Error('Incomplete five-day forecast: '+zone+'/'+type+'/'+threshold);
   }
  }
- const output={schema:1,provider:'Open-Meteo ECMWF IFS ENS five-day members',model:'ecmwf_ifs025_ensemble',
+ const output={schema:1,provider:'Open-Meteo five-day ensemble members',model:'ncep_gefs025',
   generated_at_utc:consulted,start_day:start,end_day:end,duration_days:5,timezone:'Europe/Paris',
   zone_points:points,zones,
   method:'Each perturbed ensemble member is tracked across five complete Paris days. Rain/falling snow: sum before threshold. Frost: minimum. Snow cover/gust/storm potential: maximum. No daily probability addition.',
   source:'https://open-meteo.com/en/docs/ensemble-api',license:'CC BY 4.0',
-  notice:'50 perturbed members where available; experimental, uncalibrated proportions. Generation time is NOT model run time.'};
+  notice:'30 perturbed GEFS members where available; experimental, uncalibrated proportions. Generation time is NOT model run time.'};
  const filename=path.join(root,'proba/five-day-probabilities.json');
  fs.writeFileSync(filename+'.tmp',JSON.stringify(output)+'\n');
  fs.renameSync(filename+'.tmp',filename);

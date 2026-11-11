@@ -56,7 +56,7 @@ test('prepared data must match the dates, coordinates and freshness',async()=>{
  const old=global.fetch;
  const points=[{lat:49,lon:1},{lat:48,lon:2}];
  const j={schema:1,provider:'Open-Meteo ECMWF IFS ENS five-day members',
-  generated_at_utc:new Date().toISOString(),start_day:start,end_day:end,duration_days:5,
+  model:'ecmwf_ifs025_ensemble',generated_at_utc:new Date().toISOString(),start_day:start,end_day:end,duration_days:5,
   zone_points:{FR:[[49,1],[48,2]]},zones:{FR:{pluie:{'10':[
    {pct:50,amount:25,members:50},{pct:80,amount:40,members:50}]}}}};
  global.fetch=async()=>new Response(JSON.stringify(j));
