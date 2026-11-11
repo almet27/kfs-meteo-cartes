@@ -1,0 +1,40 @@
+name: KFS WGLC audit données impacts foudre
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/kfs-wglc-audit.yml
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Installer netCDF4
+        run: python -m pip -q install netCDF4 numpy
+      - name: Télécharger WGLC 2026 mensuel 5'
+        run: |
+          curl -L -f --retry 2 --connect-timeout 30 --max-time 540 -o /tmp/wglc.nc 'https://zenodo.org/records/20277101/files/wglc_timeseries_05m_monthly.nc?download=1'
+          ls -lh /tmp/wglc.nc
+      - name: Vérifier variables, grille et valeurs pour Eure
+        run: |
+          python - <<'PY'
+          from netCDF4 import Dataset,num2date
+          import numpy as np
+          d=Dataset('/tmp/wglc.nc')
+          print('DIMS',[(k,v.size) for k,v in d.dimensions.items()],flush=True)
+          for k,v in d.variables.items():
+            print('VAR',k,v.shape,v.dimensions,'units',getattr(v,'units',''),flush=True)
+          vars=d.variables
+          time=next((v for k,v in vars.items() if k.lower()=='time'),None)
+          if time is not None:
+            print('DATES',str(num2date(time[:3],time.units,calendar=getattr(time,'calendar','standard'))),str(num2date(time[-3:],time.units,calendar=getattr(time,'calendar','standard'))),flush=True)
+          lat=next((v for k,v in vars.items() if k.lower() in ('lat','latitude')),None)
+          lon=next((v for k,v in vars.items() if k.lower() in ('lon','longitude')),None)
+          if lat is not None and lon is not None:
+            print('GRID',lat[0],lat[-1],lon[0],lon[-1],flush=True)
+            y=int(np.argmin(abs(lat[:]-48.765)));x=int(np.argmin(abs(lon[:]-0.626)))
+            print('LAIGLE',y,x,float(lat[y]),float(lon[x]),flush=True)
+          d.close()
+          PY
