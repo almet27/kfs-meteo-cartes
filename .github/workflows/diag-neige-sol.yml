@@ -1,0 +1,59 @@
+name: KFS diagnostic archives neige au sol stations
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/diag-neige-sol.yml
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - name: Audit mesures neige proches Évreux et Bourth 2024-2025
+        shell: bash
+        run: |
+          python - <<'PY'
+          import urllib.request, csv, gzip, io, math, collections, concurrent.futures
+          base="https://meteofrance.s3.sbg.io.cloud.ovh.net/data/synchro_ftp/BASE/QUOT/"
+          depts=["27","28","61","14","76","78","95","60"]
+          places={"Evreux":(49.024,1.151),"Bourth":(48.775,0.810)}
+          def dist(a,b,c,d):
+              r=math.pi/180;x=(c-a)*r;y=(d-b)*r;z=math.sin(x/2)**2+math.cos(a*r)*math.cos(c*r)*math.sin(y/2)**2
+              return 12742*math.asin(min(1,math.sqrt(z)))
+          def check(dep,year):
+              period="previous-1950-2024" if year==2024 else "latest-2025-2026"
+              url=f"{base}Q_{dep}_{period}_autres-parametres.csv.gz"
+              try:
+                  req=urllib.request.Request(url,headers={"User-Agent":"KFS-METEO-Audit/1.0"})
+                  with urllib.request.urlopen(req,timeout=70) as r: data=r.read()
+                  items={}
+                  with gzip.open(io.BytesIO(data),"rt",encoding="utf-8-sig") as f:
+                      for row in csv.DictReader(f,delimiter=";"):
+                          date=row.get("AAAAMMJJ","")
+                          if not date.startswith(str(year)):continue
+                          try:
+                              lat=float(row["LAT"]);lon=float(row["LON"])
+                          except (TypeError,ValueError,KeyError):continue
+                          km=min(dist(lat,lon,*xy) for xy in places.values())
+                          if km>90:continue
+                          ident=row["NUM_POSTE"]
+                          if ident not in items:items[ident]={"name":row.get("NOM_USUEL"),"km":round(km,1),"fields":{k:[] for k in ["NEIG","SOLNEIGE","NEIGETOTX","NEIGETOT06","HNEIGEF"]},"meta":{}}
+                          st=items[ident]
+                          for key in st["fields"]:
+                              val=row.get(key,"").strip()
+                              qual=row.get("Q"+key,"").strip()
+                              if val and qual in ("","0","1","9"):
+                                  try:st["fields"][key].append((date,float(val)))
+                                  except ValueError:pass
+                  print("DEPT",dep,"YEAR",year,"size_gz",len(data),"NEAR_STATIONS",len(items),flush=True)
+                  for id,st in sorted(items.items(),key=lambda it:it[1]["km"])[:30]:
+                      fs=st["fields"]
+                      vals={key:{"n":len(v),"max":max(v,key=lambda p:p[1]) if v else None,"positives":sum(a>0 for _,a in v)} for key,v in fs.items()}
+                      print("POSTE",year,dep,id,st["name"],"km",st["km"],"availability",vals,flush=True)
+              except Exception as e:print("ERROR",dep,year,type(e).__name__,str(e)[:220],flush=True)
+          with concurrent.futures.ThreadPoolExecutor(max_workers=5) as pool:
+              jobs=[pool.submit(check,dep,year) for year in (2024,2025) for dep in depts]
+              [j.result() for j in jobs]
+          PY
