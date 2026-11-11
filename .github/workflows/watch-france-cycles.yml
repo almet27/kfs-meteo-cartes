@@ -96,6 +96,70 @@ jobs:
           fi
           gh workflow run tendance-analyse.yml --repo "$GH_REPO" --ref main
           echo "Secours /tendance déclenché (cycle principal absent)."
+      - name: Secours /tendance soir si le bulletin de 21 h manque
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          clock="$(TZ=Europe/Paris date +%H%M)"
+          clock=$((10#$clock))
+          if (( clock < 2055 || clock > 2240 )); then
+            echo "Secours soir /tendance hors fenêtre."
+            exit 0
+          fi
+          # Ne pas régénérer si le lot de quatre cartes existe depuis 20 h 30 Paris.
+          url="https://raw.githubusercontent.com/almet27/kfs-meteo-cartes/main/forecast-maps/tendance/tendance-cartes.json?rescue=$(date +%s)"
+          if curl -fsSL --max-time 12 "$url" -o /tmp/kfs-tendance-evening.json; then
+            if python - <<'PY'
+          import json,sys
+          from datetime import datetime
+          from zoneinfo import ZoneInfo
+          try:
+              with open("/tmp/kfs-tendance-evening.json") as fh: d=json.load(fh)
+              ts=datetime.fromisoformat(d["generated_utc"]).astimezone(ZoneInfo("Europe/Paris"))
+              today=datetime.now(ZoneInfo("Europe/Paris"))
+              complete=({x.get("id") for x in d.get("period_maps",[])}==
+                        {"j3","j7","j10","j15"})
+              good=(ts.date()==today.date() and ts.hour*60+ts.minute>=20*60+30
+                    and d.get("schema_version")==1
+                    and d.get("status")=="illustrative_model_maps" and complete)
+              if good:
+                  print("Cartes /tendance du soir déjà prêtes :",ts.isoformat())
+                  sys.exit(0)
+          except Exception as exc:
+              print("Manifeste /tendance du soir invalide :",repr(exc))
+          sys.exit(1)
+          PY
+            then exit 0; fi
+          fi
+          # Ne déclencher ni doublon ni rafale de relances : attendre les runs
+          # déjà actifs et au moins 35 minutes après la dernière tentative.
+          gh run list --repo "$GH_REPO" --workflow tendance-analyse.yml --limit 30 \
+            --json createdAt,status,conclusion > /tmp/kfs-tendance-evening-runs.json
+          if python - <<'PY'
+          import json,sys
+          from datetime import datetime
+          from zoneinfo import ZoneInfo
+          now=datetime.now(ZoneInfo("Europe/Paris"))
+          with open("/tmp/kfs-tendance-evening-runs.json") as f: runs=json.load(f)
+          for r in runs:
+              dt=datetime.fromisoformat(r["createdAt"].replace("Z","+00:00")).astimezone(ZoneInfo("Europe/Paris"))
+              if dt.date()!=now.date() or dt.hour*60+dt.minute<20*60+30:
+                  continue
+              minutes=(now-dt).total_seconds()/60
+              if r.get("status")!="completed":
+                  print("Génération /tendance du soir déjà en cours :",r["createdAt"])
+                  sys.exit(0)
+              if minutes<35:
+                  print("Tentative /tendance du soir trop récente :",r["createdAt"])
+                  sys.exit(0)
+          sys.exit(1)
+          PY
+          then exit 0; fi
+          gh workflow run tendance-analyse.yml --repo "$GH_REPO" --ref main
+          echo "Secours /tendance du soir déclenché."
       - name: Installer le client legere ECMWF
         run: python -m pip install 'ecmwf-opendata>=0.3'
       - name: Identifier les dernieres sorties disponibles
