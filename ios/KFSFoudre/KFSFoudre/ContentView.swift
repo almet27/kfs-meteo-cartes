@@ -1,9 +1,11 @@
 import SwiftUI
 import MapKit
+import CoreLocation
 
 struct ContentView: View {
     @EnvironmentObject var monitor: HuntMonitor
     @State private var settings = false
+    @State private var remoteTest = false
     private let accent = Color(red: 0.99, green: 0.75, blue: 0.25)
     var body: some View {
         NavigationStack {
@@ -68,6 +70,14 @@ struct ContentView: View {
                     }
                     .buttonStyle(.borderedProminent).tint(monitor.active ? .red : accent)
                     .foregroundStyle(monitor.active ? .white : .black)
+                    Button { remoteTest = true } label: {
+                        Label("Tester une zone d’Europe", systemImage: "globe.europe.africa.fill")
+                    }
+                    .disabled(monitor.active)
+                    if monitor.active {
+                        Text("Arrête la chasse pour consulter une zone à distance.")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
                     Text("Position suivie pendant la séance, y compris écran verrouillé avec l’autorisation Toujours. Consultations au mieux toutes les minutes selon GPS, réseau et fonctionnement d’iOS.")
                         .font(.caption).foregroundStyle(.secondary)
                     if !monitor.strikes.isEmpty {
@@ -98,6 +108,7 @@ struct ContentView: View {
                 Button { settings = true } label: { Image(systemName: "slider.horizontal.3") }
             }}
             .sheet(isPresented: $settings) { SettingsView().environmentObject(monitor) }
+            .sheet(isPresented: $remoteTest) { RemoteTestView().environmentObject(monitor) }
         }
     }
     private func metric(_ title: String, _ value: String) -> some View {
@@ -147,6 +158,136 @@ struct SettingsView: View {
                 }
             }.navigationTitle("Réglages")
                 .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Fermer") { dismiss() } } }
+        }
+    }
+}
+
+
+struct RemoteTestView: View {
+    @EnvironmentObject var monitor: HuntMonitor
+    @Environment(\.dismiss) private var dismiss
+    @State private var city = ""
+    @State private var latitude = ""
+    @State private var longitude = ""
+    @State private var radius = 100
+    @State private var busy = false
+    @State private var problem: String?
+    @State private var feed: LightningFeed?
+    @State private var testedCenter: CLLocationCoordinate2D?
+    @State private var testedName = ""
+    @State private var testedRadius = 100
+    @State private var nextTry = Date.distantPast
+    private let geocoder = CLGeocoder()
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    Text("Consulte les vraies décharges des cinq dernières minutes autour d’une ville ou de coordonnées. Ce mode ne déclenche aucune alerte et ne modifie pas ton GPS.")
+                        .font(.footnote)
+                    TextField("Ville et pays, ex. Palerme, Italie", text: $city)
+                    Text("Ou indique des coordonnées ; elles sont prioritaires sur la ville.")
+                        .font(.caption).foregroundStyle(.secondary)
+                    TextField("Latitude, ex. 38.12", text: $latitude).keyboardType(.numbersAndPunctuation)
+                    TextField("Longitude, ex. 13.36", text: $longitude).keyboardType(.numbersAndPunctuation)
+                    Picker("Rayon", selection: $radius) {
+                        ForEach([10, 30, 50, 100], id: \.self) { Text("\($0) km").tag($0) }
+                    }
+                    Button {
+                        Task { await inspect() }
+                    } label: {
+                        if busy { ProgressView("Consultation…") }
+                        else { Label("Consulter cette zone", systemImage: "bolt.fill") }
+                    }.disabled(busy)
+                    Text("Une consultation au maximum par minute, partagée avec la chasse. Garde cet écran ouvert pendant la consultation.")
+                        .font(.caption).foregroundStyle(.secondary)
+                } header: { Text("Essai à distance · Europe") }
+                if let problem { Section { Text(problem).foregroundStyle(.orange) } }
+                if let center = testedCenter, let feed {
+                    Section(testedName) {
+                        Map {
+                            Annotation("Centre de l’essai", coordinate: center) {
+                                Image(systemName: "scope").foregroundStyle(.orange)
+                            }
+                            MapCircle(center: center, radius: Double(testedRadius) * 1000)
+                                .foregroundStyle(.orange.opacity(0.05)).stroke(.orange.opacity(0.5), lineWidth: 1)
+                            ForEach(feed.strikes) { strike in
+                                Annotation(strike.currentLabel, coordinate: CLLocationCoordinate2D(latitude: strike.latitude, longitude: strike.longitude)) {
+                                    Image(systemName: strike.type == "cg" ? "bolt.fill" : "cloud.bolt.fill")
+                                        .foregroundStyle((strike.peakCurrentKA ?? 0) > 0 ? .orange : .cyan)
+                                        .padding(6).background(.ultraThinMaterial, in: Circle())
+                                }
+                            }
+                        }.frame(height: 260).id("\(center.latitude),\(center.longitude),\(feed.collectedAt)")
+                        Text("\(feed.strikes.count) décharge(s) fournies · 5 dernières minutes")
+                        Text("Source consultée : \(Date(timeIntervalSince1970: feed.collectedAt).formatted(date: .omitted, time: .standard))")
+                            .font(.caption)
+                        if feed.partial { Text("Liste limitée par la source : certaines décharges peuvent manquer.").foregroundStyle(.orange) }
+                        if feed.strikes.isEmpty { Text(feed.note).font(.footnote) }
+                        ForEach(feed.strikes) { strike in
+                            HStack {
+                                VStack(alignment: .leading) {
+                                    Text(strike.currentLabel).bold()
+                                    Text(strike.typeLabel).font(.caption)
+                                }
+                                Spacer()
+                                VStack(alignment: .trailing) {
+                                    Text(String(format: "%.1f km", strike.distanceKm))
+                                    Text(Date(timeIntervalSince1970: strike.timestamp).formatted(date: .omitted, time: .standard)).font(.caption)
+                                }
+                            }
+                        }
+                    }
+                }
+                Section {
+                    Text("Source : Vaisala Xweather. Les kA sont un courant de crête estimé. Une carte vide ne prouve pas l’absence d’orage ni une panne de l’app.")
+                        .font(.caption)
+                }
+            }
+            .disabled(busy)
+            .navigationTitle("Tester une zone")
+            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Fermer") { dismiss() }.disabled(busy) } }
+            .interactiveDismissDisabled(busy)
+        }
+    }
+
+    @MainActor private func inspect() async {
+        guard !busy else { return }
+        guard Date() >= nextTry else {
+            problem = "Attends encore \(max(1, Int(nextTry.timeIntervalSinceNow.rounded(.up)))) secondes."; return
+        }
+        busy = true; problem = nil; feed = nil; testedCenter = nil
+        defer { busy = false }
+        do {
+            let center: CLLocationCoordinate2D
+            let latText = latitude.trimmingCharacters(in: .whitespacesAndNewlines)
+            let lonText = longitude.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !latText.isEmpty || !lonText.isEmpty {
+                guard let lat = Double(latText.replacingOccurrences(of: ",", with: ".")),
+                      let lon = Double(lonText.replacingOccurrences(of: ",", with: ".")) else {
+                    throw LightningError.message("Renseigne une latitude et une longitude valides.", 0)
+                }
+                center = CLLocationCoordinate2D(latitude: lat, longitude: lon)
+                testedName = "\(lat), \(lon)"
+            } else {
+                let query = city.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !query.isEmpty else { throw LightningError.message("Indique une ville avec son pays, ou des coordonnées.", 0) }
+                let matches = try await geocoder.geocodeAddressString(query)
+                guard let fix = matches?.first?.location else { throw LightningError.message("Ville introuvable. Essaie les coordonnées.", 0) }
+                center = fix.coordinate
+                testedName = [matches?.first?.locality, matches?.first?.country].compactMap { $0 }.joined(separator: ", ")
+                if testedName.isEmpty { testedName = query }
+            }
+            guard center.latitude.isFinite, center.longitude.isFinite,
+                  (30...72).contains(center.latitude), (-25...45).contains(center.longitude) else {
+                throw LightningError.message("Choisis une zone européenne (latitude 30 à 72°, longitude −25 à 45°).", 0)
+            }
+            let response = try await monitor.inspectZone(latitude: center.latitude, longitude: center.longitude, radius: radius)
+            nextTry = Date().addingTimeInterval(Double(max(60, response.pollAfterSeconds)))
+            testedCenter = center; testedRadius = radius; feed = response
+        } catch {
+            problem = error.localizedDescription
+            if let error = error as? LightningError, error.retry > 0 { nextTry = Date().addingTimeInterval(Double(error.retry)) }
         }
     }
 }

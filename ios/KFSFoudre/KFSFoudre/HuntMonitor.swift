@@ -54,6 +54,32 @@ final class HuntMonitor: NSObject, ObservableObject, CLLocationManagerDelegate, 
         refreshUsage()
     }
 
+    // Remote inspections are one-shot foreground reads, without location tracking or alerts.
+    func inspectZone(latitude: Double, longitude: Double, radius: Int) async throws -> LightningFeed {
+        guard !active else {
+            throw LightningError.message("Arrête la chasse avant de tester une autre zone.", 60)
+        }
+        guard token.count >= 32 else {
+            throw LightningError.message("Configure le code d’accès personnel dans Réglages.", 60)
+        }
+        refreshUsage()
+        guard todayRequests < 120, monthRequests < 1000 else {
+            throw LightningError.message("Limite locale de consultations atteinte.", 900)
+        }
+        guard Date() >= nextPoll else {
+            throw LightningError.message("Attends une minute entre deux consultations.", max(1, Int(nextPoll.timeIntervalSinceNow.rounded(.up))))
+        }
+        nextPoll = Date().addingTimeInterval(60)
+        countRequest()
+        do {
+            return try await APIClient(endpoint: endpoint, token: token).load(
+                latitude: latitude, longitude: longitude, radius: radius, timestamp: Date())
+        } catch {
+            nextPoll = Date().addingTimeInterval(Double(max(60, (error as? LightningError)?.retry ?? 120)))
+            throw error
+        }
+    }
+
     func saveAccess() {
         token = token.trimmingCharacters(in: .whitespacesAndNewlines)
         problem = SecureStore.saveToken(token) ? nil : "Impossible d’enregistrer le code dans le trousseau."
@@ -102,7 +128,8 @@ final class HuntMonitor: NSObject, ObservableObject, CLLocationManagerDelegate, 
         notifiedIssue = nil
         status = "Recherche d’une position GPS récente…"
         expiresAt = Date().addingTimeInterval(2 * 3600)
-        nextPoll = .distantPast
+        strikes = []
+        lastRefresh = nil
         manager.allowsBackgroundLocationUpdates = true
         manager.showsBackgroundLocationIndicator = true
         manager.startUpdatingLocation()

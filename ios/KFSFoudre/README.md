@@ -66,3 +66,32 @@ node Backend/test-mobile-api.cjs
 - https://developer.apple.com/documentation/usernotifications/scheduling-a-notification-locally-from-your-app
 - https://developer.apple.com/help/account/basics/about-your-developer-account
 - https://www.xweather.com/docs/weather-api/endpoints/lightning
+
+
+## Essai à distance en Europe
+
+Depuis l’accueil, arrêter la chasse puis ouvrir **Tester une zone d’Europe**.
+Indiquer une ville avec son pays, ou une latitude et une longitude (prioritaires),
+choisir un rayon et toucher **Consulter cette zone**. La source est interrogée
+une seule fois. Attendre au moins une minute avant une nouvelle consultation.
+La zone de consultation couvre latitude 30–72°, longitude −25–45°.
+
+Cet écran montre les données réelles des cinq dernières minutes, CG et IC,
+avec les kA disponibles, sans appliquer le seuil des alertes. Il ne change pas
+le GPS, ne produit aucune notification et ne suit pas une zone en arrière-plan.
+Fermer cet écran puis démarrer une chasse pour reprendre le suivi GPS personnel.
+La consultation n’exige pas l’autorisation de localisation de l’iPhone.
+Les limites locales de consultations restent partagées avec les chasses.
+
+Validation le 11 novembre 2026 à 16:02 UTC : une décharge IC réelle de +2 kA
+fournie par Xweather, coordonnées 44.1699, 10.2751 (Apennins au nord de Lucques),
+horodatée 16:00:53 UTC. Ce résultat daté ne garantit pas une activité ultérieure.
+Pour essayer ce secteur, utiliser latitude 44.236 et longitude 10.307, rayon 100 km.
+
+### Installer cette mise à jour
+
+Décompresser la nouvelle archive dans un nouveau dossier pour conserver l’ancien
+projet. Ouvrir son KFSFoudre.xcodeproj, sélectionner la même Personal Team dans
+Signing & Capabilities puis l’iPhone physique et lancer ▶. Garder le Bundle
+Identifier fr.alainleprevost.kfsfoudre : l’app existante est mise à jour.
+Le code personnel reste dans le trousseau de l’iPhone.

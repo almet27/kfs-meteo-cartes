@@ -24,6 +24,14 @@ const invoke=async r=>{context.req=r;context.env=env;return vm.runInContext('kfs
   assert.equal(feed.strikes[0].peakCurrentKA,-65);assert.equal(feed.strikes[1].peakCurrentKA,null);
   assert.equal(feed.strikes[0].distanceKm,0);assert.equal(upstream,1);
   assert.equal((await invoke(request(input))).status,429);assert.equal(upstream,1);
+  for(const [latitude,longitude] of [[38.1,13.4],[37.9,23.7],[52,13],[64,-22],[41.3,28.9]]) {
+    cache.clear();vm.runInContext('KFS_MOBILE_INFLIGHT.clear()',context);
+    assert.equal((await invoke(request({...input,latitude,longitude}))).status,200);
+  }
+  for(const [latitude,longitude] of [[29,13],[73,13],[48,-26],[48,46]]) {
+    assert.equal((await invoke(request({...input,latitude,longitude}))).status,400);
+  }
+  assert.equal((await invoke(request(null))).status,400);
   assert.ok(!JSON.stringify(feed).includes(env.FOUDRE_MOBILE_TOKEN));
   console.log('PASS: authentication, GPS freshness, geographic scope, signed kA, missing current, radius, source age, throttle, no credentials in response');
 })().catch(e=>{console.error(e);process.exitCode=1;});

@@ -23,11 +23,12 @@ async function kfsMobileAPI(request,env){
   if(Number(request.headers.get("Content-Length")||0)>2048)return mobileJson({error:"Requête trop volumineuse"},413);
   let body;try{const text=await request.text();if(text.length>2048)throw Error();body=JSON.parse(text);}
   catch{return mobileJson({error:"Requête invalide"},400);}
+  if(!body||typeof body!=="object"||Array.isArray(body))return mobileJson({error:"Requête invalide"},400);
   const {latitude:lat,longitude:lon,radiusKm:radius,positionTimestamp:position}=body;
-  if(!Number.isFinite(lat)||!Number.isFinite(lon)||lat<41||lat>52||lon< -6||lon>10||
+  if(!Number.isFinite(lat)||!Number.isFinite(lon)||lat<30||lat>72||lon< -25||lon>45||
      ![10,30,50,100].includes(radius)||!Number.isFinite(position)||
      Math.abs(Date.now()/1000-position)>120)
-    return mobileJson({error:"Position récente en France métropolitaine et rayon valide requis"},400);
+    return mobileJson({error:"Coordonnées européennes récentes et rayon valide requis"},400);
   // One personal phone, at most one source consultation/minute per edge location.
   // This is a throttle, not a contractual global quota cap; the iPhone also caps sessions.
   const minute=Math.floor(Date.now()/60000);
