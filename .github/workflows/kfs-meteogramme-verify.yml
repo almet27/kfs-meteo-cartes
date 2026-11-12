@@ -37,7 +37,34 @@ jobs:
               data=json.load(f)
           assert data.get('registered') is True, f'Discord registration failed: {data}'
           assert set(['ville','modele','jour','affichage']).issubset(data.get('options',[])), data
+          assert 'icon_d2' in data.get('models',[]), f'ICON-D2 missing from registered Discord command: {data}'
           print('Discord /meteogramme is registered with the expected options.')
+          PY
+
+      - name: Check ICON-D2 availability in its geographical domain
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,urllib.request,urllib.parse
+          base='https://api.open-meteo.com/v1/forecast?'
+          cities={'Strasbourg':(48.58,7.75),'Évreux':(49.02,1.15)}
+          for city,(lat,lon) in cities.items():
+              args={'latitude':lat,'longitude':lon,'models':'icon_d2','forecast_days':2,
+                    'hourly':'temperature_2m,relative_humidity_2m,precipitation,wind_speed_10m,pressure_msl,cape',
+                    'timezone':'Europe/Paris'}
+              url=base+urllib.parse.urlencode(args)
+              try:
+                  with urllib.request.urlopen(url,timeout=25) as r: data=json.load(r)
+                  hourly=data.get('hourly') or {}
+                  hours=len(hourly.get('time',[]))
+                  valid=sum(isinstance(t,(float,int)) for t in (hourly.get('temperature_2m') or []))
+                  fields=list(hourly.keys())
+                  print(city,'ICON_D2',hours,'timestamps',valid,'valid hourly temp', 'fields=',fields)
+                  if city=='Strasbourg':assert valid>=20, f'ICON-D2 expected in central Europe but returned only {valid} valid temperatures'
+              except Exception as err:
+                  print(city,'ICON_D2_API_ERROR',repr(err))
+                  if city=='Strasbourg':raise
           PY
       - name: Check hourly weather sources for requested models
         shell: bash
