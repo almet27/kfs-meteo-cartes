@@ -13,8 +13,14 @@ const hourly={
   pressure_msl:[1017,1014,1011],cape:[0,100,700],
   wet_bulb_temperature_2m:[4,5,4],freezing_level_height:[1500,1200,1200]
 };
+for(let i=3;i<24;i++){
+ hourly.time.push("2026-11-12T"+String(i).padStart(2,"0")+":00");
+ for(const key of Object.keys(hourly)){
+   if(key!=="time")hourly[key].push(hourly[key][i%3]);
+ }
+}
 const rows=api.rows(hourly);
-assert.equal(rows.length,3);
+assert.equal(rows.length,24);
 assert.equal(rows[1].humidity,85);
 const csv=api.csv(rows,"GFS","Évreux");
 assert(csv.includes("humidite_pct"));
