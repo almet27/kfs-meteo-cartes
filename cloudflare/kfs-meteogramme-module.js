@@ -286,20 +286,30 @@ async function kfsMgramComplete(interaction,cityName,model,jour,view,origin){
       type:"text/csv;charset=utf-8"}];
     const pngs=[];
     let plotError="";
-    for(const date of chosen){
-      const day=rows.filter(r=>r.time.startsWith(date));
-      try{
-        const png=await kfsRenderEnsembleChart(kfsMgramPlot(day,
-          spec.name+" • "+label+" • "+date+" • heure de Paris","weather"));
-        pngs.push({filename:"kfs-"+model+"-"+date+".png",type:"image/png",bytes:png});
-        if(view==="jour"){
-          const second=await kfsRenderEnsembleChart(kfsMgramPlot(day,
-            "Instabilité / pression / indices • "+date,"risk"));
-          pngs.push({filename:"kfs-risques-"+model+"-"+date+".png",type:"image/png",bytes:second});
+    // At most three QuickChart jobs in flight, while preserving date order.
+    // One bad chart must not suppress the CSV or the successful days.
+    for(let offset=0;offset<chosen.length;offset+=3){
+      const results=await Promise.all(chosen.slice(offset,offset+3).map(async date=>{
+        const day=rows.filter(r=>r.time.startsWith(date));
+        try{
+          const png=await kfsRenderEnsembleChart(kfsMgramPlot(day,
+            spec.name+" • "+label+" • "+date+" • heure de Paris","weather"));
+          const charts=[{filename:"kfs-"+model+"-"+date+".png",type:"image/png",bytes:png}];
+          if(view==="jour"){
+            const second=await kfsRenderEnsembleChart(kfsMgramPlot(day,
+              "Instabilité / pression / indices • "+date,"risk"));
+            charts.push({filename:"kfs-risques-"+model+"-"+date+".png",type:"image/png",bytes:second});
+          }
+          return {charts};
+        }catch(error){
+          const reason=String(error?.message||error).slice(0,120);
+          console.error("KFS_MGRAM_CHART",date,reason);
+          return {charts:[],reason};
         }
-      }catch(error){
-        plotError=String(error?.message||error).slice(0,120);
-        console.error("KFS_MGRAM_CHART",date,plotError);
+      }));
+      for(const result of results){
+        pngs.push(...result.charts);
+        if(result.reason)plotError=result.reason;
       }
     }
     files.push(...pngs);
