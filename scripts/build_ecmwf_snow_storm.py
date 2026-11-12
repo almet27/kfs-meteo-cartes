@@ -180,13 +180,13 @@ def convective_tier(cape, precipitation_mm, gust_kmh, dewpoint_c=math.nan):
         return None
     moist = np.isfinite(dewpoint_c) and dewpoint_c >= 8
     level = 0
-    if (cape >= 100 and precipitation_mm >= 0.1) or (cape >= 225 and moist):
+    if (cape >= 75 and precipitation_mm >= 0.1) or (cape >= 175 and moist):
         level = 1
-    if (cape >= 300 and precipitation_mm >= 0.25) or (cape >= 500 and moist):
+    if (cape >= 250 and precipitation_mm >= 0.2) or (cape >= 400 and moist):
         level = 2
-    if cape >= 650 and precipitation_mm >= 0.7 and (moist or (np.isfinite(gust_kmh) and gust_kmh >= 30)):
+    if cape >= 550 and precipitation_mm >= 0.55 and (moist or (np.isfinite(gust_kmh) and gust_kmh >= 28)):
         level = 3
-    if cape >= 950 and precipitation_mm >= 1 and np.isfinite(gust_kmh) and gust_kmh >= 35:
+    if cape >= 850 and precipitation_mm >= 0.8 and np.isfinite(gust_kmh) and gust_kmh >= 32:
         level = 3
     if cape >= 1500 and precipitation_mm >= 2 and np.isfinite(gust_kmh) and gust_kmh >= 55:
         level = 4
