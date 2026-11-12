@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_utc": "2026-11-12T22:28:01.671267+00:00",
+  "generated_utc": "2026-11-12T22:43:20.951743+00:00",
   "source_run_utc": "2026-11-08T12:00:00+00:00",
   "source": "NOAA GFS / NCEP NOMADS",
   "models": {
@@ -418,39 +418,39 @@
         }
       },
       "240": {
-        "run_utc": "2026-11-12T12:00:00+00:00",
-        "valid_utc": "2026-11-22T12:00:00+00:00",
+        "run_utc": "2026-11-12T18:00:00+00:00",
+        "valid_utc": "2026-11-22T18:00:00+00:00",
         "fields": {
           "t850": {
             "france": {
               "region": "France et alentours",
-              "mean": 1.38,
-              "min": -2.96,
-              "max": 4.83,
+              "mean": 4.78,
+              "min": -1.71,
+              "max": 14.65,
               "grid_points": 2223,
               "note": "Moyenne spatiale sur une boîte géographique incluant potentiellement la mer."
             },
             "atlantique": {
               "region": "Atlantique nord-est",
-              "mean": 0.13,
-              "min": -12.05,
-              "max": 12.35,
+              "mean": 0.21,
+              "min": -8.43,
+              "max": 7.62,
               "grid_points": 10769,
               "note": "Moyenne spatiale sur une boîte géographique incluant potentiellement la mer."
             },
             "europe": {
               "region": "Europe occidentale",
-              "mean": -0.25,
-              "min": -5.26,
-              "max": 5.64,
+              "mean": 1.42,
+              "min": -6.5,
+              "max": 14.65,
               "grid_points": 7521,
               "note": "Moyenne spatiale sur une boîte géographique incluant potentiellement la mer."
             },
             "groenland": {
               "region": "Groenland et environs",
-              "mean": -11.17,
-              "min": -38.14,
-              "max": 2.18,
+              "mean": -6.84,
+              "min": -26.76,
+              "max": 2.6,
               "grid_points": 14685,
               "note": "Moyenne spatiale sur une boîte géographique incluant potentiellement la mer."
             }
@@ -458,33 +458,33 @@
           "msl": {
             "france": {
               "region": "France et alentours",
-              "mean": 1028.38,
-              "min": 1024.86,
-              "max": 1032.66,
+              "mean": 1006.92,
+              "min": 996.62,
+              "max": 1017.57,
               "grid_points": 2223,
               "note": "Moyenne spatiale sur une boîte géographique incluant potentiellement la mer."
             },
             "atlantique": {
               "region": "Atlantique nord-est",
-              "mean": 1007.57,
-              "min": 971.74,
-              "max": 1030.82,
+              "mean": 1005.02,
+              "min": 978.92,
+              "max": 1021.11,
               "grid_points": 10769,
               "note": "Moyenne spatiale sur une boîte géographique incluant potentiellement la mer."
             },
             "europe": {
               "region": "Europe occidentale",
-              "mean": 1025.21,
-              "min": 999.8,
-              "max": 1032.66,
+              "mean": 1008.8,
+              "min": 987.17,
+              "max": 1018.8,
               "grid_points": 7521,
               "note": "Moyenne spatiale sur une boîte géographique incluant potentiellement la mer."
             },
             "groenland": {
               "region": "Groenland et environs",
-              "mean": 996.08,
-              "min": 971.74,
-              "max": 1027.29,
+              "mean": 1015.29,
+              "min": 991.56,
+              "max": 1051.25,
               "grid_points": 14685,
               "note": "Moyenne spatiale sur une boîte géographique incluant potentiellement la mer."
             }
@@ -492,33 +492,33 @@
           "z500": {
             "france": {
               "region": "France et alentours",
-              "mean": 564.25,
-              "min": 558.03,
-              "max": 571.44,
+              "mean": 553.96,
+              "min": 542.4,
+              "max": 572.45,
               "grid_points": 2223,
               "note": "Moyenne spatiale sur une boîte géographique incluant potentiellement la mer."
             },
             "atlantique": {
               "region": "Atlantique nord-est",
-              "mean": 547.08,
-              "min": 501.78,
-              "max": 579.16,
+              "mean": 544.91,
+              "min": 521.14,
+              "max": 564.87,
               "grid_points": 10769,
               "note": "Moyenne spatiale sur une boîte géographique incluant potentiellement la mer."
             },
             "europe": {
               "region": "Europe occidentale",
-              "mean": 559.3,
-              "min": 535.77,
-              "max": 576.25,
+              "mean": 549.89,
+              "min": 531.42,
+              "max": 574.97,
               "grid_points": 7521,
               "note": "Moyenne spatiale sur une boîte géographique incluant potentiellement la mer."
             },
             "groenland": {
               "region": "Groenland et environs",
-              "mean": 513.87,
-              "min": 496.15,
-              "max": 545.28,
+              "mean": 538.01,
+              "min": 509.87,
+              "max": 551.02,
               "grid_points": 14685,
               "note": "Moyenne spatiale sur une boîte géographique incluant potentiellement la mer."
             }
@@ -526,33 +526,33 @@
           "u850": {
             "france": {
               "region": "France et alentours",
-              "mean": 4.07,
-              "min": -11.59,
-              "max": 18.76,
+              "mean": 8.9,
+              "min": -17.27,
+              "max": 26.67,
               "grid_points": 2223,
               "note": "Moyenne spatiale sur une boîte géographique incluant potentiellement la mer."
             },
             "atlantique": {
               "region": "Atlantique nord-est",
-              "mean": 9.0,
-              "min": -17.44,
-              "max": 23.59,
+              "mean": 4.86,
+              "min": -24.58,
+              "max": 29.8,
               "grid_points": 10769,
               "note": "Moyenne spatiale sur une boîte géographique incluant potentiellement la mer."
             },
             "europe": {
               "region": "Europe occidentale",
-              "mean": 6.82,
-              "min": -12.52,
-              "max": 28.54,
+              "mean": 3.22,
+              "min": -21.8,
+              "max": 26.95,
               "grid_points": 7521,
               "note": "Moyenne spatiale sur une boîte géographique incluant potentiellement la mer."
             },
             "groenland": {
               "region": "Groenland et environs",
-              "mean": -1.31,
-              "min": -32.09,
-              "max": 15.67,
+              "mean": -4.35,
+              "min": -28.47,
+              "max": 14.78,
               "grid_points": 14685,
               "note": "Moyenne spatiale sur une boîte géographique incluant potentiellement la mer."
             }
@@ -560,65 +560,65 @@
           "v850": {
             "france": {
               "region": "France et alentours",
-              "mean": -0.27,
-              "min": -9.31,
-              "max": 7.12,
+              "mean": 5.07,
+              "min": -6.06,
+              "max": 18.83,
               "grid_points": 2223,
               "note": "Moyenne spatiale sur une boîte géographique incluant potentiellement la mer."
             },
             "atlantique": {
               "region": "Atlantique nord-est",
-              "mean": 8.37,
-              "min": -22.7,
-              "max": 41.6,
+              "mean": 1.91,
+              "min": -20.83,
+              "max": 26.13,
               "grid_points": 10769,
               "note": "Moyenne spatiale sur une boîte géographique incluant potentiellement la mer."
             },
             "europe": {
               "region": "Europe occidentale",
-              "mean": -0.53,
-              "min": -16.64,
-              "max": 14.59,
+              "mean": 3.1,
+              "min": -13.39,
+              "max": 18.83,
               "grid_points": 7521,
               "note": "Moyenne spatiale sur une boîte géographique incluant potentiellement la mer."
             },
             "groenland": {
               "region": "Groenland et environs",
-              "mean": 4.85,
-              "min": -23.16,
-              "max": 32.59,
+              "mean": 3.34,
+              "min": -16.22,
+              "max": 27.89,
               "grid_points": 14685,
               "note": "Moyenne spatiale sur une boîte géographique incluant potentiellement la mer."
             }
           }
         },
         "flow_850": {
-          "france": {
-            "u_mean_ms": 4.07,
-            "v_mean_ms": -0.27,
-            "vector_speed_ms": 4.1,
-            "from_deg": 274,
-            "note": "Vecteur moyen vent 850 hPa, pas un vent au sol ni une trajectoire réelle d'advection."
-          },
           "atlantique": {
-            "u_mean_ms": 9.0,
-            "v_mean_ms": 8.37,
-            "vector_speed_ms": 12.3,
-            "from_deg": 227,
-            "note": "Vecteur moyen vent 850 hPa, pas un vent au sol ni une trajectoire réelle d'advection."
-          },
-          "groenland": {
-            "u_mean_ms": -1.31,
-            "v_mean_ms": 4.85,
-            "vector_speed_ms": 5.0,
-            "from_deg": 165,
+            "u_mean_ms": 4.86,
+            "v_mean_ms": 1.91,
+            "vector_speed_ms": 5.2,
+            "from_deg": 249,
             "note": "Vecteur moyen vent 850 hPa, pas un vent au sol ni une trajectoire réelle d'advection."
           },
           "europe": {
-            "u_mean_ms": 6.82,
-            "v_mean_ms": -0.53,
-            "vector_speed_ms": 6.8,
-            "from_deg": 274,
+            "u_mean_ms": 3.22,
+            "v_mean_ms": 3.1,
+            "vector_speed_ms": 4.5,
+            "from_deg": 226,
+            "note": "Vecteur moyen vent 850 hPa, pas un vent au sol ni une trajectoire réelle d'advection."
+          },
+          "groenland": {
+            "u_mean_ms": -4.35,
+            "v_mean_ms": 3.34,
+            "vector_speed_ms": 5.5,
+            "from_deg": 128,
+            "note": "Vecteur moyen vent 850 hPa, pas un vent au sol ni une trajectoire réelle d'advection."
+          },
+          "france": {
+            "u_mean_ms": 8.9,
+            "v_mean_ms": 5.07,
+            "vector_speed_ms": 10.2,
+            "from_deg": 240,
             "note": "Vecteur moyen vent 850 hPa, pas un vent au sol ni une trajectoire réelle d'advection."
           }
         }
