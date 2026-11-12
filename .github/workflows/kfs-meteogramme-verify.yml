@@ -1,0 +1,55 @@
+name: KFS /meteogramme - verify Discord command
+on:
+  push:
+    branches:
+      - feat/meteogramme-hourly-2026-11-12
+    paths:
+      - .github/workflows/kfs-meteogramme-verify.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Register and verify /meteogramme from Cloudflare Worker
+        shell: bash
+        run: |
+          set -euo pipefail
+          url='https://kfs-meteo-ia.alain-leprevost.workers.dev/meteogramme-status?verify=1'
+          echo "Calling Worker verification endpoint..."
+          curl --fail --show-error --silent --retry 3 --retry-delay 3 --connect-timeout 10 --max-time 45 "$url" | tee /tmp/kfs-mgram-registration.json
+          python3 - <<'PY'
+          import json
+          with open('/tmp/kfs-mgram-registration.json', encoding='utf-8') as f:
+              data=json.load(f)
+          assert data.get('registered') is True, f'Discord registration failed: {data}'
+          assert set(['ville','modele','jour','affichage']).issubset(data.get('options',[])), data
+          print('Discord /meteogramme is registered with the expected options.')
+          PY
+      - name: Check hourly weather sources for requested models
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,urllib.parse,urllib.request
+          models={'gfs':('ncep_gfs_global',7),'ecmwf':('ecmwf_ifs025',7),'arome':('meteofrance_arome_france',2),'icon':('icon_eu',2)}
+          fields='weather_code,temperature_2m,precipitation,rain,snowfall,wind_speed_10m,wind_gusts_10m,wind_direction_10m,pressure_msl,cape'
+          for name,(model,days) in models.items():
+              url='https://api.open-meteo.com/v1/forecast?'+urllib.parse.urlencode({
+                  'latitude':49.02,'longitude':1.15,'timezone':'Europe/Paris','forecast_days':days,
+                  'models':model,'hourly':fields,'wind_speed_unit':'kmh'})
+              try:
+                  with urllib.request.urlopen(url,timeout=22) as r:
+                      obj=json.load(r)
+                  hourly=obj.get('hourly',{})
+                  count=len(hourly.get('time',[]))
+                  assert count>=days*20,(name,count)
+                  keys=[k for k in fields.split(',') if not hourly.get(k)]
+                  print(name,model,'hourly_steps=',count,'missing=',keys)
+              except Exception as e:
+                  print(name,model,'source unavailable:',str(e)[:200])
+          PY
