@@ -5,7 +5,7 @@ on:
       - feat/meteogramme-hourly-2026-11-12
     paths:
       - .github/workflows/kfs-meteogramme-verify.yml
-      - tests/test-meteogramme-matrix.cjs
+      - tests/test-meteogramme-table.cjs
       - cloudflare/kfs-meteogramme-table-module.js
       - cloudflare/kfs-meteogramme-module.js
   workflow_dispatch:
@@ -23,7 +23,7 @@ jobs:
       - name: Validate table and image on QuickChart
         env:
           KFS_TEST_QUICKCHART: "1"
-        run: node tests/test-meteogramme-matrix.cjs
+        run: node tests/test-meteogramme-table.cjs
       - name: Register and verify /meteogramme from Cloudflare Worker
         shell: bash
         run: |
