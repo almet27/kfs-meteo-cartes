@@ -208,14 +208,14 @@ function kfsProbaStormTier(cape,rain,gust,weatherCode,cin,dewpoint){
  let level=thunder?1:0;
  if(cp!==null){
   // La CAPE + l'humidite peuvent signaler un risque AVANT les pluies prevues.
-  if((cp>=100&&pr!==null&&pr>=0.1)||(cp>=225&&moist&&capOpen))
+  if((cp>=75&&pr!==null&&pr>=0.1)||(cp>=175&&moist&&capOpen))
    level=Math.max(level,1);
-  if((cp>=300&&pr!==null&&pr>=0.25)||(cp>=500&&moist&&capOpen))
+  if((cp>=250&&pr!==null&&pr>=0.2)||(cp>=400&&moist&&capOpen))
    level=Math.max(level,2);
   // Modere exige une precipitation modelisee, pas seulement de la CAPE.
-  if(cp>=650&&pr!==null&&pr>=0.7&&((gu!==null&&gu>=30)||moist))
+  if(cp>=550&&pr!==null&&pr>=0.55&&((gu!==null&&gu>=28)||moist))
    level=Math.max(level,3);
-  if(cp>=950&&pr!==null&&pr>=1&&gu!==null&&gu>=35)
+  if(cp>=850&&pr!==null&&pr>=0.8&&gu!==null&&gu>=32)
    level=Math.max(level,3);
   // Niveaux fort et extreme : criteres combines stricts.
   if(cp>=1500&&pr!==null&&pr>=2&&gu!==null&&gu>=55)
