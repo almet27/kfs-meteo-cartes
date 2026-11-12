@@ -15,7 +15,7 @@ const assert=require("node:assert/strict");
    'y:{type:"category",labels:'+JSON.stringify(labelsY)+',offset:true,reverse:true,'+
    'ticks:{color:"#172947",font:{size:14}},grid:{display:false}}},'+
    'plugins:{legend:{display:false},datalabels:{display:true,color:"#172947",'+
-   'font:{size:14,weight:"bold"},formatter:function(value){return value.txt;}}}}';
+   'font:{size:14,weight:"bold"},formatter:function(value){return value.txt;}}}}}';
  const req={version:"4",width:620,height:290,devicePixelRatio:1,format:"png",
    backgroundColor:"#f1f7ff",chart};
  const response=await fetch("https://quickchart.io/chart",{method:"POST",
