@@ -18,6 +18,13 @@ class ConvectivePotentialTests(unittest.TestCase):
     def test_moisture_missing_does_not_get_invented(self):
         self.assertEqual(convective_tier(550, 0, 20, math.nan), 0)
 
+    def test_lower_thresholds_detect_weak_and_moderate_convection(self):
+        self.assertEqual(convective_tier(80, 0.12, 15), 1)
+        self.assertEqual(convective_tier(260, 0.22, 20), 2)
+        self.assertEqual(convective_tier(580, 0.6, 28), 3)
+        self.assertEqual(convective_tier(180, 0, 15, 10), 1)
+        self.assertEqual(convective_tier(800, 0, 50, math.nan), 0)
+
     def test_winter_low_top_convection(self):
         self.assertEqual(convective_tier(180, 0.15, 10, 4), 1)
 
