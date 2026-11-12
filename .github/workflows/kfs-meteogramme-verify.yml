@@ -5,6 +5,9 @@ on:
       - feat/meteogramme-hourly-2026-11-12
     paths:
       - .github/workflows/kfs-meteogramme-verify.yml
+      - tests/test-meteogramme-matrix.cjs
+      - cloudflare/kfs-meteogramme-table-module.js
+      - cloudflare/kfs-meteogramme-module.js
   workflow_dispatch:
 
 permissions:
