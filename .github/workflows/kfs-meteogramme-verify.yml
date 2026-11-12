@@ -15,6 +15,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v4
+      - name: Validate table and image on QuickChart
+        env:
+          KFS_TEST_QUICKCHART: "1"
+        run: node tests/test-meteogramme-table.cjs
       - name: Register and verify /meteogramme from Cloudflare Worker
         shell: bash
         run: |
@@ -37,7 +43,7 @@ jobs:
           python3 - <<'PY'
           import json,urllib.parse,urllib.request
           models={'gfs':('ncep_gfs_global',7),'ecmwf':('ecmwf_ifs025',7),'arome':('meteofrance_arome_france',2),'icon':('icon_eu',2)}
-          fields='weather_code,temperature_2m,precipitation,rain,snowfall,wind_speed_10m,wind_gusts_10m,wind_direction_10m,pressure_msl,cape'
+          fields='weather_code,temperature_2m,relative_humidity_2m,is_day,precipitation,rain,snowfall,wind_speed_10m,wind_gusts_10m,wind_direction_10m,pressure_msl,cape'
           for name,(model,days) in models.items():
               url='https://api.open-meteo.com/v1/forecast?'+urllib.parse.urlencode({
                   'latitude':49.02,'longitude':1.15,'timezone':'Europe/Paris','forecast_days':days,
