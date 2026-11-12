@@ -114,3 +114,14 @@ test('five civil days retain the 23-hour spring and 25-hour autumn days',()=>{
   assert.equal(result.pct,expected>=120?100:0);
  }
 });
+
+const stormTier=new Function(source+';return kfsProbaStormTier;')();
+test('sensitive thunderstorm forecast detects weak to moderate environments without inflating severity',()=>{
+ assert.equal(stormTier(80,0.12,15,null,null,null),1);
+ assert.equal(stormTier(260,0.22,20,null,null,null),2);
+ assert.equal(stormTier(580,0.6,28,null,null,null),3);
+ assert.equal(stormTier(180,0,15,null,null,10),1);
+ assert.equal(stormTier(800,0,50,null,null,null),0);
+ assert.equal(stormTier(180,0,15,null,-220,10),0);
+ assert.equal(stormTier(1700,2.6,65,null,null,13),4);
+});
