@@ -6,7 +6,8 @@ const KFS_MGRAM_MODELS={
   gfs:{name:"GFS",code:"ncep_gfs_global",days:7},
   ifs:{name:"ECMWF IFS",code:"ecmwf_ifs025",days:7},
   arome:{name:"ARÔME France",code:"meteofrance_arome_france",days:2},
-  icon:{name:"ICON Europe",code:"icon_eu",days:2}
+  icon:{name:"ICON Europe",code:"icon_eu",days:2},
+  icon_d2:{name:"ICON-D2 (2 km, Europe centrale)",code:"icon_d2",days:2}
 };
 let KFS_MGRAM_SYNCED=false;
 async function kfsMgramRegister(env){
@@ -15,17 +16,17 @@ async function kfsMgramRegister(env){
   const headers={"Authorization":"Bot "+env.DISCORD_BOT_TOKEN,"content-type":"application/json"};
   const modelChoices=Object.entries(KFS_MGRAM_MODELS).map(([value,m])=>({name:m.name,value}));
   const command={name:"meteogramme",type:1,
-    description:"Météogramme horaire par ville · GFS/ECMWF 7 j, AROME/ICON 48 h",
+    description:"Météogramme · GFS/ECMWF 7 j, AROME/ICON EU et D2 48 h",
     options:[
       {type:3,name:"ville",description:"Ville française (ex. Évreux)",required:true,min_length:2,max_length:75},
       {type:3,name:"modele",description:"Modèle météorologique",required:true,choices:modelChoices},
-      {type:4,name:"jour",description:"Jour à détailler (J+0 à J+6 ; AROME/ICON : J+0 à J+1)",
+      {type:4,name:"jour",description:"Jour à détailler (J+0 à J+6 ; modèles 48 h : J+0 à J+1)",
         required:false,choices:Array.from({length:7},(_,i)=>({name:"J+"+i,value:i}))},
-      {type:3,name:"affichage",description:"Tableau coloré, graphiques ou 7 jours avec export CSV",
+      {type:3,name:"affichage",description:"Tableau coloré, graphiques ou période complète (PNG)",
         required:false,choices:[
           {name:"Tableau horaire coloré (défaut)",value:"tableau"},
-          {name:"Graphiques du jour + CSV",value:"graphique"},
-          {name:"Période complète : tableaux + CSV",value:"complet"},
+          {name:"Graphiques du jour",value:"graphique"},
+          {name:"Période complète : tableaux",value:"complet"},
           {name:"Ancien format graphique",value:"jour"}
         ]}
     ]};
@@ -35,8 +36,9 @@ async function kfsMgramRegister(env){
   const current=Array.isArray(commands)?commands.find(c=>c.name==="meteogramme"):null;
   const affichage=current?.options?.find(x=>x.name==="affichage");
   const registeredViews=affichage?.choices?.map(x=>x.value)||[];
+  const registeredModels=current?.options?.find(x=>x.name==="modele")?.choices?.map(x=>x.value)||[];
   if(current && current.options?.length===command.options.length &&
-      current.options.find(x=>x.name==="modele")?.choices?.length===4 &&
+      Object.keys(KFS_MGRAM_MODELS).every(x=>registeredModels.includes(x)) &&
       ["tableau","graphique","complet","jour"].every(x=>registeredViews.includes(x)))return;
   const resp=await fetch(endpoint,{method:"POST",headers,body:JSON.stringify(command),signal:AbortSignal.timeout(12000)});
   if(!resp.ok)throw Error("Enregistrement /meteogramme HTTP "+resp.status+" "+(await resp.text()).slice(0,200));
@@ -79,6 +81,11 @@ async function kfsMgramFetch(lat,lon,code,days,origin){
     }
   }
   if(!payload?.hourly?.time?.length)throw Error("Série horaire indisponible");
+  if(code==="icon_d2"){
+    const available=(payload.hourly.temperature_2m||[]).filter(Number.isFinite).length;
+    if(available<20)
+      throw Error("ICON-D2 ne couvre que l'Europe centrale. Les données sont indisponibles ici : utilise ICON Europe ou AROME France. Aucun autre modèle n'est substitué.");
+  }
   // Nonavailable optional fields must stay null: never silently borrow another model.
   if(payload.hourly.cape===undefined){
     try{
@@ -295,6 +302,8 @@ async function kfsMgramComplete(interaction,cityName,model,jour,view,origin){
     const chosen=view==="complet"?dates:[dates[jour]];
     const rows=all.filter(r=>chosen.includes(r.time.slice(0,10)));
     if(rows.length<20)throw Error("Données horaires insuffisantes");
+    if(model==="icon_d2" && rows.filter(x=>Number.isFinite(x.temp)).length<15)
+      throw Error("ICON-D2 : moins de 15 heures exploitables sur cette période. Couverture limitée à l'Europe centrale. Essaie ICON Europe ou AROME.");
 
     const pngs=[];
     let plotError="";
