@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "generated_utc": "2026-11-12T01:55:18.823496+00:00",
-  "atlas_generated_utc": "2026-11-12T00:28:16.183242+00:00",
+  "generated_utc": "2026-11-12T07:23:32.804741+00:00",
+  "atlas_generated_utc": "2026-11-12T05:23:31.401342+00:00",
   "reference": "ECMWF Open Data, Copernicus DEM GLO-90 via Open-Meteo — champs géoréférencés",
   "stages": [
     {
@@ -294,20 +294,13 @@
       "id": "j15",
       "step_h": 360,
       "model": "aifs-single",
-      "run_utc": "2026-11-11T18:00:00+00:00",
-      "valid_utc": "2026-11-26T18:00:00+00:00",
+      "run_utc": "2026-11-12T00:00:00+00:00",
+      "valid_utc": "2026-11-27T00:00:00+00:00",
       "background_path": "forecast-maps/tendance/tendance-risques-fond-j15.png",
       "risks": {
         "neige": {
-          "status": "relief_uniquement",
-          "max": 0,
-          "unit": "mm équiv. eau/6h",
-          "reason": "Neige hors relief ≤ 800 m, hors vallée de montagne (Copernicus GLO-90) ; relief : 21 zones échantillonnées",
-          "mountain_signal": true,
-          "mountain_max": 2.0,
-          "lowland_sample_count": 0,
-          "highland_sample_count": 21,
-          "terrain_source": "Copernicus DEM GLO-90 via Open-Meteo"
+          "status": "indisponible",
+          "reason": "Filtre altitude indisponible : Altitude Copernicus non accessible : <urlopen error _ssl.c:1001: The handshake operation timed out>"
         },
         "verglas": {
           "status": "indisponible",
@@ -318,8 +311,8 @@
           "reason": "Champs spécifiques non disponibles"
         },
         "tempete": {
-          "status": "absent",
-          "max": 43.2,
+          "status": "possible",
+          "max": 60.8,
           "unit": "km/h (vent moyen 10 m)",
           "reason": "Signal de vent soutenu, pas une vigilance tempête"
         },
@@ -336,30 +329,30 @@
           "reason": "Crue non déductible d'un seul cumul de pluie de 6 h"
         },
         "pluie_forte": {
-          "status": "possible",
-          "max": 12.0,
+          "status": "absent",
+          "max": 2.5,
           "unit": "mm/6h",
           "reason": "Cumul des 6 heures précédant l'échéance"
         }
       },
       "markers": [
         {
-          "lon": 5.75,
-          "lat": 46.0,
-          "value": 12.0,
-          "kind": "pluie_forte"
+          "lon": 3.75,
+          "lat": 42.25,
+          "value": 60.8,
+          "kind": "vent_fort"
         },
         {
-          "lon": 9.75,
-          "lat": 46.0,
-          "value": 10.8,
-          "kind": "pluie_forte"
-        },
-        {
-          "lon": -9.0,
+          "lon": 6.25,
           "lat": 41.75,
-          "value": 10.0,
-          "kind": "pluie_forte"
+          "value": 55.8,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": -10.0,
+          "lat": 51.25,
+          "value": 50.9,
+          "kind": "vent_fort"
         }
       ],
       "t850_shading": {
