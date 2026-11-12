@@ -5,7 +5,7 @@ const KFS_MGRAM_TABLE_COLS=[
  ["Vent","direction",104],["Moy km/h","wind",93],["Raf km/h","gust",97],
  ["Press hPa","pressure",103],["CAPE","cape",88],
  ["Orage idx","storm",93],["Intensite","strength",104],
- ["Neige idx","snowRisk",91],["Gresil idx","graupel",91]
+ ["Neige idx","snowRisk",91],["Graupel idx","graupel",91]
 ];
 function kfsMgramFmtCell(v,d=0,unit=""){
   return Number.isFinite(v)?Number(v.toFixed(d)).toLocaleString("fr-FR")+unit:"—";
@@ -29,71 +29,44 @@ function kfsMgramTableRows(rows){
  }));
 }
 // Draws the full table on a QuickChart canvas. Function source is sent as a string.
-function kfsMgramTableCanvas(chart){
- const ctx=chart.ctx,cols=__COLS__,rows=__ROWS__,W=__W__,H=__H__;
- const pad=16,top=92,hh=43,rh=37;
- function rect(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(x,y,w,h);}
- function txt(s,x,y,c,size,bold,align){
-   ctx.fillStyle=c;ctx.font=(bold?"bold ":"")+size+"px Arial";
-   ctx.textAlign=align||"center";ctx.textBaseline="middle";
-   ctx.fillText(String(s),x,y);
- }
- function bg(key,v){
-   if(typeof v!=="number"||!isFinite(v))return null;
-   if(key==="temp")return v<0?"#b8d8ff":v<5?"#9feaf6":v<12?"#b7f5d2":v<20?"#f6f2a7":"#ffc7a0";
-   if(key==="humidity")return v>=90?"#8bbce6":v>=70?"#add5f1":v>=45?"#d2e9fa":"#f0f6fd";
-   if(key==="rain")return v>=8?"#3b77c0":v>=3?"#6aa9de":v>=.5?"#b7ddf5":v>0?"#d8effc":"#f1f7fc";
-   if(key==="snow")return v>=3?"#83b9df":v>=.5?"#c8e9fa":v>0?"#e0f6ff":"#f4f9fd";
-   if(key==="wind"||key==="gust")return v>=80?"#ef9d9e":v>=50?"#ffcf9c":v>=25?"#b5ebd7":"#d9f3e8";
-   if(key==="cape")return v>=1800?"#f1a7a7":v>=800?"#ffd59f":v>=150?"#fff1be":"#f5f7fc";
-   if(key==="storm"||key==="snowRisk"||key==="graupel")return v>=70?"#f6a5a6":v>=40?"#ffd3a0":v>=15?"#fff0ae":"#e8f5e9";
-   return null;
- }
- rect(0,0,W,H,"#f0f5fc");rect(0,0,W,85,"#172947");rect(0,83,W,3,"#49b6cd");
- txt(__TITLE__,pad,29,"#ffffff",22,true,"left");
- txt(__SUBTITLE__,pad,62,"#d8e9f8",15,false,"left");
- let x=pad;
- for(let i=0;i<cols.length;i++){
-   const w=cols[i][2];
-   rect(x,top,w,hh,i%2===0?"#c9d7f8":"#d7e1fa");
-   ctx.strokeStyle="#a3b5d2";ctx.strokeRect(x+.5,top+.5,w-1,hh-1);
-   txt(cols[i][0],x+w/2,top+hh/2,"#22375b",13,true);
-   x+=w;
- }
- for(let j=0;j<rows.length;j++){
-   const r=rows[j],y=top+hh+j*rh;let xx=pad;
-   for(let i=0;i<cols.length;i++){
-     const key=cols[i][1],w=cols[i][2],v=r._values&&r._values[key];
-     rect(xx,y,w,rh,bg(key,v)||(j%2===0?"#e7f0fc":"#f7fbff"));
-     ctx.strokeStyle="#c6d4e8";ctx.strokeRect(xx+.5,y+.5,w-1,rh-1);
-     txt(r[key]??"—",xx+w/2,y+rh/2,"#172947",key==="weather"?22:14,
-       key==="temp"||key==="storm"||key==="gust");
-     xx+=w;
-   }
- }
- const foot=top+hh+rows.length*rh+17;
- txt("Indices 0-100 : diagnostics heuristiques, pas des probabilites calibrées. Graupel = grésil.",
-     pad,foot,"#5e7292",13,false,"left");
- txt("Vent : direction d'origine + fleche du deplacement  |  Pluie / neige : quantites horaires",
-     pad,foot+24,"#5e7292",13,false,"left");
+function kfsMgramTableColor(key,v,i){
+ const neutral=i%2?"#f5faff":"#e8f1fb";
+ if(!Number.isFinite(v))return neutral;
+ if(key==="temp")return v<0?"#b8d8ff":v<5?"#9feaf6":v<12?"#b7f5d2":v<20?"#f6f2a7":"#ffc7a0";
+ if(key==="humidity")return v>=90?"#8bbce6":v>=70?"#add5f1":v>=45?"#d2e9fa":"#f0f6fd";
+ if(key==="rain")return v>=8?"#3b77c0":v>=3?"#6aa9de":v>=.5?"#b7ddf5":v>0?"#d8effc":"#f1f7fc";
+ if(key==="snow")return v>=3?"#83b9df":v>=.5?"#c8e9fa":v>0?"#e0f6ff":"#f4f9fd";
+ if(key==="wind"||key==="gust")return v>=80?"#ef9d9e":v>=50?"#ffcf9c":v>=25?"#b5ebd7":"#d9f3e8";
+ if(key==="cape")return v>=1800?"#f1a7a7":v>=800?"#ffd59f":v>=150?"#fff1be":"#f5f7fc";
+ if(key==="storm"||key==="snowRisk"||key==="graupel")return v>=70?"#f6a5a6":v>=40?"#ffd3a0":v>=15?"#fff0ae":"#e8f5e9";
+ return neutral;
 }
 function kfsMgramTableChart(rows,model,city,date){
- const cols=KFS_MGRAM_TABLE_COLS;
- const items=kfsMgramTableRows(rows).slice(0,27);
- const width=cols.reduce((a,b)=>a+b[2],0)+32;
- const height=160+items.length*37;
- const draw=kfsMgramTableCanvas.toString()
-  .replace("__COLS__",JSON.stringify(cols))
-  .replace("__ROWS__",JSON.stringify(items))
-  .replace("__W__",String(width)).replace("__H__",String(height))
-  .replace("__TITLE__",JSON.stringify("KFS MÉTÉO  /  "+city+"  /  "+model))
-  .replace("__SUBTITLE__",JSON.stringify(date+"  ·  Heure de Paris  ·  Données heure par heure"));
- return {width,height,format:"png",version:"2",devicePixelRatio:1,
-  backgroundColor:"#f0f5fc",
-  chart:'{type:"bar",data:{labels:[],datasets:[]},options:{responsive:false,animation:false,'+
-   'legend:{display:false},tooltips:{enabled:false},scales:{xAxes:[{display:false}],yAxes:[{display:false}]}},'+
-   'plugins:[{beforeDraw:'+draw+'}]}'
- };
+ const columns=KFS_MGRAM_TABLE_COLS.filter(c=>c[1]!=="time");
+ const display=kfsMgramTableRows(rows.slice(0,27));
+ const xs=columns.map(c=>c[0]),ys=display.map(r=>r.time);
+ const data=[],colors=[];
+ display.forEach((row,j)=>columns.forEach((col,i)=>{
+   const key=col[1];
+   data.push({x:xs[i],y:ys[j],v:j*columns.length+i,txt:row[key]});
+   colors.push(kfsMgramTableColor(key,row._values[key],j));
+ }));
+ const width=1640,height=Math.max(410,rows.length*40+185);
+ const chart='{type:"matrix",data:{datasets:[{data:'+JSON.stringify(data)+
+  ',borderColor:"#edf4fc",borderWidth:1,backgroundColor:'+JSON.stringify(colors)+
+  ',width:105,height:35}]},options:{responsive:false,layout:{padding:12},'+
+  'scales:{x:{type:"category",labels:'+JSON.stringify(xs)+
+  ',offset:true,position:"top",ticks:{color:"#233a62",font:{size:13,weight:"bold"},maxRotation:0,autoSkip:false},grid:{display:false}},'+
+  'y:{type:"category",labels:'+JSON.stringify(ys)+
+  ',offset:true,reverse:true,ticks:{color:"#233a62",font:{size:14,weight:"bold"},autoSkip:false},grid:{display:false}}},'+
+  'plugins:{title:{display:true,text:'+JSON.stringify("KFS MÉTÉO  •  "+city+"  •  "+model)+
+  ',color:"#172947",font:{size:25,weight:"bold"},padding:18},'+
+  'subtitle:{display:true,text:'+JSON.stringify(date+" · Heure de Paris · Pluie/neige horaires · Vent: direction d'origine")+
+  ',color:"#617597",font:{size:15},padding:12},'+
+  'legend:{display:false},datalabels:{display:true,color:"#172947",'+
+  'font:{size:14,weight:"bold"},formatter:function(value){return value.txt;}}}}}';
+ return {version:"4",width,height,format:"png",devicePixelRatio:1,
+    backgroundColor:"#f0f5fc",chart};
 }
 function kfsMgramFallbackTable(rows,model,city,date){
  const cols=KFS_MGRAM_TABLE_COLS,records=kfsMgramTableRows(rows);
