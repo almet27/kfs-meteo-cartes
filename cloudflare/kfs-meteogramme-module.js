@@ -295,13 +295,11 @@ async function kfsMgramComplete(interaction,cityName,model,jour,view,origin){
     const chosen=view==="complet"?dates:[dates[jour]];
     const rows=all.filter(r=>chosen.includes(r.time.slice(0,10)));
     if(rows.length<20)throw Error("Données horaires insuffisantes");
-    const csv=kfsMgramCsv(rows,spec.name,label);
-    const files=[{filename:"kfs-meteogramme-"+model+".csv",bytes:new TextEncoder().encode(csv),
-      type:"text/csv;charset=utf-8"}];
+
     const pngs=[];
     let plotError="";
     // At most three QuickChart jobs in flight, while preserving date order.
-    // One bad chart must not suppress the CSV or the successful days.
+    // One bad chart must not suppress the successful days.
     for(let offset=0;offset<chosen.length;offset+=3){
       const results=await Promise.all(chosen.slice(offset,offset+3).map(async date=>{
         const day=rows.filter(r=>r.time.startsWith(date));
@@ -330,30 +328,14 @@ async function kfsMgramComplete(interaction,cityName,model,jour,view,origin){
         if(result.reason)plotError=result.reason;
       }
     }
-    files.push(...pngs);
-    const max=(field)=>{const values=rows.map(r=>r[field]).filter(Number.isFinite);return values.length?Math.max(...values):null;};
-    const sum=(field)=>kfsMgramRound(rows.map(r=>r[field]).filter(Number.isFinite)
-      .reduce((a,b)=>a+b,0),1);
-    const fmt=(x,unit)=>x===null?"n/d":String(kfsMgramRound(x,1))+unit;
-    const period=view==="complet"?spec.days+" jours":chosen[0];
-    const content="🌦️ **KFS MÉTÉO — Météogramme "+spec.name+" · "+label+"**\n"+
-      "📅 **"+period+"** · données horaires · heure locale Europe/Paris\n"+
-      "🌡️ Température, pluie, neige, vent moyen/rafales et direction, pression et CAPE.\n"+
-      "🌧️ Pluie totale : **"+fmt(sum("rain")," mm")+"** · neige fraîche : **"+fmt(sum("snow")," cm")+"**"+
-      " · rafale maxi : **"+fmt(max("gust")," km/h")+"**\n"+
-      "⚡ Indice orage maxi : **"+fmt(max("storm")," %")+"**"+
-      " · indice neige : **"+fmt(max("snowRisk")," %")+"**"+
-      " · indice graupel : **"+fmt(max("graupel")," %")+"**\n"+
-      "📎 **CSV joint** : chaque heure, avec humidité, pictos, vent et indices de risques."+
-      (pngs.length?"\n🖼️ "+pngs.length+(["tableau","complet"].includes(view)?" tableau(x) PNG":" graphique(s)")+" en pièces jointes.":"")+
-      (plotError?"\n⚠️ Certains graphiques sont indisponibles : "+plotError:"")+
-      "\n⚠️ **Indices orage/neige/graupel (%) : diagnostics heuristiques, PAS probabilités calibrées d'ensemble.**"+
-      " La puissance orageuse est un potentiel CAPE, non une prévision de sévérité."+
-      "\n_Source : Open-Meteo, modèle "+spec.name+" ; présentation KFS MÉTÉO._";
+
+    // La réponse ne contient que les images PNG et un titre discret.
+    const content="🌦️ **KFS MÉTÉO — "+spec.name+" · "+label+"**"+
+      (plotError?"\n⚠️ Certains tableaux ou graphiques sont indisponibles : "+plotError:"");
     await kfsMgramSend(interaction,
-      {content:content.slice(0,1950),allowed_mentions:{parse:[]},
-        attachments:files.map((f,i)=>({id:i,filename:f.filename,
-          description:i===0?"Météogramme horaire CSV":(["tableau","complet"].includes(view)?"Tableau météo ":"Graphique météo ")+spec.name}))},files);
+      {content,allowed_mentions:{parse:[]},
+        attachments:pngs.map((f,i)=>({id:i,filename:f.filename,
+          description:(["tableau","complet"].includes(view)?"Tableau météo ":"Graphique météo ")+spec.name}))},pngs);
   }catch(error){
     console.error("KFS_METEOGRAMME_ERROR",String(error?.stack||error));
     await kfsMgramSend(interaction,{content:"⚠️ **/meteogramme** : "+
