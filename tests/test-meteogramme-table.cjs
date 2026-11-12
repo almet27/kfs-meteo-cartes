@@ -22,11 +22,12 @@ assert(csv.includes('"85"'));
 assert.equal(api.cols.length,15);
 const cfg=api.table(rows,"GFS","Évreux","2026-11-12");
 assert(cfg.chart.includes("KFS MÉTÉO"));
-const chart=new Function("return "+cfg.chart)();
-const ctx={fillRect(){},strokeRect(){},fillText(){}};
-chart.plugins[0].beforeDraw({ctx});
+const chart=new Function("return ("+cfg.chart+")")();
+assert.equal(chart.type,"matrix");
+assert.equal(chart.data.datasets[0].data.length,rows.length*(api.cols.length-1));
+assert.equal(typeof chart.options.plugins.datalabels.formatter,"function");
 console.log("LOCAL_TEST_OK","tableColumns",api.cols.length,"rows",rows.length,
-  "chartWxH",cfg.width,cfg.height,"csvCols",csv.split("\n")[0].split(";").length);
+  "matrixWxH",cfg.width,cfg.height,"csvCols",csv.split("\n")[0].split(";").length);
 
 if(process.env.KFS_TEST_QUICKCHART==="1"){
   (async()=>{
