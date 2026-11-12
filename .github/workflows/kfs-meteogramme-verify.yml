@@ -20,7 +20,7 @@ jobs:
       - name: Validate table and image on QuickChart
         env:
           KFS_TEST_QUICKCHART: "1"
-        run: node tests/test-meteogramme-table.cjs
+        run: node tests/test-meteogramme-matrix.cjs
       - name: Register and verify /meteogramme from Cloudflare Worker
         shell: bash
         run: |
