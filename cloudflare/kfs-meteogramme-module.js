@@ -21,31 +21,35 @@ async function kfsMgramRegister(env){
       {type:3,name:"modele",description:"Modèle météorologique",required:true,choices:modelChoices},
       {type:4,name:"jour",description:"Jour à détailler (J+0 à J+6 ; AROME/ICON : J+0 à J+1)",
         required:false,choices:Array.from({length:7},(_,i)=>({name:"J+"+i,value:i}))},
-      {type:3,name:"affichage",description:"Un jour détaillé ou toute la période avec export horaire",
+      {type:3,name:"affichage",description:"Tableau coloré, graphiques ou 7 jours avec export CSV",
         required:false,choices:[
-          {name:"Jour choisi · 2 graphiques + CSV",value:"jour"},
-          {name:"Période complète · 7 j ou 48 h + CSV",value:"complet"}
+          {name:"Tableau horaire coloré (défaut)",value:"tableau"},
+          {name:"Graphiques du jour + CSV",value:"graphique"},
+          {name:"Période complète : tableaux + CSV",value:"complet"},
+          {name:"Ancien format graphique",value:"jour"}
         ]}
     ]};
   const list=await fetch(endpoint,{headers:{Authorization:headers.Authorization},signal:AbortSignal.timeout(12000)});
   if(!list.ok)throw Error("Lecture commandes Discord HTTP "+list.status);
   const commands=await list.json();
   const current=Array.isArray(commands)?commands.find(c=>c.name==="meteogramme"):null;
+  const affichage=current?.options?.find(x=>x.name==="affichage");
+  const registeredViews=affichage?.choices?.map(x=>x.value)||[];
   if(current && current.options?.length===command.options.length &&
-      current.options.some(x=>x.name==="affichage") &&
-      current.options.find(x=>x.name==="modele")?.choices?.length===4) return;
+      current.options.find(x=>x.name==="modele")?.choices?.length===4 &&
+      ["tableau","graphique","complet","jour"].every(x=>registeredViews.includes(x)))return;
   const resp=await fetch(endpoint,{method:"POST",headers,body:JSON.stringify(command),signal:AbortSignal.timeout(12000)});
   if(!resp.ok)throw Error("Enregistrement /meteogramme HTTP "+resp.status+" "+(await resp.text()).slice(0,200));
 }
 async function kfsMgramFetch(lat,lon,code,days,origin){
   const key=[lat.toFixed(3),lon.toFixed(3),code,days].join(":");
-  const previous=await kfsDiagGet(origin,"mgram-hourly-v1",key);
+  const previous=await kfsDiagGet(origin,"mgram-hourly-v2",key);
   if(previous?.data?.hourly?.time?.length)return previous.data;
   const base=[
     "weather_code","temperature_2m","precipitation","rain","snowfall",
     "wind_speed_10m","wind_gusts_10m","wind_direction_10m","pressure_msl","cape"
   ];
-  const extras=["showers","wet_bulb_temperature_2m","freezing_level_height"];
+  const extras=["showers","wet_bulb_temperature_2m","freezing_level_height","relative_humidity_2m","is_day"];
   const build=fields=>{
     const u=new URL("https://api.open-meteo.com/v1/forecast");
     u.searchParams.set("latitude",String(lat));
@@ -83,7 +87,16 @@ async function kfsMgramFetch(lat,lon,code,days,origin){
         payload.hourly.cape=extra.hourly.cape;
     }catch(e){console.warn("KFS_MGRAM_CAPE_MISSING",String(e).slice(0,120));}
   }
-  await kfsDiagPut(origin,"mgram-hourly-v1",key,{data:payload},900);
+  if(payload.hourly.relative_humidity_2m===undefined){
+    try{
+      const extra=await get(["relative_humidity_2m","is_day"]);
+      if(JSON.stringify(extra.hourly?.time)===JSON.stringify(payload.hourly.time)){
+        payload.hourly.relative_humidity_2m=extra.hourly.relative_humidity_2m;
+        payload.hourly.is_day=extra.hourly.is_day;
+      }
+    }catch(e){console.warn("KFS_MGRAM_RH_MISSING",String(e).slice(0,120));}
+  }
+  await kfsDiagPut(origin,"mgram-hourly-v2",key,{data:payload},900);
   return payload;
 }
 function kfsMgramWx(code,isNight){
@@ -161,6 +174,7 @@ function kfsMgramRows(hourly){
     const rain=liquid!==null&&show!==null?liquid+show:
       (total!==null&&cm!==null?Math.max(0,total-cm/0.7):liquid??total);
     const row={time,code,temp:value("temperature_2m",i),
+      humidity:value("relative_humidity_2m",i),isDay:value("is_day",i),
       rain,snow:cm,wind:value("wind_speed_10m",i),
       gust:value("wind_gusts_10m",i),dir:value("wind_direction_10m",i),
       pressure:value("pressure_msl",i),cape:value("cape",i),
@@ -170,13 +184,13 @@ function kfsMgramRows(hourly){
   });
 }
 function kfsMgramCsv(rows,model,city){
-  const columns=["date_locale","modele","ville","picto","temperature_C","pluie_mm_h",
+  const columns=["date_locale","modele","ville","picto","temperature_C","humidite_pct","pluie_mm_h",
     "neige_cm_h","vent_kmh","rafale_kmh","direction_degres","direction_cardinale",
     "pression_hPa","CAPE_J_kg","indice_orage_pct","intensite_potentielle",
     "indice_neige_pct","indice_graupel_pct"];
   const escape=x=>'"'+String(x??"").replace(/"/g,'""')+'"';
   const records=rows.map(r=>[
-    r.time,model,city,kfsMgramWx(r.code,false),r.temp,r.rain,r.snow,
+    r.time,model,city,kfsMgramWx(r.code,r.isDay===0),r.temp,r.humidity,r.rain,r.snow,
     r.wind,r.gust,r.dir,kfsMgramCompass(r.dir),r.pressure,r.cape,
     r.storm,r.strength,r.snowRisk,r.graupel
   ].map(escape).join(";"));
@@ -260,9 +274,9 @@ async function kfsMgramComplete(interaction,cityName,model,jour,view,origin){
   try{
     const spec=KFS_MGRAM_MODELS[model];
     if(!spec||cityName.length<2||cityName.length>75||
-      !Number.isInteger(jour)||jour<0||jour>6||!["jour","complet"].includes(view))
+      !Number.isInteger(jour)||jour<0||jour>6||!["tableau","graphique","complet","jour"].includes(view))
       throw Error("Paramètres de commande invalides");
-    if(view==="jour"&&jour>=spec.days)
+    if(view!=="complet"&&jour>=spec.days)
       throw Error(spec.name+" couvre 48 h : choisis J+0 ou J+1.");
     const geoUrl=new URL("https://geocoding-api.open-meteo.com/v1/search");
     geoUrl.searchParams.set("name",cityName);
@@ -292,10 +306,14 @@ async function kfsMgramComplete(interaction,cityName,model,jour,view,origin){
       const results=await Promise.all(chosen.slice(offset,offset+3).map(async date=>{
         const day=rows.filter(r=>r.time.startsWith(date));
         try{
-          const png=await kfsRenderEnsembleChart(kfsMgramPlot(day,
-            spec.name+" • "+label+" • "+date+" • heure de Paris","weather"));
-          const charts=[{filename:"kfs-"+model+"-"+date+".png",type:"image/png",bytes:png}];
-          if(view==="jour"){
+          const isTable=["tableau","complet"].includes(view);
+          const png=isTable
+            ?await kfsMgramTablePng(day,spec.name,label,date)
+            :await kfsRenderEnsembleChart(kfsMgramPlot(day,
+              spec.name+" • "+label+" • "+date+" • heure de Paris","weather"));
+          const charts=[{filename:"kfs-"+(isTable?"tableau-":"")+model+"-"+date+".png",
+            type:"image/png",bytes:png}];
+          if(!isTable){
             const second=await kfsRenderEnsembleChart(kfsMgramPlot(day,
               "Instabilité / pression / indices • "+date,"risk"));
             charts.push({filename:"kfs-risques-"+model+"-"+date+".png",type:"image/png",bytes:second});
@@ -326,8 +344,8 @@ async function kfsMgramComplete(interaction,cityName,model,jour,view,origin){
       "⚡ Indice orage maxi : **"+fmt(max("storm")," %")+"**"+
       " · indice neige : **"+fmt(max("snowRisk")," %")+"**"+
       " · indice graupel : **"+fmt(max("graupel")," %")+"**\n"+
-      "📎 **CSV joint** : chaque heure et les 17 colonnes, dont pictos météo, orientation et intensité orageuse."+
-      (pngs.length?"\n🖼️ "+pngs.length+" graphique(s) en pièces jointes.":"")+
+      "📎 **CSV joint** : chaque heure, avec humidité, pictos, vent et indices de risques."+
+      (pngs.length?"\n🖼️ "+pngs.length+(["tableau","complet"].includes(view)?" tableau(x) PNG":" graphique(s)")+" en pièces jointes.":"")+
       (plotError?"\n⚠️ Certains graphiques sont indisponibles : "+plotError:"")+
       "\n⚠️ **Indices orage/neige/graupel (%) : diagnostics heuristiques, PAS probabilités calibrées d'ensemble.**"+
       " La puissance orageuse est un potentiel CAPE, non une prévision de sévérité."+
@@ -335,7 +353,7 @@ async function kfsMgramComplete(interaction,cityName,model,jour,view,origin){
     await kfsMgramSend(interaction,
       {content:content.slice(0,1950),allowed_mentions:{parse:[]},
         attachments:files.map((f,i)=>({id:i,filename:f.filename,
-          description:i===0?"Météogramme horaire complet CSV":"Graphique météogramme "+spec.name}))},files);
+          description:i===0?"Météogramme horaire CSV":(["tableau","complet"].includes(view)?"Tableau météo ":"Graphique météo ")+spec.name}))},files);
   }catch(error){
     console.error("KFS_METEOGRAMME_ERROR",String(error?.stack||error));
     await kfsMgramSend(interaction,{content:"⚠️ **/meteogramme** : "+
