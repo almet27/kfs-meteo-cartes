@@ -1127,7 +1127,7 @@ async function kfsProbaFiveDayRead(type,threshold,zone,start,end,points){
  }catch(e){console.error("KFS_PROBA_FIVE_DAY_READ",String(e));return null;}
 }
 async function kfsProbaFiveDayComplete(interaction,type,zone,threshold){
- if(!await kfsProbaMultiComplete(interaction,type,zone,5,threshold))
+ if(!await kfsProbaMultiComplete(interaction,type,zone,6,threshold))
   throw Error("Aucun ensemble ne couvre les cinq jours complets. Réessaie après l'actualisation des données.");
 }
 
