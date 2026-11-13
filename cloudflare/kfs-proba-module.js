@@ -582,7 +582,7 @@ function kfsProbaRender(features,samples,zone,type,departments=[]){
   if(!Number.isFinite(x)||!Number.isFinite(y))continue;
   if(cityGuardRadius>0&&cityAnchors.some(q=>
      Math.abs(q.x-x)<cityGuardRadius&&Math.abs(q.y-y)<cityGuardRadius*.7))continue;
-  const score=Math.round(p.value),unit=KFS_PROBA_SCALE[type].unit;
+  const score=Math.round(p.value),unit=type==="neige_chutes"?"mm":KFS_PROBA_SCALE[type].unit;
   const qty=type==="probabilite"?"":type==="orage"?KFS_STORM_NAMES[kfsProbaClassIndex(p.amount,"orage")]:
    (type==="vent"?Math.round(p.amount):Math.round(p.amount*10)/10)+unit;
   const proba=score+"%",lw=Math.max(proba.length,qty.length)*12+14,h=type==="probabilite"?23:39;
@@ -644,7 +644,8 @@ function kfsProbaRender(features,samples,zone,type,departments=[]){
   txt(names[i],Math.round((l+r-names[i].length*12)/2),710,2,[241,246,250]);
  }
  for(let y=ly-3;y<ly+22;y++)put(right,y,246,250,254);
- if(type!=="orage")txt(legend.unit,right-legend.unit.length*12,738,2,[197,228,249]);
+ const legendUnit=type==="neige_chutes"?"mm":legend.unit;
+ if(type!=="orage")txt(legendUnit,right-legendUnit.length*12,738,2,[197,228,249]);
  return {rgba,W,H};
 }
 function kfsProbaCrc(a){
