@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "status": "illustrative_model_maps",
-  "generated_utc": "2026-11-13T01:06:43.595093+00:00",
-  "source_generated_utc": "2026-11-13T01:05:14.417353+00:00",
+  "generated_utc": "2026-11-13T01:30:13.671294+00:00",
+  "source_generated_utc": "2026-11-13T01:28:21.427946+00:00",
   "charts_generated_utc": "2026-11-13T00:33:49.150772+00:00",
   "source": "ECMWF Open Data (CC BY 4.0), NOAA GFS si disponible",
   "not_weekly_anomalies": true,
@@ -383,7 +383,7 @@
       "step_h": 360,
       "path": "forecast-maps/tendance/tendance-carte-j15.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j15.png",
-      "size_bytes": 546751,
+      "size_bytes": 561938,
       "run_utc": {
         "aifs": "2026-11-12T18:00Z",
         "gfs": "2026-11-12T18:00:00+00:00"
@@ -399,8 +399,15 @@
       "risk_status": "altitude_filtered_georeferenced",
       "risks": {
         "neige": {
-          "status": "indisponible",
-          "reason": "Filtre altitude indisponible : Altitude Copernicus non accessible : HTTP Error 429: Too Many Requests"
+          "status": "possible",
+          "max": 1.8,
+          "unit": "mm équiv. eau/6h",
+          "reason": "Neige hors relief ≤ 800 m, hors vallée de montagne (Copernicus GLO-90) ; relief : 47 zones échantillonnées",
+          "mountain_signal": true,
+          "mountain_max": 2.5,
+          "lowland_sample_count": 73,
+          "highland_sample_count": 47,
+          "terrain_source": "Copernicus DEM GLO-90 via Open-Meteo"
         },
         "verglas": {
           "status": "indisponible",
@@ -455,6 +462,14 @@
           "kind": "vent_fort"
         },
         {
+          "lon": 10.0,
+          "lat": 50.5,
+          "value": 1.8,
+          "kind": "neige",
+          "altitude_m": 582,
+          "terrain_context": "hors relief marqué"
+        },
+        {
           "lon": -10.0,
           "lat": 45.5,
           "value": 62.0,
@@ -465,6 +480,22 @@
           "lat": 47.5,
           "value": 10.2,
           "kind": "pluie_forte"
+        },
+        {
+          "lon": 11.0,
+          "lat": 52.0,
+          "value": 1.0,
+          "kind": "neige",
+          "altitude_m": 106,
+          "terrain_context": "hors relief marqué"
+        },
+        {
+          "lon": 8.0,
+          "lat": 48.0,
+          "value": 1.0,
+          "kind": "neige",
+          "altitude_m": 527,
+          "terrain_context": "hors relief marqué"
         }
       ],
       "t850_shading": {

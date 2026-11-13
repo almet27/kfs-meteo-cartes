@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_utc": "2026-11-13T01:05:37.550648+00:00",
+  "generated_utc": "2026-11-13T01:28:59.254137+00:00",
   "atlas_generated_utc": "2026-11-13T00:33:49.150772+00:00",
   "reference": "ECMWF Open Data, Copernicus DEM GLO-90 via Open-Meteo — champs géoréférencés",
   "stages": [
@@ -347,8 +347,15 @@
       "background_path": "forecast-maps/tendance/tendance-risques-fond-j15.png",
       "risks": {
         "neige": {
-          "status": "indisponible",
-          "reason": "Filtre altitude indisponible : Altitude Copernicus non accessible : HTTP Error 429: Too Many Requests"
+          "status": "possible",
+          "max": 1.8,
+          "unit": "mm équiv. eau/6h",
+          "reason": "Neige hors relief ≤ 800 m, hors vallée de montagne (Copernicus GLO-90) ; relief : 47 zones échantillonnées",
+          "mountain_signal": true,
+          "mountain_max": 2.5,
+          "lowland_sample_count": 73,
+          "highland_sample_count": 47,
+          "terrain_source": "Copernicus DEM GLO-90 via Open-Meteo"
         },
         "verglas": {
           "status": "indisponible",
@@ -403,6 +410,14 @@
           "kind": "vent_fort"
         },
         {
+          "lon": 10.0,
+          "lat": 50.5,
+          "value": 1.8,
+          "kind": "neige",
+          "altitude_m": 582,
+          "terrain_context": "hors relief marqué"
+        },
+        {
           "lon": -10.0,
           "lat": 45.5,
           "value": 62.0,
@@ -413,6 +428,22 @@
           "lat": 47.5,
           "value": 10.2,
           "kind": "pluie_forte"
+        },
+        {
+          "lon": 11.0,
+          "lat": 52.0,
+          "value": 1.0,
+          "kind": "neige",
+          "altitude_m": 106,
+          "terrain_context": "hors relief marqué"
+        },
+        {
+          "lon": 8.0,
+          "lat": 48.0,
+          "value": 1.0,
+          "kind": "neige",
+          "altitude_m": 527,
+          "terrain_context": "hors relief marqué"
         }
       ],
       "t850_shading": {
