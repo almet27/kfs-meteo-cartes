@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "generated_utc": "2026-11-13T01:28:59.254137+00:00",
-  "atlas_generated_utc": "2026-11-13T00:33:49.150772+00:00",
+  "generated_utc": "2026-11-13T07:23:13.110007+00:00",
+  "atlas_generated_utc": "2026-11-13T05:28:02.776578+00:00",
   "reference": "ECMWF Open Data, Copernicus DEM GLO-90 via Open-Meteo — champs géoréférencés",
   "stages": [
     {
@@ -342,20 +342,15 @@
       "id": "j15",
       "step_h": 360,
       "model": "aifs-single",
-      "run_utc": "2026-11-12T18:00:00+00:00",
-      "valid_utc": "2026-11-27T18:00:00+00:00",
+      "run_utc": "2026-11-13T00:00:00+00:00",
+      "valid_utc": "2026-11-28T00:00:00+00:00",
       "background_path": "forecast-maps/tendance/tendance-risques-fond-j15.png",
       "risks": {
         "neige": {
-          "status": "possible",
-          "max": 1.8,
+          "status": "absent",
+          "max": 0.0,
           "unit": "mm équiv. eau/6h",
-          "reason": "Neige hors relief ≤ 800 m, hors vallée de montagne (Copernicus GLO-90) ; relief : 47 zones échantillonnées",
-          "mountain_signal": true,
-          "mountain_max": 2.5,
-          "lowland_sample_count": 73,
-          "highland_sample_count": 47,
-          "terrain_source": "Copernicus DEM GLO-90 via Open-Meteo"
+          "reason": "Pas de neige ≥ 0,5 mm/6h sur le domaine terrestre"
         },
         "verglas": {
           "status": "indisponible",
@@ -367,7 +362,7 @@
         },
         "tempete": {
           "status": "possible",
-          "max": 67.0,
+          "max": 52.1,
           "unit": "km/h (vent moyen 10 m)",
           "reason": "Signal de vent soutenu, pas une vigilance tempête"
         },
@@ -385,65 +380,29 @@
         },
         "pluie_forte": {
           "status": "marque",
-          "max": 23.0,
+          "max": 21.8,
           "unit": "mm/6h",
           "reason": "Cumul des 6 heures précédant l'échéance"
         }
       },
       "markers": [
         {
-          "lon": -8.25,
-          "lat": 41.75,
-          "value": 23.0,
+          "lon": 3.5,
+          "lat": 44.25,
+          "value": 21.8,
           "kind": "pluie_forte"
         },
         {
-          "lon": -8.25,
-          "lat": 44.0,
-          "value": 67.0,
-          "kind": "vent_fort"
-        },
-        {
-          "lon": -6.25,
-          "lat": 45.25,
-          "value": 63.9,
-          "kind": "vent_fort"
-        },
-        {
-          "lon": 10.0,
-          "lat": 50.5,
-          "value": 1.8,
-          "kind": "neige",
-          "altitude_m": 582,
-          "terrain_context": "hors relief marqué"
+          "lon": 4.5,
+          "lat": 46.25,
+          "value": 18.5,
+          "kind": "pluie_forte"
         },
         {
           "lon": -10.0,
-          "lat": 45.5,
-          "value": 62.0,
+          "lat": 46.5,
+          "value": 52.1,
           "kind": "vent_fort"
-        },
-        {
-          "lon": -7.0,
-          "lat": 47.5,
-          "value": 10.2,
-          "kind": "pluie_forte"
-        },
-        {
-          "lon": 11.0,
-          "lat": 52.0,
-          "value": 1.0,
-          "kind": "neige",
-          "altitude_m": 106,
-          "terrain_context": "hors relief marqué"
-        },
-        {
-          "lon": 8.0,
-          "lat": 48.0,
-          "value": 1.0,
-          "kind": "neige",
-          "altitude_m": 527,
-          "terrain_context": "hors relief marqué"
         }
       ],
       "t850_shading": {
