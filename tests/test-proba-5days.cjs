@@ -96,8 +96,8 @@ test('Discord option explicitly identifies the five-day period',async()=>{
   global.APPLICATION_ID='test-application';
   await api.kfsProbaRegister({DISCORD_BOT_TOKEN:'test-token'});
   const day=command.options.find(o=>o.name==='jour');
-  assert.match(day.choices.find(c=>c.value===5).name,/J\+1 à J\+5/);
-  assert.deepEqual(day.choices.filter(c=>c.value!==5).map(c=>c.value),[0,1,2,3]);
+  assert.match(day.choices.find(c=>c.value===6).name,/J\+1 à J\+5/);
+  assert.deepEqual(day.choices.filter(c=>c.value!==6).map(c=>c.value),[0,1,2,3,4,5]);
  }finally{global.fetch=old;delete global.APPLICATION_ID;}
 });
 
