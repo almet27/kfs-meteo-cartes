@@ -1,0 +1,31 @@
+name: KFS PROBA - Synchroniser les choix Discord
+on:
+  push:
+    paths:
+      - .github/workflows/kfs-proba-register.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  register:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Synchroniser /proba avec Discord
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --retry 2 --max-time 45 \
+            "https://kfs-meteo-ia.alain-leprevost.workers.dev/proba-status?sync=1" \
+            -o /tmp/kfs-proba-register.json
+          python - <<'PY'
+          import json
+          with open('/tmp/kfs-proba-register.json') as f:
+              data = json.load(f)
+          assert data.get('ok') and data.get('registration_confirmed'), data
+          assert data.get('days') == [0, 1, 2, 3, 4, 5], data
+          assert data.get('cumulative', {}).get('choice') == 6, data
+          print('Choix /proba synchronisés : J+0 à J+5 et 5 jours cumulés.')
+          PY
