@@ -10,6 +10,7 @@ on:
   push:
     paths:
       - 'scripts/build_model_skill.py'
+      - 'scripts/build_model_regimes.py'
       - '.github/workflows/kfs-model-skill.yml'
   schedule:
     - cron: '35 7 * * 1'
@@ -24,7 +25,7 @@ concurrency:
 jobs:
   verifier:
     runs-on: ubuntu-latest
-    timeout-minutes: 55
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -38,6 +39,15 @@ jobs:
             python scripts/build_model_skill.py --month "$REQUESTED_MONTH"
           else
             python scripts/build_model_skill.py
+          fi
+      - name: Vérifier les configurations synoptiques (indices de pression de surface)
+        env:
+          REQUESTED_MONTH: ${{ inputs.month }}
+        run: |
+          if [ -n "$REQUESTED_MONTH" ]; then
+            python scripts/build_model_regimes.py --month "$REQUESTED_MONTH"
+          else
+            python scripts/build_model_regimes.py
           fi
       - name: Publier uniquement les statistiques réellement vérifiées
         run: |
