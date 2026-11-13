@@ -31,9 +31,11 @@ async function main(){
  for(const [name,id] of selected){
   let model=state.models[id];
   if(!model||!Number.isInteger(model.next)||model.next<0||model.next>entries.length||
-   !Number.isFinite(Date.parse(model.generated_at_utc))||Date.now()-Date.parse(model.generated_at_utc)>6*3600000){
-   const periods=Object.fromEntries([0,1,2,3,5].map(j=>[String(j),{
-    start_day:api.kfsProbaDay(j===5?1:j),end_day:api.kfsProbaDay(j===5?5:j),
+   !Number.isFinite(Date.parse(model.generated_at_utc))||Date.now()-Date.parse(model.generated_at_utc)>6*3600000||
+  ![0,1,2,3,4,5,6].every(j=>model.periods?.[String(j)]?.start_day===api.kfsProbaDay(j===6?1:j)&&
+   model.periods?.[String(j)]?.end_day===api.kfsProbaDay(j===6?5:j))){
+   const periods=Object.fromEntries([0,1,2,3,4,5,6].map(j=>[String(j),{
+    start_day:api.kfsProbaDay(j===6?1:j),end_day:api.kfsProbaDay(j===6?5:j),
     zones:Object.fromEntries(Object.keys(points).map(zone=>[zone,{}]))
    }]));
    model=state.models[id]={name,next:0,generated_at_utc:new Date().toISOString(),periods};
@@ -71,7 +73,7 @@ async function main(){
        const values=fields[String(threshold)]??=new Array(points[zone].length).fill(null);
        const value=type==='orage'?api.kfsProbaStormMembers(hourly,period.start_day,threshold,period.end_day):
         api.kfsProbaMemberProbability(hourly,period.start_day,type,threshold,period.end_day);
-       values[index]=jour!=='5'&&type==='neige'&&point.elevation>800?null:value;
+       values[index]=jour!=='6'&&type==='neige'&&point.elevation>800?null:value;
       }
      }
      // Core variables must cover every point and the entire requested period.
