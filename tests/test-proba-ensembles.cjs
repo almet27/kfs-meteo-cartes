@@ -14,6 +14,7 @@ function api(){return new Function(source+`;return {
   if(d.features)kfsProbaFeatures=d.features;
   if(d.samples)kfsProbaSamples=d.samples;
   if(d.resolve)kfsProbaResolveEnsembles=d.resolve;
+  kfsProbaPeakDays=d.peak|| (async()=>null);
   if(d.edit)kfsProbaEdit=d.edit;
   kfsProbaDepartments=async()=>[];kfsProbaRender=()=>'<svg/>';kfsProbaPng=async()=>new Uint8Array([1]);
  }
@@ -135,4 +136,33 @@ test('publishing rejects missing shards, duplicate points, wrong dates and misma
  assert.throws(()=>merge(wrongDates),/Wrong shard forecast period/);
  const wrongGrid=structuredClone(shards);wrongGrid[0].zone_points.FR[0][0]+=1;
  assert.throws(()=>merge(wrongGrid),/Invalid shard metadata/);
+});
+
+test('five-day peak uses daily probabilities, not the cumulative probability or the strongest single grid point',async()=>{
+ const base=new Function(source+';return {kfsProbaDay};')().kfsProbaDay;
+ const points=[{lat:49,lon:1},{lat:48,lon:2}];
+ const probabilities=[[10,20],[30,40],[60,20],[15,70],[5,10]];
+ const models={};
+ for(const [id,shift] of [['ecmwf_ifs025_ensemble',0],['ncep_gefs025',10]]){
+  models[id]={generated_at_utc:new Date().toISOString(),periods:{}};
+  for(let d=1;d<=5;d++){
+   const date=base(d);
+   models[id].periods[d]={start_day:date,end_day:date,zones:{FR:{pluie:{'1':
+    probabilities[d-1].map(pct=>member(pct+shift,30,10))}}}};
+  }
+ }
+ const data={schema:2,provider:'Open-Meteo ECMWF ENS + GEFS members',
+  timezone:'Europe/Paris',zone_points:{FR:[[49,1],[48,2]]},models};
+ const peak=new Function('fetch',source+';return kfsProbaPeakDays;')(
+  async()=>new Response(JSON.stringify(data)));
+ const p=await peak('pluie',1,'FR',points);
+ assert.equal(p.locations[0].bestDay,3);
+ assert.equal(p.locations[1].bestDay,4);
+ assert.equal(p.bestDay,4);
+ assert.equal(p.locations[0].bestPct,65);
+ assert.equal(p.paired,2);
+ // The label is not produced when a threshold is never reached on any single day.
+ for(const model of Object.values(models))for(const period of Object.values(model.periods))
+  period.zones.FR.pluie['1']=period.zones.FR.pluie['1'].map(x=>({...x,pct:0}));
+ assert.equal((await peak('pluie',1,'FR',points)).bestDay,null);
 });
