@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated_utc": "2026-11-13T12:32:06Z",
+  "generated_utc": "2026-11-13T15:11:55Z",
   "models": {
     "ifs": {
       "source": "ECMWF IFS Open Data",
@@ -11,7 +11,8 @@
       "early_12h_available_for_latest_run": true,
       "latest_72h_temperature_step_utc": "2026-11-13T06:00:00Z",
       "temperature_72h_available_for_latest_run": true,
-      "all_required_fields_verified": false
+      "all_required_fields_verified": false,
+      "check_error": "Cannot establish latest date for {'date': ['2026-11-12 00:00:00'], 'model': ['ifs'], 'resol': ['0p25'], 'stream': ['oper'], 'type': ['fc'], 'step': ['3'], '_url': ['https://data.ecmwf.int/forecasts']}"
     },
     "aifs-single": {
       "source": "ECMWF AIFS Open Data",
@@ -22,7 +23,8 @@
       "early_12h_available_for_latest_run": true,
       "latest_72h_temperature_step_utc": "2026-11-13T06:00:00Z",
       "temperature_72h_available_for_latest_run": true,
-      "all_required_fields_verified": false
+      "all_required_fields_verified": false,
+      "check_error": "Cannot establish latest date for {'date': ['2026-11-12 00:00:00'], 'model': ['aifs-single'], 'resol': ['0p25'], 'stream': ['oper'], 'type': ['fc'], 'step': ['6'], '_url': ['https://data.ecmwf.int/fore"
     },
     "gfs": {
       "source": "NOAA NCEP GFS",
@@ -47,6 +49,9 @@
       "all_required_fields_verified": false
     }
   },
-  "warnings": {},
+  "warnings": {
+    "ifs": "Echec de la verification : pas de nouveau run annonce",
+    "aifs-single": "Echec de la verification : pas de nouveau run annonce"
+  },
   "note": "Latest source availability, not a completed/posted forecast map. GitHub scheduled checks may be delayed."
 }
