@@ -350,13 +350,22 @@ def render(metric, zone, records, shapes, timestamp, hours):
     area, bounds = ZONES[zone]
     x0, x1, y0, y1 = bounds
     points = [p for p in records if x0 <= p[0] <= x1 and y0 <= p[1] <= y1]
-    # France entiere : un format quasi carre exploite beaucoup mieux l'espace.
-    # Les quatre secteurs conservent leur cadrage vertical specifique.
-    # Les autres zones conservent leur format horizontal.
+    # Adapter le canevas aux proportions géographiques pour occuper
+    # réellement la largeur de l'image Discord (notamment les régions).
     france_zone = zone == "fr"
     quadrant_zone = zone in ("no", "ne", "so", "se")
-    figure_size = ((11.5, 11.5) if france_zone else
-                   (9.2, 12.8) if quadrant_zone else (12.8, 8.5))
+    if france_zone:
+        figure_size = (11.5, 11.5)
+    elif quadrant_zone:
+        figure_size = (9.2, 12.8)
+    elif zone == "eur2":
+        figure_size = (12.8, 8.5)
+    else:
+        lat_centre = (y0 + y1) / 2
+        hauteur_projetee = (y1 - y0) / max(.25, math.cos(math.radians(lat_centre)))
+        ratio_carte = hauteur_projetee / max(.5, x1 - x0)
+        largeur = 9.6
+        figure_size = (largeur, min(13.0, max(8.2, largeur * ratio_carte + 1.7)))
     fig, ax = plt.subplots(figsize=figure_size, dpi=150)
     fig.patch.set_facecolor("#101927")
     ax.set_facecolor("#172538")
@@ -457,41 +466,23 @@ def render(metric, zone, records, shapes, timestamp, hours):
     ax.tick_params(labelbottom=False, labelleft=False, bottom=False, left=False)
     for side in ax.spines.values():
         side.set_color("#405168")
-    fig.text(.055, .94, "KFS MÉTÉO  /  OBSERVATIONS", color="#65d8f7",
-             weight="bold", fontsize=17)
-    fig.text(.055, .89, title + " — " + area, color="white",
-             weight="bold", fontsize=17)
-    footer = (f"Stations : {len(points)} · mesure {timestamp} UTC"
-              + (f" · {hours} relevés horaires reçus" if metric in ("tmax","tmin","rafalesmax","pluie") else ""))
-    fig.text(.055, .04, footer, color="#cfdae9", fontsize=10.5)
-    fig.text(.055, .016, "Source : Météo-France · Contours : IGN / Admin Express (Licence Ouverte)",
-             color="#8da2b8", fontsize=9.5)
-    if metric in TEMPERATURE_METRICS:
-        fig.text(.5, .073, "Bleu : plus froid   ·   Rouge : plus chaud   ·   "
-                 "Dégradé estimé par interpolation entre stations",
-                 ha="center", color="#c6d4e4", fontsize=9.5)
-    elif metric == "pluie":
-        fig.text(.5, .073, "Cumul 24 h (mm) · Dégradé estimé entre les stations "
-                 "· Ne représente pas un relevé radar",
-                 ha="center", color="#c6d4e4", fontsize=9.5)
-    elif metric in WIND_METRICS:
-        fig.text(.5, .073, "Nombre : km/h · Flèche : sens où souffle le vent · "
-                 "Sans flèche = direction non mesurée ou vent très faible",
-                 ha="center", color="#c6d4e4", fontsize=9.5)
-    if quadrant_zone or france_zone:
-        # Maximiser la carte sans rogner le bandeau ni le pied.
-        fig.subplots_adjust(left=.035, right=.975, top=.86, bottom=.105)
-        if points:
-            # La legende doit avoir la MEME largeur que la carte visible.
-            # Par defaut Matplotlib lui laisse toute la largeur du canevas.
-            fig.canvas.draw()
-            map_box = ax.get_position()
-            scale_box = cb.ax.get_position()
-            cb.ax.set_axes_locator(None)
-            cb.ax.set_position((map_box.x0, scale_box.y0,
-                                map_box.width, scale_box.height))
-    else:
-        fig.subplots_adjust(left=.035, right=.975, top=.85, bottom=.13)
+    # Un seul titre : les détails indispensables restent discrets au pied.
+    fig.text(.04, .946, "KFS MÉTÉO · " + title + " — " + area,
+             color="white", weight="bold", fontsize=16)
+    fig.text(.04, .018,
+             f"{timestamp} UTC · {len(points)} stations · "
+             "Source : Météo-France · IGN / Admin Express (Licence Ouverte)",
+             color="#8da2b8", fontsize=9)
+    # Plus de paragraphes explicatifs dans l'image, la légende suffit.
+    fig.subplots_adjust(left=.035, right=.975, top=.905, bottom=.115)
+    if points:
+        # La légende adopte exactement la largeur utile de la carte.
+        fig.canvas.draw()
+        map_box = ax.get_position()
+        scale_box = cb.ax.get_position()
+        cb.ax.set_axes_locator(None)
+        cb.ax.set_position((map_box.x0, scale_box.y0,
+                            map_box.width, scale_box.height))
     OUT.mkdir(exist_ok=True)
     dest = OUT / f"{zone}-{metric}.png"
     fig.savefig(dest, facecolor=fig.get_facecolor(), dpi=150)
