@@ -26,8 +26,8 @@ function merge(shards){
     const key=zone+'/'+index;
     if(!points[zone]?.[index]||seen.has(key))throw Error('Duplicate or unknown shard point: '+key);
     seen.add(key);
-    for(const jour of [0,1,2,3,5]){
-     const start=api.kfsProbaDay(jour===5?1:jour),end=api.kfsProbaDay(jour===5?5:jour);
+    for(const jour of [0,1,2,3,4,5,6]){
+     const start=api.kfsProbaDay(jour===6?1:jour),end=api.kfsProbaDay(jour===6?5:jour);
      const period=m.periods?.[jour];
      if(period?.start_day!==start||period.end_day!==end)throw Error('Wrong shard forecast period');
      const target=model.periods[jour]??={start_day:start,end_day:end,zones:{}};
