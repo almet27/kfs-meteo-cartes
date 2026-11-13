@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_utc": "2026-11-13T00:43:35.482609+00:00",
+  "generated_utc": "2026-11-13T00:58:54.199734+00:00",
   "atlas_generated_utc": "2026-11-13T00:33:49.150772+00:00",
   "reference": "ECMWF Open Data, Copernicus DEM GLO-90 via Open-Meteo — champs géoréférencés",
   "stages": [
@@ -348,7 +348,7 @@
       "risks": {
         "neige": {
           "status": "indisponible",
-          "reason": "Filtre altitude indisponible : Altitude Copernicus non accessible : <urlopen error _ssl.c:1001: The handshake operation timed out>"
+          "reason": "Filtre altitude indisponible : Altitude Copernicus non accessible : HTTP Error 429: Too Many Requests"
         },
         "verglas": {
           "status": "indisponible",
