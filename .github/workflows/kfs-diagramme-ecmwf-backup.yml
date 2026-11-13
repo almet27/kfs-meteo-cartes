@@ -6,7 +6,9 @@ on:
       - scripts/build_diagramme_ecmwf_backup.py
       - .github/workflows/kfs-diagramme-ecmwf-backup.yml
   schedule:
-    - cron: '45 11,23 * * *'
+    # Tentatives anticipées puis rattrapage pour les runs longs 00Z / 12Z.
+    # ECMWF ne fournit le run complet que lorsque tous les pas sont publiés.
+    - cron: '30 9,11,21,23 * * *'
 permissions:
   contents: write
 concurrency:
