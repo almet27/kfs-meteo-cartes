@@ -71,7 +71,7 @@ test('daily and five-day messages describe equal weights and explicit single-sou
    {pct:70,amount:10,sources:[{id:'ecmwf_ifs025_ensemble',members:50}]}],
    results:[{name:'ECMWF IFS ENS',consulted:'2026-11-11T10:00:00.000Z'},{name:'GEFS NOAA',consulted:'2026-11-11T10:00:00.000Z'}]}),
   edit:async(_interaction,payload)=>messages.push(payload.content)});
- for(const day of [1,5])for(const [type,threshold] of [['pluie',10],['neige_chutes',1],['gel',0],['orage',2],['vent',90],['neige',1]])
+ for(const day of [1,6])for(const [type,threshold] of [['pluie',10],['neige_chutes',1],['gel',0],['orage',2],['vent',90],['neige',1]])
   assert.equal(await a.kfsProbaMultiComplete({},type,'FR',day,threshold),true);
  for(const content of messages){
   assert.match(content,/50 % ECMWF ENS \+ 50 % GEFS/);assert.match(content,/Mode dégradé/);
@@ -102,8 +102,8 @@ test('the builder checkpoints both models, resumes without redownloading, and ag
  }
  await run();assert.equal(calls,2);await run();assert.equal(calls,2);
  const output=JSON.parse([...disk].find(([p])=>p.endsWith('ensemble-probabilities.json'))[1]);
- const ens=output.models.ecmwf_ifs025_ensemble.periods['5'].zones.FR.pluie['40'][0];
- const gefs=output.models.ncep_gefs025.periods['5'].zones.FR.pluie['40'][0];
+ const ens=output.models.ecmwf_ifs025_ensemble.periods['6'].zones.FR.pluie['40'][0];
+ const gefs=output.models.ncep_gefs025.periods['6'].zones.FR.pluie['40'][0];
  assert.equal(ens.amount,120);assert.equal(ens.pct,100);assert.equal(gefs.pct,0);
  assert.equal(api().kfsProbaBlend([{id:'ens',values:[ens]},{id:'gefs',values:[gefs]}],1)[0].pct,50);
 });
@@ -118,11 +118,11 @@ test('publishing rejects missing shards, duplicate points, wrong dates and misma
  const shards=[];
  for(const id of ['ecmwf_ifs025_ensemble','ncep_gefs025'])for(const index of [0,1]){
   const periods={};
-  for(const jour of [0,1,2,3,5]){
+  for(const jour of [0,1,2,3,4,5,6]){
    const zones=Object.fromEntries(Object.entries(points).map(([zone,p])=>[zone,
     Object.fromEntries(Object.entries(rules).map(([type,rule])=>[type,
      Object.fromEntries(rule.allowed.map(t=>[t,p.map(()=>member(70,50))]))]))]));
-   periods[jour]={start_day:day(jour===5?1:jour),end_day:day(jour===5?5:jour),zones};
+   periods[jour]={start_day:day(jour===6?1:jour),end_day:day(jour===6?5:jour),zones};
   }
   shards.push({schema:2,provider:'Open-Meteo ECMWF ENS + GEFS members',timezone:'Europe/Paris',zone_points:points,
    partition:{model:id,index,total:2,points:entries.filter((_,i)=>i%2===index)},
