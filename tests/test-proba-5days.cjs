@@ -125,3 +125,11 @@ test('sensitive thunderstorm forecast detects weak to moderate environments with
  assert.equal(stormTier(180,0,15,null,-220,10),0);
  assert.equal(stormTier(1700,2.6,65,null,null,13),4);
 });
+
+test('five-day selection dispatches to the cumulative period, not the isolated J+5',async()=>{
+ let selectedDay;
+ const dispatch=new Function(source+';return {run:kfsProbaFiveDayComplete,set(fn){kfsProbaMultiComplete=fn;}};')();
+ dispatch.set(async(_interaction,_type,_zone,jour)=>{selectedDay=jour;return true;});
+ await dispatch.run({},'pluie','FR',1);
+ assert.equal(selectedDay,6);
+});
