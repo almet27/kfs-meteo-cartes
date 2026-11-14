@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_utc": "2026-11-14T19:58:14.239808+00:00",
+  "generated_utc": "2026-11-14T23:25:27.750098+00:00",
   "atlas_generated_utc": "2026-11-14T19:37:53.913171+00:00",
   "reference": "ECMWF Open Data, Copernicus DEM GLO-90 via Open-Meteo — champs géoréférencés",
   "stages": [
@@ -13,15 +13,8 @@
       "background_path": "forecast-maps/tendance/tendance-risques-fond-j3.png",
       "risks": {
         "neige": {
-          "status": "marque",
-          "max": 2.1,
-          "unit": "mm équiv. eau/6h",
-          "reason": "Neige hors relief ≤ 800 m, hors vallée de montagne (Copernicus GLO-90) ; relief : 30 zones échantillonnées",
-          "mountain_signal": true,
-          "mountain_max": 7.9,
-          "lowland_sample_count": 10,
-          "highland_sample_count": 30,
-          "terrain_source": "Copernicus DEM GLO-90 via Open-Meteo"
+          "status": "indisponible",
+          "reason": "Filtre altitude indisponible : Altitude Copernicus non accessible : <urlopen error _ssl.c:1001: The handshake operation timed out>"
         },
         "verglas": {
           "status": "indisponible",
@@ -64,14 +57,6 @@
           "kind": "pluie_forte"
         },
         {
-          "lon": 6.5,
-          "lat": 52.75,
-          "value": 2.1,
-          "kind": "neige",
-          "altitude_m": 12,
-          "terrain_context": "hors relief marqué"
-        },
-        {
           "lon": -8.0,
           "lat": 47.75,
           "value": 71.8,
@@ -88,14 +73,6 @@
           "lat": 45.75,
           "value": 65.4,
           "kind": "vent_fort"
-        },
-        {
-          "lon": 10.5,
-          "lat": 51.75,
-          "value": 1.7,
-          "kind": "neige",
-          "altitude_m": 798,
-          "terrain_context": "hors relief marqué"
         },
         {
           "lon": 9.5,
@@ -138,15 +115,8 @@
       "background_path": "forecast-maps/tendance/tendance-risques-fond-j7.png",
       "risks": {
         "neige": {
-          "status": "marque",
-          "max": 3.2,
-          "unit": "mm équiv. eau/6h",
-          "reason": "Neige hors relief ≤ 800 m, hors vallée de montagne (Copernicus GLO-90) ; relief : 14 zones échantillonnées",
-          "mountain_signal": true,
-          "mountain_max": 3.9,
-          "lowland_sample_count": 3,
-          "highland_sample_count": 14,
-          "terrain_source": "Copernicus DEM GLO-90 via Open-Meteo"
+          "status": "indisponible",
+          "reason": "Filtre altitude indisponible : Altitude Copernicus non accessible : <urlopen error _ssl.c:1001: The handshake operation timed out>"
         },
         "verglas": {
           "status": "indisponible",
@@ -182,14 +152,6 @@
         }
       },
       "markers": [
-        {
-          "lon": 10.25,
-          "lat": 51.75,
-          "value": 3.2,
-          "kind": "neige",
-          "altitude_m": 260,
-          "terrain_context": "hors relief marqué"
-        },
         {
           "lon": -9.75,
           "lat": 48.5,
