@@ -1,0 +1,50 @@
+{
+  "status": "prototype_ne_pas_diffuser",
+  "generated_utc": "2026-11-14T01:30:09.860965+00:00",
+  "product": "ECMWF seamless weekly ensemble mean via Open-Meteo",
+  "region": "Atlantique nord oriental / Europe",
+  "points": 99,
+  "grid": "coarse_experimental",
+  "analysis": "analysis-TEST.json",
+  "analysis_text": "bulletin-TEST.txt",
+  "source_run_utc": null,
+  "basemap": "Natural Earth 50m via Cartopy (coasts, land/ocean, borders)",
+  "periods": [
+    {
+      "start": "2026-11-16",
+      "end": "2026-11-22"
+    },
+    {
+      "start": "2026-11-23",
+      "end": "2026-11-29"
+    },
+    {
+      "start": "2026-11-30",
+      "end": "2026-12-06"
+    },
+    {
+      "start": "2026-12-07",
+      "end": "2026-12-13"
+    }
+  ],
+  "units": {
+    "time": "iso8601",
+    "pressure_msl_mean": "hPa",
+    "pressure_msl_anomaly": "hPa",
+    "temperature_2m_anomaly": "K",
+    "precipitation_anomaly": "mm",
+    "wind_u_component_10m_mean": "km/h",
+    "wind_v_component_10m_mean": "km/h"
+  },
+  "files": [
+    "centres-action-4semaines-TEST.png",
+    "anomalies-thermiques-4semaines-TEST.png"
+  ],
+  "warnings": [
+    "Source avec données non corrigées des biais, résolution grossière.",
+    "4 semaines moyennes ; ne prédit pas la position exacte des centres d'action.",
+    "Aucune donnée T850 ou Z500 ; les flèches représentent vent à 10m.",
+    "Pas de vérification de dispersion des membres de l'ensemble.",
+    "Aucune donnée importée dans le bot Discord."
+  ]
+}
