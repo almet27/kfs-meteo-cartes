@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "generated_utc": "2026-11-13T19:58:52.295194+00:00",
-  "atlas_generated_utc": "2026-11-13T19:39:06.264057+00:00",
+  "generated_utc": "2026-11-14T00:29:45.373238+00:00",
+  "atlas_generated_utc": "2026-11-13T23:28:01.880700+00:00",
   "reference": "ECMWF Open Data, Copernicus DEM GLO-90 via Open-Meteo — champs géoréférencés",
   "stages": [
     {
@@ -317,20 +317,15 @@
       "id": "j15",
       "step_h": 360,
       "model": "aifs-single",
-      "run_utc": "2026-11-13T12:00:00+00:00",
-      "valid_utc": "2026-11-28T12:00:00+00:00",
+      "run_utc": "2026-11-13T18:00:00+00:00",
+      "valid_utc": "2026-11-28T18:00:00+00:00",
       "background_path": "forecast-maps/tendance/tendance-risques-fond-j15.png",
       "risks": {
         "neige": {
-          "status": "possible",
-          "max": 0.5,
+          "status": "absent",
+          "max": 0.0,
           "unit": "mm équiv. eau/6h",
-          "reason": "Neige hors relief ≤ 800 m, hors vallée de montagne (Copernicus GLO-90) ; relief : 23 zones échantillonnées",
-          "mountain_signal": true,
-          "mountain_max": 1.0,
-          "lowland_sample_count": 2,
-          "highland_sample_count": 23,
-          "terrain_source": "Copernicus DEM GLO-90 via Open-Meteo"
+          "reason": "Pas de neige ≥ 0,5 mm/6h sur le domaine terrestre"
         },
         "verglas": {
           "status": "indisponible",
@@ -342,7 +337,7 @@
         },
         "tempete": {
           "status": "absent",
-          "max": 44.6,
+          "max": 47.4,
           "unit": "km/h (vent moyen 10 m)",
           "reason": "Signal de vent soutenu, pas une vigilance tempête"
         },
@@ -360,21 +355,12 @@
         },
         "pluie_forte": {
           "status": "absent",
-          "max": 8.0,
+          "max": 7.0,
           "unit": "mm/6h",
           "reason": "Cumul des 6 heures précédant l'échéance"
         }
       },
-      "markers": [
-        {
-          "lon": 12.0,
-          "lat": 52.5,
-          "value": 0.5,
-          "kind": "neige",
-          "altitude_m": 33,
-          "terrain_context": "hors relief marqué"
-        }
-      ],
+      "markers": [],
       "t850_shading": {
         "enabled": true,
         "level_hpa": 850,
