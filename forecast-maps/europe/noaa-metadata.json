@@ -1,10 +1,10 @@
 {
-  "generated_utc": "2026-11-15T05:08:28.547180+00:00",
-  "run_utc": "2026-11-15T00:00:00+00:00",
+  "generated_utc": "2026-11-15T09:43:46.200957+00:00",
+  "run_utc": "2026-11-15T06:00:00+00:00",
   "runs_utc": {
     "gfs": {
-      "24": "2026-11-15T00:00:00+00:00",
-      "48": "2026-11-15T00:00:00+00:00",
+      "24": "2026-11-15T06:00:00+00:00",
+      "48": "2026-11-15T06:00:00+00:00",
       "72": "2026-11-15T00:00:00+00:00",
       "120": "2026-11-15T00:00:00+00:00",
       "168": "2026-11-15T00:00:00+00:00",
@@ -13,7 +13,7 @@
     },
     "aigfs": {
       "24": "2026-11-15T00:00:00+00:00",
-      "48": "2026-11-15T00:00:00+00:00",
+      "48": "2026-11-15T06:00:00+00:00",
       "72": "2026-11-15T00:00:00+00:00",
       "120": "2026-11-15T00:00:00+00:00",
       "168": "2026-11-15T00:00:00+00:00",
@@ -132,15 +132,15 @@
         "rain6h": "APCP_6h*(1-CPOFP_at_valid_time/100)",
         "snow6h": "APCP_6h*CPOFP_at_valid_time/100",
         "warning": "ESTIMATION. CPOFP est instantané en fin d'intervalle. Le champ snow6h contient les précipitations gelées (dont neige, potentiellement grésil), et non un cumul neige natif.",
-        "wet_cells_with_valid_phase": 15671,
-        "wet_cells_total": 51100
+        "wet_cells_with_valid_phase": 14971,
+        "wet_cells_total": 50510
       },
       "48": {
         "rain6h": "APCP_6h*(1-CPOFP_at_valid_time/100)",
         "snow6h": "APCP_6h*CPOFP_at_valid_time/100",
         "warning": "ESTIMATION. CPOFP est instantané en fin d'intervalle. Le champ snow6h contient les précipitations gelées (dont neige, potentiellement grésil), et non un cumul neige natif.",
-        "wet_cells_with_valid_phase": 15281,
-        "wet_cells_total": 50423
+        "wet_cells_with_valid_phase": 16106,
+        "wet_cells_total": 52288
       },
       "72": {
         "rain6h": "APCP_6h*(1-CPOFP_at_valid_time/100)",
@@ -179,5 +179,7 @@
       }
     }
   },
-  "errors": {}
+  "errors": {
+    "aigfs-h024-z500_msl": "[Errno 2] No such file or directory: '/home/runner/data/aigfs/20261115/subset_c10eb0ae__aigfs.t06z.pres.f024.grib2'"
+  }
 }
