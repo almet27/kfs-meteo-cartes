@@ -1,27 +1,20 @@
 {
   "schema_version": 1,
-  "generated_utc": "2026-11-15T00:14:12.842093+00:00",
-  "atlas_generated_utc": "2026-11-14T23:27:43.400449+00:00",
+  "generated_utc": "2026-11-15T07:23:37.635818+00:00",
+  "atlas_generated_utc": "2026-11-15T05:23:30.390852+00:00",
   "reference": "ECMWF Open Data, Copernicus DEM GLO-90 via Open-Meteo — champs géoréférencés",
   "stages": [
     {
       "id": "j3",
       "step_h": 72,
       "model": "ifs",
-      "run_utc": "2026-11-14T12:00:00+00:00",
-      "valid_utc": "2026-11-17T12:00:00+00:00",
+      "run_utc": "2026-11-14T18:00:00+00:00",
+      "valid_utc": "2026-11-17T18:00:00+00:00",
       "background_path": "forecast-maps/tendance/tendance-risques-fond-j3.png",
       "risks": {
         "neige": {
-          "status": "marque",
-          "max": 2.1,
-          "unit": "mm équiv. eau/6h",
-          "reason": "Neige hors relief ≤ 800 m, hors vallée de montagne (Copernicus GLO-90) ; relief : 30 zones échantillonnées",
-          "mountain_signal": true,
-          "mountain_max": 7.9,
-          "lowland_sample_count": 10,
-          "highland_sample_count": 30,
-          "terrain_source": "Copernicus DEM GLO-90 via Open-Meteo"
+          "status": "indisponible",
+          "reason": "Filtre altitude indisponible : Altitude Copernicus non accessible : <urlopen error _ssl.c:1001: The handshake operation timed out>"
         },
         "verglas": {
           "status": "indisponible",
@@ -32,8 +25,8 @@
           "reason": "Champs spécifiques non disponibles"
         },
         "tempete": {
-          "status": "marque",
-          "max": 71.8,
+          "status": "possible",
+          "max": 65.9,
           "unit": "km/h (vent moyen 10 m)",
           "reason": "Signal de vent soutenu, pas une vigilance tempête"
         },
@@ -51,68 +44,52 @@
         },
         "pluie_forte": {
           "status": "marque",
-          "max": 22.0,
+          "max": 30.3,
           "unit": "mm/6h",
           "reason": "Cumul des 6 heures précédant l'échéance"
         }
       },
       "markers": [
         {
-          "lon": -3.75,
-          "lat": 51.5,
-          "value": 22.0,
-          "kind": "pluie_forte"
-        },
-        {
-          "lon": 6.5,
-          "lat": 52.75,
-          "value": 2.1,
-          "kind": "neige",
-          "altitude_m": 12,
-          "terrain_context": "hors relief marqué"
-        },
-        {
-          "lon": -8.0,
-          "lat": 47.75,
-          "value": 71.8,
-          "kind": "vent_fort"
-        },
-        {
-          "lon": -1.0,
-          "lat": 50.0,
-          "value": 68.5,
-          "kind": "vent_fort"
-        },
-        {
-          "lon": -9.25,
-          "lat": 45.75,
-          "value": 65.4,
-          "kind": "vent_fort"
-        },
-        {
-          "lon": 10.5,
-          "lat": 51.75,
-          "value": 1.7,
-          "kind": "neige",
-          "altitude_m": 798,
-          "terrain_context": "hors relief marqué"
-        },
-        {
-          "lon": 9.5,
-          "lat": 50.0,
-          "value": 16.1,
-          "kind": "pluie_forte"
-        },
-        {
-          "lon": -1.75,
-          "lat": 43.5,
-          "value": 13.7,
-          "kind": "pluie_forte"
-        },
-        {
-          "lon": 10.5,
+          "lon": 10.25,
           "lat": 44.0,
-          "value": 13.2,
+          "value": 30.3,
+          "kind": "pluie_forte"
+        },
+        {
+          "lon": -4.25,
+          "lat": 45.0,
+          "value": 65.9,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": -7.75,
+          "lat": 44.5,
+          "value": 63.1,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": 10.25,
+          "lat": 41.75,
+          "value": 59.7,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": 0.0,
+          "lat": 44.25,
+          "value": 14.4,
+          "kind": "pluie_forte"
+        },
+        {
+          "lon": 0.75,
+          "lat": 50.0,
+          "value": 11.5,
+          "kind": "pluie_forte"
+        },
+        {
+          "lon": 7.25,
+          "lat": 46.25,
+          "value": 11.1,
           "kind": "pluie_forte"
         }
       ],
@@ -138,15 +115,8 @@
       "background_path": "forecast-maps/tendance/tendance-risques-fond-j7.png",
       "risks": {
         "neige": {
-          "status": "marque",
-          "max": 3.2,
-          "unit": "mm équiv. eau/6h",
-          "reason": "Neige hors relief ≤ 800 m, hors vallée de montagne (Copernicus GLO-90) ; relief : 14 zones échantillonnées",
-          "mountain_signal": true,
-          "mountain_max": 3.9,
-          "lowland_sample_count": 3,
-          "highland_sample_count": 14,
-          "terrain_source": "Copernicus DEM GLO-90 via Open-Meteo"
+          "status": "indisponible",
+          "reason": "Filtre altitude indisponible : Altitude Copernicus non accessible : <urlopen error _ssl.c:1001: The handshake operation timed out>"
         },
         "verglas": {
           "status": "indisponible",
@@ -182,14 +152,6 @@
         }
       },
       "markers": [
-        {
-          "lon": 10.25,
-          "lat": 51.75,
-          "value": 3.2,
-          "kind": "neige",
-          "altitude_m": 260,
-          "terrain_context": "hors relief marqué"
-        },
         {
           "lon": -9.75,
           "lat": 48.5,
@@ -243,15 +205,8 @@
       "background_path": "forecast-maps/tendance/tendance-risques-fond-j10.png",
       "risks": {
         "neige": {
-          "status": "relief_uniquement",
-          "max": 0,
-          "unit": "mm équiv. eau/6h",
-          "reason": "Neige hors relief ≤ 800 m, hors vallée de montagne (Copernicus GLO-90) ; relief : 15 zones échantillonnées",
-          "mountain_signal": true,
-          "mountain_max": 5.6,
-          "lowland_sample_count": 0,
-          "highland_sample_count": 15,
-          "terrain_source": "Copernicus DEM GLO-90 via Open-Meteo"
+          "status": "indisponible",
+          "reason": "Filtre altitude indisponible : Altitude Copernicus non accessible : <urlopen error _ssl.c:1001: The handshake operation timed out>"
         },
         "verglas": {
           "status": "indisponible",
@@ -335,8 +290,8 @@
       "id": "j15",
       "step_h": 360,
       "model": "aifs-single",
-      "run_utc": "2026-11-14T18:00:00+00:00",
-      "valid_utc": "2026-11-29T18:00:00+00:00",
+      "run_utc": "2026-11-15T00:00:00+00:00",
+      "valid_utc": "2026-11-30T00:00:00+00:00",
       "background_path": "forecast-maps/tendance/tendance-risques-fond-j15.png",
       "risks": {
         "neige": {
@@ -355,7 +310,7 @@
         },
         "tempete": {
           "status": "possible",
-          "max": 64.2,
+          "max": 60.6,
           "unit": "km/h (vent moyen 10 m)",
           "reason": "Signal de vent soutenu, pas une vigilance tempête"
         },
@@ -373,34 +328,34 @@
         },
         "pluie_forte": {
           "status": "possible",
-          "max": 10.8,
+          "max": 11.8,
           "unit": "mm/6h",
           "reason": "Cumul des 6 heures précédant l'échéance"
         }
       },
       "markers": [
         {
-          "lon": -5.0,
-          "lat": 52.5,
-          "value": 64.2,
-          "kind": "vent_fort"
-        },
-        {
-          "lon": -8.0,
-          "lat": 51.5,
-          "value": 62.0,
-          "kind": "vent_fort"
-        },
-        {
-          "lon": -10.0,
-          "lat": 50.0,
-          "value": 58.8,
+          "lon": -8.25,
+          "lat": 46.5,
+          "value": 60.6,
           "kind": "vent_fort"
         },
         {
           "lon": -9.75,
-          "lat": 52.0,
-          "value": 10.8,
+          "lat": 44.5,
+          "value": 59.4,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": -5.75,
+          "lat": 47.75,
+          "value": 56.9,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": -10.0,
+          "lat": 46.75,
+          "value": 11.8,
           "kind": "pluie_forte"
         }
       ],
