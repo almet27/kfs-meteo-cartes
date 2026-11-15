@@ -1,32 +1,190 @@
 {
   "schema_version": 1,
-  "verified": false,
-  "generated_utc": "2026-11-15T19:53:13Z",
+  "verified": true,
+  "generated_utc": "2026-11-15T23:02:51Z",
   "source": "ECMWF OpenCharts — Sub-seasonal ensemble weekly anomalies",
   "base_time_utc": "2026-11-12T00:00:00Z",
   "weeks": [
     3,
     4
   ],
-  "temperature_anomalies_verified": false,
-  "precipitation_anomalies_verified": false,
-  "charts": {},
-  "probability_charts": {},
-  "synoptic_charts": {},
-  "note": "Authentic ECMWF weekly products. Images are not numerical anomaly values or ensemble spread.",
-  "copyright": "© ECMWF, CC BY 4.0; original image and product links retained per chart.",
-  "alerts": [
-    "Week 3 charts/t2m unavailable: ECMWF reuse licence missing or unexpected",
-    "Week 3 charts/precip unavailable: ECMWF reuse licence missing or unexpected",
-    "Week 3 probability_charts/t2m unavailable: ECMWF reuse licence missing or unexpected",
-    "Week 3 probability_charts/precip unavailable: ECMWF reuse licence missing or unexpected",
-    "Week 3 synoptic_charts/mslp unavailable: ECMWF reuse licence missing or unexpected",
-    "Week 3 synoptic_charts/z500 unavailable: ECMWF reuse licence missing or unexpected",
-    "Week 4 charts/t2m unavailable: ECMWF reuse licence missing or unexpected",
-    "Week 4 charts/precip unavailable: ECMWF reuse licence missing or unexpected",
-    "Week 4 probability_charts/t2m unavailable: ECMWF reuse licence missing or unexpected",
-    "Week 4 probability_charts/precip unavailable: ECMWF reuse licence missing or unexpected",
-    "Week 4 synoptic_charts/mslp unavailable: ECMWF reuse licence missing or unexpected",
-    "Week 4 synoptic_charts/z500 unavailable: ECMWF reuse licence missing or unexpected"
-  ]
+  "temperature_anomalies_verified": true,
+  "precipitation_anomalies_verified": true,
+  "charts": {
+    "3": {
+      "t2m": {
+        "product": "extended-anomaly-2t",
+        "file_path": "forecast-maps/tendance/weekly-week3-t2m.png",
+        "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/weekly-week3-t2m.png",
+        "ecmwf_content_url": "https://charts.ecmwf.int/content/20261112220259-cd028a84c331c6846952fe60576f13bcf07f88e3.png",
+        "ecmwf_product_url": "https://charts.ecmwf.int/opencharts-api/v1/products/extended-anomaly-2t/?base_time=2026-11-12T00%3A00%3A00Z&valid_time=2026-12-07T00%3A00%3A00Z&projection=opencharts_eurasia",
+        "description": "Base time: Thu 12 Nov 2026 Valid time: Mon 30 Nov 2026 - Mon 07 Dec 2026 (+600h) Area : Eurasia",
+        "size_bytes": 1492607,
+        "sha256": "8e017150f4b5b42756fba5d25db8b65afb992fcd30c8ae39a31663e68268ad46",
+        "chart_type": "weekly ensemble mean anomaly",
+        "valid_start_utc": "2026-11-30T00:00:00Z",
+        "valid_end_utc": "2026-12-07T00:00:00Z"
+      },
+      "precip": {
+        "product": "extended-anomaly-tp",
+        "file_path": "forecast-maps/tendance/weekly-week3-precip.png",
+        "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/weekly-week3-precip.png",
+        "ecmwf_content_url": "https://charts.ecmwf.int/content/20261112220346-5ec5d4009cb0792db24d7322b4f894c09a64a7c8.png",
+        "ecmwf_product_url": "https://charts.ecmwf.int/opencharts-api/v1/products/extended-anomaly-tp/?base_time=2026-11-12T00%3A00%3A00Z&valid_time=2026-12-07T00%3A00%3A00Z&projection=opencharts_eurasia",
+        "description": "Base time: Thu 12 Nov 2026 Valid time: Mon 30 Nov 2026 - Mon 07 Dec 2026 (+600h) Area : Eurasia",
+        "size_bytes": 1638902,
+        "sha256": "02290cdfbad2685f46f054d58753a89c665ac38e1bcf16c005e69c991db56a66",
+        "chart_type": "weekly ensemble mean anomaly",
+        "valid_start_utc": "2026-11-30T00:00:00Z",
+        "valid_end_utc": "2026-12-07T00:00:00Z"
+      }
+    },
+    "4": {
+      "t2m": {
+        "product": "extended-anomaly-2t",
+        "file_path": "forecast-maps/tendance/weekly-week4-t2m.png",
+        "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/weekly-week4-t2m.png",
+        "ecmwf_content_url": "https://charts.ecmwf.int/content/20261113234519-76e7fb1a9769a92a1c2bf1c936967aa128ebb101.png",
+        "ecmwf_product_url": "https://charts.ecmwf.int/opencharts-api/v1/products/extended-anomaly-2t/?base_time=2026-11-12T00%3A00%3A00Z&valid_time=2026-12-14T00%3A00%3A00Z&projection=opencharts_eurasia",
+        "description": "Base time: Thu 12 Nov 2026 Valid time: Mon 07 Dec 2026 - Mon 14 Dec 2026 (+768h) Area : Eurasia",
+        "size_bytes": 1497423,
+        "sha256": "eecee8b253a5490d04521a0c7c76584b104909f874c7a422d02e527968885569",
+        "chart_type": "weekly ensemble mean anomaly",
+        "valid_start_utc": "2026-12-07T00:00:00Z",
+        "valid_end_utc": "2026-12-14T00:00:00Z"
+      },
+      "precip": {
+        "product": "extended-anomaly-tp",
+        "file_path": "forecast-maps/tendance/weekly-week4-precip.png",
+        "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/weekly-week4-precip.png",
+        "ecmwf_content_url": "https://charts.ecmwf.int/content/20261112220355-a8552c8288ffa6abfd0fffd698b95011fa3a08ef.png",
+        "ecmwf_product_url": "https://charts.ecmwf.int/opencharts-api/v1/products/extended-anomaly-tp/?base_time=2026-11-12T00%3A00%3A00Z&valid_time=2026-12-14T00%3A00%3A00Z&projection=opencharts_eurasia",
+        "description": "Base time: Thu 12 Nov 2026 Valid time: Mon 07 Dec 2026 - Mon 14 Dec 2026 (+768h) Area : Eurasia",
+        "size_bytes": 1523257,
+        "sha256": "5644ea0fecfaa98148b82191e61abd0953a2508a8303a45f4cc3f3be4d7ae4c0",
+        "chart_type": "weekly ensemble mean anomaly",
+        "valid_start_utc": "2026-12-07T00:00:00Z",
+        "valid_end_utc": "2026-12-14T00:00:00Z"
+      }
+    }
+  },
+  "probability_charts": {
+    "3": {
+      "t2m": {
+        "product": "extended-prob-anom-2t",
+        "file_path": "forecast-maps/tendance/weekly-week3-prob-t2m.png",
+        "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/weekly-week3-prob-t2m.png",
+        "ecmwf_content_url": "https://charts.ecmwf.int/content/20261113234529-777fc8d55528e88390163ffcbb34d9594c0b1f7d.png",
+        "ecmwf_product_url": "https://charts.ecmwf.int/opencharts-api/v1/products/extended-prob-anom-2t/?base_time=2026-11-12T00%3A00%3A00Z&valid_time=2026-12-07T00%3A00%3A00Z&projection=opencharts_eurasia",
+        "description": "Base time: Thu 12 Nov 2026 Valid time: Mon 30 Nov 2026 - Mon 07 Dec 2026 (+600h) Area : Eurasia",
+        "size_bytes": 1642656,
+        "sha256": "baf2339b4a4f79b701ab9d43ce5e543f7e406cf73df2da4642b3a0f2aca43226",
+        "chart_type": "ensemble probability of anomaly",
+        "valid_start_utc": "2026-11-30T00:00:00Z",
+        "valid_end_utc": "2026-12-07T00:00:00Z"
+      },
+      "precip": {
+        "product": "extended-prob-anom-tp",
+        "file_path": "forecast-maps/tendance/weekly-week3-prob-precip.png",
+        "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/weekly-week3-prob-precip.png",
+        "ecmwf_content_url": "https://charts.ecmwf.int/content/20261112234423-c385d8086e25748d7e490eaebac72a2df2042c89.png",
+        "ecmwf_product_url": "https://charts.ecmwf.int/opencharts-api/v1/products/extended-prob-anom-tp/?base_time=2026-11-12T00%3A00%3A00Z&valid_time=2026-12-07T00%3A00%3A00Z&projection=opencharts_eurasia",
+        "description": "Base time: Thu 12 Nov 2026 Valid time: Mon 30 Nov 2026 - Mon 07 Dec 2026 (+600h) Area : Eurasia",
+        "size_bytes": 1558173,
+        "sha256": "09d50eb9fddee808793ffbcf2a44f1c78a392f94c32d694a2aad0711a9a5487d",
+        "chart_type": "ensemble probability of anomaly",
+        "valid_start_utc": "2026-11-30T00:00:00Z",
+        "valid_end_utc": "2026-12-07T00:00:00Z"
+      }
+    },
+    "4": {
+      "t2m": {
+        "product": "extended-prob-anom-2t",
+        "file_path": "forecast-maps/tendance/weekly-week4-prob-t2m.png",
+        "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/weekly-week4-prob-t2m.png",
+        "ecmwf_content_url": "https://charts.ecmwf.int/content/20261113234539-d9937c34556447414ca5d4b620a130b1b26ecf44.png",
+        "ecmwf_product_url": "https://charts.ecmwf.int/opencharts-api/v1/products/extended-prob-anom-2t/?base_time=2026-11-12T00%3A00%3A00Z&valid_time=2026-12-14T00%3A00%3A00Z&projection=opencharts_eurasia",
+        "description": "Base time: Thu 12 Nov 2026 Valid time: Mon 07 Dec 2026 - Mon 14 Dec 2026 (+768h) Area : Eurasia",
+        "size_bytes": 1587607,
+        "sha256": "31c74658b432e6318255a681c583c8e0c5326f8451886e0e1c5dec4db5ce758f",
+        "chart_type": "ensemble probability of anomaly",
+        "valid_start_utc": "2026-12-07T00:00:00Z",
+        "valid_end_utc": "2026-12-14T00:00:00Z"
+      },
+      "precip": {
+        "product": "extended-prob-anom-tp",
+        "file_path": "forecast-maps/tendance/weekly-week4-prob-precip.png",
+        "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/weekly-week4-prob-precip.png",
+        "ecmwf_content_url": "https://charts.ecmwf.int/content/20261112234447-f636f42be040ed89f64b0deaea3ccb2bf27e14ed.png",
+        "ecmwf_product_url": "https://charts.ecmwf.int/opencharts-api/v1/products/extended-prob-anom-tp/?base_time=2026-11-12T00%3A00%3A00Z&valid_time=2026-12-14T00%3A00%3A00Z&projection=opencharts_eurasia",
+        "description": "Base time: Thu 12 Nov 2026 Valid time: Mon 07 Dec 2026 - Mon 14 Dec 2026 (+768h) Area : Eurasia",
+        "size_bytes": 1447671,
+        "sha256": "2991eba72866da6f745cca04c24d118f91621637bba5f1e808d837bd9758a7a2",
+        "chart_type": "ensemble probability of anomaly",
+        "valid_start_utc": "2026-12-07T00:00:00Z",
+        "valid_end_utc": "2026-12-14T00:00:00Z"
+      }
+    }
+  },
+  "synoptic_charts": {
+    "3": {
+      "mslp": {
+        "product": "extended-anomaly-mslp",
+        "file_path": "forecast-maps/tendance/weekly-week3-mslp.png",
+        "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/weekly-week3-mslp.png",
+        "ecmwf_content_url": "https://charts.ecmwf.int/content/20261113234546-0bc3e663d575f63269d6925507eccf1000f8d458.png",
+        "ecmwf_product_url": "https://charts.ecmwf.int/opencharts-api/v1/products/extended-anomaly-mslp/?base_time=2026-11-12T00%3A00%3A00Z&valid_time=2026-12-07T00%3A00%3A00Z&projection=opencharts_eurasia",
+        "description": "Base time: Thu 12 Nov 2026 Valid time: Mon 30 Nov 2026 - Mon 07 Dec 2026 (+600h) Area : Eurasia",
+        "size_bytes": 1084372,
+        "sha256": "ce93d7eb5371151536efa5d33276198eef6dab726e8edad1725e5d0097b77783",
+        "chart_type": "weekly ensemble mean anomaly",
+        "valid_start_utc": "2026-11-30T00:00:00Z",
+        "valid_end_utc": "2026-12-07T00:00:00Z"
+      },
+      "z500": {
+        "product": "extended-anomaly-z500",
+        "file_path": "forecast-maps/tendance/weekly-week3-z500.png",
+        "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/weekly-week3-z500.png",
+        "ecmwf_content_url": "https://charts.ecmwf.int/content/20261115230244-fa6778122000d1cfc5bd76aedbc1b38fb288d2d2.png",
+        "ecmwf_product_url": "https://charts.ecmwf.int/opencharts-api/v1/products/extended-anomaly-z500/?base_time=2026-11-12T00%3A00%3A00Z&valid_time=2026-12-07T00%3A00%3A00Z&projection=opencharts_eurasia",
+        "description": "Base time: Thu 12 Nov 2026 Valid time: Mon 30 Nov 2026 - Mon 07 Dec 2026 (+600h) Area : Eurasia",
+        "size_bytes": 1168559,
+        "sha256": "b9d581684eaef6b0b871fae9092fc92a60ed900b0fdfc1e114bb9b81ede2549c",
+        "chart_type": "weekly ensemble mean anomaly",
+        "valid_start_utc": "2026-11-30T00:00:00Z",
+        "valid_end_utc": "2026-12-07T00:00:00Z"
+      }
+    },
+    "4": {
+      "mslp": {
+        "product": "extended-anomaly-mslp",
+        "file_path": "forecast-maps/tendance/weekly-week4-mslp.png",
+        "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/weekly-week4-mslp.png",
+        "ecmwf_content_url": "https://charts.ecmwf.int/content/20261112220535-ac06f7542c5cf9f2c5e9a6017dc3796ffefed78b.png",
+        "ecmwf_product_url": "https://charts.ecmwf.int/opencharts-api/v1/products/extended-anomaly-mslp/?base_time=2026-11-12T00%3A00%3A00Z&valid_time=2026-12-14T00%3A00%3A00Z&projection=opencharts_eurasia",
+        "description": "Base time: Thu 12 Nov 2026 Valid time: Mon 07 Dec 2026 - Mon 14 Dec 2026 (+768h) Area : Eurasia",
+        "size_bytes": 1003711,
+        "sha256": "ac4f76efa8074a3a07a9dc3e12cb9439cbd387dc70139523e91dbba2126c21b8",
+        "chart_type": "weekly ensemble mean anomaly",
+        "valid_start_utc": "2026-12-07T00:00:00Z",
+        "valid_end_utc": "2026-12-14T00:00:00Z"
+      },
+      "z500": {
+        "product": "extended-anomaly-z500",
+        "file_path": "forecast-maps/tendance/weekly-week4-z500.png",
+        "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/weekly-week4-z500.png",
+        "ecmwf_content_url": "https://charts.ecmwf.int/content/20261112220443-b7000a536fb792e90012ee9fa917c3badb7e42f6.png",
+        "ecmwf_product_url": "https://charts.ecmwf.int/opencharts-api/v1/products/extended-anomaly-z500/?base_time=2026-11-12T00%3A00%3A00Z&valid_time=2026-12-14T00%3A00%3A00Z&projection=opencharts_eurasia",
+        "description": "Base time: Thu 12 Nov 2026 Valid time: Mon 07 Dec 2026 - Mon 14 Dec 2026 (+768h) Area : Eurasia",
+        "size_bytes": 1133602,
+        "sha256": "50c7615d1a7018d8777df097929f3b7ae7cede3e036f519cf8a04d7e301e45c5",
+        "chart_type": "weekly ensemble mean anomaly",
+        "valid_start_utc": "2026-12-07T00:00:00Z",
+        "valid_end_utc": "2026-12-14T00:00:00Z"
+      }
+    }
+  },
+  "note": "Official ECMWF weekly anomaly PNGs downloaded and validated for both weeks. No numeric anomaly magnitude or ensemble spread inferred from images; interpretation requires chart review.",
+  "copyright": "© ECMWF — original product URLs and provenance provided.",
+  "alerts": []
 }
