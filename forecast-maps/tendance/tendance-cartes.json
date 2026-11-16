@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
   "status": "illustrative_model_maps",
-  "generated_utc": "2026-11-15T21:00:48.825144+00:00",
-  "source_generated_utc": "2026-11-15T20:58:41.296683+00:00",
-  "charts_generated_utc": "2026-11-15T19:38:18.959595+00:00",
+  "generated_utc": "2026-11-16T07:27:39.137962+00:00",
+  "source_generated_utc": "2026-11-16T07:22:49.203493+00:00",
+  "charts_generated_utc": "2026-11-16T05:23:13.750345+00:00",
   "source": "ECMWF Open Data (CC BY 4.0), NOAA GFS si disponible",
   "not_weekly_anomalies": true,
   "period_maps": [
@@ -12,13 +12,13 @@
       "step_h": 72,
       "path": "forecast-maps/tendance/tendance-carte-j3.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j3.png",
-      "size_bytes": 604451,
+      "size_bytes": 579641,
       "run_utc": {
-        "ifs": "2026-11-15T12:00Z",
-        "aifs": "2026-11-15T12:00Z",
-        "gfs": "2026-11-15T12:00:00+00:00"
+        "ifs": "2026-11-15T18:00Z",
+        "aifs": "2026-11-16T00:00Z",
+        "gfs": "2026-11-16T00:00:00+00:00"
       },
-      "valid_utc": "2026-11-18T12:00:00+00:00",
+      "valid_utc": "2026-11-18T18:00:00+00:00",
       "title": "J+3 — synthèse synoptique IFS / AIFS / GFS",
       "confidence_label": "Modérée (indicative)",
       "marked_phenomena": [
@@ -29,15 +29,8 @@
       "risk_status": "altitude_filtered_georeferenced",
       "risks": {
         "neige": {
-          "status": "relief_uniquement",
-          "max": 0,
-          "unit": "mm équiv. eau/6h",
-          "reason": "Neige hors relief ≤ 800 m, hors vallée de montagne (Copernicus GLO-90) ; relief : 23 zones échantillonnées",
-          "mountain_signal": true,
-          "mountain_max": 8.3,
-          "lowland_sample_count": 0,
-          "highland_sample_count": 23,
-          "terrain_source": "Copernicus DEM GLO-90 via Open-Meteo"
+          "status": "indisponible",
+          "reason": "Filtre altitude indisponible : Altitude Copernicus non accessible : <urlopen error _ssl.c:1001: The handshake operation timed out>"
         },
         "verglas": {
           "status": "indisponible",
@@ -49,7 +42,7 @@
         },
         "tempete": {
           "status": "possible",
-          "max": 67.1,
+          "max": 68.3,
           "unit": "km/h (vent moyen 10 m)",
           "reason": "Signal de vent soutenu, pas une vigilance tempête"
         },
@@ -67,52 +60,52 @@
         },
         "pluie_forte": {
           "status": "marque",
-          "max": 21.5,
+          "max": 21.2,
           "unit": "mm/6h",
           "reason": "Cumul des 6 heures précédant l'échéance"
         }
       },
       "risk_markers": [
         {
-          "lon": -3.75,
-          "lat": 51.5,
-          "value": 21.5,
+          "lon": -8.25,
+          "lat": 41.75,
+          "value": 21.2,
           "kind": "pluie_forte"
         },
         {
-          "lon": 0.5,
-          "lat": 50.0,
-          "value": 19.8,
-          "kind": "pluie_forte"
-        },
-        {
-          "lon": -9.5,
-          "lat": 46.25,
-          "value": 67.1,
-          "kind": "vent_fort"
-        },
-        {
-          "lon": -10.0,
-          "lat": 49.0,
-          "value": 63.2,
-          "kind": "vent_fort"
-        },
-        {
-          "lon": -10.0,
+          "lon": -7.0,
           "lat": 44.25,
-          "value": 62.5,
+          "value": 68.3,
           "kind": "vent_fort"
         },
         {
-          "lon": 6.75,
-          "lat": 48.0,
-          "value": 17.8,
+          "lon": -8.75,
+          "lat": 46.75,
+          "value": 66.2,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": -4.0,
+          "lat": 45.25,
+          "value": 65.0,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": 8.0,
+          "lat": 47.5,
+          "value": 14.6,
           "kind": "pluie_forte"
         },
         {
-          "lon": 3.5,
-          "lat": 52.0,
-          "value": 15.1,
+          "lon": 5.75,
+          "lat": 45.75,
+          "value": 13.9,
+          "kind": "pluie_forte"
+        },
+        {
+          "lon": 4.5,
+          "lat": 52.5,
+          "value": 13.7,
           "kind": "pluie_forte"
         }
       ],
@@ -134,11 +127,11 @@
       "step_h": 168,
       "path": "forecast-maps/tendance/tendance-carte-j7.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j7.png",
-      "size_bytes": 563393,
+      "size_bytes": 562648,
       "run_utc": {
         "ifs": "2026-11-15T12:00Z",
-        "aifs": "2026-11-15T12:00Z",
-        "gfs": "2026-11-15T12:00:00+00:00"
+        "aifs": "2026-11-16T00:00Z",
+        "gfs": "2026-11-16T00:00:00+00:00"
       },
       "valid_utc": "2026-11-22T12:00:00+00:00",
       "title": "J+7 — synthèse synoptique IFS / AIFS / GFS",
@@ -152,15 +145,8 @@
       "risk_status": "altitude_filtered_georeferenced",
       "risks": {
         "neige": {
-          "status": "relief_uniquement",
-          "max": 0,
-          "unit": "mm équiv. eau/6h",
-          "reason": "Neige hors relief ≤ 800 m, hors vallée de montagne (Copernicus GLO-90) ; relief : 26 zones échantillonnées",
-          "mountain_signal": true,
-          "mountain_max": 8.1,
-          "lowland_sample_count": 0,
-          "highland_sample_count": 26,
-          "terrain_source": "Copernicus DEM GLO-90 via Open-Meteo"
+          "status": "indisponible",
+          "reason": "Filtre altitude indisponible : Altitude Copernicus non accessible : <urlopen error _ssl.c:1001: The handshake operation timed out>"
         },
         "verglas": {
           "status": "indisponible",
@@ -245,11 +231,11 @@
       "step_h": 240,
       "path": "forecast-maps/tendance/tendance-carte-j10.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j10.png",
-      "size_bytes": 610714,
+      "size_bytes": 610891,
       "run_utc": {
         "ifs": "2026-11-15T12:00Z",
-        "aifs": "2026-11-15T12:00Z",
-        "gfs": "2026-11-15T12:00:00+00:00"
+        "aifs": "2026-11-16T00:00Z",
+        "gfs": "2026-11-16T00:00:00+00:00"
       },
       "valid_utc": "2026-11-25T12:00:00+00:00",
       "title": "J+10 — synthèse synoptique IFS / AIFS / GFS",
@@ -322,12 +308,12 @@
       "step_h": 360,
       "path": "forecast-maps/tendance/tendance-carte-j15.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j15.png",
-      "size_bytes": 568887,
+      "size_bytes": 531565,
       "run_utc": {
-        "aifs": "2026-11-15T12:00Z",
-        "gfs": "2026-11-15T12:00:00+00:00"
+        "aifs": "2026-11-16T00:00Z",
+        "gfs": "2026-11-16T00:00:00+00:00"
       },
-      "valid_utc": "2026-11-30T12:00:00+00:00",
+      "valid_utc": "2026-12-01T00:00:00+00:00",
       "title": "J+15 — synthèse synoptique AIFS / GFS",
       "confidence_label": "Très limitée (indicative)",
       "marked_phenomena": [],
@@ -336,14 +322,14 @@
       "risk_status": "altitude_filtered_georeferenced",
       "risks": {
         "neige": {
-          "status": "possible",
-          "max": 0.5,
+          "status": "relief_uniquement",
+          "max": 0,
           "unit": "mm équiv. eau/6h",
-          "reason": "Neige hors relief ≤ 800 m, hors vallée de montagne (Copernicus GLO-90) ; relief : 0 zones échantillonnées",
-          "mountain_signal": false,
-          "mountain_max": 0,
-          "lowland_sample_count": 5,
-          "highland_sample_count": 0,
+          "reason": "Neige hors relief ≤ 800 m, hors vallée de montagne (Copernicus GLO-90) ; relief : 38 zones échantillonnées",
+          "mountain_signal": true,
+          "mountain_max": 6.2,
+          "lowland_sample_count": 0,
+          "highland_sample_count": 38,
           "terrain_source": "Copernicus DEM GLO-90 via Open-Meteo"
         },
         "verglas": {
@@ -356,7 +342,7 @@
         },
         "tempete": {
           "status": "possible",
-          "max": 59.0,
+          "max": 51.0,
           "unit": "km/h (vent moyen 10 m)",
           "reason": "Signal de vent soutenu, pas une vigilance tempête"
         },
@@ -374,51 +360,41 @@
         },
         "pluie_forte": {
           "status": "possible",
-          "max": 11.2,
+          "max": 17.5,
           "unit": "mm/6h",
           "reason": "Cumul des 6 heures précédant l'échéance"
         }
       },
       "risk_markers": [
         {
-          "lon": -8.25,
-          "lat": 45.25,
-          "value": 59.0,
-          "kind": "vent_fort"
-        },
-        {
-          "lon": -5.75,
-          "lat": 46.0,
-          "value": 56.9,
-          "kind": "vent_fort"
-        },
-        {
-          "lon": -9.5,
-          "lat": 43.5,
-          "value": 56.4,
-          "kind": "vent_fort"
-        },
-        {
-          "lon": 0.25,
-          "lat": 45.5,
-          "value": 11.2,
+          "lon": 4.5,
+          "lat": 44.5,
+          "value": 17.5,
           "kind": "pluie_forte"
         },
         {
-          "lon": 11.75,
-          "lat": 50.5,
-          "value": 0.5,
-          "kind": "neige",
-          "altitude_m": 482,
-          "terrain_context": "hors relief marqué"
+          "lon": 4.25,
+          "lat": 47.0,
+          "value": 16.2,
+          "kind": "pluie_forte"
         },
         {
-          "lon": 9.0,
-          "lat": 51.0,
-          "value": 0.5,
-          "kind": "neige",
-          "altitude_m": 436,
-          "terrain_context": "hors relief marqué"
+          "lon": -5.0,
+          "lat": 44.5,
+          "value": 51.0,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": 7.0,
+          "lat": 43.75,
+          "value": 13.2,
+          "kind": "pluie_forte"
+        },
+        {
+          "lon": 2.0,
+          "lat": 45.25,
+          "value": 13.2,
+          "kind": "pluie_forte"
         }
       ],
       "t850_shading": {
