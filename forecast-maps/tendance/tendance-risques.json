@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "generated_utc": "2026-11-17T03:09:08.760690+00:00",
-  "atlas_generated_utc": "2026-11-17T00:28:24.833532+00:00",
+  "generated_utc": "2026-11-17T07:23:41.457952+00:00",
+  "atlas_generated_utc": "2026-11-17T05:23:37.991599+00:00",
   "reference": "ECMWF Open Data, Copernicus DEM GLO-90 via Open-Meteo — champs géoréférencés",
   "stages": [
     {
@@ -13,15 +13,8 @@
       "background_path": "forecast-maps/tendance/tendance-risques-fond-j3.png",
       "risks": {
         "neige": {
-          "status": "relief_uniquement",
-          "max": 0,
-          "unit": "mm équiv. eau/6h",
-          "reason": "Neige hors relief ≤ 800 m, hors vallée de montagne (Copernicus GLO-90) ; relief : 19 zones échantillonnées",
-          "mountain_signal": true,
-          "mountain_max": 3.9,
-          "lowland_sample_count": 0,
-          "highland_sample_count": 19,
-          "terrain_source": "Copernicus DEM GLO-90 via Open-Meteo"
+          "status": "indisponible",
+          "reason": "Filtre altitude indisponible : Altitude Copernicus non accessible : <urlopen error _ssl.c:1001: The handshake operation timed out>"
         },
         "verglas": {
           "status": "indisponible",
@@ -304,20 +297,15 @@
       "id": "j15",
       "step_h": 360,
       "model": "aifs-single",
-      "run_utc": "2026-11-16T18:00:00+00:00",
-      "valid_utc": "2026-12-01T18:00:00+00:00",
+      "run_utc": "2026-11-17T00:00:00+00:00",
+      "valid_utc": "2026-12-02T00:00:00+00:00",
       "background_path": "forecast-maps/tendance/tendance-risques-fond-j15.png",
       "risks": {
         "neige": {
-          "status": "relief_uniquement",
-          "max": 0,
+          "status": "absent",
+          "max": 0.0,
           "unit": "mm équiv. eau/6h",
-          "reason": "Neige hors relief ≤ 800 m, hors vallée de montagne (Copernicus GLO-90) ; relief : 40 zones échantillonnées",
-          "mountain_signal": true,
-          "mountain_max": 3.5,
-          "lowland_sample_count": 0,
-          "highland_sample_count": 40,
-          "terrain_source": "Copernicus DEM GLO-90 via Open-Meteo"
+          "reason": "Pas de neige ≥ 0,5 mm/6h sur le domaine terrestre"
         },
         "verglas": {
           "status": "indisponible",
@@ -329,7 +317,7 @@
         },
         "tempete": {
           "status": "possible",
-          "max": 55.1,
+          "max": 66.2,
           "unit": "km/h (vent moyen 10 m)",
           "reason": "Signal de vent soutenu, pas une vigilance tempête"
         },
@@ -346,36 +334,24 @@
           "reason": "Crue non déductible d'un seul cumul de pluie de 6 h"
         },
         "pluie_forte": {
-          "status": "possible",
-          "max": 10.8,
+          "status": "absent",
+          "max": 4.8,
           "unit": "mm/6h",
           "reason": "Cumul des 6 heures précédant l'échéance"
         }
       },
       "markers": [
         {
-          "lon": -5.0,
-          "lat": 45.5,
-          "value": 55.1,
+          "lon": -9.75,
+          "lat": 41.75,
+          "value": 66.2,
           "kind": "vent_fort"
         },
         {
-          "lon": -7.5,
-          "lat": 44.25,
-          "value": 52.3,
+          "lon": -10.0,
+          "lat": 43.75,
+          "value": 50.4,
           "kind": "vent_fort"
-        },
-        {
-          "lon": -2.5,
-          "lat": 46.5,
-          "value": 51.8,
-          "kind": "vent_fort"
-        },
-        {
-          "lon": 4.25,
-          "lat": 44.5,
-          "value": 10.8,
-          "kind": "pluie_forte"
         }
       ],
       "t850_shading": {
