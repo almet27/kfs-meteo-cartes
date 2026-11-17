@@ -1,22 +1,22 @@
 {
-  "generated_utc": "2026-11-17T03:44:18.078133+00:00",
+  "generated_utc": "2026-11-17T03:58:07.944284+00:00",
   "run_utc": "2026-11-17T00:00:00+00:00",
   "runs_utc": {
     "gfs": {
       "24": "2026-11-17T00:00:00+00:00",
-      "48": "2026-11-16T18:00:00+00:00",
-      "72": "2026-11-16T18:00:00+00:00",
+      "48": "2026-11-17T00:00:00+00:00",
+      "72": "2026-11-17T00:00:00+00:00",
       "120": "2026-11-16T18:00:00+00:00",
       "168": "2026-11-16T18:00:00+00:00",
       "240": "2026-11-16T18:00:00+00:00",
       "360": "2026-11-16T18:00:00+00:00"
     },
     "aigfs": {
-      "24": "2026-11-16T18:00:00+00:00",
-      "48": "2026-11-16T18:00:00+00:00",
-      "72": "2026-11-16T18:00:00+00:00",
-      "120": "2026-11-16T18:00:00+00:00",
-      "168": "2026-11-16T18:00:00+00:00",
+      "24": "2026-11-17T00:00:00+00:00",
+      "48": "2026-11-17T00:00:00+00:00",
+      "72": "2026-11-17T00:00:00+00:00",
+      "120": "2026-11-17T00:00:00+00:00",
+      "168": "2026-11-17T00:00:00+00:00",
       "240": "2026-11-16T18:00:00+00:00",
       "360": "2026-11-16T18:00:00+00:00"
     }
@@ -139,14 +139,14 @@
         "rain6h": "APCP_6h*(1-CPOFP_at_valid_time/100)",
         "snow6h": "APCP_6h*CPOFP_at_valid_time/100",
         "warning": "ESTIMATION. CPOFP est instantané en fin d'intervalle. Le champ snow6h contient les précipitations gelées (dont neige, potentiellement grésil), et non un cumul neige natif.",
-        "wet_cells_with_valid_phase": 16259,
-        "wet_cells_total": 52843
+        "wet_cells_with_valid_phase": 16087,
+        "wet_cells_total": 54067
       },
       "72": {
         "rain6h": "APCP_6h*(1-CPOFP_at_valid_time/100)",
         "snow6h": "APCP_6h*CPOFP_at_valid_time/100",
         "warning": "ESTIMATION. CPOFP est instantané en fin d'intervalle. Le champ snow6h contient les précipitations gelées (dont neige, potentiellement grésil), et non un cumul neige natif.",
-        "wet_cells_with_valid_phase": 14262,
+        "wet_cells_with_valid_phase": 16195,
         "wet_cells_total": 52526
       },
       "120": {
@@ -179,8 +179,5 @@
       }
     }
   },
-  "errors": {
-    "aigfs-h024-t850": "[Errno 2] No such file or directory: '/home/runner/data/aigfs/20261117/subset_eb0e9aeb__aigfs.t00z.pres.f024.grib2'",
-    "aigfs-h024-z500_msl": "[Errno 2] No such file or directory: '/home/runner/data/aigfs/20261117/subset_eb0eb0ae__aigfs.t00z.pres.f024.grib2'"
-  }
+  "errors": {}
 }
