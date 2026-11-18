@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_utc": "2026-11-18T15:44:09.134836+00:00",
+  "generated_utc": "2026-11-18T15:57:56.534079+00:00",
   "source_run_utc": "2026-11-08T12:00:00+00:00",
   "source": "NOAA GFS / NCEP NOMADS",
   "models": {
@@ -831,7 +831,10 @@
       }
     }
   },
-  "errors": {},
+  "errors": {
+    "gfs-h072-wind850": "[Errno 2] No such file or directory: '/home/runner/data/gfs/20261118/subset_07f15a3a__gfs.t12z.pgrb2.0p25.f072'",
+    "gfs-h072-required": "T850, pression ou Z500 absent : scénario exclu de l'analyse"
+  },
   "steps_h": [
     72,
     168,
