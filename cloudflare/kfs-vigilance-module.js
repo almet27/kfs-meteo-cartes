@@ -93,8 +93,10 @@ export async function kfsVigilanceScheduled(env) {
   if (!(env.MF_VIGILANCE_API_KEY || env.MF_VIGILANCE_APPLICATION_ID || env.MF_VIGILANCE_TOKEN ||
     (env.MF_VIGILANCE_CLIENT_ID && env.MF_VIGILANCE_CLIENT_SECRET)))
     return {ok:false,reason:'meteofrance_access_missing'};
-  const token = await tokenMeteoFrance(env);
-  const headers = {Authorization:'Bearer '+token,Accept:'*/*'};
+  // Deux authentifications distinctes : API Key dans l'en-tête "apikey", OAuth dans "Authorization: Bearer".
+  const headers = env.MF_VIGILANCE_API_KEY
+    ? {apikey:env.MF_VIGILANCE_API_KEY,Accept:'*/*'}
+    : {Authorization:'Bearer '+await tokenMeteoFrance(env),Accept:'*/*'};
   const response = await fetch(API+'/cartevigilance/encours',{headers,signal:AbortSignal.timeout(15000)});
   if (!response.ok) throw Error('API Vigilance HTTP '+response.status);
   const doc = await response.json();
