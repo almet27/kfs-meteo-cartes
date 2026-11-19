@@ -33,6 +33,8 @@ export function analyseVigilance(doc) {
 
 let kfsMfCachedOAuthToken='', kfsMfCachedOAuthUntil=0;
 async function tokenMeteoFrance(env) {
+  // Clé API Key longue durée du portail : bearer direct, sans demande OAuth.
+  if(env.MF_VIGILANCE_API_KEY) return env.MF_VIGILANCE_API_KEY;
   const applicationId=env.MF_VIGILANCE_APPLICATION_ID ||
     ((env.MF_VIGILANCE_CLIENT_ID && env.MF_VIGILANCE_CLIENT_SECRET)
       ? btoa(env.MF_VIGILANCE_CLIENT_ID+':'+env.MF_VIGILANCE_CLIENT_SECRET) : '');
@@ -88,7 +90,7 @@ function messageVigilance(alerts, date) {
 
 export async function kfsVigilanceScheduled(env) {
   if (!env.DISCORD_BOT_TOKEN) return {ok:false,reason:'discord_missing'};
-  if (!(env.MF_VIGILANCE_APPLICATION_ID || env.MF_VIGILANCE_TOKEN ||
+  if (!(env.MF_VIGILANCE_API_KEY || env.MF_VIGILANCE_APPLICATION_ID || env.MF_VIGILANCE_TOKEN ||
     (env.MF_VIGILANCE_CLIENT_ID && env.MF_VIGILANCE_CLIENT_SECRET)))
     return {ok:false,reason:'meteofrance_access_missing'};
   const token = await tokenMeteoFrance(env);
@@ -153,8 +155,9 @@ export async function kfsVigilanceScheduled(env) {
 export function kfsVigilanceConfigStatus(env) {
   return {
     discordConfigured:Boolean(env.DISCORD_BOT_TOKEN),
+    meteofranceApiKeyConfigured:Boolean(env.MF_VIGILANCE_API_KEY),
     meteofranceOAuthConfigured:Boolean(env.MF_VIGILANCE_APPLICATION_ID || (env.MF_VIGILANCE_CLIENT_ID && env.MF_VIGILANCE_CLIENT_SECRET)),
     meteofranceTemporaryTokenConfigured:Boolean(env.MF_VIGILANCE_TOKEN),
-    permanentAutomationReady:Boolean(env.DISCORD_BOT_TOKEN && (env.MF_VIGILANCE_APPLICATION_ID || (env.MF_VIGILANCE_CLIENT_ID && env.MF_VIGILANCE_CLIENT_SECRET)))
+    permanentAutomationReady:Boolean(env.DISCORD_BOT_TOKEN && (env.MF_VIGILANCE_API_KEY || env.MF_VIGILANCE_APPLICATION_ID || (env.MF_VIGILANCE_CLIENT_ID && env.MF_VIGILANCE_CLIENT_SECRET)))
   };
 }
