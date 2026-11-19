@@ -31,20 +31,28 @@ export function analyseVigilance(doc) {
   return alerts.sort((a,b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
 }
 
+let kfsMfCachedOAuthToken='', kfsMfCachedOAuthUntil=0;
 async function tokenMeteoFrance(env) {
-  if (env.MF_VIGILANCE_OAUTH_URL && env.MF_VIGILANCE_CLIENT_ID && env.MF_VIGILANCE_CLIENT_SECRET) {
-    const base64 = btoa(env.MF_VIGILANCE_CLIENT_ID + ':' + env.MF_VIGILANCE_CLIENT_SECRET);
-    const r = await fetch(env.MF_VIGILANCE_OAUTH_URL, {
+  const applicationId=env.MF_VIGILANCE_APPLICATION_ID ||
+    ((env.MF_VIGILANCE_CLIENT_ID && env.MF_VIGILANCE_CLIENT_SECRET)
+      ? btoa(env.MF_VIGILANCE_CLIENT_ID+':'+env.MF_VIGILANCE_CLIENT_SECRET) : '');
+  if(applicationId){
+    if(kfsMfCachedOAuthToken && Date.now()<kfsMfCachedOAuthUntil) return kfsMfCachedOAuthToken;
+    const url=env.MF_VIGILANCE_OAUTH_URL || 'https://portail-api.meteofrance.fr/token';
+    const r=await fetch(url,{
       method:'POST',
-      headers:{Authorization:'Basic ' + base64, 'Content-Type':'application/x-www-form-urlencoded'},
-      body:'grant_type=client_credentials', signal:AbortSignal.timeout(12000)
+      headers:{Authorization:'Basic '+applicationId,'Content-Type':'application/x-www-form-urlencoded'},
+      body:'grant_type=client_credentials',signal:AbortSignal.timeout(12000)
     });
-    if (!r.ok) throw Error('OAuth Météo-France HTTP ' + r.status);
-    const j = await r.json();
-    if (!j.access_token) throw Error('Jeton OAuth absent');
+    if(!r.ok) throw Error('OAuth Météo-France HTTP '+r.status);
+    const j=await r.json();
+    if(!j.access_token) throw Error('Jeton OAuth absent');
+    kfsMfCachedOAuthToken=j.access_token;
+    kfsMfCachedOAuthUntil=Date.now()+Math.max(60000,(Number(j.expires_in)||3600)*1000-120000);
     return j.access_token;
   }
-  if (env.MF_VIGILANCE_TOKEN) return env.MF_VIGILANCE_TOKEN;
+  // Dépannage ponctuel : un token manuel expire généralement après une heure.
+  if(env.MF_VIGILANCE_TOKEN) return env.MF_VIGILANCE_TOKEN;
   throw Error('Accès Météo-France non configuré');
 }
 
@@ -80,8 +88,8 @@ function messageVigilance(alerts, date) {
 
 export async function kfsVigilanceScheduled(env) {
   if (!env.DISCORD_BOT_TOKEN) return {ok:false,reason:'discord_missing'};
-  if (!(env.MF_VIGILANCE_TOKEN ||
-    (env.MF_VIGILANCE_OAUTH_URL && env.MF_VIGILANCE_CLIENT_ID && env.MF_VIGILANCE_CLIENT_SECRET)))
+  if (!(env.MF_VIGILANCE_APPLICATION_ID || env.MF_VIGILANCE_TOKEN ||
+    (env.MF_VIGILANCE_CLIENT_ID && env.MF_VIGILANCE_CLIENT_SECRET)))
     return {ok:false,reason:'meteofrance_access_missing'};
   const token = await tokenMeteoFrance(env);
   const headers = {Authorization:'Bearer '+token,Accept:'*/*'};
@@ -145,8 +153,8 @@ export async function kfsVigilanceScheduled(env) {
 export function kfsVigilanceConfigStatus(env) {
   return {
     discordConfigured:Boolean(env.DISCORD_BOT_TOKEN),
-    meteofranceOAuthConfigured:Boolean(env.MF_VIGILANCE_OAUTH_URL && env.MF_VIGILANCE_CLIENT_ID && env.MF_VIGILANCE_CLIENT_SECRET),
+    meteofranceOAuthConfigured:Boolean(env.MF_VIGILANCE_APPLICATION_ID || (env.MF_VIGILANCE_CLIENT_ID && env.MF_VIGILANCE_CLIENT_SECRET)),
     meteofranceTemporaryTokenConfigured:Boolean(env.MF_VIGILANCE_TOKEN),
-    permanentAutomationReady:Boolean(env.DISCORD_BOT_TOKEN && env.MF_VIGILANCE_OAUTH_URL && env.MF_VIGILANCE_CLIENT_ID && env.MF_VIGILANCE_CLIENT_SECRET)
+    permanentAutomationReady:Boolean(env.DISCORD_BOT_TOKEN && (env.MF_VIGILANCE_APPLICATION_ID || (env.MF_VIGILANCE_CLIENT_ID && env.MF_VIGILANCE_CLIENT_SECRET)))
   };
 }
