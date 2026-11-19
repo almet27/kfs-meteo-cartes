@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "model": "ecmwf_ifs",
-  "run_utc": "2026-11-18T12:00:00+00:00",
-  "generated_utc": "2026-11-18T23:16:26.604040+00:00",
+  "run_utc": "2026-11-19T12:00:00+00:00",
+  "generated_utc": "2026-11-19T23:24:16.253108+00:00",
   "source": "Open-Meteo Single Runs API / ECMWF IFS HRES",
   "resolution_native_km": 9,
   "sample_spacing": "~35-60 km",
@@ -10,86 +10,86 @@
   "usage": "Non-commercial only",
   "days": {
     "0": {
-      "date": "2026-11-18",
+      "date": "2026-11-19",
       "maps": {
         "tmin": {
           "file": "ifs9-tmin-j0.webp",
-          "bytes": 58572,
+          "bytes": 57270,
           "coverage_hours": 11
         },
         "tmax": {
           "file": "ifs9-tmax-j0.webp",
-          "bytes": 62470,
+          "bytes": 61710,
           "coverage_hours": 11
         }
       }
     },
     "1": {
-      "date": "2026-11-19",
+      "date": "2026-11-20",
       "maps": {
         "tmin": {
           "file": "ifs9-tmin-j1.webp",
-          "bytes": 56214,
+          "bytes": 55338,
           "coverage_hours": 24
         },
         "tmax": {
           "file": "ifs9-tmax-j1.webp",
-          "bytes": 60314,
+          "bytes": 60720,
           "coverage_hours": 24
         },
         "gust": {
           "file": "ifs9-gust-j1.webp",
-          "bytes": 71498,
+          "bytes": 72268,
           "coverage_hours": 24
         },
         "precip": {
           "file": "ifs9-precip-j1.webp",
-          "bytes": 62348,
+          "bytes": 58730,
           "coverage_hours": 24
         },
         "rain": {
           "file": "ifs9-rain-j1.webp",
-          "bytes": 55632,
+          "bytes": 55810,
           "coverage_hours": 24
         },
         "neige_frais": {
           "file": "ifs9-neige_frais-j1.webp",
-          "bytes": 56370,
+          "bytes": 56478,
           "coverage_hours": 24
         }
       }
     },
     "2": {
-      "date": "2026-11-20",
+      "date": "2026-11-21",
       "maps": {
         "tmin": {
           "file": "ifs9-tmin-j2.webp",
-          "bytes": 55418,
+          "bytes": 54450,
           "coverage_hours": 24
         },
         "tmax": {
           "file": "ifs9-tmax-j2.webp",
-          "bytes": 60678,
+          "bytes": 58346,
           "coverage_hours": 24
         },
         "gust": {
           "file": "ifs9-gust-j2.webp",
-          "bytes": 72730,
+          "bytes": 77124,
           "coverage_hours": 24
         },
         "precip": {
           "file": "ifs9-precip-j2.webp",
-          "bytes": 59140,
+          "bytes": 55896,
           "coverage_hours": 24
         },
         "rain": {
           "file": "ifs9-rain-j2.webp",
-          "bytes": 55734,
+          "bytes": 55040,
           "coverage_hours": 24
         },
         "neige_frais": {
           "file": "ifs9-neige_frais-j2.webp",
-          "bytes": 56404,
+          "bytes": 55172,
           "coverage_hours": 24
         }
       }
