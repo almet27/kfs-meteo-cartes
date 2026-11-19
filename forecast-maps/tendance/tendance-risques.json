@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "generated_utc": "2026-11-19T02:00:19.318513+00:00",
-  "atlas_generated_utc": "2026-11-19T00:33:27.217987+00:00",
+  "generated_utc": "2026-11-19T07:36:12.964427+00:00",
+  "atlas_generated_utc": "2026-11-19T05:33:55.201363+00:00",
   "reference": "ECMWF Open Data, Copernicus DEM GLO-90 via Open-Meteo — champs géoréférencés",
   "stages": [
     {
@@ -284,13 +284,15 @@
       "id": "j15",
       "step_h": 360,
       "model": "aifs-single",
-      "run_utc": "2026-11-18T18:00:00+00:00",
-      "valid_utc": "2026-12-03T18:00:00+00:00",
+      "run_utc": "2026-11-19T00:00:00+00:00",
+      "valid_utc": "2026-12-04T00:00:00+00:00",
       "background_path": "forecast-maps/tendance/tendance-risques-fond-j15.png",
       "risks": {
         "neige": {
-          "status": "indisponible",
-          "reason": "Filtre altitude indisponible : Altitude Copernicus non accessible : HTTP Error 429: Too Many Requests"
+          "status": "absent",
+          "max": 0.0,
+          "unit": "mm équiv. eau/6h",
+          "reason": "Pas de neige ≥ 0,5 mm/6h sur le domaine terrestre"
         },
         "verglas": {
           "status": "indisponible",
@@ -301,8 +303,8 @@
           "reason": "Champs spécifiques non disponibles"
         },
         "tempete": {
-          "status": "marque",
-          "max": 71.5,
+          "status": "absent",
+          "max": 42.2,
           "unit": "km/h (vent moyen 10 m)",
           "reason": "Signal de vent soutenu, pas une vigilance tempête"
         },
@@ -319,30 +321,18 @@
           "reason": "Crue non déductible d'un seul cumul de pluie de 6 h"
         },
         "pluie_forte": {
-          "status": "absent",
-          "max": 5.0,
+          "status": "possible",
+          "max": 13.5,
           "unit": "mm/6h",
           "reason": "Cumul des 6 heures précédant l'échéance"
         }
       },
       "markers": [
         {
-          "lon": 5.5,
-          "lat": 42.75,
-          "value": 71.5,
-          "kind": "vent_fort"
-        },
-        {
-          "lon": 6.5,
-          "lat": 41.0,
-          "value": 58.9,
-          "kind": "vent_fort"
-        },
-        {
-          "lon": 9.75,
-          "lat": 41.25,
-          "value": 54.2,
-          "kind": "vent_fort"
+          "lon": 2.75,
+          "lat": 42.25,
+          "value": 13.5,
+          "kind": "pluie_forte"
         }
       ],
       "t850_shading": {
