@@ -1,4 +1,4 @@
-// KFS METEO — module de vigilance Météo-France, préparé mais NON déployé.
+// KFS METEO — module de vigilance Météo-France (prêt à intégrer ; NON déployé).
 // API officielle : https://public-api.meteofrance.fr/public/DPVigilance/v1/
 // Ne pas utiliser de jeton temporaire pour une automatisation permanente.
 const API = 'https://public-api.meteofrance.fr/public/DPVigilance/v1';
@@ -102,25 +102,51 @@ export async function kfsVigilanceScheduled(env) {
   const messages = await hist.json();
   if (messages.some(m=>(m.embeds||[]).some(e=>e.footer?.text===marker)))
     return {ok:true,notified:false,reason:'already_posted'};
-  const img = await fetch(API+'/vignettenationale-J-et-J1/encours',{
-    headers,signal:AbortSignal.timeout(15000)
-  });
-  if (!img.ok || !(img.headers.get('content-type')||'').includes('image'))
-    throw Error('Carte nationale officielle PNG non disponible : aucune alerte envoyée');
-  const form = new FormData();
-  form.append('payload_json',JSON.stringify({
+  // Une image indisponible ne doit JAMAIS empêcher la diffusion d'une vigilance.
+  // Seules les données officielles de la carte JSON déterminent l'alerte.
+  const payload={
     content:messageVigilance(alerts,date),
     allowed_mentions:{parse:[]},
-    embeds:[{image:{url:'attachment://vigilance-meteofrance.png'},footer:{text:marker}}]
-  }));
-  form.append('files[0]',new Blob([await img.arrayBuffer()],{type:'image/png'}),'vigilance-meteofrance.png');
+    embeds:[{footer:{text:marker}}]
+  };
+  const form=new FormData();
+  let hasMap=false;
+  try {
+    const img=await fetch(API+'/vignettenationale-J-et-J1/encours',{
+      headers,signal:AbortSignal.timeout(15000)
+    });
+    const mime=(img.headers.get('content-type')||'').toLowerCase();
+    if(img.ok && mime.includes('image/png')) {
+      const bytes=await img.arrayBuffer();
+      if(bytes.byteLength>0 && bytes.byteLength<7500000){
+        payload.embeds[0].image={url:'attachment://vigilance-meteofrance.png'};
+        form.append('files[0]',new Blob([bytes],{type:'image/png'}),'vigilance-meteofrance.png');
+        hasMap=true;
+      }
+    }
+  }catch(error) {
+    console.warn('KFS_VIGILANCE_MAP_UNAVAILABLE',String(error).slice(0,180));
+  }
+  if(!hasMap) payload.content+='\n⚠️ Carte nationale indisponible : consulter vigilance.meteofrance.fr';
+  form.append('payload_json',JSON.stringify(payload));
   const posted = await fetch('https://discord.com/api/v10/channels/'+TOPIC+'/messages',{
     method:'POST',headers:{Authorization:'Bot '+env.DISCORD_BOT_TOKEN},
     body:form,signal:AbortSignal.timeout(25000)
   });
   if (!posted.ok) throw Error('Publication Discord HTTP '+posted.status);
   const result = await posted.json();
-  return {ok:true,notified:true,messageId:result.id,alerts:alerts.length};
+  console.log('KFS_VIGILANCE_POSTED',JSON.stringify({messageId:result.id,alerts:alerts.length,hasMap}));
+  return {ok:true,notified:true,messageId:result.id,alerts:alerts.length,hasMap};
 }
 // À intégrer explicitement au déclencheur toutes les 5 minutes du Worker existant.
 // Pour un anti-doublon garanti au-delà de 100 messages, ajouter une persistance KV/D1.
+
+// Diagnostic non publiant, à exposer uniquement via une route d'administration protégée.
+export function kfsVigilanceConfigStatus(env) {
+  return {
+    discordConfigured:Boolean(env.DISCORD_BOT_TOKEN),
+    meteofranceOAuthConfigured:Boolean(env.MF_VIGILANCE_OAUTH_URL && env.MF_VIGILANCE_CLIENT_ID && env.MF_VIGILANCE_CLIENT_SECRET),
+    meteofranceTemporaryTokenConfigured:Boolean(env.MF_VIGILANCE_TOKEN),
+    permanentAutomationReady:Boolean(env.DISCORD_BOT_TOKEN && env.MF_VIGILANCE_OAUTH_URL && env.MF_VIGILANCE_CLIENT_ID && env.MF_VIGILANCE_CLIENT_SECRET)
+  };
+}
