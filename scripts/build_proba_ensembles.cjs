@@ -81,7 +81,7 @@ async function main(){
        const values=fields[String(threshold)]??=new Array(points[zone].length).fill(null);
        const value=type==='orage'?api.kfsProbaStormMembers(hourly,period.start_day,threshold,period.end_day):
         api.kfsProbaMemberProbability(hourly,period.start_day,type,threshold,period.end_day);
-       values[index]=jour!=='6'&&type==='neige'&&point.elevation>800?null:(type==='neige_chutes'&&value?{...value,elevation:Number.isFinite(point.elevation)?point.elevation:null}:type==='gel'&&threshold===0&&value?{...value,tmax:alertTmax(hourly,period.start_day,period.end_day)}:value);
+       values[index]=jour!=='6'&&type==='neige'&&point.elevation>800?null:(value&&['neige_chutes','vent','gel'].includes(type)?{...value,elevation:Number.isFinite(point.elevation)?point.elevation:null,...(type==='gel'&&threshold===0?{tmax:alertTmax(hourly,period.start_day,period.end_day)}:{})}:value);
       }
      }
      // Core variables must cover every point and the entire requested period.
