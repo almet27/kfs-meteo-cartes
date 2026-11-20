@@ -401,8 +401,9 @@ def generate_short_daily(model,data,coords,run,document):
                 "hours":len(indices),"maps":maps}
             # Reuse existing hourly data for departmental gust alerts, no extra API calls.
             gust_values=short_daily_values(data,indices,"wind_gusts_10m","max")
-            days[str(d)]["gust_points"]=[[float(lat),float(lon),round(float(v),1)]
-                for (lat,lon),v in zip(coords,gust_values) if np.isfinite(v)]
+            days[str(d)]["gust_points"]=[[float(lat),float(lon),round(float(v),1),float(row["elevation"])]
+                for (lat,lon),v,row in zip(coords,gust_values,data)
+                if np.isfinite(v) and isnum(row.get("elevation"))]
     document["models"][model]={"name":CODES[model],"run_utc":run,"days":days}
 
 def main():
