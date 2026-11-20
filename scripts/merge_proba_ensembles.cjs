@@ -4,6 +4,7 @@ const path=require('node:path');
 const root=path.resolve(__dirname,'..');
 const source=fs.readFileSync(path.join(root,'cloudflare/kfs-proba-module.js'),'utf8');
 const api=new Function(source+';return {KFS_PROBA_RULES,KFS_PROBA_BLEND_MODELS,kfsProbaDay,kfsProbaValidMemberResult};')();
+api.KFS_PROBA_RULES.neige_chutes.allowed.push(100/7);
 function merge(shards){
  const points=JSON.parse(fs.readFileSync(path.join(root,'proba/points-ecmwf.json'),'utf8')).zones;
  const output={schema:2,provider:'Open-Meteo ECMWF ENS + GEFS members',timezone:'Europe/Paris',

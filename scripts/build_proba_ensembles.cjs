@@ -5,6 +5,8 @@ const path=require('node:path');
 const root=path.resolve(__dirname,'..');
 const source=fs.readFileSync(path.join(root,'cloudflare/kfs-proba-module.js'),'utf8');
 const api=new Function(source+';return {KFS_PROBA_RULES,KFS_PROBA_BLEND_MODELS,kfsProbaDay,kfsProbaMemberProbability,kfsProbaStormMembers,kfsProbaNormalizeHourly,kfsProbaValidMemberResult};')();
+// /alerte: 10 cm snowfall at altitude, in the existing mm-water approximation.
+api.KFS_PROBA_RULES.neige_chutes.allowed.push(100/7);
 const points=JSON.parse(fs.readFileSync(path.join(root,'proba/points-ecmwf.json'),'utf8')).zones;
 const variables=['rain','snow_depth','snowfall','temperature_2m','wind_gusts_10m','cape','precipitation','dew_point_2m'];
 async function main(){
@@ -19,11 +21,11 @@ async function main(){
  const checkpoint=path.join(root,'proba/ensemble-checkpoint'+suffix+'.json');
  const delay=Number(process.env?.PROBA_BATCH_DELAY_MS??65000);
  const batchSize=24;
- let state={schema:2,today,models:{}};
+ let state={schema:3,today,models:{}};
  if(fs.existsSync(checkpoint)){
   try{
    const saved=JSON.parse(fs.readFileSync(checkpoint,'utf8'));
-   if(saved.schema===2&&saved.today===today&&saved.total===total&&saved.shard===shard&&saved.models&&
+   if(saved.schema===3&&saved.today===today&&saved.total===total&&saved.shard===shard&&saved.models&&
     JSON.stringify(saved.zone_points)===JSON.stringify(points))state=saved;
   }catch(error){console.log('Ignoring incompatible checkpoint:',error.message);}
  }
@@ -73,7 +75,7 @@ async function main(){
        const values=fields[String(threshold)]??=new Array(points[zone].length).fill(null);
        const value=type==='orage'?api.kfsProbaStormMembers(hourly,period.start_day,threshold,period.end_day):
         api.kfsProbaMemberProbability(hourly,period.start_day,type,threshold,period.end_day);
-       values[index]=jour!=='6'&&type==='neige'&&point.elevation>800?null:value;
+       values[index]=jour!=='6'&&type==='neige'&&point.elevation>800?null:(type==='neige_chutes'&&value?{...value,elevation:Number.isFinite(point.elevation)?point.elevation:null}:value);
       }
      }
      // Core variables must cover every point and the entire requested period.
