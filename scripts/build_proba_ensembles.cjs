@@ -8,6 +8,12 @@ const api=new Function(source+';return {KFS_PROBA_RULES,KFS_PROBA_BLEND_MODELS,k
 // /alerte: 10 cm snowfall at altitude, in the existing mm-water approximation.
 api.KFS_PROBA_RULES.neige_chutes.allowed.push(100/7);
 const points=JSON.parse(fs.readFileSync(path.join(root,'proba/points-ecmwf.json'),'utf8')).zones;
+// Mean of each complete member's daily maximum, for /alerte heat.
+function alertTmax(hourly,start,end){
+ const ids=hourly.time.map((t,i)=>String(t).slice(0,10)>=start&&String(t).slice(0,10)<=end?i:-1).filter(i=>i>=0);
+ const values=Object.keys(hourly).filter(k=>k.startsWith('temperature_2m_')&&/member\d+/.test(k)).flatMap(k=>{const a=ids.map(i=>hourly[k]?.[i]);return a.length&&a.every(Number.isFinite)?[Math.max(...a)]:[];});
+ return values.length>=2?values.reduce((x,y)=>x+y,0)/values.length:null;
+}
 const variables=['rain','snow_depth','snowfall','temperature_2m','wind_gusts_10m','cape','precipitation','dew_point_2m'];
 async function main(){
  const today=api.kfsProbaDay(0),last=api.kfsProbaDay(6);
@@ -21,11 +27,11 @@ async function main(){
  const checkpoint=path.join(root,'proba/ensemble-checkpoint'+suffix+'.json');
  const delay=Number(process.env?.PROBA_BATCH_DELAY_MS??65000);
  const batchSize=24;
- let state={schema:3,today,models:{}};
+ let state={schema:4,today,models:{}};
  if(fs.existsSync(checkpoint)){
   try{
    const saved=JSON.parse(fs.readFileSync(checkpoint,'utf8'));
-   if(saved.schema===3&&saved.today===today&&saved.total===total&&saved.shard===shard&&saved.models&&
+   if(saved.schema===4&&saved.today===today&&saved.total===total&&saved.shard===shard&&saved.models&&
     JSON.stringify(saved.zone_points)===JSON.stringify(points))state=saved;
   }catch(error){console.log('Ignoring incompatible checkpoint:',error.message);}
  }
@@ -75,7 +81,7 @@ async function main(){
        const values=fields[String(threshold)]??=new Array(points[zone].length).fill(null);
        const value=type==='orage'?api.kfsProbaStormMembers(hourly,period.start_day,threshold,period.end_day):
         api.kfsProbaMemberProbability(hourly,period.start_day,type,threshold,period.end_day);
-       values[index]=jour!=='6'&&type==='neige'&&point.elevation>800?null:(type==='neige_chutes'&&value?{...value,elevation:Number.isFinite(point.elevation)?point.elevation:null}:value);
+       values[index]=jour!=='6'&&type==='neige'&&point.elevation>800?null:(type==='neige_chutes'&&value?{...value,elevation:Number.isFinite(point.elevation)?point.elevation:null}:type==='gel'&&threshold===0&&value?{...value,tmax:alertTmax(hourly,period.start_day,period.end_day)}:value);
       }
      }
      // Core variables must cover every point and the entire requested period.
