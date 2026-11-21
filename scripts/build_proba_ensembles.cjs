@@ -38,18 +38,19 @@ async function main(){
  const checkpoint=path.join(root,'proba/ensemble-checkpoint'+suffix+'.json');
  const delay=Number(process.env?.PROBA_BATCH_DELAY_MS??65000);
  const batchSize=24;
- let state={schema:4,today,models:{}};
+ let state={schema:5,today,models:{}};
  if(fs.existsSync(checkpoint)){
   try{
    const saved=JSON.parse(fs.readFileSync(checkpoint,'utf8'));
-   if(saved.schema===4&&saved.today===today&&saved.total===total&&saved.shard===shard&&saved.models&&
+   if(saved.schema===5&&saved.today===today&&saved.total===total&&saved.shard===shard&&saved.models&&
     JSON.stringify(saved.zone_points)===JSON.stringify(points))state=saved;
   }catch(error){console.log('Ignoring incompatible checkpoint:',error.message);}
  }
  state.zone_points=points;state.total=total;state.shard=shard;
  for(const [name,id] of selected){
   let model=state.models[id];
-  if(!model||!Number.isInteger(model.next)||model.next<0||model.next>entries.length||
+  const currentCycle=await probaCycle(id);
+  if(!model||(currentCycle&&model.checkpoint_cycle!==currentCycle)||!Number.isInteger(model.next)||model.next<0||model.next>entries.length||
    !Number.isFinite(Date.parse(model.generated_at_utc))||Date.now()-Date.parse(model.generated_at_utc)>6*3600000||
   ![0,1,2,3,4,5,6].every(j=>model.periods?.[String(j)]?.start_day===api.kfsProbaDay(j===6?1:j)&&
    model.periods?.[String(j)]?.end_day===api.kfsProbaDay(j===6?5:j))){
@@ -57,7 +58,7 @@ async function main(){
     start_day:api.kfsProbaDay(j===6?1:j),end_day:api.kfsProbaDay(j===6?5:j),
     zones:Object.fromEntries(Object.keys(points).map(zone=>[zone,{}]))
    }]));
-   model=state.models[id]={name,next:0,generated_at_utc:new Date().toISOString(),periods};
+   model=state.models[id]={name,next:0,checkpoint_cycle:currentCycle,generated_at_utc:new Date().toISOString(),periods};
   }
   for(let offset=model.next;offset<entries.length;offset+=batchSize){
    const batch=entries.slice(offset,offset+batchSize);
@@ -75,7 +76,7 @@ async function main(){
       if(response.status===429&&/Daily/i.test(message))throw Error('Daily quota exhausted: '+message);
       throw Error('Ensemble HTTP '+response.status+': '+message);
      }
-     raw=await response.json();const after=await probaCycle(id);runUtc=before&&before===after?before:null;break;
+     raw=await response.json();const after=await probaCycle(id);runUtc=before&&before===after?before:null;console.log(name,'cycle:',runUtc||'unknown','metadata before:',before,'after:',after);break;
     }catch(error){
      if(attempt===3||/Daily quota/.test(error.message))throw error;
      console.log(name,'temporary failure:',error.message,'retry',attempt+1);
