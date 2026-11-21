@@ -91,21 +91,21 @@ test('the builder checkpoints both models, resumes without redownloading, and ag
    for(let n=1;n<=6;n++)hourly[variable+'_member0'+n]=time.map(()=>value);
   return {hourly};
  }
- const disk=new Map();let calls=0;
+ const disk=new Map();let calls=0;const cycle=Math.floor((Date.now()-3600000)/21600000)*21600000;
  const mockFs={readFileSync(file){if(file.endsWith('kfs-proba-module.js'))return source;if(file.endsWith('points-ecmwf.json'))return JSON.stringify({zones:{FR:[[49,1],[48,2]]}});return disk.get(file);},
   existsSync:file=>disk.has(file),writeFileSync:(file,v)=>disk.set(file,v),
   renameSync(a,b){disk.set(b,disk.get(a));disk.delete(a);},statSync:file=>({size:disk.get(file).length})};
  async function run(){
   const context={require:name=>name==='node:fs'?mockFs:require(name),__dirname:path.join(root,'scripts'),
    Intl,Date,Response,URLSearchParams,AbortSignal,process:{env:{},exitCode:0},console:{log(){},error:console.error},setTimeout:cb=>cb(),
-   fetch:async url=>{calls++;const model=new URL(url).searchParams.get('models');return new Response(JSON.stringify([data(model),data(model)]));}};
+   fetch:async url=>{if(String(url).includes('/static/meta.json'))return new Response(JSON.stringify({last_run_initialisation_time:cycle/1000,last_run_availability_time:(cycle+1800000)/1000}));calls++;const model=new URL(url).searchParams.get('models');return new Response(JSON.stringify([data(model),data(model)]));}};
   await vm.runInNewContext(build,context);assert.equal(context.process.exitCode,0);
  }
  await run();assert.equal(calls,2);await run();assert.equal(calls,2);
  const output=JSON.parse([...disk].find(([p])=>p.endsWith('ensemble-probabilities.json'))[1]);
  const ens=output.models.ecmwf_ifs025_ensemble.periods['6'].zones.FR.pluie['40'][0];
  const gefs=output.models.ncep_gefs025.periods['6'].zones.FR.pluie['40'][0];
- assert.equal(ens.amount,120);assert.equal(ens.pct,100);assert.equal(gefs.pct,0);
+ assert.equal(ens.run_utc,new Date(cycle).toISOString());assert.equal(gefs.run_utc,ens.run_utc);assert.equal(ens.amount,120);assert.equal(ens.pct,100);assert.equal(gefs.pct,0);
  assert.equal(api().kfsProbaBlend([{id:'ens',values:[ens]},{id:'gefs',values:[gefs]}],1)[0].pct,50);
 });
 
@@ -114,6 +114,7 @@ test('publishing rejects missing shards, duplicate points, wrong dates and misma
  assert.throws(()=>merge([]),/Missing shards/);
  const points=JSON.parse(fs.readFileSync(path.join(root,'proba/points-ecmwf.json'),'utf8')).zones;
  const rules=new Function(source+';return KFS_PROBA_RULES;')();
+ rules.neige_chutes.allowed.push(100/7);
  const day=new Function(source+';return kfsProbaDay;')();
  const entries=Object.entries(points).flatMap(([zone,p])=>p.map((_,index)=>({zone,index})));
  const shards=[];
