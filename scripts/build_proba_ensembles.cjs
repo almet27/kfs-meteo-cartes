@@ -15,6 +15,17 @@ function alertTmax(hourly,start,end){
  return values.length>=2?values.reduce((x,y)=>x+y,0)/values.length:null;
 }
 const variables=['rain','snow_depth','snowfall','temperature_2m','wind_gusts_10m','cape','precipitation','dew_point_2m'];
+async function probaCycle(id){
+ try{
+  const r=await fetch('https://api.open-meteo.com/data/'+id+'/static/meta.json?ts='+Date.now(),{cache:'no-store',signal:AbortSignal.timeout(8000)});
+  if(!r.ok)return null;
+  const j=await r.json(),init=Number(j.last_run_initialisation_time),avail=Number(j.last_run_availability_time);
+  const ms=init>1e12?init:init*1000,ready=avail>1e12?avail:avail*1000;
+  if(!Number.isFinite(ms)||!Number.isFinite(ready)||ready<ms||ready>Date.now()-600000||Date.now()-ms>7*86400000)return null;
+  const d=new Date(ms);if(![0,6,12,18].includes(d.getUTCHours())||d.getUTCMinutes()!==0)return null;
+  return d.toISOString();
+ }catch{return null;}
+}
 async function main(){
  const today=api.kfsProbaDay(0),last=api.kfsProbaDay(6);
  const total=Number(process.env?.PROBA_SHARD_TOTAL??1),shard=Number(process.env?.PROBA_SHARD_INDEX??0);
@@ -53,9 +64,10 @@ async function main(){
    const params=new URLSearchParams({latitude:batch.map(p=>p.lat).join(','),longitude:batch.map(p=>p.lon).join(','),
     models:id,hourly:variables.join(','),start_date:api.kfsProbaDay(-1),end_date:last,
     timeformat:'unixtime',timezone:'Europe/Paris',temporal_resolution:'hourly_1'});
-   let raw;
+   let raw, runUtc=null;
    for(let attempt=0;attempt<4;attempt++){
     try{
+     const before=await probaCycle(id);
      const response=await fetch('https://ensemble-api.open-meteo.com/v1/ensemble?'+params,
       {signal:AbortSignal.timeout(90000)});
      if(!response.ok){
@@ -63,7 +75,7 @@ async function main(){
       if(response.status===429&&/Daily/i.test(message))throw Error('Daily quota exhausted: '+message);
       throw Error('Ensemble HTTP '+response.status+': '+message);
      }
-     raw=await response.json();break;
+     raw=await response.json();const after=await probaCycle(id);runUtc=before&&before===after?before:null;break;
     }catch(error){
      if(attempt===3||/Daily quota/.test(error.message))throw error;
      console.log(name,'temporary failure:',error.message,'retry',attempt+1);
@@ -82,6 +94,7 @@ async function main(){
        const value=type==='orage'?api.kfsProbaStormMembers(hourly,period.start_day,threshold,period.end_day):
         api.kfsProbaMemberProbability(hourly,period.start_day,type,threshold,period.end_day);
        values[index]=jour!=='6'&&type==='neige'&&point.elevation>800?null:(value&&['neige_chutes','vent','gel'].includes(type)?{...value,elevation:Number.isFinite(point.elevation)?point.elevation:null,...(type==='gel'&&threshold===0?{tmax:alertTmax(hourly,period.start_day,period.end_day)}:{})}:value);
+       if(values[index]&&runUtc)values[index].run_utc=runUtc;
       }
      }
      // Core variables must cover every point and the entire requested period.
