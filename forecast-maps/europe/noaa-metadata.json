@@ -1,13 +1,13 @@
 {
-  "generated_utc": "2026-11-21T04:04:06.655832+00:00",
+  "generated_utc": "2026-11-21T04:18:23.193206+00:00",
   "run_utc": "2026-11-21T00:00:00+00:00",
   "runs_utc": {
     "gfs": {
       "24": "2026-11-21T00:00:00+00:00",
       "48": "2026-11-21T00:00:00+00:00",
       "72": "2026-11-21T00:00:00+00:00",
-      "120": "2026-11-20T18:00:00+00:00",
-      "168": "2026-11-20T18:00:00+00:00",
+      "120": "2026-11-21T00:00:00+00:00",
+      "168": "2026-11-21T00:00:00+00:00",
       "240": "2026-11-20T18:00:00+00:00",
       "360": "2026-11-20T18:00:00+00:00"
     },
@@ -17,8 +17,8 @@
       "72": "2026-11-21T00:00:00+00:00",
       "120": "2026-11-21T00:00:00+00:00",
       "168": "2026-11-21T00:00:00+00:00",
-      "240": "2026-11-20T18:00:00+00:00",
-      "360": "2026-11-20T18:00:00+00:00"
+      "240": "2026-11-21T00:00:00+00:00",
+      "360": "2026-11-21T00:00:00+00:00"
     }
   },
   "source": "NOAA NCEP NOMADS",
@@ -153,15 +153,15 @@
         "rain6h": "APCP_6h*(1-CPOFP_at_valid_time/100)",
         "snow6h": "APCP_6h*CPOFP_at_valid_time/100",
         "warning": "ESTIMATION. CPOFP est instantané en fin d'intervalle. Le champ snow6h contient les précipitations gelées (dont neige, potentiellement grésil), et non un cumul neige natif.",
-        "wet_cells_with_valid_phase": 13241,
-        "wet_cells_total": 44497
+        "wet_cells_with_valid_phase": 14495,
+        "wet_cells_total": 44141
       },
       "168": {
         "rain6h": "APCP_6h*(1-CPOFP_at_valid_time/100)",
         "snow6h": "APCP_6h*CPOFP_at_valid_time/100",
         "warning": "ESTIMATION. CPOFP est instantané en fin d'intervalle. Le champ snow6h contient les précipitations gelées (dont neige, potentiellement grésil), et non un cumul neige natif.",
-        "wet_cells_with_valid_phase": 13892,
-        "wet_cells_total": 50240
+        "wet_cells_with_valid_phase": 11925,
+        "wet_cells_total": 46645
       },
       "240": {
         "rain6h": "APCP_6h*(1-CPOFP_at_valid_time/100)",
@@ -179,8 +179,5 @@
       }
     }
   },
-  "errors": {
-    "aigfs-h240-t850": "\nNo index file was found for https://nomads.ncep.noaa.gov/pub/data/nccf/com/aigfs/prod/aigfs.20261121/00/model/atmos/grib2/aigfs.t00z.pres.f240.grib2\nDownload the full file first (with `H.download()`).\nYou will need to remake the Herbie object (H = `Herbie()`)\nor delete this cached property: `del H.index_as_dataframe()`",
-    "aigfs-h240-z500_msl": "\nNo index file was found for https://nomads.ncep.noaa.gov/pub/data/nccf/com/aigfs/prod/aigfs.20261121/00/model/atmos/grib2/aigfs.t00z.pres.f240.grib2\nDownload the full file first (with `H.download()`).\nYou will need to remake the Herbie object (H = `Herbie()`)\nor delete this cached property: `del H.index_as_dataframe()`"
-  }
+  "errors": {}
 }
