@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_utc": "2026-11-21T00:58:36.086218+00:00",
+  "generated_utc": "2026-11-21T01:15:21.550484+00:00",
   "atlas_generated_utc": "2026-11-21T00:33:30.183318+00:00",
   "reference": "ECMWF Open Data, Copernicus DEM GLO-90 via Open-Meteo — champs géoréférencés",
   "stages": [
@@ -13,8 +13,15 @@
       "background_path": "forecast-maps/tendance/tendance-risques-fond-j3.png",
       "risks": {
         "neige": {
-          "status": "indisponible",
-          "reason": "Filtre altitude indisponible : Altitude Copernicus non accessible : <urlopen error _ssl.c:1001: The handshake operation timed out>"
+          "status": "marque",
+          "max": 2.7,
+          "unit": "mm équiv. eau/6h",
+          "reason": "Neige hors relief ≤ 800 m, hors vallée de montagne (Copernicus GLO-90) ; relief : 32 zones échantillonnées",
+          "mountain_signal": true,
+          "mountain_max": 13.5,
+          "lowland_sample_count": 6,
+          "highland_sample_count": 32,
+          "terrain_source": "Copernicus DEM GLO-90 via Open-Meteo"
         },
         "verglas": {
           "status": "indisponible",
@@ -51,6 +58,14 @@
       },
       "markers": [
         {
+          "lon": 6.75,
+          "lat": 47.25,
+          "value": 2.7,
+          "kind": "neige",
+          "altitude_m": 772,
+          "terrain_context": "hors relief marqué"
+        },
+        {
           "lon": 9.25,
           "lat": 41.25,
           "value": 63.1,
@@ -73,6 +88,22 @@
           "lat": 51.25,
           "value": 11.5,
           "kind": "pluie_forte"
+        },
+        {
+          "lon": 12.0,
+          "lat": 52.25,
+          "value": 1.1,
+          "kind": "neige",
+          "altitude_m": 59,
+          "terrain_context": "hors relief marqué"
+        },
+        {
+          "lon": 9.0,
+          "lat": 52.25,
+          "value": 0.9,
+          "kind": "neige",
+          "altitude_m": 76,
+          "terrain_context": "hors relief marqué"
         }
       ],
       "t850_shading": {
