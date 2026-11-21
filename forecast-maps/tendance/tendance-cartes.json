@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
   "status": "illustrative_model_maps",
-  "generated_utc": "2026-11-21T01:45:00.587004+00:00",
-  "source_generated_utc": "2026-11-21T01:44:09.162304+00:00",
-  "charts_generated_utc": "2026-11-21T00:33:30.183318+00:00",
+  "generated_utc": "2026-11-21T07:24:51.449212+00:00",
+  "source_generated_utc": "2026-11-21T07:22:55.518395+00:00",
+  "charts_generated_utc": "2026-11-21T05:28:12.490980+00:00",
   "source": "ECMWF Open Data (CC BY 4.0), NOAA GFS si disponible",
   "not_weekly_anomalies": true,
   "period_maps": [
@@ -12,11 +12,11 @@
       "step_h": 72,
       "path": "forecast-maps/tendance/tendance-carte-j3.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j3.png",
-      "size_bytes": 602025,
+      "size_bytes": 602438,
       "run_utc": {
         "ifs": "2026-11-20T18:00Z",
-        "aifs": "2026-11-20T18:00Z",
-        "gfs": "2026-11-20T18:00:00+00:00"
+        "aifs": "2026-11-21T00:00Z",
+        "gfs": "2026-11-21T00:00:00+00:00"
       },
       "valid_utc": "2026-11-23T18:00:00+00:00",
       "title": "J+3 — synthèse synoptique IFS / AIFS / GFS",
@@ -140,11 +140,11 @@
       "step_h": 168,
       "path": "forecast-maps/tendance/tendance-carte-j7.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j7.png",
-      "size_bytes": 590714,
+      "size_bytes": 590735,
       "run_utc": {
         "ifs": "2026-11-20T12:00Z",
-        "aifs": "2026-11-20T18:00Z",
-        "gfs": "2026-11-20T18:00:00+00:00"
+        "aifs": "2026-11-21T00:00Z",
+        "gfs": "2026-11-21T00:00:00+00:00"
       },
       "valid_utc": "2026-11-27T12:00:00+00:00",
       "title": "J+7 — synthèse synoptique IFS / AIFS / GFS",
@@ -271,11 +271,11 @@
       "step_h": 240,
       "path": "forecast-maps/tendance/tendance-carte-j10.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j10.png",
-      "size_bytes": 571070,
+      "size_bytes": 571048,
       "run_utc": {
         "ifs": "2026-11-20T12:00Z",
-        "aifs": "2026-11-20T18:00Z",
-        "gfs": "2026-11-20T18:00:00+00:00"
+        "aifs": "2026-11-21T00:00Z",
+        "gfs": "2026-11-21T00:00:00+00:00"
       },
       "valid_utc": "2026-11-30T12:00:00+00:00",
       "title": "J+10 — synthèse synoptique IFS / AIFS / GFS",
@@ -385,12 +385,12 @@
       "step_h": 360,
       "path": "forecast-maps/tendance/tendance-carte-j15.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j15.png",
-      "size_bytes": 501602,
+      "size_bytes": 523192,
       "run_utc": {
-        "aifs": "2026-11-20T18:00Z",
-        "gfs": "2026-11-20T18:00:00+00:00"
+        "aifs": "2026-11-21T00:00Z",
+        "gfs": "2026-11-21T00:00:00+00:00"
       },
-      "valid_utc": "2026-12-05T18:00:00+00:00",
+      "valid_utc": "2026-12-06T00:00:00+00:00",
       "title": "J+15 — synthèse synoptique AIFS / GFS",
       "confidence_label": "Très limitée (indicative)",
       "marked_phenomena": [],
@@ -414,7 +414,7 @@
         },
         "tempete": {
           "status": "absent",
-          "max": 42.0,
+          "max": 33.9,
           "unit": "km/h (vent moyen 10 m)",
           "reason": "Signal de vent soutenu, pas une vigilance tempête"
         },
@@ -431,20 +431,13 @@
           "reason": "Crue non déductible d'un seul cumul de pluie de 6 h"
         },
         "pluie_forte": {
-          "status": "possible",
-          "max": 18.8,
+          "status": "absent",
+          "max": 7.8,
           "unit": "mm/6h",
           "reason": "Cumul des 6 heures précédant l'échéance"
         }
       },
-      "risk_markers": [
-        {
-          "lon": -8.25,
-          "lat": 41.75,
-          "value": 18.8,
-          "kind": "pluie_forte"
-        }
-      ],
+      "risk_markers": [],
       "t850_shading": {
         "enabled": true,
         "level_hpa": 850,

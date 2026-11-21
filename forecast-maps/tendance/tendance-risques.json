@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "generated_utc": "2026-11-21T01:44:33.782843+00:00",
-  "atlas_generated_utc": "2026-11-21T00:33:30.183318+00:00",
+  "generated_utc": "2026-11-21T07:23:25.809386+00:00",
+  "atlas_generated_utc": "2026-11-21T05:28:12.490980+00:00",
   "reference": "ECMWF Open Data, Copernicus DEM GLO-90 via Open-Meteo — champs géoréférencés",
   "stages": [
     {
@@ -343,8 +343,8 @@
       "id": "j15",
       "step_h": 360,
       "model": "aifs-single",
-      "run_utc": "2026-11-20T18:00:00+00:00",
-      "valid_utc": "2026-12-05T18:00:00+00:00",
+      "run_utc": "2026-11-21T00:00:00+00:00",
+      "valid_utc": "2026-12-06T00:00:00+00:00",
       "background_path": "forecast-maps/tendance/tendance-risques-fond-j15.png",
       "risks": {
         "neige": {
@@ -363,7 +363,7 @@
         },
         "tempete": {
           "status": "absent",
-          "max": 42.0,
+          "max": 33.9,
           "unit": "km/h (vent moyen 10 m)",
           "reason": "Signal de vent soutenu, pas une vigilance tempête"
         },
@@ -380,20 +380,13 @@
           "reason": "Crue non déductible d'un seul cumul de pluie de 6 h"
         },
         "pluie_forte": {
-          "status": "possible",
-          "max": 18.8,
+          "status": "absent",
+          "max": 7.8,
           "unit": "mm/6h",
           "reason": "Cumul des 6 heures précédant l'échéance"
         }
       },
-      "markers": [
-        {
-          "lon": -8.25,
-          "lat": 41.75,
-          "value": 18.8,
-          "kind": "pluie_forte"
-        }
-      ],
+      "markers": [],
       "t850_shading": {
         "enabled": true,
         "level_hpa": 850,
