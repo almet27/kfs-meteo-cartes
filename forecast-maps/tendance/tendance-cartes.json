@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "status": "illustrative_model_maps",
-  "generated_utc": "2026-11-22T08:43:35.162393+00:00",
-  "source_generated_utc": "2026-11-22T08:42:04.251155+00:00",
+  "generated_utc": "2026-11-22T08:54:48.081175+00:00",
+  "source_generated_utc": "2026-11-22T08:53:37.072839+00:00",
   "charts_generated_utc": "2026-11-22T07:43:28.481893+00:00",
   "source": "ECMWF Open Data (CC BY 4.0), NOAA GFS si disponible",
   "not_weekly_anomalies": true,
@@ -12,7 +12,7 @@
       "step_h": 72,
       "path": "forecast-maps/tendance/tendance-carte-j3.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j3.png",
-      "size_bytes": 573748,
+      "size_bytes": 626159,
       "run_utc": {
         "ifs": "2026-11-22T00:00Z",
         "aifs": "2026-11-22T00:00Z",
@@ -147,17 +147,19 @@
           20
         ],
         "opacity": 0.92,
+        "palette": "kfs-spectrum-v1",
         "description": "Température à 850 hPa modélisée, pas température au sol"
       },
-      "style": "kfs-editorial-masses-air-sans-fronts-v10-grande-carte",
-      "note": "Grande carte géoréférencée 1544x720 sans encart superposé ; ! rouge localisé = pic dépassant un seuil marqué, non officiel."
+      "style": "kfs-editorial-plein-cadre-neutre-v11",
+      "summary": "Flux de sud-ouest sur la France, avec air plus frais en altitude. Signaux sur France et abords : pluie jusqu’à 29 mm/6 h, rafales jusqu’à 86 km/h, gel jusqu’à -12 °C. Confiance modérée.",
+      "note": "Carte géoréférencée bord à bord 1600x700, bandeau neutre et synthèse issue des champs IFS ; ! rouge = seuil KFS non officiel."
     },
     {
       "id": "j7",
       "step_h": 168,
       "path": "forecast-maps/tendance/tendance-carte-j7.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j7.png",
-      "size_bytes": 588799,
+      "size_bytes": 664015,
       "run_utc": {
         "ifs": "2026-11-22T00:00Z",
         "aifs": "2026-11-22T00:00Z",
@@ -294,17 +296,19 @@
           20
         ],
         "opacity": 0.92,
+        "palette": "kfs-spectrum-v1",
         "description": "Température à 850 hPa modélisée, pas température au sol"
       },
-      "style": "kfs-editorial-masses-air-sans-fronts-v10-grande-carte",
-      "note": "Grande carte géoréférencée 1544x720 sans encart superposé ; ! rouge localisé = pic dépassant un seuil marqué, non officiel."
+      "style": "kfs-editorial-plein-cadre-neutre-v11",
+      "summary": "Flux de sud sur la France, avec air plus frais en altitude. Signaux sur France et abords : pluie jusqu’à 21 mm/6 h, rafales jusqu’à 76 km/h, neige hors relief, gel jusqu’à -20 °C. Confiance limitée.",
+      "note": "Carte géoréférencée bord à bord 1600x700, bandeau neutre et synthèse issue des champs IFS ; ! rouge = seuil KFS non officiel."
     },
     {
       "id": "j10",
       "step_h": 240,
       "path": "forecast-maps/tendance/tendance-carte-j10.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j10.png",
-      "size_bytes": 565270,
+      "size_bytes": 621005,
       "run_utc": {
         "ifs": "2026-11-22T00:00Z",
         "aifs": "2026-11-22T00:00Z",
@@ -414,17 +418,19 @@
           20
         ],
         "opacity": 0.92,
+        "palette": "kfs-spectrum-v1",
         "description": "Température à 850 hPa modélisée, pas température au sol"
       },
-      "style": "kfs-editorial-masses-air-sans-fronts-v10-grande-carte",
-      "note": "Grande carte géoréférencée 1544x720 sans encart superposé ; ! rouge localisé = pic dépassant un seuil marqué, non officiel."
+      "style": "kfs-editorial-plein-cadre-neutre-v11",
+      "summary": "Flux d’ouest-sud-ouest sur la France, avec air plus frais en altitude. Signaux sur France et abords : pluie jusqu’à 13 mm/6 h, rafales jusqu’à 66 km/h, gel jusqu’à -15 °C. Confiance faible.",
+      "note": "Carte géoréférencée bord à bord 1600x700, bandeau neutre et synthèse issue des champs IFS ; ! rouge = seuil KFS non officiel."
     },
     {
       "id": "j15",
       "step_h": 360,
       "path": "forecast-maps/tendance/tendance-carte-j15.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j15.png",
-      "size_bytes": 555242,
+      "size_bytes": 603938,
       "run_utc": {
         "ifs": "2026-11-22T00:00Z",
         "aifs": "2026-11-22T00:00Z",
@@ -558,10 +564,12 @@
           20
         ],
         "opacity": 0.92,
+        "palette": "kfs-spectrum-v1",
         "description": "Température à 850 hPa modélisée, pas température au sol"
       },
-      "style": "kfs-editorial-masses-air-sans-fronts-v10-grande-carte",
-      "note": "Grande carte géoréférencée 1544x720 sans encart superposé ; ! rouge localisé = pic dépassant un seuil marqué, non officiel."
+      "style": "kfs-editorial-plein-cadre-neutre-v11",
+      "summary": "Flux de nord-ouest sur la France, avec air froid à 850 hpa. Signaux sur France et abords : rafales jusqu’à 54 km/h, neige hors relief, gel jusqu’à -15 °C. Confiance très limitée.",
+      "note": "Carte géoréférencée bord à bord 1600x700, bandeau neutre et synthèse issue des champs IFS ; ! rouge = seuil KFS non officiel."
     }
   ],
   "public": true,
