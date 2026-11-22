@@ -118,8 +118,7 @@ for model, title in MODELS.items():
     result["maps"].setdefault(model,{})
     result["runs_utc"].setdefault(model,{})
     for step in STEPS:
-        if model=="ifs" and step>240:
-            continue
+        # IFS Open Data: 00Z/12Z now extend to +360 h; latest() selects an available cycle.
         key=f"{model}-h{step:03}"
         try:
             latest=client.latest(stream="oper",type="fc",step=step,param="2t")
