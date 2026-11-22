@@ -60,3 +60,19 @@ jobs:
               print("BULK",d.get("n"),d.get("tronque"),"sample",str(d.get("mesures",[])[:2])[:800])
           except Exception as e: print("BULK indisponible",repr(e))
           PY
+      - name: Vérifier le périmètre participatif et les licences amont
+        run: |
+          python - <<'PY'
+          import json, urllib.request, urllib.parse, collections
+          b="https://climato.chom.engineering"
+          def get(path,**params):
+              with urllib.request.urlopen(b+path+"?"+urllib.parse.urlencode(params),timeout=30) as r: return json.load(r)
+          for path,params in [("/ref/stations",{"genre":"static","actif_depuis":"1900-01-01"}),("/ref/stations-legacy",{"perimetre":"stations_xhr"}),("/stations",{"q":"STATIC0253"}),("/statIC/stations",{})]:
+              try:
+                  d=get(path,**params)
+                  rows=d if isinstance(d,list) else d.get("features",d.get("stations",[]))
+                  print(path,params,"total",len(rows),"sample",str(rows[:2])[:2400])
+                  if path=="/statIC/stations":
+                      print("Catalog latest",max((str(x.get("derniere_obs") or "") for x in rows),default=""))
+              except Exception as e:print(path,repr(e))
+          PY
