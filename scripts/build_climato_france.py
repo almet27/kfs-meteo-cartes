@@ -173,8 +173,22 @@ def render(points,boundaries,title,units,cmap,norm,metric,cutoff,filename):
     ax.pcolormesh(xx,yy,np.ma.masked_invalid(grid.reshape(xx.shape)),cmap=cm,norm=norm,shading="nearest",zorder=2)
     for outer in outlines:
         ax.plot(outer[:,0],outer[:,1],color="#65727b",linewidth=.48,alpha=.8,zorder=3)
-    # Small station markers preserve traceability without hiding the climate zones.
-    ax.scatter(xs,ys,s=8,facecolor="#222c33",edgecolor="white",linewidth=.35,alpha=.75,zorder=4)
+    # Label actual station anomalies, without overlapping nearby labels.
+    # All eligible stations still enter the interpolation.
+    from matplotlib import patheffects
+    order=sorted(range(len(values)),key=lambda i:(-ys[i],xs[i]))
+    plotted=[]
+    for i in order:
+        x,y,v=xs[i],ys[i],values[i]
+        if any(math.hypot((x-px)*111.2*math.cos(math.radians((y+py)/2)),(y-py)*111.2)<65 for px,py in plotted):
+            continue
+        plotted.append((x,y))
+        rgba=cm(norm(v))
+        light=.2126*rgba[0]+.7152*rgba[1]+.0722*rgba[2]
+        fg,bg=("#172029","white") if light>.52 else ("white","#20252b")
+        label=f"{v:+.1f}" if metric in ("temp","frost") else f"{v:+.0f}%"
+        ax.text(x,y,label,ha="center",va="center",fontsize=8.2,fontweight="bold",color=fg,zorder=4,
+                path_effects=[patheffects.withStroke(linewidth=1.7,foreground=bg)])
     ax.set_xlim(-5.7,9.9);ax.set_ylim(41.1,51.5);ax.set_aspect(1/math.cos(math.radians(46.5)));ax.set_xticks([]);ax.set_yticks([])
     for spine in ax.spines.values():spine.set_visible(False)
     fig.suptitle("KFS MÉTÉO  |  CLIMATOLOGIE",x=.5,y=.975,fontsize=15,fontweight="bold",color="#385064")
@@ -183,7 +197,7 @@ def render(points,boundaries,title,units,cmap,norm,metric,cutoff,filename):
     bar=fig.colorbar(sm,ax=ax,orientation="horizontal",fraction=.045,pad=.035,aspect=32,extend="both",ticks=levels)
     bar.set_label(units)
     fig.text(.5,.035,f"Du 1er au {cutoff.strftime('%d/%m/%Y')}  •  {len(points)} stations  •  Météo-France",ha="center",fontsize=11,fontweight="bold")
-    fig.text(.5,.015,"Zonage interpolé (IDW) • normales 1991–2020 sur les mêmes dates • gris : données insuffisantes",ha="center",fontsize=9,color="#52606b")
+    fig.text(.5,.015,"Zonage interpolé (IDW) • valeurs aux stations • normales 1991–2020 • gris : données insuffisantes",ha="center",fontsize=9,color="#52606b")
     fig.savefig(OUT/filename,dpi=150,bbox_inches="tight",pad_inches=.2);plt.close(fig)
 
 def main():
@@ -208,8 +222,8 @@ def main():
         cutoff=TODAY.replace(day=n)
         specs={
             "temp":[("temperature-anomalie.png","Anomalie de température moyenne","Écart (°C)","RdBu_r",TwoSlopeNorm(vmin=-5,vcenter=0,vmax=5),lambda o,r:o-r)],
-            "rain":[("pluie-cumul.png","Cumul des précipitations","mm","Blues",Normalize(0,max(100,max(r[0] for _,r in picks.values()))),lambda o,r:o),("pluie-anomalie.png","Anomalie de précipitations","Écart (%)","BrBG",TwoSlopeNorm(vmin=-100,vcenter=0,vmax=100),lambda o,r:(o/r-1)*100)],
-            "sun":[("soleil-cumul.png","Cumul d’ensoleillement","heures","YlOrBr",Normalize(0,max(100,max(r[0] for _,r in picks.values()))),lambda o,r:o),("soleil-anomalie.png","Anomalie d’ensoleillement","Écart (%)","PuOr_r",TwoSlopeNorm(vmin=-100,vcenter=0,vmax=100),lambda o,r:(o/r-1)*100)],
+            "rain":[("pluie-anomalie.png","Anomalie de précipitations","Écart (%)","BrBG",TwoSlopeNorm(vmin=-100,vcenter=0,vmax=100),lambda o,r:(o/r-1)*100)],
+            "sun":[("soleil-anomalie.png","Anomalie d’ensoleillement","Écart (%)","PuOr_r",TwoSlopeNorm(vmin=-100,vcenter=0,vmax=100),lambda o,r:(o/r-1)*100)],
             "frost":[("gel-anomalie.png","Anomalie du nombre de jours de gel","Écart (jours)","RdBu",TwoSlopeNorm(vmin=-10,vcenter=0,vmax=10),lambda o,r:o-r)]
         }[key]
         for filename,title,units,cmap,norm,fn in specs:
