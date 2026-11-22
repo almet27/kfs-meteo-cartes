@@ -253,7 +253,7 @@ def snow_off_mountain(lon,lat,snow):
     for p in sorted(low,key=lambda p:p["value"],reverse=True):
         if all(distance_km(p["lon"],p["lat"],q["lon"],q["lat"])>=180 for q in markers):
             markers.append(p)
-        if len(markers)>=3:break
+        if len(markers)>=20:break
     return markers,{"status":st,"max":round(highest,1),"unit":"mm équiv. eau/6h",
         "reason":f"Neige hors relief ≤ {SNOW_ALT_MAX_M} m, hors vallée de montagne (Copernicus GLO-90) ; relief : "+str(len(high))+" zones échantillonnées",
         "mountain_signal":bool(high), "mountain_max":round(max((p["value"] for p in high),default=0),1),
@@ -469,7 +469,7 @@ def build_risk(id,step,model,recorded,run,f,x,y,wind,wind_error,rain,snow,tmin,c
     risks["neige"]=snow_info
     cold_markers=[]
     if tmin is not None:
-        cold_markers=peaks(x,y,-tmin,0,"gel",3)
+        cold_markers=peaks(x,y,-tmin,0,"gel",20)
         if cold_markers:
             low=min(p["value"] for p in cold_markers)
             risks["gel"]={"status":"marque" if low<=-5 else "possible",
@@ -482,8 +482,8 @@ def build_risk(id,step,model,recorded,run,f,x,y,wind,wind_error,rain,snow,tmin,c
         risks["gel"]={"status":"indisponible","reason":"Tmin 2 m indisponible : "+str(cold_error)}
     risks["inondation"]={"status":"indisponible",
                          "reason":"Crue non déductible d'un seul cumul de pluie de 6 h"}
-    markers=((peaks(x,y,wind,50,"vent_fort",3) if wind is not None else []) +
-             peaks(x,y,rain,10,"pluie_forte",4) +
+    markers=((peaks(x,y,wind,50,"vent_fort",20) if wind is not None else []) +
+             peaks(x,y,rain,10,"pluie_forte",20) +
              snow_markers + cold_markers)
     # Adjacent pin collision is undesirable even across different phenomena.
     selected=[]
