@@ -92,8 +92,6 @@ def acquisition():
         client=Client(source="ecmwf",model=model,resol="0p25")
         data["models"][model]={}
         for step in STEPS:
-            if model == "ifs" and step == 360:
-                continue  # IFS oper n'offre pas ce pas ; AIFS et GFS restent exploitables.
             key=str(step)
             expected=atlas.get("runs_utc",{}).get(model,{}).get(key)
             if expected is None:
@@ -263,7 +261,7 @@ def report(data):
         "",
         "## 1. Méthode et limites de lecture",
         "",
-        "Nous confrontons les prévisions numériques à +72, +168 et +240 heures ; GFS peut aussi fournir +360 h. "
+        "Nous confrontons les prévisions numériques à +72, +168, +240 et +360 heures (IFS, AIFS et GFS si vérifié). "
         "Les valeurs fournies sont des moyennes spatiales calculées sur des boîtes "
         "géographiques fixes, non des observations au sol ni des anomalies par "
         "rapport à la climatologie. Une boîte peut comprendre la mer et la terre. "
@@ -302,7 +300,7 @@ def report(data):
         "plusieurs cycles et d'examiner la dispersion des membres d'ensemble "
         "pour apprécier la robustesse d'une tendance.",
         "",
-        "## 4. Troisième partie — fin de la période déterministe",
+        "## 4. Troisième partie — évolution à J+10",
         "",
         compare(data,240,"t850","france","°C"),
         "",
@@ -316,16 +314,15 @@ def report(data):
         "de scénario, et non comme une prévision stabilisée de chaque région. "
         "Cette prudence s'applique encore davantage au-delà de J+10.",
         "",
-        "## 5. Extension possible à J+15 via GFS",
+        "## 5. Évolution à J+15 — IFS / AIFS / GFS",
         "",
-        ("À +360 h, GFS indique sur la France une température moyenne à 850 hPa "
-         "de %.1f °C et une pression moyenne de %.1f hPa. Il s'agit d'une seule "
-         "sortie déterministe isolée et non d'une tendance probabiliste validée à J+15."
-         %(get(data,"gfs",360,"t850","france"),get(data,"gfs",360,"msl","france"))
-         if get(data,"gfs",360,"t850","france") is not None and
-            get(data,"gfs",360,"msl","france") is not None
-         else "Aucun champ GFS authentifié à +360 h disponible pour cette édition ; "
-              "nous n'extrapolons pas J+10 jusqu'à J+15."),
+        compare(data,360,"t850","france","°C"),
+        "",
+        compare(data,360,"msl","atlantique","hPa"),
+        "",
+        compare(data,360,"z500","europe","dam"),
+        "",
+        "À J+15, ces sorties déterministes sont des scénarios indicatifs et non des probabilités.",
         "",
         "## 6. Semaines 3 et 4 : état de disponibilité",
         "",

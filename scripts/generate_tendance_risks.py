@@ -37,7 +37,7 @@ from matplotlib.path import Path as MplPath
 OUT=Path("forecast-maps/tendance")
 EU=Path("forecast-maps/europe")
 OUT.mkdir(parents=True,exist_ok=True)
-STAGES=[("j3",72,"ifs"),("j7",168,"ifs"),("j10",240,"ifs"),("j15",360,"aifs-single")]
+STAGES=[("j3",72,"ifs"),("j7",168,"ifs"),("j10",240,"ifs"),("j15",360,"ifs")]
 GEOGRAPHY=(-45,35,31,75)
 FOCUS=(-10,12,41,53)
 CATEGORIES=("neige","verglas","orage","tempete","gel","canicule","inondation","pluie_forte")

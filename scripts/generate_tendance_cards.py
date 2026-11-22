@@ -167,8 +167,6 @@ def curve_arrow(base, origin, bearing, scale=1.0):
 
 def write_stage(stage,meta,data,now):
     step=stage["step"]
-    if step == "360":
-        return write_j15(stage,meta,data,now)
     ifs=select(meta,data,stage,"ifs")
     aifs=select(meta,data,stage,"aifs-single")
     _,di,wi,ti,pi=ifs
@@ -265,90 +263,14 @@ def write_stage(stage,meta,data,now):
     }
 
 
-def write_j15(stage, meta, data, now):
-    """J+15: carte AIFS authentique et diagnostic GFS séparé ; aucun IFS fictif."""
-    path, aifs, flow, t850, msl = select(meta, data, stage, "aifs-single")
-    gfs = data.get("models", {}).get("gfs", {}).get("360")
-    if not gfs:
-        raise RuntimeError("GFS +360 h manquant : consensus J+15 non vérifiable")
-    gt = gfs.get("fields", {}).get("t850", {}).get("france", {}).get("mean")
-    gp = gfs.get("fields", {}).get("msl", {}).get("france", {}).get("mean")
-    if gt is None or gp is None:
-        raise RuntimeError("Champs GFS +360 h incomplets")
-    if not gfs.get("run_utc") or not gfs.get("valid_utc"):
-        raise RuntimeError("Horodatages GFS +360 h absents")
-    valid = parsed(aifs["valid_utc"])
-    valid_gfs = parsed(gfs["valid_utc"])
-    if abs((valid-valid_gfs).total_seconds()) > 12*3600:
-        raise RuntimeError("Échéances AIFS et GFS désynchronisées de plus de 12 h")
-    out = linear_bg()
-    out = glow(out, (0, -180, 1100, 400), COL["blue"], 85, 105)
-    d = ImageDraw.Draw(out)
-    d.rectangle((0, 0, 14, H), fill=(*COL["cyan"], 255))
-    cloud(d, 55, 18)
-    txt(d, (190, 32), "KFS MÉTÉO", 43, "white", True)
-    txt(d, (55, 112), "Tendance européenne à J+15", 52, "white", True)
-    rounded(d, (59, 185, 740, 234), radius=23, fill=(204, 230, 249, 246))
-    txt(d, (78, 194), "J+15  •  " + valid.strftime("%d/%m/%Y %H:%M UTC"), 24, (9, 42, 77), True)
-    txt(d, (775, 194), "AIFS + GFS  •  IFS indisponible", 22, "cyan", True)
-    mx, my, mw, mh = 53, 260, 1494, 677
-    rounded(d, (mx-5, my-5, mx+mw+5, my+mh+5), radius=29,
-            fill=(30, 72, 105, 255), outline=(119, 194, 238, 255), width=3)
-    hero = map_crop(path, (mw, mh)).convert("RGBA")
-    mask = Image.new("L", (mw, mh), 0)
-    ImageDraw.Draw(mask).rounded_rectangle((0, 0, mw-1, mh-1), radius=22, fill=255)
-    out.paste(hero, (mx, my), mask)
-    d = ImageDraw.Draw(out)
-    rounded(d, (78, 283, 790, 374), radius=17,
-            fill=(9, 32, 58, 239), outline=(89, 176, 231, 195))
-    txt(d, (105, 290), "AIFS  •  géopotentiel 500 hPa et pression", 24, "white", True)
-    txt(d, (105, 331), "Champs du modèle — pictogrammes de risques non évalués", 18, "light")
-    out = curve_arrow(out, (1013, 713), flow.get("from_deg"))
-    d = ImageDraw.Draw(out)
-    rounded(d, (520, 783, 1509, 904), radius=22,
-            fill=(8, 38, 69, 234), outline=(104, 210, 244, 227))
-    txt(d, (548, 794), "FRANCE  •  comparaison de masses d'air à 850 hPa", 24, "cyan", True)
-    txt(d, (548, 837), "AIFS %+0.1f °C    |    GFS %+0.1f °C"%(t850, gt), 30, "white", True)
-    rounded(d, (48, 959, 1552, 1132), radius=31,
-            fill=(9, 36, 67, 242), outline=(111, 188, 233, 220), width=3)
-    d.line((815, 981, 815, 1110), fill=(110, 159, 198, 160), width=2)
-    txt(d, (80, 984), "ÉCHÉANCE LONGUE  •  SCÉNARIOS INCERTAINS", 23, "cyan", True)
-    txt(d, (80, 1038), "Flux AIFS : "+sector(flow.get("from_deg")), 28, "white", True)
-    txt(d, (846, 984), "RISQUES LOCALISÉS", 23, "cyan", True)
-    txt(d, (846, 1038), "Non évalués sans données adaptées", 24, "white", True)
-    txt(d, (58, 1143), "Runs : AIFS "+stamp(aifs["run_utc"])+" / GFS "+stamp(gfs["run_utc"]), 16, "light")
-    txt(d, (58, 1170), "Carte AIFS réelle • comparaison GFS sectorielle • aucune localisation de risque inventée.", 15, "muted")
-    output = OUT / "tendance-carte-j15.png"
-    out.convert("RGB").save(output, "PNG", optimize=True)
-    return {
-        "id":"j15", "step_h":360, "path":str(output), "image_url":"https://almet27.github.io/kfs-meteo-cartes/"+str(output),
-        "size_bytes":output.stat().st_size, "run_utc":{"aifs-single":aifs["run_utc"],"gfs":gfs["run_utc"]},
-        "valid_utc":{"aifs-single":aifs["valid_utc"],"gfs":gfs["valid_utc"]},
-        "title":"J+15 — scénarios AIFS et GFS", "style":"illustration-europe-kfs-v3",
-        "confidence_label":"Très limitée — sorties déterministes",
-        "risk_status":"non_evalue", "model_comparison":"Champs cartographiés AIFS ; diagnostic sectoriel GFS"
-    }
-
-
 def write_premium_stage(stage, meta, data, now, risk_document):
     """Infographie européenne 16:9 : champs météorologiques réels et risques non inventés."""
     step=stage["step"]
-    if step=="360":
-        chart, details, flow, t850, pressure=select(meta,data,stage,"aifs-single")
-        model_a="AIFS"
-        other=data.get("models",{}).get("gfs",{}).get(step)
-        gfs_ok=(other is not None and
-                other.get("fields",{}).get("t850",{}).get("france",{}).get("mean") is not None and
-                bool(other.get("run_utc")))
-        model_b="GFS" if gfs_ok else "GFS indisponible"
-        other_t=float(other["fields"]["t850"]["france"]["mean"]) if gfs_ok else None
-        other_run=other["run_utc"] if gfs_ok else None
-    else:
-        chart, details, flow, t850, pressure=select(meta,data,stage,"ifs")
-        _,other,_,other_t,_=select(meta,data,stage,"aifs-single")
-        other_run=other["run_utc"]
-        model_a="IFS"
-        model_b="AIFS"
+    chart, details, flow, t850, pressure=select(meta,data,stage,"ifs")
+    _,other,_,other_t,_=select(meta,data,stage,"aifs-single")
+    other_run=other["run_utc"]
+    model_a="IFS"
+    model_b="AIFS"
     # Le GFS est affiché uniquement si les diagnostics NOAA sont réels,
     # horodatés et à échéance comparable (max. 12 h de décalage).
     gfs_record=data.get("models",{}).get("gfs",{}).get(step)
@@ -365,13 +287,12 @@ def write_premium_stage(stage, meta, data, now, risk_document):
                        bool(gfs_record.get("run_utc")))
         except (KeyError,TypeError,ValueError,OverflowError):
             gfs_ready=False
-    if step=="360":
-        model_b="GFS" if gfs_ready else "GFS indisponible"
-        other_run=gfs_record["run_utc"] if gfs_ready else None
     date=parsed(details["valid_utc"])
     hazards=next((a for a in risk_document["stages"] if a["id"]==stage["id"]),None)
     if not hazards or hazards["step_h"]!=int(step):
         raise RuntimeError("Données de risque manquantes "+stage["id"])
+    if hazards.get("model")!="ifs":
+        raise RuntimeError("Fond de risques non IFS "+stage["id"])
     if parsed(hazards["run_utc"])!=parsed(details["run_utc"]):
         raise RuntimeError("Run de risques désynchronisé "+stage["id"])
     if parsed(hazards["valid_utc"])!=date:
@@ -422,12 +343,9 @@ def write_premium_stage(stage, meta, data, now, risk_document):
     txt(d,(157,19),"KFS MÉTÉO  •  TENDANCE EUROPE",37,"white",True)
     txt(d,(158,81),stage["period"]+"  ·  "+date.strftime("%d/%m/%Y %H:%M")+" UTC",
         24,"cyan",True)
-    if step=="360":
-        model_names="AIFS"+(" / GFS" if gfs_ready else "")
-    else:
-        model_names="IFS / AIFS"+(" / GFS" if gfs_ready else "")
+    model_names="IFS / AIFS"+(" / GFS" if gfs_ready else "")
     run_segments=[model_a+" "+parsed(details["run_utc"]).strftime("%HZ")]
-    if step!="360" and other_run:
+    if other_run:
         run_segments.append("AIFS "+parsed(other_run).strftime("%HZ"))
     if gfs_ready:
         run_segments.append("GFS "+parsed(gfs_record["run_utc"]).strftime("%HZ"))
@@ -521,9 +439,9 @@ def write_premium_stage(stage, meta, data, now, risk_document):
     runs={model_a.lower():details["run_utc"]}
     if other_run is not None:
         runs[model_b.lower()]=other_run
-    if gfs_ready and step!="360":
+    if gfs_ready:
         runs["gfs"]=gfs_record["run_utc"]
-    display_models=model_a+" / "+model_b+(" / GFS" if gfs_ready and step!="360" else "")
+    display_models=model_a+" / "+model_b+(" / GFS" if gfs_ready else "")
     return {"id":stage["id"],"step_h":int(step),"path":str(out),
        "image_url":"https://almet27.github.io/kfs-meteo-cartes/"+str(out),
        "size_bytes":out.stat().st_size, "run_utc":runs,
