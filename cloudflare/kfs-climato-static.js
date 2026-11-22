@@ -25,7 +25,7 @@ function kfsStaticCandidates(rows,city,period){
   for(const r of rows){
     if(r.pays!=="FR"||r.ouverte!==true||r.parametre!=="air_temperature"||!r.ic_id||!r.libelle||!Number.isFinite(r.latitude)||!Number.isFinite(r.longitude))continue;
     const first=String(r.premiere_obs||"").slice(0,10),last=String(r.derniere_obs||"").slice(0,10);
-    if(!first||!last||first>=period.to||last<period.from)continue;
+    if(!first||first>=period.to)continue; // metadata can lag; test actual days instead
     const km=kfsClimDistance(city.lat,city.lon,r.latitude,r.longitude);
     if(km>50)continue;
     dedup.set(r.ic_id,{id:String(r.ic_id),name:String(r.libelle),km,alt:r.altitude});
@@ -52,9 +52,9 @@ async function kfsStaticReport(city,year,month){
   const catalog=await kfsStaticFetch("/statIC/stations",{},86400);
   if(!Array.isArray(catalog.stations))throw Error("Catalogue StatIC non reconnu.");
   // Independent network identity check: reject official MF posts, even if listed by StatIC.
-  const ref=await kfsStaticFetch("/ref/stations",{genre:"static",parametre:"air_temperature",actif_depuis:period.from},86400);
+  const ref=await kfsStaticFetch("/ref/stations",{genre:"static",actif_depuis:"1900-01-01"},86400);
   if(!Array.isArray(ref.features))throw Error("Référentiel des réseaux Infoclimat non reconnu ; aucun repli Météo-France.");
-  const ids=new Set(ref.features.map(f=>f.properties).filter(s=>s&&s.genre==="static"&&Object.hasOwn(s,"mfid")&&!String(s.mfid??"").trim()&&!String(s.type_poste??"").trim()&&s.ic_id&&!/^TEST MF CSV/i.test(s.libelle_source||s.libelle||"")).map(s=>String(s.ic_id)));
+  const ids=new Set(ref.features.map(f=>f.properties).filter(s=>s&&s.genre==="static"&&s.publiable===true&&Object.hasOwn(s,"mfid")&&!String(s.mfid??"").trim()&&!String(s.type_poste??"").trim()&&s.ic_id&&!/^TEST MF CSV/i.test(s.libelle_source||s.libelle||"")).map(s=>String(s.ic_id)));
   const candidates=kfsStaticCandidates(catalog.stations.filter(s=>ids.has(String(s.ic_id))),city,period);
   if(!candidates.length)throw Error("Aucune station StatIC ouverte à moins de 50 km avec des observations sur cette période.");
   // Bounded parallel requests; no whole-France scraping.
