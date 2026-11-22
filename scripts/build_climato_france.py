@@ -212,6 +212,7 @@ def main():
             except Exception as e: logging.warning("%s: %s",jobs[job],e)
     boundaries=fetch_json("https://raw.githubusercontent.com/gregoiredavid/france-geojson/master/departements-version-simplifiee.geojson")
     manifest={"schema":1,"month":TODAY.strftime("%Y-%m"),"generated_at":datetime.now(ZoneInfo("Europe/Paris")).isoformat(),"source":"Météo-France, observations quotidiennes","method":"IDW, 150 km max nearest station, 2 stations within 200 km","maps":[]}
+    audit={}
     for key,minimum in [("temp",15),("rain",15),("sun",8),("frost",15)]:
         picks={}
         for n in range(END.day,0,-1):
@@ -220,6 +221,11 @@ def main():
         else:
             logging.warning("Insufficient coverage for %s",key);continue
         cutoff=TODAY.replace(day=n)
+        audit[key]={"end":cutoff.isoformat(),"stations":[{"id":sid,"name":loc[2],"lon":loc[0],"lat":loc[1],"observed":round(r[0],4),"normal":round(r[1],4),"delta":round(r[0]-r[1],4),"reference_years":r[2]} for sid,(loc,r) in picks.items()]}
+        if key=="temp":
+            for row in audit[key]["stations"]:
+                if abs(row["lon"]-3.10)<1.0 and abs(row["lat"]-50.57)<.65:
+                    logging.info("LILLE AUDIT %s",json.dumps(row,ensure_ascii=False))
         specs={
             "temp":[("temperature-anomalie.png","Anomalie de température moyenne","Écart (°C)","RdBu_r",TwoSlopeNorm(vmin=-5,vcenter=0,vmax=5),lambda o,r:o-r)],
             "rain":[("pluie-anomalie.png","Anomalie de précipitations","Écart (%)","BrBG",TwoSlopeNorm(vmin=-100,vcenter=0,vmax=100),lambda o,r:(o/r-1)*100)],
@@ -232,5 +238,6 @@ def main():
             manifest["maps"].append({"file":filename,"title":title,"end":cutoff.isoformat(),"stations":len(points)})
     if not any(m["file"]=="temperature-anomalie.png" for m in manifest["maps"]) or not any(m["file"]=="pluie-anomalie.png" for m in manifest["maps"]):
         raise SystemExit("Couverture température/pluie insuffisante : ne pas publier de cartes incomplètes.")
+    (OUT/"station-audit.json").write_text(json.dumps(audit,ensure_ascii=False,separators=(",",":")))
     (OUT/"latest.json").write_text(json.dumps(manifest,ensure_ascii=False,indent=2))
 if __name__=="__main__":main()
