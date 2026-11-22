@@ -1,5 +1,5 @@
 {
-  "generated_utc": "2026-11-22T07:38:17.445532+00:00",
+  "generated_utc": "2026-11-22T07:43:28.481893+00:00",
   "source": "ECMWF Open Data (CC BY 4.0)",
   "maps": {
     "ifs": {
@@ -50,6 +50,14 @@
         "rain6h": "forecast-maps/europe/ifs-h240-rain6h.png",
         "snow6h": "forecast-maps/europe/ifs-h240-snow6h.png",
         "precip6h": "forecast-maps/europe/ifs-h240-precip6h.png"
+      },
+      "360": {
+        "t850": "forecast-maps/europe/ifs-h360-t850.png",
+        "z500_msl": "forecast-maps/europe/ifs-h360-z500_msl.png",
+        "wind10m": "forecast-maps/europe/ifs-h360-wind10m.png",
+        "rain6h": "forecast-maps/europe/ifs-h360-rain6h.png",
+        "snow6h": "forecast-maps/europe/ifs-h360-snow6h.png",
+        "precip6h": "forecast-maps/europe/ifs-h360-precip6h.png"
       }
     },
     "aifs-single": {
@@ -118,7 +126,8 @@
       "72": "2026-11-22T00:00:00+00:00",
       "120": "2026-11-22T00:00:00+00:00",
       "168": "2026-11-22T00:00:00+00:00",
-      "240": "2026-11-22T00:00:00+00:00"
+      "240": "2026-11-22T00:00:00+00:00",
+      "360": "2026-11-22T00:00:00+00:00"
     },
     "aifs-single": {
       "24": "2026-11-22T00:00:00+00:00",
@@ -133,27 +142,7 @@
   "errors": {},
   "precip_units": {
     "ifs": {
-      "24": {
-        "tp": "m",
-        "sf": "m of water equivalent"
-      },
-      "48": {
-        "tp": "m",
-        "sf": "m of water equivalent"
-      },
-      "72": {
-        "tp": "m",
-        "sf": "m of water equivalent"
-      },
-      "120": {
-        "tp": "m",
-        "sf": "m of water equivalent"
-      },
-      "168": {
-        "tp": "m",
-        "sf": "m of water equivalent"
-      },
-      "240": {
+      "360": {
         "tp": "m",
         "sf": "m of water equivalent"
       }
