@@ -63,7 +63,12 @@ def when(value):
 def load(path,name):
     ds=xr.open_dataset(path,engine="cfgrib",backend_kwargs={"indexpath":""})
     try:
-        z=ds[name].squeeze().load()
+        if name=="fg10":
+            matches=[v for v in ds.data_vars.values() if int(v.attrs.get("GRIB_paramId",-1))==49]
+            if len(matches)!=1:raise ValueError("Champ ECMWF 10fg non identifiable")
+            z=matches[0].squeeze().load()
+        else:
+            z=ds[name].squeeze().load()
         lon=((np.asarray(z.longitude.values,dtype=float)+180)%360)-180
         lat=np.asarray(z.latitude.values,dtype=float)
         field=np.asarray(z.values,dtype=float)
@@ -333,10 +338,9 @@ def calculate(id,step,model,atlas,now):
     if run>now+timedelta(hours=1) or now-run>timedelta(hours=48):
         raise RuntimeError("Run de carte trop ancien")
     client=Client(source="ecmwf",model=model,resol="0p25")
-    # Fully aligned synoptic data, 10m WIND, six-hour precipitation and snow-water.
+    # Fully aligned synoptic data, maximum 10m gusts and six-hour precipitation.
     f={}
     for key,param,var,lev in (("gh","gh","gh",500),("msl","msl","msl",None),
-                               ("u","10u","u10",None),("v","10v","v10",None),
                                ("tp","tp","tp",None),("sf","sf","sf",None),
                                ("t850","t","t",850)):
         f[key]=single(client,model,step,run,param,var,lev)
@@ -344,8 +348,24 @@ def calculate(id,step,model,atlas,now):
         f[key]=single(client,model,step-6,run,param,var)
     verify(f["msl"],list(f.values()))
     x,y=f["msl"][0],f["msl"][1]
-    wind=np.hypot(f["u"][2],f["v"][2])*3.6
-    if np.nanmax(wind)>400:raise RuntimeError("Vent 10 m physiquement aberrant")
+    # IFS 10fg is the maximum since the previous post-processing step.
+    # At +72 h, combine the two 3-hour maxima; later stages already span 6 h.
+    wind=None
+    wind_error=None
+    try:
+        gusts=[single(client,model,h,run,"10fg","fg10")
+               for h in ([step-3,step] if step<=144 else [step])]
+        verify(f["msl"],gusts)
+        for gust in gusts:
+            unit=gust[4].lower().replace(" ","")
+            if unit not in {"ms**-1","ms^-1","ms-1","m/s","ms**(-1)"}:
+                raise ValueError("Unité rafales inconnue : "+gust[4])
+        wind=np.maximum.reduce([g[2] for g in gusts])*3.6
+        if not np.all(np.isfinite(wind)) or np.min(wind)<0 or np.max(wind)>400:
+            raise ValueError("Rafales 10 m non plausibles")
+    except Exception as exc:
+        wind=None
+        wind_error=str(exc)[:150]
     rainnow=f["tp"][2]*mm_factor(f["tp"][4])
     rainprev=f["tp_prev"][2]*mm_factor(f["tp_prev"][4])
     snownow=f["sf"][2]*mm_factor(f["sf"][4])
@@ -353,18 +373,20 @@ def calculate(id,step,model,atlas,now):
     total=np.maximum(0,rainnow-rainprev)
     snow=np.maximum(0,snownow-snowprev)
     rain=np.maximum(0,total-snow)
-    if not np.all(np.isfinite(wind)) or not np.all(np.isfinite(rain)) or not np.all(np.isfinite(snow)):
+    if not np.all(np.isfinite(rain)) or not np.all(np.isfinite(snow)):
         raise RuntimeError("Données de risques non finies")
     box=(x>=FOCUS[0])&(x<=FOCUS[1])
     by=(y>=FOCUS[2])&(y<=FOCUS[3])
     region=np.ix_(by,box)
-    vw=float(np.max(wind[region]))
+    vw=float(np.max(wind[region])) if wind is not None else None
     vr=float(np.max(rain[region]))
     vs=float(np.max(snow[region]))
-    # 10m average speed != gust. Do not claim official storm warning from it.
     risks={k:{"status":"indisponible","reason":"Champs spécifiques non disponibles"} for k in CATEGORIES}
-    risks["tempete"]={"status":status(vw,50,70),"max":round(vw,1),"unit":"km/h (vent moyen 10 m)",
-                      "reason":"Signal de vent soutenu, pas une vigilance tempête"}
+    if vw is not None:
+        risks["tempete"]={"status":status(vw,50,100),"max":round(vw,1),"unit":"km/h (rafales max 10 m/6 h)",
+                          "reason":"Rafales maximales ECMWF IFS des 6 h précédentes, pas une vigilance officielle"}
+    else:
+        risks["tempete"]={"status":"indisponible","reason":"Champ rafales 10fg indisponible : "+str(wind_error)}
     risks["pluie_forte"]={"status":status(vr,10,20),"max":round(vr,1),"unit":"mm/6h",
                           "reason":"Cumul des 6 heures précédant l'échéance"}
     try:
@@ -376,7 +398,7 @@ def calculate(id,step,model,atlas,now):
     risks["neige"]=snow_info
     risks["inondation"]={"status":"indisponible",
                          "reason":"Crue non déductible d'un seul cumul de pluie de 6 h"}
-    markers=(peaks(x,y,wind,50,"vent_fort",3) +
+    markers=((peaks(x,y,wind,50,"vent_fort",3) if wind is not None else []) +
              peaks(x,y,rain,10,"pluie_forte",4) +
              snow_markers)
     # Adjacent pin collision is undesirable even across different phenomena.
@@ -397,7 +419,7 @@ def calculate(id,step,model,atlas,now):
                             "fixed_scale_c":[-20,20],"opacity":0.92,
                             "description":"Température à 850 hPa modélisée, pas température au sol"},
             "risk_scope":"France et secteurs proches, domaine rectangulaire terre + mer",
-            "method":"Vent moyen 10m, pluie/neige 6h ; neige hors relief selon altitudes GLO-90 ; pas une vigilance officielle."}
+            "method":"Rafales max 10 m, pluie/neige sur les 6 h précédentes ; neige hors relief selon altitudes GLO-90 ; pas une vigilance officielle."}
 
 def main():
     now=datetime.now(timezone.utc)
