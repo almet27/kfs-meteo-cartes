@@ -39,9 +39,9 @@ def _emoji_pixels(symbol):
 
 def premium_pictogram(kind):
     """Unicode weather emoji rendered in color, with transparent background."""
-    symbols = {"pluie_forte":"🌧️", "neige":"❄️",
+    symbols = {"pluie_forte":"💦", "neige":"❄️",
                "vent_fort":"💨", "tempete":"💨",
-               "orage":"⛈️", "verglas":"🧊", "gel":"🥶",
+               "orage":"⚡", "verglas":"🧊", "gel":"🥶",
                "canicule":"🌡️", "inondation":"🌊"}
     if kind not in symbols:
         raise ValueError("Phénomène météo inconnu : " + kind)
