@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "month": "2025-08",
+  "period": "01/08/2025 – 31/08/2025",
+  "start": "2025-08-01",
+  "generated_at": "2026-11-22T13:52:22.827752+01:00",
+  "source": "Météo-France, archives quotidiennes",
+  "maps": [
+    {
+      "file": "temperature-anomalie.png",
+      "title": "Anomalie de température moyenne",
+      "end": "2025-08-31",
+      "stations": 399
+    },
+    {
+      "file": "pluie-anomalie.png",
+      "title": "Anomalie de précipitations",
+      "end": "2025-08-31",
+      "stations": 428
+    },
+    {
+      "file": "soleil-anomalie.png",
+      "title": "Anomalie d’ensoleillement",
+      "end": "2025-08-31",
+      "stations": 49
+    },
+    {
+      "file": "gel-anomalie.png",
+      "title": "Anomalie du nombre de jours de gel",
+      "end": "2025-08-31",
+      "stations": 399
+    },
+    {
+      "file": "neige-sol-max.png",
+      "title": "Hauteur maximale de neige au sol mesurée",
+      "end": "2025-08-31",
+      "stations": 82,
+      "kind": "snow_observed"
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "month": "2025-11",
+  "period": "01/11/2025 – 30/11/2025",
+  "start": "2025-11-01",
+  "generated_at": "2026-11-22T13:52:55.513919+01:00",
+  "source": "Météo-France, archives quotidiennes",
+  "maps": [
+    {
+      "file": "temperature-anomalie.png",
+      "title": "Anomalie de température moyenne",
+      "end": "2025-11-30",
+      "stations": 398
+    },
+    {
+      "file": "pluie-anomalie.png",
+      "title": "Anomalie de précipitations",
+      "end": "2025-11-30",
+      "stations": 424
+    },
+    {
+      "file": "soleil-anomalie.png",
+      "title": "Anomalie d’ensoleillement",
+      "end": "2025-11-30",
+      "stations": 51
+    },
+    {
+      "file": "gel-anomalie.png",
+      "title": "Anomalie du nombre de jours de gel",
+      "end": "2025-11-30",
+      "stations": 398
+    },
+    {
+      "file": "neige-sol-max.png",
+      "title": "Hauteur maximale de neige au sol mesurée",
+      "end": "2025-11-30",
+      "stations": 117,
+      "kind": "snow_observed"
+    }
+  ]
+}
