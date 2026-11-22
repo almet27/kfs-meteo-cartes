@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_utc": "2026-11-22T09:27:29.140044+00:00",
+  "generated_utc": "2026-11-22T09:30:36.588452+00:00",
   "atlas_generated_utc": "2026-11-22T07:43:28.481893+00:00",
   "reference": "ECMWF Open Data, Copernicus DEM GLO-90 via Open-Meteo — champs géoréférencés",
   "stages": [
@@ -13,8 +13,15 @@
       "background_path": "forecast-maps/tendance/tendance-risques-fond-j3.png",
       "risks": {
         "neige": {
-          "status": "indisponible",
-          "reason": "Filtre altitude indisponible : Altitude Copernicus non accessible : HTTP Error 429: Too Many Requests"
+          "status": "relief_uniquement",
+          "max": 0,
+          "unit": "mm équiv. eau/6h",
+          "reason": "Neige hors relief ≤ 500 m, hors vallée de montagne (Copernicus GLO-90) ; relief : 48 zones échantillonnées",
+          "mountain_signal": true,
+          "mountain_max": 7.9,
+          "lowland_sample_count": 0,
+          "highland_sample_count": 48,
+          "terrain_source": "Copernicus DEM GLO-90 via Open-Meteo"
         },
         "verglas": {
           "status": "indisponible",
@@ -84,16 +91,100 @@
           "kind": "vent_fort"
         },
         {
-          "lon": 6.25,
+          "lon": -1.75,
+          "lat": 43.75,
+          "value": 74.9,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": 5.0,
+          "lat": 43.25,
+          "value": 71.5,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": -9.5,
+          "lat": 44.25,
+          "value": 64.1,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": 6.0,
           "lat": 45.0,
-          "value": -6.113745117187477,
+          "value": 63.7,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": 1.0,
+          "lat": 41.25,
+          "value": 62.8,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": 3.25,
+          "lat": 53.0,
+          "value": 61.6,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": -2.75,
+          "lat": 45.5,
+          "value": 59.0,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": 8.5,
+          "lat": 44.0,
+          "value": 56.7,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": 0.75,
+          "lat": 50.75,
+          "value": 54.9,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": 11.0,
+          "lat": 42.5,
+          "value": 53.8,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": -9.75,
+          "lat": 42.25,
+          "value": 52.8,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": -3.25,
+          "lat": 41.25,
+          "value": 52.6,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": -6.75,
+          "lat": 43.0,
+          "value": 52.2,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": 12.0,
+          "lat": 50.0,
+          "value": -5.113745117187477,
           "kind": "gel"
         },
         {
-          "lon": 4.0,
-          "lat": 44.0,
-          "value": 29.3,
-          "kind": "pluie_forte"
+          "lon": 8.75,
+          "lat": 51.25,
+          "value": -4.613745117187477,
+          "kind": "gel"
+        },
+        {
+          "lon": 10.25,
+          "lat": 53.0,
+          "value": -3.7533325195312273,
+          "kind": "gel"
         },
         {
           "lon": -2.75,
@@ -102,16 +193,58 @@
           "kind": "pluie_forte"
         },
         {
-          "lon": -1.5,
-          "lat": 43.75,
-          "value": 15.4,
-          "kind": "pluie_forte"
+          "lon": 0.0,
+          "lat": 42.75,
+          "value": -3.3637451171874773,
+          "kind": "gel"
+        },
+        {
+          "lon": 6.25,
+          "lat": 49.75,
+          "value": -2.8637451171874773,
+          "kind": "gel"
         },
         {
           "lon": -3.25,
           "lat": 52.25,
           "value": 12.5,
           "kind": "pluie_forte"
+        },
+        {
+          "lon": 9.5,
+          "lat": 48.5,
+          "value": -2.3637451171874773,
+          "kind": "gel"
+        },
+        {
+          "lon": 6.75,
+          "lat": 43.25,
+          "value": 11.0,
+          "kind": "pluie_forte"
+        },
+        {
+          "lon": 6.0,
+          "lat": 52.25,
+          "value": -2.1137451171874773,
+          "kind": "gel"
+        },
+        {
+          "lon": 4.25,
+          "lat": 46.0,
+          "value": 10.5,
+          "kind": "pluie_forte"
+        },
+        {
+          "lon": -8.25,
+          "lat": 43.5,
+          "value": 10.3,
+          "kind": "pluie_forte"
+        },
+        {
+          "lon": 3.25,
+          "lat": 51.25,
+          "value": -0.8637451171874773,
+          "kind": "gel"
         }
       ],
       "t850_shading": {
@@ -139,8 +272,15 @@
       "background_path": "forecast-maps/tendance/tendance-risques-fond-j7.png",
       "risks": {
         "neige": {
-          "status": "indisponible",
-          "reason": "Filtre altitude indisponible : Altitude Copernicus non accessible : HTTP Error 429: Too Many Requests"
+          "status": "possible",
+          "max": 1.0,
+          "unit": "mm équiv. eau/6h",
+          "reason": "Neige hors relief ≤ 500 m, hors vallée de montagne (Copernicus GLO-90) ; relief : 1 zones échantillonnées",
+          "mountain_signal": true,
+          "mountain_max": 2.4,
+          "lowland_sample_count": 2,
+          "highland_sample_count": 1,
+          "terrain_source": "Copernicus DEM GLO-90 via Open-Meteo"
         },
         "verglas": {
           "status": "indisponible",
@@ -198,6 +338,18 @@
           "kind": "gel"
         },
         {
+          "lon": 12.0,
+          "lat": 50.5,
+          "value": -9.879797363281227,
+          "kind": "gel"
+        },
+        {
+          "lon": 8.75,
+          "lat": 51.25,
+          "value": -7.629797363281227,
+          "kind": "gel"
+        },
+        {
           "lon": -5.25,
           "lat": 53.0,
           "value": 76.2,
@@ -211,9 +363,99 @@
         },
         {
           "lon": 12.0,
+          "lat": 48.5,
+          "value": -6.879797363281227,
+          "kind": "gel"
+        },
+        {
+          "lon": 12.0,
           "lat": 41.0,
           "value": 67.5,
           "kind": "vent_fort"
+        },
+        {
+          "lon": -5.75,
+          "lat": 50.5,
+          "value": 63.2,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": 1.75,
+          "lat": 53.0,
+          "value": 60.9,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": -2.25,
+          "lat": 49.75,
+          "value": 58.2,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": 11.0,
+          "lat": 44.0,
+          "value": 57.3,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": -3.25,
+          "lat": 47.5,
+          "value": 56.9,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": 11.0,
+          "lat": 53.0,
+          "value": -5.629797363281227,
+          "kind": "gel"
+        },
+        {
+          "lon": -7.0,
+          "lat": 44.5,
+          "value": 55.5,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": -6.0,
+          "lat": 46.75,
+          "value": 54.6,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": -7.25,
+          "lat": 48.75,
+          "value": 53.7,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": -9.75,
+          "lat": 47.75,
+          "value": 53.5,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": 1.25,
+          "lat": 50.5,
+          "value": 51.9,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": -10.0,
+          "lat": 49.75,
+          "value": 50.1,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": 7.25,
+          "lat": 48.5,
+          "value": -4.629797363281227,
+          "kind": "gel"
+        },
+        {
+          "lon": 4.5,
+          "lat": 45.75,
+          "value": -4.629797363281227,
+          "kind": "gel"
         },
         {
           "lon": -8.5,
@@ -222,16 +464,52 @@
           "kind": "pluie_forte"
         },
         {
-          "lon": -6.5,
-          "lat": 44.75,
-          "value": 15.4,
-          "kind": "pluie_forte"
+          "lon": 9.0,
+          "lat": 42.25,
+          "value": -3.8797973632812273,
+          "kind": "gel"
+        },
+        {
+          "lon": 7.5,
+          "lat": 53.0,
+          "value": -3.6297973632812273,
+          "kind": "gel"
+        },
+        {
+          "lon": 6.0,
+          "lat": 50.25,
+          "value": -3.6297973632812273,
+          "kind": "gel"
+        },
+        {
+          "lon": 0.25,
+          "lat": 42.75,
+          "value": -3.3797973632812273,
+          "kind": "gel"
+        },
+        {
+          "lon": 3.25,
+          "lat": 47.5,
+          "value": -2.8797973632812273,
+          "kind": "gel"
+        },
+        {
+          "lon": 1.75,
+          "lat": 45.0,
+          "value": -2.6297973632812273,
+          "kind": "gel"
         },
         {
           "lon": -6.5,
           "lat": 51.75,
           "value": 10.7,
           "kind": "pluie_forte"
+        },
+        {
+          "lon": 3.25,
+          "lat": 51.25,
+          "value": -2.1297973632812273,
+          "kind": "gel"
         }
       ],
       "t850_shading": {
@@ -259,8 +537,15 @@
       "background_path": "forecast-maps/tendance/tendance-risques-fond-j10.png",
       "risks": {
         "neige": {
-          "status": "indisponible",
-          "reason": "Filtre altitude indisponible : Altitude Copernicus non accessible : HTTP Error 429: Too Many Requests"
+          "status": "relief_uniquement",
+          "max": 0,
+          "unit": "mm équiv. eau/6h",
+          "reason": "Neige hors relief ≤ 500 m, hors vallée de montagne (Copernicus GLO-90) ; relief : 5 zones échantillonnées",
+          "mountain_signal": true,
+          "mountain_max": 1.0,
+          "lowland_sample_count": 0,
+          "highland_sample_count": 5,
+          "terrain_source": "Copernicus DEM GLO-90 via Open-Meteo"
         },
         "verglas": {
           "status": "indisponible",
@@ -318,6 +603,24 @@
           "kind": "gel"
         },
         {
+          "lon": 12.0,
+          "lat": 48.25,
+          "value": -9.729498291015602,
+          "kind": "gel"
+        },
+        {
+          "lon": 11.75,
+          "lat": 52.5,
+          "value": -7.229498291015602,
+          "kind": "gel"
+        },
+        {
+          "lon": 8.5,
+          "lat": 51.25,
+          "value": -7.229498291015602,
+          "kind": "gel"
+        },
+        {
           "lon": 5.0,
           "lat": 43.25,
           "value": 66.3,
@@ -334,6 +637,96 @@
           "lat": 53.0,
           "value": 57.5,
           "kind": "vent_fort"
+        },
+        {
+          "lon": -2.0,
+          "lat": 46.0,
+          "value": 57.1,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": -4.75,
+          "lat": 53.0,
+          "value": 56.8,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": 7.25,
+          "lat": 53.0,
+          "value": -5.479498291015602,
+          "kind": "gel"
+        },
+        {
+          "lon": 0.75,
+          "lat": 50.75,
+          "value": 53.5,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": 5.0,
+          "lat": 53.0,
+          "value": 51.7,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": -2.0,
+          "lat": 52.0,
+          "value": 51.7,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": -8.0,
+          "lat": 51.0,
+          "value": 51.0,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": 6.25,
+          "lat": 49.75,
+          "value": -4.979498291015602,
+          "kind": "gel"
+        },
+        {
+          "lon": 11.75,
+          "lat": 43.75,
+          "value": -4.229498291015602,
+          "kind": "gel"
+        },
+        {
+          "lon": 9.25,
+          "lat": 48.75,
+          "value": -3.9794982910156023,
+          "kind": "gel"
+        },
+        {
+          "lon": 1.75,
+          "lat": 42.5,
+          "value": -3.7294982910156023,
+          "kind": "gel"
+        },
+        {
+          "lon": 5.0,
+          "lat": 51.5,
+          "value": -2.4794982910156023,
+          "kind": "gel"
+        },
+        {
+          "lon": 6.5,
+          "lat": 44.25,
+          "value": -1.7294982910156023,
+          "kind": "gel"
+        },
+        {
+          "lon": 9.0,
+          "lat": 42.25,
+          "value": -0.7294982910156023,
+          "kind": "gel"
+        },
+        {
+          "lon": -6.25,
+          "lat": 43.0,
+          "value": -0.7294982910156023,
+          "kind": "gel"
         }
       ],
       "t850_shading": {
@@ -361,8 +754,15 @@
       "background_path": "forecast-maps/tendance/tendance-risques-fond-j15.png",
       "risks": {
         "neige": {
-          "status": "indisponible",
-          "reason": "Filtre altitude indisponible : Altitude Copernicus non accessible : HTTP Error 429: Too Many Requests"
+          "status": "possible",
+          "max": 1.0,
+          "unit": "mm équiv. eau/6h",
+          "reason": "Neige hors relief ≤ 500 m, hors vallée de montagne (Copernicus GLO-90) ; relief : 9 zones échantillonnées",
+          "mountain_signal": true,
+          "mountain_max": 1.5,
+          "lowland_sample_count": 2,
+          "highland_sample_count": 9,
+          "terrain_source": "Copernicus DEM GLO-90 via Open-Meteo"
         },
         "verglas": {
           "status": "indisponible",
@@ -420,10 +820,88 @@
           "kind": "gel"
         },
         {
+          "lon": 11.5,
+          "lat": 51.0,
+          "value": -12.232214355468727,
+          "kind": "gel"
+        },
+        {
+          "lon": 7.25,
+          "lat": 49.75,
+          "value": -11.482214355468727,
+          "kind": "gel"
+        },
+        {
+          "lon": 6.5,
+          "lat": 44.25,
+          "value": -9.732214355468727,
+          "kind": "gel"
+        },
+        {
+          "lon": 8.5,
+          "lat": 48.0,
+          "value": -8.732214355468727,
+          "kind": "gel"
+        },
+        {
+          "lon": 11.0,
+          "lat": 53.0,
+          "value": -8.232214355468727,
+          "kind": "gel"
+        },
+        {
+          "lon": 0.0,
+          "lat": 42.75,
+          "value": -7.482214355468727,
+          "kind": "gel"
+        },
+        {
+          "lon": 7.5,
+          "lat": 52.0,
+          "value": -7.232214355468727,
+          "kind": "gel"
+        },
+        {
+          "lon": 4.5,
+          "lat": 50.75,
+          "value": -7.232214355468727,
+          "kind": "gel"
+        },
+        {
+          "lon": 5.5,
+          "lat": 48.25,
+          "value": -6.232214355468727,
+          "kind": "gel"
+        },
+        {
+          "lon": 1.0,
+          "lat": 49.75,
+          "value": -6.232214355468727,
+          "kind": "gel"
+        },
+        {
+          "lon": -1.5,
+          "lat": 51.25,
+          "value": -6.232214355468727,
+          "kind": "gel"
+        },
+        {
+          "lon": -1.25,
+          "lat": 48.5,
+          "value": -5.482214355468727,
+          "kind": "gel"
+        },
+        {
           "lon": 8.5,
           "lat": 44.25,
           "value": 53.8,
           "kind": "vent_fort"
+        },
+        {
+          "lon": -9.0,
+          "lat": 52.0,
+          "value": -5.232214355468727,
+          "kind": "gel"
         },
         {
           "lon": -10.0,
@@ -436,6 +914,40 @@
           "lat": 51.0,
           "value": 50.4,
           "kind": "vent_fort"
+        },
+        {
+          "lon": 3.5,
+          "lat": 45.75,
+          "value": 1.0,
+          "kind": "neige",
+          "altitude_m": 448,
+          "terrain_context": "hors relief marqué"
+        },
+        {
+          "lon": -4.75,
+          "lat": 52.0,
+          "value": 1.0,
+          "kind": "neige",
+          "altitude_m": 67,
+          "terrain_context": "hors relief marqué"
+        },
+        {
+          "lon": 0.0,
+          "lat": 46.75,
+          "value": -4.732214355468727,
+          "kind": "gel"
+        },
+        {
+          "lon": 1.5,
+          "lat": 52.25,
+          "value": -4.482214355468727,
+          "kind": "gel"
+        },
+        {
+          "lon": 2.25,
+          "lat": 48.0,
+          "value": -4.232214355468727,
+          "kind": "gel"
         }
       ],
       "t850_shading": {
@@ -465,8 +977,15 @@
       "background_path": "forecast-maps/tendance/tendance-risques-fond-france-j3.png",
       "risks": {
         "neige": {
-          "status": "indisponible",
-          "reason": "Filtre altitude indisponible : Altitude Copernicus non accessible : HTTP Error 429: Too Many Requests"
+          "status": "relief_uniquement",
+          "max": 0,
+          "unit": "mm équiv. eau/6h",
+          "reason": "Neige hors relief ≤ 500 m, hors vallée de montagne (Copernicus GLO-90) ; relief : 21 zones échantillonnées",
+          "mountain_signal": true,
+          "mountain_max": 7.9,
+          "lowland_sample_count": 0,
+          "highland_sample_count": 21,
+          "terrain_source": "Copernicus DEM GLO-90 via Open-Meteo"
         },
         "verglas": {
           "status": "indisponible",
@@ -545,6 +1064,18 @@
           "lon": 7.5,
           "lat": 48.75,
           "value": -1.8637451171874773,
+          "kind": "gel"
+        },
+        {
+          "lon": 5.0,
+          "lat": 49.75,
+          "value": -0.25333251953122726,
+          "kind": "gel"
+        },
+        {
+          "lon": 2.5,
+          "lat": 51.0,
+          "value": -0.11374511718747726,
           "kind": "gel"
         }
       ],
@@ -632,6 +1163,54 @@
           "lat": 48.5,
           "value": -4.629797363281227,
           "kind": "gel"
+        },
+        {
+          "lon": 9.0,
+          "lat": 42.25,
+          "value": -3.8797973632812273,
+          "kind": "gel"
+        },
+        {
+          "lon": 4.5,
+          "lat": 45.0,
+          "value": -3.6297973632812273,
+          "kind": "gel"
+        },
+        {
+          "lon": 4.25,
+          "lat": 47.25,
+          "value": -3.6297973632812273,
+          "kind": "gel"
+        },
+        {
+          "lon": 0.25,
+          "lat": 42.75,
+          "value": -3.3797973632812273,
+          "kind": "gel"
+        },
+        {
+          "lon": 1.75,
+          "lat": 45.0,
+          "value": -2.6297973632812273,
+          "kind": "gel"
+        },
+        {
+          "lon": 4.75,
+          "lat": 50.0,
+          "value": -2.3797973632812273,
+          "kind": "gel"
+        },
+        {
+          "lon": 1.75,
+          "lat": 49.75,
+          "value": -2.1297973632812273,
+          "kind": "gel"
+        },
+        {
+          "lon": 1.5,
+          "lat": 47.75,
+          "value": -0.8797973632812273,
+          "kind": "gel"
         }
       ],
       "t850_shading": {
@@ -718,6 +1297,18 @@
           "lat": 49.25,
           "value": -3.2294982910156023,
           "kind": "gel"
+        },
+        {
+          "lon": 9.0,
+          "lat": 42.25,
+          "value": -0.7294982910156023,
+          "kind": "gel"
+        },
+        {
+          "lon": 4.0,
+          "lat": 50.25,
+          "value": -0.47949829101560226,
+          "kind": "gel"
         }
       ],
       "t850_shading": {
@@ -745,8 +1336,15 @@
       "background_path": "forecast-maps/tendance/tendance-risques-fond-france-j15.png",
       "risks": {
         "neige": {
-          "status": "indisponible",
-          "reason": "Filtre altitude indisponible : Altitude Copernicus non accessible : HTTP Error 429: Too Many Requests"
+          "status": "possible",
+          "max": 1.0,
+          "unit": "mm équiv. eau/6h",
+          "reason": "Neige hors relief ≤ 500 m, hors vallée de montagne (Copernicus GLO-90) ; relief : 5 zones échantillonnées",
+          "mountain_signal": true,
+          "mountain_max": 1.5,
+          "lowland_sample_count": 1,
+          "highland_sample_count": 5,
+          "terrain_source": "Copernicus DEM GLO-90 via Open-Meteo"
         },
         "verglas": {
           "status": "indisponible",
@@ -801,6 +1399,62 @@
           "lon": 4.75,
           "lat": 50.0,
           "value": -7.732214355468727,
+          "kind": "gel"
+        },
+        {
+          "lon": 0.0,
+          "lat": 42.75,
+          "value": -7.482214355468727,
+          "kind": "gel"
+        },
+        {
+          "lon": 1.0,
+          "lat": 49.75,
+          "value": -6.232214355468727,
+          "kind": "gel"
+        },
+        {
+          "lon": -1.25,
+          "lat": 48.5,
+          "value": -5.482214355468727,
+          "kind": "gel"
+        },
+        {
+          "lon": 3.5,
+          "lat": 45.75,
+          "value": 1.0,
+          "kind": "neige",
+          "altitude_m": 448,
+          "terrain_context": "hors relief marqué"
+        },
+        {
+          "lon": 4.75,
+          "lat": 47.5,
+          "value": -4.732214355468727,
+          "kind": "gel"
+        },
+        {
+          "lon": 0.0,
+          "lat": 46.75,
+          "value": -4.732214355468727,
+          "kind": "gel"
+        },
+        {
+          "lon": -4.5,
+          "lat": 48.5,
+          "value": -3.2322143554687273,
+          "kind": "gel"
+        },
+        {
+          "lon": 9.0,
+          "lat": 42.25,
+          "value": -1.7322143554687273,
+          "kind": "gel"
+        },
+        {
+          "lon": 0.25,
+          "lat": 44.75,
+          "value": -0.23221435546872726,
           "kind": "gel"
         }
       ],
