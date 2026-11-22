@@ -1,0 +1,112 @@
+name: KFS Neige - archives SIM et IMS
+on:
+  workflow_dispatch:
+    inputs:
+      year:
+        description: Année de l'archive (depuis 1958)
+        required: true
+        type: string
+      month:
+        description: Mois (1 à 12) ou annee
+        required: true
+        type: string
+  push:
+    paths:
+      - .github/workflows/climato-snow-archive.yml
+  schedule:
+    - cron: '15 3 * * 2'
+permissions:
+  contents: write
+concurrency:
+  group: climato-archive
+  cancel-in-progress: false
+jobs:
+  snow:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install matplotlib requests pyproj rasterio
+      - uses: actions/cache@v4
+        with:
+          path: .climato-cache/ims-fr-v2
+          key: climato-ims-v2-${{ github.run_id }}
+          restore-keys: climato-ims-v2-
+      - name: Choisir une archive à harmoniser
+        id: period
+        env:
+          YEAR: ${{ inputs.year }}
+          MONTH: ${{ inputs.month }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          python - <<'PY'
+          import os,json,datetime as dt
+          from pathlib import Path
+          now=dt.date.today()
+          if os.environ["EVENT"]=="workflow_dispatch":
+              y=int(os.environ["YEAR"]);m=os.environ["MONTH"]
+          elif os.environ["EVENT"]=="push":
+              y=now.year-1;m=str(now.month)
+          else:
+              candidates=[]
+              for p in Path("climato/archive").glob("*/*/latest.json"):
+                  try:
+                      y=int(p.parent.parent.name);m=p.parent.name
+                      if y<1958 or m=="annee":continue
+                      if not 1<=int(m)<=12:continue
+                      maps=json.loads(p.read_text()).get("maps",[])
+                      if not any(x.get("kind")=="snow_depth" for x in maps):candidates.append((y,int(m)))
+                  except (OSError,ValueError):continue
+              if not candidates:
+                  print("Aucune archive mensuelle à harmoniser")
+                  with open(os.environ["GITHUB_OUTPUT"],"a") as f:f.write("skip=true\n")
+                  raise SystemExit(0)
+              y,m=max(candidates);m=str(m)
+          if not 1958<=y<=now.year or (m!="annee" and not 1<=int(m)<=12):raise SystemExit("Période invalide")
+          tag="annee" if m=="annee" else f"{int(m):02d}"
+          with open(os.environ["GITHUB_OUTPUT"],"a") as f:f.write(f"year={y}\nmonth={m}\ntag={tag}\nskip=false\n")
+          PY
+      - name: Générer carte historique harmonisée
+        if: steps.period.outputs.skip != 'true'
+        env:
+          YEAR: ${{ steps.period.outputs.year }}
+          MONTH: ${{ steps.period.outputs.month }}
+        run: python scripts/build_climato_snow.py --year "$YEAR" --month "$MONTH"
+      - name: Publier la carte et fusionner uniquement son entrée dans le manifeste
+        if: steps.period.outputs.skip != 'true'
+        env:
+          YEAR: ${{ steps.period.outputs.year }}
+          TAG: ${{ steps.period.outputs.tag }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          dir="climato/archive/$YEAR/$TAG"
+          backup="$(mktemp -d)"
+          cp "$dir/neige-sol-max.png" "$dir/latest.json" "$backup/"
+          export DIR="$dir" BACKUP="$backup"
+          for i in 1 2 3 4 5 6; do
+            git fetch origin main
+            git reset --hard origin/main
+            cp "$backup/neige-sol-max.png" "$dir/"
+            python - <<'PY'
+          import os,json
+          from pathlib import Path
+          d=Path(os.environ["DIR"])/"latest.json"
+          old=json.loads(d.read_text())
+          new=json.loads((Path(os.environ["BACKUP"])/"latest.json").read_text())
+          assert old["month"]==new["month"]
+          snow=next(m for m in new["maps"] if m["file"]=="neige-sol-max.png" and m["kind"]=="snow_depth")
+          old["maps"]=[m for m in old["maps"] if m["file"]!="neige-sol-max.png"]+[snow]
+          d.write_text(json.dumps(old,ensure_ascii=False,indent=2))
+          PY
+            git add "$dir/neige-sol-max.png" "$dir/latest.json"
+            if git diff --cached --quiet; then exit 0; fi
+            git commit -m "Harmoniser neige France $YEAR/$TAG"
+            if git push origin HEAD:main; then exit 0; fi
+            sleep 5
+          done
+          exit 1
