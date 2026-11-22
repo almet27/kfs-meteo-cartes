@@ -37,10 +37,36 @@ def _emoji_pixels(symbol):
     return np.asarray(outline)
 
 
+@lru_cache(maxsize=1)
+def _windsock_pixels():
+    """Red/white windsock symbol; orientation is decorative, not wind direction."""
+    image = Image.new("RGBA", (384,384))
+    d = ImageDraw.Draw(image)
+    # Pole and foot, outlined to remain visible on the temperature palette.
+    d.line([(78,53),(78,323)], fill="#173451", width=23)
+    d.line([(78,53),(78,323)], fill="#F0F5FA", width=11)
+    d.rounded_rectangle((39,315,117,334), radius=8, fill="#E5EDF3",
+                        outline="#173451", width=5)
+    top=[(91,67),(143,76),(195,85),(247,94),(299,103),(351,112)]
+    bottom=[(91,179),(143,171),(195,163),(247,155),(299,147),(351,139)]
+    for i in range(5):
+        color="#E63740" if i%2==0 else "#F8FBFF"
+        d.polygon([top[i],top[i+1],bottom[i+1],bottom[i]], fill=color)
+        y1=round(top[i][1]*.78+bottom[i][1]*.22)
+        y2=round(top[i+1][1]*.78+bottom[i+1][1]*.22)
+        d.line([(top[i][0]+3,y1),(top[i+1][0]-3,y2)],
+               fill="#FF9090" if i%2==0 else "#FFFFFF",width=7)
+    d.line(top+list(reversed(bottom))+[top[0]],fill="#173451",width=6,joint="curve")
+    d.ellipse((80,66,105,180),fill="#AD2431",outline="#173451",width=5)
+    d.ellipse((85,77,99,169),fill="#702C32")
+    return np.asarray(image.resize((128,128),Image.Resampling.LANCZOS))
+
+
 def premium_pictogram(kind):
     """Unicode weather emoji rendered in color, with transparent background."""
+    if kind in ("vent_fort", "tempete"):
+        return OffsetImage(_windsock_pixels(), zoom=.36, interpolation="lanczos")
     symbols = {"pluie_forte":"💦", "neige":"❄️",
-               "vent_fort":"💨", "tempete":"💨",
                "orage":"⚡", "verglas":"🧊", "gel":"🥶",
                "canicule":"🌡️", "inondation":"🌊"}
     if kind not in symbols:
