@@ -3,32 +3,68 @@
   "month": "2025-08",
   "period": "01/08/2025 – 31/08/2025",
   "start": "2025-08-01",
-  "generated_at": "2026-11-22T13:52:22.827752+01:00",
+  "generated_at": "2026-11-22T15:16:29.646557+01:00",
   "source": "Météo-France, archives quotidiennes",
   "maps": [
     {
       "file": "temperature-anomalie.png",
       "title": "Anomalie de température moyenne",
       "end": "2025-08-31",
-      "stations": 399
+      "stations": 399,
+      "zones": {
+        "nord_ouest": "temperature-anomalie-nord_ouest.png",
+        "nord_est": "temperature-anomalie-nord_est.png",
+        "sud_ouest": "temperature-anomalie-sud_ouest.png",
+        "sud_est": "temperature-anomalie-sud_est.png",
+        "alpes": "temperature-anomalie-alpes.png",
+        "pyrenees": "temperature-anomalie-pyrenees.png",
+        "massif_central": "temperature-anomalie-massif_central.png"
+      }
     },
     {
       "file": "pluie-anomalie.png",
       "title": "Anomalie de précipitations",
       "end": "2025-08-31",
-      "stations": 428
+      "stations": 428,
+      "zones": {
+        "nord_ouest": "pluie-anomalie-nord_ouest.png",
+        "nord_est": "pluie-anomalie-nord_est.png",
+        "sud_ouest": "pluie-anomalie-sud_ouest.png",
+        "sud_est": "pluie-anomalie-sud_est.png",
+        "alpes": "pluie-anomalie-alpes.png",
+        "pyrenees": "pluie-anomalie-pyrenees.png",
+        "massif_central": "pluie-anomalie-massif_central.png"
+      }
     },
     {
       "file": "soleil-anomalie.png",
       "title": "Anomalie d’ensoleillement",
       "end": "2025-08-31",
-      "stations": 49
+      "stations": 49,
+      "zones": {
+        "nord_ouest": "soleil-anomalie-nord_ouest.png",
+        "nord_est": "soleil-anomalie-nord_est.png",
+        "sud_ouest": "soleil-anomalie-sud_ouest.png",
+        "sud_est": "soleil-anomalie-sud_est.png",
+        "alpes": "soleil-anomalie-alpes.png",
+        "pyrenees": "soleil-anomalie-pyrenees.png",
+        "massif_central": "soleil-anomalie-massif_central.png"
+      }
     },
     {
       "file": "gel-anomalie.png",
       "title": "Anomalie du nombre de jours de gel",
       "end": "2025-08-31",
-      "stations": 399
+      "stations": 399,
+      "zones": {
+        "nord_ouest": "gel-anomalie-nord_ouest.png",
+        "nord_est": "gel-anomalie-nord_est.png",
+        "sud_ouest": "gel-anomalie-sud_ouest.png",
+        "sud_est": "gel-anomalie-sud_est.png",
+        "alpes": "gel-anomalie-alpes.png",
+        "pyrenees": "gel-anomalie-pyrenees.png",
+        "massif_central": "gel-anomalie-massif_central.png"
+      }
     },
     {
       "file": "neige-sol-max.png",
