@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "status": "illustrative_model_maps",
-  "generated_utc": "2026-11-22T09:17:48.757746+00:00",
-  "source_generated_utc": "2026-11-22T09:16:31.841399+00:00",
+  "generated_utc": "2026-11-22T09:29:07.029314+00:00",
+  "source_generated_utc": "2026-11-22T09:27:00.685054+00:00",
   "charts_generated_utc": "2026-11-22T07:43:28.481893+00:00",
   "source": "ECMWF Open Data (CC BY 4.0), NOAA GFS si disponible",
   "not_weekly_anomalies": true,
@@ -12,7 +12,7 @@
       "step_h": 72,
       "path": "forecast-maps/tendance/tendance-carte-j3.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j3.png",
-      "size_bytes": 623255,
+      "size_bytes": 626448,
       "run_utc": {
         "ifs": "2026-11-22T00:00Z",
         "aifs": "2026-11-22T00:00Z",
@@ -31,15 +31,8 @@
       "risk_status": "altitude_filtered_georeferenced",
       "risks": {
         "neige": {
-          "status": "relief_uniquement",
-          "max": 0,
-          "unit": "mm équiv. eau/6h",
-          "reason": "Neige hors relief ≤ 800 m, hors vallée de montagne (Copernicus GLO-90) ; relief : 48 zones échantillonnées",
-          "mountain_signal": true,
-          "mountain_max": 7.9,
-          "lowland_sample_count": 0,
-          "highland_sample_count": 48,
-          "terrain_source": "Copernicus DEM GLO-90 via Open-Meteo"
+          "status": "indisponible",
+          "reason": "Filtre altitude indisponible : Altitude Copernicus non accessible : HTTP Error 429: Too Many Requests"
         },
         "verglas": {
           "status": "indisponible",
@@ -152,7 +145,7 @@
         "description": "Température à 850 hPa modélisée, pas température au sol"
       },
       "style": "kfs-editorial-plein-cadre-neutre-v11",
-      "summary": "Flux de sud-ouest sur la France, avec air plus frais en altitude. Signaux sur France et abords : pluie jusqu’à 29 mm/6 h, rafales jusqu’à 86 km/h, gel jusqu’à -12 °C. Confiance modérée.",
+      "summary": "Flux de sud-ouest sur la France, avec air plus frais en altitude. Signaux sur France et abords : pluie jusqu’à 29 mm/6 h, rafales jusqu’à 86 km/h, gel jusqu’à -12 °C. Non calculé : Neige hors relief. Confiance modérée.",
       "note": "Carte géoréférencée bord à bord 1600x700, bandeau neutre et synthèse issue des champs IFS ; ! rouge = seuil KFS non officiel."
     },
     {
@@ -160,7 +153,7 @@
       "step_h": 168,
       "path": "forecast-maps/tendance/tendance-carte-j7.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j7.png",
-      "size_bytes": 660962,
+      "size_bytes": 658674,
       "run_utc": {
         "ifs": "2026-11-22T00:00Z",
         "aifs": "2026-11-22T00:00Z",
@@ -179,15 +172,8 @@
       "risk_status": "altitude_filtered_georeferenced",
       "risks": {
         "neige": {
-          "status": "possible",
-          "max": 1.0,
-          "unit": "mm équiv. eau/6h",
-          "reason": "Neige hors relief ≤ 800 m, hors vallée de montagne (Copernicus GLO-90) ; relief : 1 zones échantillonnées",
-          "mountain_signal": true,
-          "mountain_max": 2.4,
-          "lowland_sample_count": 2,
-          "highland_sample_count": 1,
-          "terrain_source": "Copernicus DEM GLO-90 via Open-Meteo"
+          "status": "indisponible",
+          "reason": "Filtre altitude indisponible : Altitude Copernicus non accessible : HTTP Error 429: Too Many Requests"
         },
         "verglas": {
           "status": "indisponible",
@@ -263,14 +249,6 @@
           "kind": "vent_fort"
         },
         {
-          "lon": 11.75,
-          "lat": 44.0,
-          "value": 1.0,
-          "kind": "neige",
-          "altitude_m": 498,
-          "terrain_context": "hors relief marqué"
-        },
-        {
           "lon": -8.5,
           "lat": 41.5,
           "value": 20.8,
@@ -302,7 +280,7 @@
         "description": "Température à 850 hPa modélisée, pas température au sol"
       },
       "style": "kfs-editorial-plein-cadre-neutre-v11",
-      "summary": "Flux de sud sur la France, avec air plus frais en altitude. Signaux sur France et abords : pluie jusqu’à 21 mm/6 h, rafales jusqu’à 76 km/h, neige hors relief, gel jusqu’à -20 °C. Confiance limitée.",
+      "summary": "Flux de sud sur la France, avec air plus frais en altitude. Signaux sur France et abords : pluie jusqu’à 21 mm/6 h, rafales jusqu’à 76 km/h, gel jusqu’à -20 °C. Non calculé : Neige hors relief. Confiance limitée.",
       "note": "Carte géoréférencée bord à bord 1600x700, bandeau neutre et synthèse issue des champs IFS ; ! rouge = seuil KFS non officiel."
     },
     {
@@ -310,7 +288,7 @@
       "step_h": 240,
       "path": "forecast-maps/tendance/tendance-carte-j10.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j10.png",
-      "size_bytes": 616934,
+      "size_bytes": 619703,
       "run_utc": {
         "ifs": "2026-11-22T00:00Z",
         "aifs": "2026-11-22T00:00Z",
@@ -328,15 +306,8 @@
       "risk_status": "altitude_filtered_georeferenced",
       "risks": {
         "neige": {
-          "status": "relief_uniquement",
-          "max": 0,
-          "unit": "mm équiv. eau/6h",
-          "reason": "Neige hors relief ≤ 800 m, hors vallée de montagne (Copernicus GLO-90) ; relief : 5 zones échantillonnées",
-          "mountain_signal": true,
-          "mountain_max": 1.0,
-          "lowland_sample_count": 0,
-          "highland_sample_count": 5,
-          "terrain_source": "Copernicus DEM GLO-90 via Open-Meteo"
+          "status": "indisponible",
+          "reason": "Filtre altitude indisponible : Altitude Copernicus non accessible : HTTP Error 429: Too Many Requests"
         },
         "verglas": {
           "status": "indisponible",
@@ -425,7 +396,7 @@
         "description": "Température à 850 hPa modélisée, pas température au sol"
       },
       "style": "kfs-editorial-plein-cadre-neutre-v11",
-      "summary": "Flux d’ouest-sud-ouest sur la France, avec air plus frais en altitude. Signaux sur France et abords : pluie jusqu’à 13 mm/6 h, rafales jusqu’à 66 km/h, gel jusqu’à -15 °C. Confiance faible.",
+      "summary": "Flux d’ouest-sud-ouest sur la France, avec air plus frais en altitude. Signaux sur France et abords : pluie jusqu’à 13 mm/6 h, rafales jusqu’à 66 km/h, gel jusqu’à -15 °C. Non calculé : Neige hors relief. Confiance faible.",
       "note": "Carte géoréférencée bord à bord 1600x700, bandeau neutre et synthèse issue des champs IFS ; ! rouge = seuil KFS non officiel."
     },
     {
@@ -433,7 +404,7 @@
       "step_h": 360,
       "path": "forecast-maps/tendance/tendance-carte-j15.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j15.png",
-      "size_bytes": 600188,
+      "size_bytes": 590400,
       "run_utc": {
         "ifs": "2026-11-22T00:00Z",
         "aifs": "2026-11-22T00:00Z",
@@ -451,15 +422,8 @@
       "risk_status": "altitude_filtered_georeferenced",
       "risks": {
         "neige": {
-          "status": "possible",
-          "max": 1.5,
-          "unit": "mm équiv. eau/6h",
-          "reason": "Neige hors relief ≤ 800 m, hors vallée de montagne (Copernicus GLO-90) ; relief : 8 zones échantillonnées",
-          "mountain_signal": true,
-          "mountain_max": 1.5,
-          "lowland_sample_count": 3,
-          "highland_sample_count": 8,
-          "terrain_source": "Copernicus DEM GLO-90 via Open-Meteo"
+          "status": "indisponible",
+          "reason": "Filtre altitude indisponible : Altitude Copernicus non accessible : HTTP Error 429: Too Many Requests"
         },
         "verglas": {
           "status": "indisponible",
@@ -517,14 +481,6 @@
           "kind": "gel"
         },
         {
-          "lon": 3.5,
-          "lat": 44.0,
-          "value": 1.5,
-          "kind": "neige",
-          "altitude_m": 646,
-          "terrain_context": "hors relief marqué"
-        },
-        {
           "lon": 8.5,
           "lat": 44.25,
           "value": 53.8,
@@ -541,22 +497,6 @@
           "lat": 51.0,
           "value": 50.4,
           "kind": "vent_fort"
-        },
-        {
-          "lon": 3.5,
-          "lat": 45.75,
-          "value": 1.0,
-          "kind": "neige",
-          "altitude_m": 448,
-          "terrain_context": "hors relief marqué"
-        },
-        {
-          "lon": -4.75,
-          "lat": 52.0,
-          "value": 1.0,
-          "kind": "neige",
-          "altitude_m": 67,
-          "terrain_context": "hors relief marqué"
         }
       ],
       "t850_shading": {
@@ -572,7 +512,7 @@
         "description": "Température à 850 hPa modélisée, pas température au sol"
       },
       "style": "kfs-editorial-plein-cadre-neutre-v11",
-      "summary": "Flux de nord-ouest sur la France, avec air froid à 850 hpa. Signaux sur France et abords : rafales jusqu’à 54 km/h, neige hors relief, gel jusqu’à -15 °C. Confiance très limitée.",
+      "summary": "Flux de nord-ouest sur la France, avec air froid à 850 hpa. Signaux sur France et abords : rafales jusqu’à 54 km/h, gel jusqu’à -15 °C. Non calculé : Neige hors relief. Confiance très limitée.",
       "note": "Carte géoréférencée bord à bord 1600x700, bandeau neutre et synthèse issue des champs IFS ; ! rouge = seuil KFS non officiel."
     }
   ],
@@ -582,7 +522,7 @@
       "step_h": 72,
       "path": "forecast-maps/tendance/tendance-carte-france-j3.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-france-j3.png",
-      "size_bytes": 418436,
+      "size_bytes": 421006,
       "run_utc": {
         "ifs": "2026-11-22T00:00Z",
         "aifs": "2026-11-22T00:00Z",
@@ -601,15 +541,8 @@
       "risk_status": "altitude_filtered_georeferenced",
       "risks": {
         "neige": {
-          "status": "relief_uniquement",
-          "max": 0,
-          "unit": "mm équiv. eau/6h",
-          "reason": "Neige hors relief ≤ 800 m, hors vallée de montagne (Copernicus GLO-90) ; relief : 21 zones échantillonnées",
-          "mountain_signal": true,
-          "mountain_max": 7.9,
-          "lowland_sample_count": 0,
-          "highland_sample_count": 21,
-          "terrain_source": "Copernicus DEM GLO-90 via Open-Meteo"
+          "status": "indisponible",
+          "reason": "Filtre altitude indisponible : Altitude Copernicus non accessible : HTTP Error 429: Too Many Requests"
         },
         "verglas": {
           "status": "indisponible",
@@ -704,7 +637,7 @@
         "description": "Température à 850 hPa modélisée, pas température au sol"
       },
       "style": "kfs-editorial-plein-cadre-neutre-v11",
-      "summary": "Flux de sud-ouest sur la France, avec air plus frais en altitude. Signaux en France : pluie jusqu’à 29 mm/6 h, rafales jusqu’à 64 km/h, gel jusqu’à -8 °C. Confiance modérée.",
+      "summary": "Flux de sud-ouest sur la France, avec air plus frais en altitude. Signaux en France : pluie jusqu’à 29 mm/6 h, rafales jusqu’à 64 km/h, gel jusqu’à -8 °C. Non calculé : Neige hors relief. Confiance modérée.",
       "note": "Carte géoréférencée bord à bord 1600x700, bandeau neutre et synthèse issue des champs IFS ; ! rouge = seuil KFS non officiel."
     },
     {
@@ -912,7 +845,7 @@
       "step_h": 360,
       "path": "forecast-maps/tendance/tendance-carte-france-j15.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-france-j15.png",
-      "size_bytes": 352455,
+      "size_bytes": 342612,
       "run_utc": {
         "ifs": "2026-11-22T00:00Z",
         "aifs": "2026-11-22T00:00Z",
@@ -930,15 +863,8 @@
       "risk_status": "altitude_filtered_georeferenced",
       "risks": {
         "neige": {
-          "status": "possible",
-          "max": 1.5,
-          "unit": "mm équiv. eau/6h",
-          "reason": "Neige hors relief ≤ 800 m, hors vallée de montagne (Copernicus GLO-90) ; relief : 4 zones échantillonnées",
-          "mountain_signal": true,
-          "mountain_max": 1.5,
-          "lowland_sample_count": 2,
-          "highland_sample_count": 4,
-          "terrain_source": "Copernicus DEM GLO-90 via Open-Meteo"
+          "status": "indisponible",
+          "reason": "Filtre altitude indisponible : Altitude Copernicus non accessible : HTTP Error 429: Too Many Requests"
         },
         "verglas": {
           "status": "indisponible",
@@ -994,22 +920,6 @@
           "lat": 50.0,
           "value": -7.732214355468727,
           "kind": "gel"
-        },
-        {
-          "lon": 3.5,
-          "lat": 44.0,
-          "value": 1.5,
-          "kind": "neige",
-          "altitude_m": 646,
-          "terrain_context": "hors relief marqué"
-        },
-        {
-          "lon": 3.5,
-          "lat": 45.75,
-          "value": 1.0,
-          "kind": "neige",
-          "altitude_m": 448,
-          "terrain_context": "hors relief marqué"
         }
       ],
       "t850_shading": {
@@ -1025,7 +935,7 @@
         "description": "Température à 850 hPa modélisée, pas température au sol"
       },
       "style": "kfs-editorial-plein-cadre-neutre-v11",
-      "summary": "Flux de nord-ouest sur la France, avec air froid à 850 hpa. Signaux en France : neige hors relief, gel jusqu’à -13 °C. Confiance très limitée.",
+      "summary": "Flux de nord-ouest sur la France, avec air froid à 850 hpa. Signaux en France : gel jusqu’à -13 °C. Non calculé : Neige hors relief. Confiance très limitée.",
       "note": "Carte géoréférencée bord à bord 1600x700, bandeau neutre et synthèse issue des champs IFS ; ! rouge = seuil KFS non officiel."
     }
   ],
