@@ -40,3 +40,29 @@ jobs:
           print("Derniers jours station témoin:",len(rows(recent)), "date max", max((x["date"] for x in rows(recent)),default=None))
           print("Couverture du fonds:",str(load("/coverage"))[:1000])
           PY
+      - name: Vérifier les stations strictement participatives
+        run: |
+          python - <<'PY'
+          import json, urllib.request, urllib.parse, math
+          b="https://climato.chom.engineering"
+          def get(path, params):
+              with urllib.request.urlopen(b+path+"?"+urllib.parse.urlencode(params),timeout=25) as r:
+                  return json.load(r)
+          ref=get("/ref/stations",{"genre":"static","parametre":"air_temperature","actif_depuis":"2026-11-01"})
+          assert isinstance(ref.get("features"),list), list(ref)
+          ids={str(s["ic_id"]) for f in ref["features"] if (s:=f.get("properties",{})).get("genre")=="static" and "mfid" in s and not s["mfid"] and not s.get("type_poste") and s.get("ic_id") and not (s.get("libelle_source") or s.get("libelle") or "").upper().startswith("TEST MF CSV")}
+          print("Identités participatives strictes:",len(ids))
+          assert ids
+          cat=get("/statIC/stations",{})["stations"]
+          candidates=[s for s in cat if str(s.get("ic_id")) in ids and s.get("parametre")=="air_temperature" and s.get("pays")=="FR" and s.get("ouverte") is True and s.get("latitude") is not None and s.get("longitude") is not None and str(s.get("premiere_obs",""))[:10]<"2026-11-22" and str(s.get("derniere_obs",""))[:10]>="2026-11-01"]
+          candidates.sort(key=lambda s:math.hypot(s["latitude"]-48.77,(s["longitude"]-0.81)*0.66))
+          print("Stations près de Bourth:",[(s["ic_id"],s["libelle"]) for s in candidates[:4]])
+          assert candidates
+          counts=[]
+          for s in candidates[:4]:
+              d=get("/statIC/journaliere",{"station":s["ic_id"],"from":"2026-11-01","to":"2026-11-22"})
+              days=[x for x in d["mesures"] if str(x.get("ic_id"))==str(s["ic_id"]) and x.get("n_obs",0)-(x.get("n_obs_rejetees") or 0)>=24 and x.get("taux_qc_valide",0)>=0.99 and x.get("tn") is not None and x.get("tx") is not None]
+              counts.append(len(days))
+              print(s["ic_id"],s["libelle"],"jours admissibles",len(days))
+          assert any(counts), "Pas de relevés admissibles parmi les 4 stations proches"
+          PY
