@@ -1,0 +1,24 @@
+name: Diagnostic sources neige climato
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - scripts/check_climato_snow_sources.py
+      - .github/workflows/climato-snow-diagnostic.yml
+permissions:
+  contents: read
+jobs:
+  source-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install requests
+      - run: python scripts/check_climato_snow_sources.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: snow-source-diagnostic
+          path: snow-source-diagnostic.json
