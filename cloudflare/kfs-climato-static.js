@@ -51,7 +51,11 @@ async function kfsStaticReport(city,year,month){
   const period=kfsStaticPeriod(year,month);
   const catalog=await kfsStaticFetch("/statIC/stations",{},86400);
   if(!Array.isArray(catalog.stations))throw Error("Catalogue StatIC non reconnu.");
-  const candidates=kfsStaticCandidates(catalog.stations,city,period);
+  // Independent network identity check: reject official MF posts, even if listed by StatIC.
+  const ref=await kfsStaticFetch("/ref/stations",{genre:"static",parametre:"air_temperature",actif_depuis:period.from},86400);
+  if(!Array.isArray(ref.features))throw Error("Référentiel des réseaux Infoclimat non reconnu ; aucun repli Météo-France.");
+  const ids=new Set(ref.features.map(f=>f.properties).filter(s=>s&&s.genre==="static"&&Object.hasOwn(s,"mfid")&&!String(s.mfid??"").trim()&&!String(s.type_poste??"").trim()&&s.ic_id&&!/^TEST MF CSV/i.test(s.libelle_source||s.libelle||"")).map(s=>String(s.ic_id)));
+  const candidates=kfsStaticCandidates(catalog.stations.filter(s=>ids.has(String(s.ic_id))),city,period);
   if(!candidates.length)throw Error("Aucune station StatIC ouverte à moins de 50 km avec des observations sur cette période.");
   // Bounded parallel requests; no whole-France scraping.
   const found=await Promise.all(candidates.map(async station=>{
@@ -75,5 +79,5 @@ async function kfsStaticReport(city,year,month){
     {name:"❄️ Gel / chaleur",value:a.frost+" j de gel (Tn ≤ 0 °C) · "+a.hot30+" j ≥ 30 °C, sur jours retenus.",inline:true},
     {name:"Couverture et fraîcheur",value:a.observed+"/"+period.expected+" jours retenus · dernière date retenue : **"+selected.days.at(-1).date+"**. "+(a.observed<period.expected?"Période incomplète ; statistiques partielles. ":"")+"Minimum 24 observations thermiques non rejetées et 99 % physiquement plausibles (filtre KFS, ne certifie pas l'installation).",inline:false}
   ];
-  return {embeds:[{title:"KFS MÉTÉO — Station participative StatIC",color:0x1975b8,description:"📍 **"+city.name+"** · **"+s.name+"** ("+s.id+", "+p(s.km," km")+")\n"+range+"\nSérie distincte des relevés Météo-France ; aucune normale officielle calculée. Températures agrégées sur les jours civils locaux.",fields,footer:{text:"Source : Infoclimat / réseau StatIC · agrégats chom.engineering · Licence Ouverte 2.0 (selon portail) · Calculs KFS"}}],allowed_mentions:{parse:[]}};
+  return {embeds:[{title:"KFS MÉTÉO — Station participative StatIC",color:0x1975b8,description:"📍 **"+city.name+"** · **"+s.name+"** ("+s.id+", "+p(s.km," km")+")\n"+range+"\nRéseau StatIC vérifié (sans identifiant Météo-France) ; aucune normale officielle calculée. Températures agrégées sur les jours civils locaux.",fields,footer:{text:"Source : Infoclimat / réseau StatIC · agrégats chom.engineering · Licence Ouverte 2.0 (selon portail) · Calculs KFS"}}],allowed_mentions:{parse:[]}};
 }
