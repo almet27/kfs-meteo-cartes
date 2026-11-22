@@ -40,6 +40,8 @@ OUT.mkdir(parents=True,exist_ok=True)
 STAGES=[("j3",72,"ifs"),("j7",168,"ifs"),("j10",240,"ifs"),("j15",360,"ifs")]
 GEOGRAPHY=(-45,35,31,75)
 FOCUS=(-10,12,41,53)
+FR_GEOGRAPHY=(-9,14,40,53)
+_FR_MASK=None
 CATEGORIES=("neige","verglas","orage","tempete","gel","canicule","inondation","pluie_forte")
 COLORS={"vent_fort":"#FFCE66","tempete":"#FB765A","pluie_forte":"#37CFFF","neige":"#BCEBFF"}
 SNOW_ALT_MAX_M=800
@@ -262,18 +264,19 @@ def weather_pictogram(kind):
     """Premium independent icon, no background circle."""
     return premium_pictogram(kind)
 
-def render(id,run,fields,marks,risks):
+def render(id,run,fields,marks,risks,france=False):
+    geography=FR_GEOGRAPHY if france else GEOGRAPHY
     lon,lat=fields["msl"][0],fields["msl"][1]
     msl=fields["msl"][2]/100.0
     gh=fields["gh"][2]/10.0
-    ix=np.flatnonzero((lon>=GEOGRAPHY[0])&(lon<=GEOGRAPHY[1]))
-    iy=np.flatnonzero((lat>=GEOGRAPHY[2])&(lat<=GEOGRAPHY[3]))
+    ix=np.flatnonzero((lon>=geography[0])&(lon<=geography[1]))
+    iy=np.flatnonzero((lat>=geography[2])&(lat<=geography[3]))
     xx,yy=lon[ix],lat[iy]
     pres=msl[np.ix_(iy,ix)]
     geop=gh[np.ix_(iy,ix)]
-    fig=plt.figure(figsize=(16,7),dpi=100,facecolor="#E7E9EC")
+    fig=plt.figure(figsize=(16,9 if france else 7),dpi=100,facecolor="#E7E9EC")
     ax=fig.add_axes([0,0,1,1],projection=ccrs.PlateCarree())
-    ax.set_extent(GEOGRAPHY,crs=ccrs.PlateCarree())
+    ax.set_extent(geography,crs=ccrs.PlateCarree())
     ax.set_aspect("auto")
     # Neutral cartographic base; genuine T850 colours remain dominant.
     ax.set_facecolor("#E7E9EC")
@@ -305,8 +308,8 @@ def render(id,run,fields,marks,risks):
     for a in labels:
         a.set_fontweight("bold")
         a.set_path_effects([pe.Stroke(linewidth=2.5,foreground="#173147",alpha=.65),pe.Normal()])
-    ax.coastlines("110m",linewidth=.85,color="#EFF6F9",zorder=10)
-    ax.add_feature(cfeature.BORDERS,linewidth=.56,edgecolor="#E2EFF5",alpha=.82,zorder=10)
+    ax.coastlines("50m" if france else "110m",linewidth=.85,color="#EFF6F9",zorder=10)
+    ax.add_feature(cfeature.BORDERS.with_scale("50m" if france else "110m"),linewidth=.7 if france else .56,edgecolor="#E2EFF5",alpha=.82,zorder=10)
     # D/H at genuine local MSL pressure extrema, never fabricated.
     # Require a surrounding pressure contrast and enough room for the label.
     centres=[]
@@ -353,10 +356,27 @@ def render(id,run,fields,marks,risks):
                         color="#FFFFFF",zorder=25,
                         bbox={"boxstyle":"circle,pad=0.22","fc":"#D92D41",
                               "ec":"#FFFFFF","lw":1.5})
-    fn=OUT/("tendance-risques-fond-"+id+".png")
+    fn=OUT/("tendance-risques-fond-"+("france-" if france else "")+id+".png")
     fig.savefig(fn,dpi=100,facecolor=fig.get_facecolor(),pad_inches=0)
     plt.close(fig)
     return fn
+
+def france_mask(x,y):
+    """Natural Earth country polygon, mainland France and Corsica only."""
+    global _FR_MASK
+    if _FR_MASK is not None:return _FR_MASK
+    source=shapereader.natural_earth(resolution="50m",category="cultural",name="admin_0_countries")
+    records=[rec.geometry for rec in shapereader.Reader(source).records()
+             if rec.attributes.get("ADM0_A3")=="FRA" or rec.attributes.get("ADMIN")=="France"]
+    if not records:raise RuntimeError("Contour France introuvable")
+    shape=prep(unary_union(records))
+    mask=np.zeros((len(y),len(x)),dtype=bool)
+    for j in np.flatnonzero((y>=41)&(y<=52)):
+        for i in np.flatnonzero((x>=-6)&(x<=10)):
+            mask[j,i]=shape.intersects(Point(float(x[i]),float(y[j])))
+    if mask.sum()<100:raise RuntimeError("Contour France incomplet")
+    _FR_MASK=mask
+    return mask
 
 def calculate(id,step,model,atlas,now):
     recorded=atlas["runs_utc"][model][str(step)]
@@ -401,12 +421,37 @@ def calculate(id,step,model,atlas,now):
     rain=np.maximum(0,total-snow)
     if not np.all(np.isfinite(rain)) or not np.all(np.isfinite(snow)):
         raise RuntimeError("Données de risques non finies")
+    # Actual period minima, not instantaneous T2m or temperature at 850 hPa.
+    tmin=None
+    cold_error=None
+    try:
+        name="mn2t3" if step<=144 else "mn2t6"
+        mins=[single(client,model,h,run,name,name)
+              for h in ([step-3,step] if step<=144 else [step])]
+        verify(f["msl"],mins)
+        if any(v[4].strip().lower() not in {"k","kelvin"} for v in mins):
+            raise ValueError("Unité Tmin non reconnue")
+        tmin=np.minimum.reduce([v[2] for v in mins])-273.15
+        if not np.all(np.isfinite(tmin)) or np.min(tmin)<-100 or np.max(tmin)>65:
+            raise ValueError("Tmin 2 m non plausible")
+    except Exception as exc:
+        tmin=None
+        cold_error=str(exc)[:155]
+    f["rain6h"]=(x,y,rain,recorded,"mm")
+    args=(id,step,model,recorded,run,f,x,y,wind,wind_error,rain,snow,tmin,cold_error)
+    return build_risk(*args,france=False),build_risk(*args,france=True)
+
+def build_risk(id,step,model,recorded,run,f,x,y,wind,wind_error,rain,snow,tmin,cold_error,france=False):
     box=(x>=FOCUS[0])&(x<=FOCUS[1])
     by=(y>=FOCUS[2])&(y<=FOCUS[3])
-    region=np.ix_(by,box)
+    region=france_mask(x,y) if france else by[:,None]&box[None,:]
+    if france:
+        rain=np.where(region,rain,np.nan)
+        snow=np.where(region,snow,np.nan)
+        if wind is not None:wind=np.where(region,wind,np.nan)
+        if tmin is not None:tmin=np.where(region,tmin,np.nan)
     vw=float(np.max(wind[region])) if wind is not None else None
     vr=float(np.max(rain[region]))
-    vs=float(np.max(snow[region]))
     risks={k:{"status":"indisponible","reason":"Champs spécifiques non disponibles"} for k in CATEGORIES}
     if vw is not None:
         risks["tempete"]={"status":status(vw,50,100),"max":round(vw,1),"unit":"km/h (rafales max 10 m/6 h)",
@@ -422,18 +467,8 @@ def calculate(id,step,model,atlas,now):
         snow_markers=[]
         snow_info={"status":"indisponible","reason":"Filtre altitude indisponible : "+str(exc)[:155]}
     risks["neige"]=snow_info
-    # Actual period minima, not instantaneous T2m or temperature at 850 hPa.
     cold_markers=[]
-    try:
-        name="mn2t3" if step<=144 else "mn2t6"
-        mins=[single(client,model,h,run,name,name)
-              for h in ([step-3,step] if step<=144 else [step])]
-        verify(f["msl"],mins)
-        if any(v[4].strip().lower() not in {"k","kelvin"} for v in mins):
-            raise ValueError("Unité Tmin non reconnue")
-        tmin=np.minimum.reduce([v[2] for v in mins])-273.15
-        if not np.all(np.isfinite(tmin)) or np.min(tmin)<-100 or np.max(tmin)>65:
-            raise ValueError("Tmin 2 m non plausible")
+    if tmin is not None:
         cold_markers=peaks(x,y,-tmin,0,"gel",3)
         if cold_markers:
             low=min(p["value"] for p in cold_markers)
@@ -443,9 +478,8 @@ def calculate(id,step,model,atlas,now):
                           "reason":"Minimum sur les 6 h précédentes, points terrestres"}
         else:
             risks["gel"]={"status":"absent","reason":"Aucun point terrestre à 0 °C ou moins"}
-    except Exception as exc:
-        cold_markers=[]
-        risks["gel"]={"status":"indisponible","reason":"Tmin 2 m indisponible : "+str(exc)[:155]}
+    else:
+        risks["gel"]={"status":"indisponible","reason":"Tmin 2 m indisponible : "+str(cold_error)}
     risks["inondation"]={"status":"indisponible",
                          "reason":"Crue non déductible d'un seul cumul de pluie de 6 h"}
     markers=((peaks(x,y,wind,50,"vent_fort",3) if wind is not None else []) +
@@ -460,27 +494,28 @@ def calculate(id,step,model,atlas,now):
     for p in sorted(markers,key=priority,reverse=True):
         if all(distance_km(p["lon"],p["lat"],q["lon"],q["lat"])>=125 for q in selected):
             selected.append(p)
-    f["rain6h"]=(x,y,rain,recorded,"mm")
-    background=render(id,recorded,f,selected,risks)
+    background=render(id,recorded,f,selected,risks,france=france)
     return {"id":id,"step_h":step,"model":model,"run_utc":recorded,
             "valid_utc":(run+timedelta(hours=step)).isoformat(),
             "background_path":str(background),"risks":risks,"markers":selected,
             "t850_shading":{"enabled":True,"level_hpa":850,"unit":"°C",
                             "fixed_scale_c":[-20,20],"opacity":0.92,"palette":"kfs-spectrum-v1",
                             "description":"Température à 850 hPa modélisée, pas température au sol"},
-            "risk_scope":"France et secteurs proches, domaine rectangulaire terre + mer",
+            "risk_scope":"France métropolitaine et Corse" if france else "France et secteurs proches, domaine rectangulaire terre + mer",
+            "zone":"france" if france else "europe",
             "method":"Rafales max 10 m, Tmin 2 m terrestre, pluie/neige sur les 6 h précédentes ; neige hors relief selon altitudes GLO-90 ; pas une vigilance officielle."}
 
 def main():
     now=datetime.now(timezone.utc)
     atlas=json.loads((EU/"metadata.json").read_text(encoding="utf-8"))
-    records=[]
+    records=[];france_records=[]
     for id,step,model in STAGES:
-        records.append(calculate(id,step,model,atlas,now))
+        europe,france=calculate(id,step,model,atlas,now)
+        records.append(europe);france_records.append(france)
     output={"schema_version":1,"generated_utc":now.isoformat(),
             "atlas_generated_utc":atlas["generated_utc"],
             "reference":"ECMWF Open Data, Copernicus DEM GLO-90 via Open-Meteo — champs géoréférencés",
-            "stages":records}
+            "stages":records,"france_stages":france_records}
     (OUT/"tendance-risques.json").write_text(json.dumps(output,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
     print(json.dumps({"generated_utc":output["generated_utc"],
                       "stages":[{"id":r["id"],"risks":{k:v["status"] for k,v in r["risks"].items()},

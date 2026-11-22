@@ -264,7 +264,7 @@ def write_stage(stage,meta,data,now):
     }
 
 
-def write_premium_stage(stage, meta, data, now, risk_document):
+def write_premium_stage(stage, meta, data, now, risk_document, france=False):
     """Infographie européenne 16:9 : champs météorologiques réels et risques non inventés."""
     step=stage["step"]
     chart, details, flow, t850, pressure=select(meta,data,stage,"ifs")
@@ -289,7 +289,7 @@ def write_premium_stage(stage, meta, data, now, risk_document):
         except (KeyError,TypeError,ValueError,OverflowError):
             gfs_ready=False
     date=parsed(details["valid_utc"])
-    hazards=next((a for a in risk_document["stages"] if a["id"]==stage["id"]),None)
+    hazards=next((a for a in risk_document["france_stages" if france else "stages"] if a["id"]==stage["id"]),None)
     if not hazards or hazards["step_h"]!=int(step):
         raise RuntimeError("Données de risque manquantes "+stage["id"])
     if hazards.get("model")!="ifs":
@@ -306,9 +306,9 @@ def write_premium_stage(stage, meta, data, now, risk_document):
     canvas=Image.new("RGBA",(W2,H2),"#EEF0F2")
     with Image.open(risk_map) as src:
         hero=src.convert("RGBA")
-    if hero.size!=(1600,700):
-        raise RuntimeError("Le fond doit mesurer 1600x700 pixels")
-    canvas.alpha_composite(hero,(0,0))
+    if hero.size!=(1600,900 if france else 700):
+        raise RuntimeError("Dimensions du fond incohérentes")
+    if not france:canvas.alpha_composite(hero,(0,0))
     d=ImageDraw.Draw(canvas)
     ink="#162E4C"
     muted="#506174"
@@ -317,7 +317,7 @@ def write_premium_stage(stage, meta, data, now, risk_document):
     d.rounded_rectangle((14,12,561,88),radius=15,fill="#F1F3F5",outline="#D2D7DC",width=1)
     d.rounded_rectangle((14,12,23,88),radius=4,fill=blue)
     txt(d,(36,17),"Tendance météo",32,ink,True)
-    txt(d,(38,56),"KFS MÉTÉO  •  Situation et masses d’air",17,muted)
+    txt(d,(38,56),"KFS MÉTÉO  •  France métropolitaine" if france else "KFS MÉTÉO  •  Europe et masses d’air",17,muted)
     d.rounded_rectangle((904,12,1586,88),radius=15,fill="#F1F3F5",outline="#D2D7DC",width=1)
     txt(d,(923,20),"Échéance : "+stage["period"],24,ink,True)
     txt(d,(924,53),date.strftime("%d/%m/%Y  %HZ")+"  •  Carte IFS",16,muted)
@@ -396,7 +396,7 @@ def write_premium_stage(stage, meta, data, now, risk_document):
         signals.append("neige hors relief")
     if risks["gel"].get("status") in ("possible","marque"):
         signals.append("gel jusqu’à %.0f °C"%risks["gel"]["min"])
-    if signals:sentence+=" Signaux sur France et abords : "+", ".join(signals)+"."
+    if signals:sentence+=(" Signaux en France : " if france else " Signaux sur France et abords : ")+", ".join(signals)+"."
     elif all(risks[k].get("status")!="indisponible" for k, *_ in entries):
         sentence+=" Aucun signal notable parmi les quatre risques calculés."
     else:sentence+=" Aucun signal notable parmi les données disponibles."
@@ -422,7 +422,15 @@ def write_premium_stage(stage, meta, data, now, risk_document):
     d.line((22,911,1578,911),fill="#D5D9DF",width=1)
     txt(d,(25,918),"Source : ECMWF Open Data • Comparaisons AIFS/GFS si disponibles • ! rouge = seuil KFS, pas une vigilance officielle.",12,muted)
     txt(d,(1322,918),"Prévision ponctuelle à "+step+" h",12,muted)
-    out=OUT/("tendance-carte-"+stage["id"]+".png")
+    if france:
+        full=Image.new("RGBA",(1600,1140),"#EEF0F2")
+        full.alpha_composite(hero,(0,0))
+        # Paste only the two title panels and the bottom information strip.
+        for box in ((14,12,562,89),(904,12,1587,89)):
+            full.paste(canvas.crop(box),box[:2])
+        full.paste(canvas.crop((0,700,1600,940)),(0,900))
+        canvas=full
+    out=OUT/("tendance-carte-"+("france-" if france else "")+stage["id"]+".png")
     canvas.convert("RGB").save(out,"PNG",optimize=True)
     runs={model_a.lower():details["run_utc"]}
     if other_run is not None:
@@ -433,7 +441,8 @@ def write_premium_stage(stage, meta, data, now, risk_document):
     return {"id":stage["id"],"step_h":int(step),"path":str(out),
        "image_url":"https://almet27.github.io/kfs-meteo-cartes/"+str(out),
        "size_bytes":out.stat().st_size, "run_utc":runs,
-       "valid_utc":details["valid_utc"], "title":stage["period"]+" — synthèse synoptique "+display_models,
+       "valid_utc":details["valid_utc"], "title":stage["period"]+" — "+("France • " if france else "")+"synthèse synoptique "+display_models,
+       "zone":"france" if france else "europe",
        "confidence_label":stage["confidence"]+" (indicative)",
        "marked_phenomena":marked_categories, "not_official_warning":True,
        "gfs_available":gfs_ready,
@@ -460,12 +469,13 @@ def main():
     if abs((parsed(risks["generated_utc"])-parsed(data["generated_utc"])).total_seconds())>7200:
         raise RuntimeError("Dates de traitement cartes / risques trop éloignées")
     maps=[write_premium_stage(s,meta,data,now,risks) for s in STAGES]
+    france_maps=[write_premium_stage(s,meta,data,now,risks,france=True) for s in STAGES]
     manifest={
       "schema_version":1,"status":"illustrative_model_maps",
       "generated_utc":now.isoformat(),"source_generated_utc":data["generated_utc"],
       "charts_generated_utc":meta["generated_utc"],
       "source":"ECMWF Open Data (CC BY 4.0), NOAA GFS si disponible",
-      "not_weekly_anomalies":True,"period_maps":maps,"public":True,
+      "not_weekly_anomalies":True,"period_maps":maps,"france_maps":france_maps,"public":True,
       "graphic_style":"KFS PREMIUM 16:9 — 4 échéances, champs réels",
       "note":"Cartes ECMWF IFS/AIFS et comparaison GFS si run NOAA vérifié ; ! rouge = signal modélisé marqué, pas de vigilance officielle. Aucun front inventé ni extrapolation à 4 semaines."}
     (OUT/"tendance-cartes.json").write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")

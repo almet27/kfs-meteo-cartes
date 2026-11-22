@@ -143,6 +143,7 @@ jobs:
             forecast-maps/tendance/tendance-carte-j7.png
             forecast-maps/tendance/tendance-carte-j10.png
             forecast-maps/tendance/tendance-carte-j15.png
+            forecast-maps/tendance/tendance-carte-france-*.png
           if-no-files-found: warn
       - name: Publier les donnees et cartes ensemble, jamais separement
         if: success()
@@ -165,6 +166,10 @@ jobs:
             forecast-maps/tendance/tendance-carte-j7.png
             forecast-maps/tendance/tendance-carte-j10.png
             forecast-maps/tendance/tendance-carte-j15.png
+            forecast-maps/tendance/tendance-carte-france-j3.png
+            forecast-maps/tendance/tendance-carte-france-j7.png
+            forecast-maps/tendance/tendance-carte-france-j10.png
+            forecast-maps/tendance/tendance-carte-france-j15.png
           )
           for fond in forecast-maps/tendance/tendance-risques-fond-*.png; do
             if [[ -f "$fond" ]]; then files+=("$fond"); fi
