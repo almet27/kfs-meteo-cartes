@@ -275,7 +275,7 @@ def render(id,run,fields,marks,risks):
         (0.750,"#F1A05C"), (0.875,"#E9674A"), (1.00,"#B93451")])
     temp_norm=Normalize(vmin=-20,vmax=20)
     ax.contourf(xx,yy,tc,levels=np.arange(-30,32,2),
-                cmap=palette,norm=temp_norm,alpha=.70,
+                cmap=palette,norm=temp_norm,alpha=.92,
                 extend="both",transform=ccrs.PlateCarree(),zorder=2)
     # Keep subtle 500-hPa height contours but do NOT use them as heat colours.
     ax.contour(xx,yy,geop,levels=np.arange(470,610,10),
@@ -291,8 +291,8 @@ def render(id,run,fields,marks,risks):
                         colors=["#42BDF2","#22B8ED","#009BC9","#1579BA","#2869AD","#4458AB"],
                         alpha=.25,extend="max",transform=ccrs.PlateCarree(),zorder=5)
     cs=ax.contour(xx,yy,pres,levels=np.arange(940,1061,5),
-                  colors="white",linewidths=1.05,transform=ccrs.PlateCarree())
-    labels=ax.clabel(cs,fmt="%d",inline=True,fontsize=8,colors="white")
+                  colors="white",linewidths=1.05,transform=ccrs.PlateCarree(),zorder=7)
+    labels=ax.clabel(cs,fmt="%d",inline=True,fontsize=8,colors="white",zorder=8)
     for a in labels:a.set_path_effects([pe.Stroke(linewidth=2.5,foreground="#173147"),pe.Normal()])
     ax.coastlines("110m",linewidth=.85,color="#EFF6F9",zorder=10)
     ax.add_feature(cfeature.BORDERS,linewidth=.56,edgecolor="#E2EFF5",alpha=.82,zorder=10)
@@ -394,7 +394,7 @@ def calculate(id,step,model,atlas,now):
             "valid_utc":(run+timedelta(hours=step)).isoformat(),
             "background_path":str(background),"risks":risks,"markers":selected,
             "t850_shading":{"enabled":True,"level_hpa":850,"unit":"°C",
-                            "fixed_scale_c":[-20,20],
+                            "fixed_scale_c":[-20,20],"opacity":0.92,
                             "description":"Température à 850 hPa modélisée, pas température au sol"},
             "risk_scope":"France et secteurs proches, domaine rectangulaire terre + mer",
             "method":"Vent moyen 10m, pluie/neige 6h ; neige hors relief selon altitudes GLO-90 ; pas une vigilance officielle."}

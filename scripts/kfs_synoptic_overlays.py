@@ -14,55 +14,67 @@ from matplotlib.path import Path
 from matplotlib.patches import PathPatch
 import cartopy.crs as ccrs
 
-COLORS={"vent_fort":"#A2F1FC","tempete":"#FFAF72",
-        "pluie_forte":"#56DDFF","neige":"#F5FDFF"}
-
-def _line(area, xs, ys, color, width=3.3, shadow=True):
-    line=Line2D(xs,ys,color=color,linewidth=width,solid_capstyle="round",
-                solid_joinstyle="round")
-    if shadow:
-        line.set_path_effects([pe.Stroke(linewidth=width+4,foreground="#051D37",alpha=.94),
-                               pe.Normal()])
-    area.add_artist(line)
-
 def premium_pictogram(kind):
-    """White/cyan minimalist meteorological vector without circular background."""
-    area=DrawingArea(68,68,0,0)
-    color=COLORS.get(kind,"#DFF9FF")
+    """Original compact weather-TV vector icons, with soft dark outlines."""
+    area = DrawingArea(48, 48, 0, 0)
+    ink = "#123452"
+
+    def curve(coords, color, width=2.8):
+        path = Path(coords, [Path.MOVETO] + [Path.CURVE4]*(len(coords)-1))
+        p = PathPatch(path, facecolor="none", edgecolor=color,
+                      linewidth=width, capstyle="round", joinstyle="round")
+        p.set_path_effects([pe.Stroke(linewidth=width+2.6, foreground=ink, alpha=.85), pe.Normal()])
+        area.add_artist(p)
+
+    def polygon(coords, codes, fill, edge=ink, width=1.35):
+        p = PathPatch(Path(coords, codes), facecolor=fill, edgecolor=edge,
+                      linewidth=width, joinstyle="round")
+        p.set_path_effects([pe.SimplePatchShadow(offset=(1,-1.4), alpha=.35), pe.Normal()])
+        area.add_artist(p)
+
+    def cloud():
+        verts = [(10,22),(5,22),(3,26),(4,30),
+                 (5,35),(9,37),(14,37),
+                 (16,44),(25,46),(30,41),
+                 (33,40),(35,37),(35,34),
+                 (42,35),(46,30),(43,25),
+                 (41,22),(39,22),(35,22),
+                 (10,22),(10,22)]
+        codes = [Path.MOVETO]+[Path.CURVE4]*18+[Path.LINETO,Path.CLOSEPOLY]
+        polygon(verts,codes,"#F4FAFF")
+
+    def flake(x,y,r):
+        for k in range(3):
+            t=math.radians(60*k)
+            dx,dy=r*math.cos(t),r*math.sin(t)
+            line=Line2D([x-dx,x+dx],[y-dy,y+dy],color="#EAFBFF",
+                        linewidth=1.6,solid_capstyle="round")
+            line.set_path_effects([pe.Stroke(linewidth=3.5,foreground=ink),pe.Normal()])
+            area.add_artist(line)
+
     if kind in ("vent_fort","tempete"):
-        for i,y in enumerate((48,35,22)):
-            path=Path([(8,y),(17,y+3),(23,y+3),(34,y),
-                       (44,y-3),(54,y-2),(57,y+4)],
-                      [Path.MOVETO]+[Path.CURVE4]*6)
-            shape=PathPatch(path,facecolor="none",edgecolor=color,linewidth=3.5,capstyle="round")
-            shape.set_path_effects([pe.Stroke(linewidth=7.2,foreground="#082342",alpha=.95),pe.Normal()])
-            area.add_artist(shape)
-        _line(area,[10,23],[14,14],color,3)
+        curve([(4,35),(12,35),(24,35),(32,35),
+               (41,35),(43,44),(35,44),(31,44),(29,41),(29,40)],
+              "#F5FAFF",3.4)
+        curve([(4,25),(13,25),(31,25),(40,25),
+               (47,25),(47,16),(41,16),(37,16),(35,18),(35,20)],
+              "#A9EBFF",3.0)
+        curve([(8,15),(12,15),(21,15),(26,15),
+               (33,15),(33,7),(26,7),(23,7),(21,9),(21,10)],
+              "#F5FAFF",2.8)
     elif kind=="pluie_forte":
-        cloud=Path([(12,28),(6,34),(12,43),(20,43),
-                    (23,54),(39,54),(44,43),
-                    (56,44),(62,32),(54,28),
-                    (50,21),(20,21),(12,28)],
-                   [Path.MOVETO]+[Path.CURVE3]*12)
-        sh=PathPatch(cloud,facecolor="#EAF9FF",edgecolor="#D6F4FF",linewidth=1.4)
-        sh.set_path_effects([pe.Stroke(linewidth=6,foreground="#082442",alpha=.93),pe.Normal()])
-        area.add_artist(sh)
-        for x in (23,35,47):
-            _line(area,[x+3,x-3],[18,7],color,3.1)
+        cloud()
+        for x,y in ((13,9),(24,5),(35,9)):
+            verts=[(x+2,y+8),(x+1,y+6),(x-3,y+2),(x-3,y),
+                   (x-3,y-4),(x+4,y-4),(x+4,y),
+                   (x+4,y+2),(x+3,y+5),(x+2,y+8),(x+2,y+8)]
+            polygon(verts,[Path.MOVETO]+[Path.CURVE4]*9+[Path.CLOSEPOLY],"#44BCF4",width=.9)
     elif kind=="neige":
-        cx,cy=34,34
-        for theta in (0,60,120):
-            a=math.radians(theta)
-            dx,dy=19*math.cos(a),19*math.sin(a)
-            _line(area,[cx-dx,cx+dx],[cy-dy,cy+dy],color,3.4)
-            for sign in (-1,1):
-                ex,ey=cx+sign*dx,cy+sign*dy
-                bx,by=-sign*math.cos(a),-sign*math.sin(a)
-                px,py=-math.sin(a),math.cos(a)
-                for branch in (-1,1):
-                    _line(area,[ex,ex+bx*6+branch*px*4],
-                          [ey,ey+by*6+branch*py*4],color,2.2)
+        cloud()
+        for x,y in ((12,10),(24,6),(36,10)):
+            flake(x,y,4.2)
     return area
+
 
 def t850_celsius(data, unit):
     a=np.asarray(data,dtype=float)
