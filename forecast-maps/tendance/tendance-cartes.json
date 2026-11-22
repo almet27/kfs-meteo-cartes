@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
   "status": "illustrative_model_maps",
-  "generated_utc": "2026-11-22T09:31:29.660377+00:00",
-  "source_generated_utc": "2026-11-22T09:30:02.556576+00:00",
-  "charts_generated_utc": "2026-11-22T07:43:28.481893+00:00",
+  "generated_utc": "2026-11-22T15:15:41.759398+00:00",
+  "source_generated_utc": "2026-11-22T15:14:22.602556+00:00",
+  "charts_generated_utc": "2026-11-22T12:33:50.143775+00:00",
   "source": "ECMWF Open Data (CC BY 4.0), NOAA GFS si disponible",
   "not_weekly_anomalies": true,
   "period_maps": [
@@ -12,13 +12,13 @@
       "step_h": 72,
       "path": "forecast-maps/tendance/tendance-carte-j3.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j3.png",
-      "size_bytes": 651168,
+      "size_bytes": 647928,
       "run_utc": {
-        "ifs": "2026-11-22T00:00Z",
-        "aifs": "2026-11-22T00:00Z",
-        "gfs": "2026-11-22T00:00:00+00:00"
+        "ifs": "2026-11-22T06:00Z",
+        "aifs": "2026-11-22T06:00Z",
+        "gfs": "2026-11-22T06:00:00+00:00"
       },
-      "valid_utc": "2026-11-25T00:00:00+00:00",
+      "valid_utc": "2026-11-25T06:00:00+00:00",
       "title": "J+3 — synthèse synoptique IFS / AIFS / GFS",
       "zone": "europe",
       "confidence_label": "Modérée (indicative)",
@@ -34,11 +34,11 @@
           "status": "relief_uniquement",
           "max": 0,
           "unit": "mm équiv. eau/6h",
-          "reason": "Neige hors relief ≤ 500 m, hors vallée de montagne (Copernicus GLO-90) ; relief : 48 zones échantillonnées",
+          "reason": "Neige hors relief ≤ 500 m, hors vallée de montagne (Copernicus GLO-90) ; relief : 91 zones échantillonnées",
           "mountain_signal": true,
-          "mountain_max": 7.9,
+          "mountain_max": 18.7,
           "lowland_sample_count": 0,
-          "highland_sample_count": 48,
+          "highland_sample_count": 91,
           "terrain_source": "Copernicus DEM GLO-90 via Open-Meteo"
         },
         "verglas": {
@@ -51,14 +51,14 @@
         },
         "tempete": {
           "status": "possible",
-          "max": 86.0,
+          "max": 94.0,
           "unit": "km/h (rafales max 10 m/6 h)",
           "reason": "Rafales maximales ECMWF IFS des 6 h précédentes, pas une vigilance officielle"
         },
         "gel": {
           "status": "marque",
           "severity": "severe",
-          "min": -12.25,
+          "min": -11.92,
           "unit": "°C (Tmin 2 m/6 h)",
           "reason": "Minimum sur les 6 h précédentes, points terrestres"
         },
@@ -72,197 +72,197 @@
         },
         "pluie_forte": {
           "status": "marque",
-          "max": 29.3,
+          "max": 50.5,
           "unit": "mm/6h",
           "reason": "Cumul des 6 heures précédant l'échéance"
         }
       },
       "risk_markers": [
         {
-          "lon": 11.25,
-          "lat": 47.0,
-          "value": -12.253332519531227,
-          "kind": "gel"
-        },
-        {
           "lon": 8.0,
           "lat": 46.5,
-          "value": -11.863745117187477,
+          "value": -11.915624999999977,
           "kind": "gel"
         },
         {
-          "lon": -4.5,
-          "lat": 44.0,
-          "value": 86.0,
+          "lon": 0.0,
+          "lat": 42.75,
+          "value": -10.915624999999977,
+          "kind": "gel"
+        },
+        {
+          "lon": 11.25,
+          "lat": 47.0,
+          "value": -10.459234619140602,
+          "kind": "gel"
+        },
+        {
+          "lon": 6.5,
+          "lat": 43.25,
+          "value": 50.5,
+          "kind": "pluie_forte"
+        },
+        {
+          "lon": -3.25,
+          "lat": 43.75,
+          "value": 94.0,
           "kind": "vent_fort"
         },
         {
-          "lon": -7.0,
-          "lat": 45.5,
-          "value": 78.8,
+          "lon": -5.75,
+          "lat": 44.5,
+          "value": 83.2,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": -8.75,
+          "lat": 45.75,
+          "value": 73.3,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": 4.0,
+          "lat": 42.5,
+          "value": 72.1,
           "kind": "vent_fort"
         },
         {
           "lon": -9.75,
-          "lat": 46.25,
-          "value": 75.1,
-          "kind": "vent_fort"
-        },
-        {
-          "lon": -1.75,
-          "lat": 43.75,
-          "value": 74.9,
-          "kind": "vent_fort"
-        },
-        {
-          "lon": 5.0,
           "lat": 43.25,
-          "value": 71.5,
-          "kind": "vent_fort"
-        },
-        {
-          "lon": -9.5,
-          "lat": 44.25,
-          "value": 64.1,
-          "kind": "vent_fort"
-        },
-        {
-          "lon": 6.0,
-          "lat": 45.0,
-          "value": 63.7,
+          "value": 69.9,
           "kind": "vent_fort"
         },
         {
           "lon": 1.0,
           "lat": 41.25,
-          "value": 62.8,
+          "value": 67.4,
           "kind": "vent_fort"
         },
         {
-          "lon": 3.25,
-          "lat": 53.0,
-          "value": 61.6,
+          "lon": -1.5,
+          "lat": 45.25,
+          "value": 64.0,
           "kind": "vent_fort"
         },
         {
-          "lon": -2.75,
-          "lat": 45.5,
-          "value": 59.0,
-          "kind": "vent_fort"
-        },
-        {
-          "lon": 8.5,
-          "lat": 44.0,
-          "value": 56.7,
-          "kind": "vent_fort"
-        },
-        {
-          "lon": 0.75,
-          "lat": 50.75,
-          "value": 54.9,
-          "kind": "vent_fort"
-        },
-        {
-          "lon": 11.0,
-          "lat": 42.5,
-          "value": 53.8,
-          "kind": "vent_fort"
-        },
-        {
-          "lon": -9.75,
-          "lat": 42.25,
-          "value": 52.8,
-          "kind": "vent_fort"
-        },
-        {
-          "lon": -3.25,
+          "lon": 8.0,
           "lat": 41.25,
-          "value": 52.6,
+          "value": 63.6,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": 4.0,
+          "lat": 53.0,
+          "value": 63.6,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": -3.5,
+          "lat": 49.0,
+          "value": 63.1,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": 10.75,
+          "lat": 42.5,
+          "value": 61.1,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": -10.0,
+          "lat": 41.25,
+          "value": 61.1,
           "kind": "vent_fort"
         },
         {
           "lon": -6.75,
-          "lat": 43.0,
-          "value": 52.2,
+          "lat": 42.25,
+          "value": 60.9,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": 6.0,
+          "lat": 45.0,
+          "value": 60.0,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": -5.75,
+          "lat": 50.25,
+          "value": 58.2,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": 4.5,
+          "lat": 44.5,
+          "value": 28.9,
+          "kind": "pluie_forte"
+        },
+        {
+          "lon": 10.5,
+          "lat": 51.75,
+          "value": -5.665624999999977,
+          "kind": "gel"
+        },
+        {
+          "lon": -2.0,
+          "lat": 42.0,
+          "value": 56.6,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": -6.0,
+          "lat": 46.5,
+          "value": 55.5,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": -8.5,
+          "lat": 48.25,
+          "value": 53.5,
           "kind": "vent_fort"
         },
         {
           "lon": 12.0,
           "lat": 50.0,
-          "value": -5.113745117187477,
+          "value": -5.209234619140602,
           "kind": "gel"
         },
         {
-          "lon": 8.75,
-          "lat": 51.25,
-          "value": -4.613745117187477,
-          "kind": "gel"
-        },
-        {
-          "lon": 10.25,
-          "lat": 53.0,
-          "value": -3.7533325195312273,
-          "kind": "gel"
-        },
-        {
-          "lon": -2.75,
-          "lat": 50.0,
-          "value": 17.8,
-          "kind": "pluie_forte"
-        },
-        {
-          "lon": 0.0,
-          "lat": 42.75,
-          "value": -3.3637451171874773,
-          "kind": "gel"
-        },
-        {
-          "lon": 6.25,
+          "lon": 7.25,
           "lat": 49.75,
-          "value": -2.8637451171874773,
+          "value": -4.209234619140602,
           "kind": "gel"
         },
         {
-          "lon": -3.25,
-          "lat": 52.25,
-          "value": 12.5,
+          "lon": 9.0,
+          "lat": 44.0,
+          "value": 13.8,
           "kind": "pluie_forte"
         },
         {
           "lon": 9.5,
           "lat": 48.5,
-          "value": -2.3637451171874773,
+          "value": -2.4592346191406023,
           "kind": "gel"
         },
         {
-          "lon": 6.75,
+          "lon": 8.0,
+          "lat": 53.0,
+          "value": -2.4592346191406023,
+          "kind": "gel"
+        },
+        {
+          "lon": -8.0,
           "lat": 43.25,
-          "value": 11.0,
-          "kind": "pluie_forte"
-        },
-        {
-          "lon": 6.0,
-          "lat": 52.25,
-          "value": -2.1137451171874773,
-          "kind": "gel"
-        },
-        {
-          "lon": 4.25,
-          "lat": 46.0,
-          "value": 10.5,
-          "kind": "pluie_forte"
-        },
-        {
-          "lon": -8.25,
-          "lat": 43.5,
           "value": 10.3,
           "kind": "pluie_forte"
         },
         {
-          "lon": 3.25,
-          "lat": 51.25,
-          "value": -0.8637451171874773,
-          "kind": "gel"
+          "lon": 5.75,
+          "lat": 46.25,
+          "value": 10.0,
+          "kind": "pluie_forte"
         }
       ],
       "t850_shading": {
@@ -278,7 +278,7 @@
         "description": "Température à 850 hPa modélisée, pas température au sol"
       },
       "style": "kfs-editorial-plein-cadre-neutre-v11",
-      "summary": "Flux de sud-ouest sur la France, avec air plus frais en altitude. Signaux sur France et abords : pluie jusqu’à 29 mm/6 h, rafales jusqu’à 86 km/h, gel jusqu’à -12 °C. Confiance modérée.",
+      "summary": "Flux d’ouest sur la France, avec air froid à 850 hpa. Signaux sur France et abords : pluie jusqu’à 50 mm/6 h, rafales jusqu’à 94 km/h, gel jusqu’à -12 °C. Confiance modérée.",
       "note": "Carte géoréférencée bord à bord 1600x700, bandeau neutre et synthèse issue des champs IFS ; ! rouge = seuil KFS non officiel."
     },
     {
@@ -286,11 +286,11 @@
       "step_h": 168,
       "path": "forecast-maps/tendance/tendance-carte-j7.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j7.png",
-      "size_bytes": 683156,
+      "size_bytes": 683186,
       "run_utc": {
         "ifs": "2026-11-22T00:00Z",
-        "aifs": "2026-11-22T00:00Z",
-        "gfs": "2026-11-22T00:00:00+00:00"
+        "aifs": "2026-11-22T06:00Z",
+        "gfs": "2026-11-22T06:00:00+00:00"
       },
       "valid_utc": "2026-11-29T00:00:00+00:00",
       "title": "J+7 — synthèse synoptique IFS / AIFS / GFS",
@@ -566,11 +566,11 @@
       "step_h": 240,
       "path": "forecast-maps/tendance/tendance-carte-j10.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j10.png",
-      "size_bytes": 642613,
+      "size_bytes": 642560,
       "run_utc": {
         "ifs": "2026-11-22T00:00Z",
-        "aifs": "2026-11-22T00:00Z",
-        "gfs": "2026-11-22T00:00:00+00:00"
+        "aifs": "2026-11-22T06:00Z",
+        "gfs": "2026-11-22T06:00:00+00:00"
       },
       "valid_utc": "2026-12-02T00:00:00+00:00",
       "title": "J+10 — synthèse synoptique IFS / AIFS / GFS",
@@ -797,11 +797,11 @@
       "step_h": 360,
       "path": "forecast-maps/tendance/tendance-carte-j15.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j15.png",
-      "size_bytes": 627339,
+      "size_bytes": 627255,
       "run_utc": {
         "ifs": "2026-11-22T00:00Z",
-        "aifs": "2026-11-22T00:00Z",
-        "gfs": "2026-11-22T00:00:00+00:00"
+        "aifs": "2026-11-22T06:00Z",
+        "gfs": "2026-11-22T06:00:00+00:00"
       },
       "valid_utc": "2026-12-07T00:00:00+00:00",
       "title": "J+15 — synthèse synoptique IFS / AIFS / GFS",
@@ -1034,13 +1034,13 @@
       "step_h": 72,
       "path": "forecast-maps/tendance/tendance-carte-france-j3.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-france-j3.png",
-      "size_bytes": 418840,
+      "size_bytes": 430149,
       "run_utc": {
-        "ifs": "2026-11-22T00:00Z",
-        "aifs": "2026-11-22T00:00Z",
-        "gfs": "2026-11-22T00:00:00+00:00"
+        "ifs": "2026-11-22T06:00Z",
+        "aifs": "2026-11-22T06:00Z",
+        "gfs": "2026-11-22T06:00:00+00:00"
       },
-      "valid_utc": "2026-11-25T00:00:00+00:00",
+      "valid_utc": "2026-11-25T06:00:00+00:00",
       "title": "J+3 — France • synthèse synoptique IFS / AIFS / GFS",
       "zone": "france",
       "confidence_label": "Modérée (indicative)",
@@ -1056,11 +1056,11 @@
           "status": "relief_uniquement",
           "max": 0,
           "unit": "mm équiv. eau/6h",
-          "reason": "Neige hors relief ≤ 500 m, hors vallée de montagne (Copernicus GLO-90) ; relief : 21 zones échantillonnées",
+          "reason": "Neige hors relief ≤ 500 m, hors vallée de montagne (Copernicus GLO-90) ; relief : 30 zones échantillonnées",
           "mountain_signal": true,
-          "mountain_max": 7.9,
+          "mountain_max": 18.7,
           "lowland_sample_count": 0,
-          "highland_sample_count": 21,
+          "highland_sample_count": 30,
           "terrain_source": "Copernicus DEM GLO-90 via Open-Meteo"
         },
         "verglas": {
@@ -1073,14 +1073,14 @@
         },
         "tempete": {
           "status": "possible",
-          "max": 63.7,
+          "max": 65.8,
           "unit": "km/h (rafales max 10 m/6 h)",
           "reason": "Rafales maximales ECMWF IFS des 6 h précédentes, pas une vigilance officielle"
         },
         "gel": {
           "status": "marque",
-          "severity": "marque",
-          "min": -8.0,
+          "severity": "severe",
+          "min": -10.92,
           "unit": "°C (Tmin 2 m/6 h)",
           "reason": "Minimum sur les 6 h précédentes, points terrestres"
         },
@@ -1094,64 +1094,70 @@
         },
         "pluie_forte": {
           "status": "marque",
-          "max": 29.3,
+          "max": 50.5,
           "unit": "mm/6h",
           "reason": "Cumul des 6 heures précédant l'échéance"
         }
       },
       "risk_markers": [
         {
-          "lon": 7.0,
-          "lat": 45.5,
-          "value": -8.003332519531227,
-          "kind": "gel"
-        },
-        {
-          "lon": 4.0,
-          "lat": 44.0,
-          "value": 29.3,
-          "kind": "pluie_forte"
-        },
-        {
           "lon": 0.0,
           "lat": 42.75,
-          "value": -3.3637451171874773,
+          "value": -10.915624999999977,
           "kind": "gel"
         },
         {
-          "lon": -1.25,
-          "lat": 44.0,
-          "value": 12.5,
-          "kind": "pluie_forte"
-        },
-        {
-          "lon": 4.25,
-          "lat": 46.0,
-          "value": 10.5,
+          "lon": 6.5,
+          "lat": 43.25,
+          "value": 50.5,
           "kind": "pluie_forte"
         },
         {
           "lon": 6.75,
+          "lat": 45.25,
+          "value": -8.165624999999977,
+          "kind": "gel"
+        },
+        {
+          "lon": 2.75,
           "lat": 43.5,
-          "value": 10.3,
+          "value": 65.8,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": -1.25,
+          "lat": 43.75,
+          "value": 63.1,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": 4.5,
+          "lat": 44.5,
+          "value": 28.9,
           "kind": "pluie_forte"
         },
         {
-          "lon": 7.5,
+          "lon": -3.5,
           "lat": 48.75,
-          "value": -1.8637451171874773,
-          "kind": "gel"
+          "value": 57.1,
+          "kind": "vent_fort"
         },
         {
-          "lon": 5.0,
-          "lat": 49.75,
-          "value": -0.25333251953122726,
-          "kind": "gel"
+          "lon": 2.75,
+          "lat": 45.75,
+          "value": 51.4,
+          "kind": "vent_fort"
         },
         {
-          "lon": 2.5,
-          "lat": 51.0,
-          "value": -0.11374511718747726,
+          "lon": 5.75,
+          "lat": 46.25,
+          "value": 10.0,
+          "kind": "pluie_forte"
+        },
+        {
+          "lon": 7.75,
+          "lat": 49.0,
+          "value": -1.4592346191406023,
           "kind": "gel"
         }
       ],
@@ -1168,7 +1174,7 @@
         "description": "Température à 850 hPa modélisée, pas température au sol"
       },
       "style": "kfs-editorial-plein-cadre-neutre-v11",
-      "summary": "Flux de sud-ouest sur la France, avec air plus frais en altitude. Signaux en France : pluie jusqu’à 29 mm/6 h, rafales jusqu’à 64 km/h, gel jusqu’à -8 °C. Confiance modérée.",
+      "summary": "Flux d’ouest sur la France, avec air froid à 850 hpa. Signaux en France : pluie jusqu’à 50 mm/6 h, rafales jusqu’à 66 km/h, gel jusqu’à -11 °C. Confiance modérée.",
       "note": "Carte géoréférencée bord à bord 1600x700, bandeau neutre et synthèse issue des champs IFS ; ! rouge = seuil KFS non officiel."
     },
     {
@@ -1176,11 +1182,11 @@
       "step_h": 168,
       "path": "forecast-maps/tendance/tendance-carte-france-j7.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-france-j7.png",
-      "size_bytes": 430962,
+      "size_bytes": 430912,
       "run_utc": {
         "ifs": "2026-11-22T00:00Z",
-        "aifs": "2026-11-22T00:00Z",
-        "gfs": "2026-11-22T00:00:00+00:00"
+        "aifs": "2026-11-22T06:00Z",
+        "gfs": "2026-11-22T06:00:00+00:00"
       },
       "valid_utc": "2026-11-29T00:00:00+00:00",
       "title": "J+7 — France • synthèse synoptique IFS / AIFS / GFS",
@@ -1324,11 +1330,11 @@
       "step_h": 240,
       "path": "forecast-maps/tendance/tendance-carte-france-j10.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-france-j10.png",
-      "size_bytes": 341381,
+      "size_bytes": 341513,
       "run_utc": {
         "ifs": "2026-11-22T00:00Z",
-        "aifs": "2026-11-22T00:00Z",
-        "gfs": "2026-11-22T00:00:00+00:00"
+        "aifs": "2026-11-22T06:00Z",
+        "gfs": "2026-11-22T06:00:00+00:00"
       },
       "valid_utc": "2026-12-02T00:00:00+00:00",
       "title": "J+10 — France • synthèse synoptique IFS / AIFS / GFS",
@@ -1436,11 +1442,11 @@
       "step_h": 360,
       "path": "forecast-maps/tendance/tendance-carte-france-j15.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-france-j15.png",
-      "size_bytes": 361513,
+      "size_bytes": 361482,
       "run_utc": {
         "ifs": "2026-11-22T00:00Z",
-        "aifs": "2026-11-22T00:00Z",
-        "gfs": "2026-11-22T00:00:00+00:00"
+        "aifs": "2026-11-22T06:00Z",
+        "gfs": "2026-11-22T06:00:00+00:00"
       },
       "valid_utc": "2026-12-07T00:00:00+00:00",
       "title": "J+15 — France • synthèse synoptique IFS / AIFS / GFS",
