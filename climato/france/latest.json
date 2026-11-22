@@ -1,44 +1,45 @@
 {
   "schema": 1,
   "month": "2026-11",
-  "generated_at": "2026-11-22T13:02:55.435433+01:00",
+  "generated_at": "2026-11-22T13:06:45.093272+01:00",
   "source": "Météo-France, observations quotidiennes",
+  "method": "IDW, 150 km max nearest station, 2 stations within 200 km",
   "maps": [
     {
       "file": "temperature-anomalie.png",
       "title": "Anomalie de température moyenne",
       "end": "2026-11-20",
-      "stations": 50
+      "stations": 387
     },
     {
       "file": "pluie-cumul.png",
       "title": "Cumul des précipitations",
       "end": "2026-11-20",
-      "stations": 50
+      "stations": 414
     },
     {
       "file": "pluie-anomalie.png",
       "title": "Anomalie de précipitations",
       "end": "2026-11-20",
-      "stations": 50
+      "stations": 414
     },
     {
       "file": "soleil-cumul.png",
       "title": "Cumul d’ensoleillement",
       "end": "2026-11-20",
-      "stations": 40
+      "stations": 46
     },
     {
       "file": "soleil-anomalie.png",
       "title": "Anomalie d’ensoleillement",
       "end": "2026-11-20",
-      "stations": 40
+      "stations": 46
     },
     {
       "file": "gel-anomalie.png",
       "title": "Anomalie du nombre de jours de gel",
       "end": "2026-11-20",
-      "stations": 50
+      "stations": 388
     }
   ]
 }
