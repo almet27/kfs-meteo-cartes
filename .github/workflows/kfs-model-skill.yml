@@ -23,17 +23,75 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      months: ${{ steps.months.outputs.months }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: months
+        name: Repérer les archives mensuelles manquantes
+        env:
+          REQUESTED_MONTH: ${{ inputs.month }}
+        run: |
+          python - <<'PY'
+          import json, os, re
+          from datetime import date, datetime, timezone, timedelta
+          from pathlib import Path
+          requested = os.environ.get("REQUESTED_MONTH", "").strip()
+          first = date(2026, 4, 1)
+          today = datetime.now(timezone.utc).date()
+          previous = today.replace(day=1) - timedelta(days=1)
+          last = previous.strftime("%Y-%m")
+          if requested:
+              if not re.fullmatch(r"20\d\d-(0[1-9]|1[0-2])", requested) or not "2026-04" <= requested <= last:
+                  raise SystemExit("Mois hors période commune des quatre modèles")
+              months = [requested]
+          else:
+              months = []
+              current = first
+              while current.strftime("%Y-%m") <= last:
+                  month = current.strftime("%Y-%m")
+                  base = Path("data/model-skill")
+                  def usable(path, regime=False):
+                      try:
+                          obj = json.loads(path.read_text())
+                          groups = obj["regimes" if regime else "metrics"]
+                          return obj["period"] == month and bool(obj["run_dates"]) and bool(groups) and all(any(n > 0 for n in item["n"]) for item in groups.values())
+                      except (OSError, ValueError, KeyError, TypeError):
+                          return False
+                  if not usable(base / (month + ".json")) or not usable(base / (month + "-regimes.json"), True):
+                      months.append(month)
+                  current = date(current.year + (current.month == 12), current.month % 12 + 1, 1)
+              # Revalider aussi le dernier mois complet, dont les comparaisons
+              # J+15 peuvent devenir disponibles après une première publication.
+              if last >= "2026-04" and last not in months:
+                  months.append(last)
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              print("months=" + json.dumps(months), file=f)
+          print("Mois à traiter:", months)
+          PY
+
   verifier:
+    needs: plan
+    if: needs.plan.outputs.months != '[]'
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        month: ${{ fromJSON(needs.plan.outputs.months) }}
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
       - name: Vérifier les prévisions historiques face à ERA5
         env:
-          REQUESTED_MONTH: ${{ inputs.month }}
+          REQUESTED_MONTH: ${{ matrix.month }}
         run: |
           if [ -n "$REQUESTED_MONTH" ]; then
             python scripts/build_model_skill.py --month "$REQUESTED_MONTH"
@@ -42,7 +100,7 @@ jobs:
           fi
       - name: Vérifier les configurations synoptiques (indices de pression de surface)
         env:
-          REQUESTED_MONTH: ${{ inputs.month }}
+          REQUESTED_MONTH: ${{ matrix.month }}
         run: |
           if [ -n "$REQUESTED_MONTH" ]; then
             python scripts/build_model_regimes.py --month "$REQUESTED_MONTH"
@@ -53,7 +111,7 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add data/model-skill/*.json
+          git add "data/model-skill/${{ matrix.month }}.json" "data/model-skill/${{ matrix.month }}-regimes.json"
           if git diff --cached --quiet; then exit 0; fi
           git commit -m "Actualiser statistiques mensuelles modèles météo"
           for n in 1 2 3 4 5; do
