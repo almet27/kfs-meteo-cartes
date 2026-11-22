@@ -44,7 +44,7 @@ FR_GEOGRAPHY=(-9,14,40,53)
 _FR_MASK=None
 CATEGORIES=("neige","verglas","orage","tempete","gel","canicule","inondation","pluie_forte")
 COLORS={"vent_fort":"#FFCE66","tempete":"#FB765A","pluie_forte":"#37CFFF","neige":"#BCEBFF"}
-SNOW_ALT_MAX_M=800
+SNOW_ALT_MAX_M=500
 RED_MARKER_THRESHOLDS={"vent_fort":100.0,"pluie_forte":50.0,"neige":2.0,"gel":10.0}
 
 
@@ -220,7 +220,7 @@ def snow_off_mountain(lon,lat,snow):
             low.append(record)
         else:
             high.append(record)
-    # A valley below 800 m can still lie in the Alps/Pyrenees.
+    # A valley below 500 m can still lie in the Alps/Pyrenees.
     # Exclude snowfall on the mountainous surroundings, not only high peaks.
     if low:
         neighbours=[]
