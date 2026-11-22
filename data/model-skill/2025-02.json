@@ -1,0 +1,199 @@
+{
+  "schema": 1,
+  "period": "2025-02",
+  "generated_utc": "2026-11-22T15:23:57.066461+00:00",
+  "territory": "France métropolitaine, Corse comprise",
+  "reference": "Réanalyse ERA5 (référence modélisée, pas relevés de stations)",
+  "method": "MAE, 12 lieux; runs 00 UTC des jours 1, 5, 9, 13, 17, 21, 25, 29 du mois; validité 00 UTC à J+1..J+15; échantillon commun aux modèles disponibles",
+  "sites": [
+    "Brest",
+    "Lille",
+    "Paris",
+    "Strasbourg",
+    "Nantes",
+    "Dijon",
+    "Clermont-Ferrand",
+    "Lyon",
+    "Bordeaux",
+    "Toulouse",
+    "Marseille",
+    "Ajaccio"
+  ],
+  "run_dates": [
+    "2025-02-01",
+    "2025-02-05",
+    "2025-02-09",
+    "2025-02-13",
+    "2025-02-17",
+    "2025-02-21",
+    "2025-02-25"
+  ],
+  "requested_run_days": [
+    1,
+    5,
+    9,
+    13,
+    17,
+    21,
+    25,
+    29
+  ],
+  "models": {
+    "ifs": "ecmwf_ifs",
+    "aifs": "ecmwf-aifs-single-forecast",
+    "gfs": "noaa-gfs-forecast"
+  },
+  "source": "Open-Meteo IFS HRES 9km, Dynamical AIFS/GFS, ERA5",
+  "notes": [
+    "AIGFS exclu avant avril 2026; résolution IFS historique différente"
+  ],
+  "metrics": {
+    "temperature_2m": {
+      "unit": "°C",
+      "n": [
+        84,
+        84,
+        84,
+        84,
+        84,
+        84,
+        84,
+        84,
+        84,
+        84,
+        84,
+        84,
+        84,
+        84,
+        84
+      ],
+      "series": {
+        "ifs": [
+          1.18,
+          1.431,
+          1.682,
+          1.72,
+          1.955,
+          2.702,
+          2.606,
+          2.998,
+          2.663,
+          3.261,
+          3.474,
+          3.514,
+          3.594,
+          3.882,
+          4.187
+        ],
+        "aifs": [
+          1.247,
+          1.239,
+          1.727,
+          1.588,
+          1.85,
+          2.275,
+          2.754,
+          2.412,
+          3.027,
+          3.689,
+          3.95,
+          4.67,
+          4.053,
+          4.02,
+          4.056
+        ],
+        "gfs": [
+          1.534,
+          1.59,
+          2.089,
+          2.018,
+          2.167,
+          2.649,
+          2.982,
+          2.775,
+          2.996,
+          3.308,
+          3.597,
+          3.859,
+          3.545,
+          3.278,
+          3.332
+        ]
+      }
+    },
+    "pressure_msl": {
+      "unit": "hPa",
+      "n": [
+        84,
+        84,
+        84,
+        84,
+        84,
+        84,
+        84,
+        84,
+        84,
+        84,
+        84,
+        84,
+        84,
+        84,
+        84
+      ],
+      "series": {
+        "ifs": [
+          0.367,
+          0.693,
+          1.061,
+          1.298,
+          2.045,
+          3.031,
+          4.021,
+          4.285,
+          7.248,
+          6.881,
+          9.43,
+          10.505,
+          10.323,
+          9.169,
+          7.014
+        ],
+        "aifs": [
+          0.356,
+          0.919,
+          1.362,
+          1.408,
+          1.841,
+          3.56,
+          4.233,
+          3.729,
+          4.972,
+          6.397,
+          8.857,
+          12.463,
+          15.408,
+          13.675,
+          11.123
+        ],
+        "gfs": [
+          0.528,
+          0.759,
+          1.405,
+          2.251,
+          2.665,
+          3.429,
+          5.046,
+          4.812,
+          5.225,
+          8.125,
+          9.143,
+          9.068,
+          10.391,
+          9.52,
+          9.364
+        ]
+      }
+    }
+  },
+  "errors": []
+}
