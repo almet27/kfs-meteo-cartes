@@ -49,22 +49,22 @@ jobs:
           if os.environ["EVENT"]=="workflow_dispatch":
               y=int(os.environ["YEAR"]);m=os.environ["MONTH"]
           elif os.environ["EVENT"]=="push":
-              y=now.year-1;m=str(now.month)
+              y=now.year-1;m="annee"
           else:
               candidates=[]
               for p in Path("climato/archive").glob("*/*/latest.json"):
                   try:
                       y=int(p.parent.parent.name);m=p.parent.name
-                      if y<1958 or m=="annee":continue
-                      if not 1<=int(m)<=12:continue
+                      if y<1958:continue
+                      if m!="annee" and not 1<=int(m)<=12:continue
                       maps=json.loads(p.read_text()).get("maps",[])
-                      if not any(x.get("kind")=="snow_depth" for x in maps):candidates.append((y,int(m)))
+                      if not any(x.get("kind")=="snow_depth" for x in maps):candidates.append((y,13 if m=="annee" else int(m)))
                   except (OSError,ValueError):continue
               if not candidates:
-                  print("Aucune archive mensuelle à harmoniser")
+                  print("Aucune archive mensuelle ou annuelle à harmoniser")
                   with open(os.environ["GITHUB_OUTPUT"],"a") as f:f.write("skip=true\n")
                   raise SystemExit(0)
-              y,m=max(candidates);m=str(m)
+              y,m=max(candidates);m="annee" if m==13 else str(m)
           if not 1958<=y<=now.year or (m!="annee" and not 1<=int(m)<=12):raise SystemExit("Période invalide")
           tag="annee" if m=="annee" else f"{int(m):02d}"
           with open(os.environ["GITHUB_OUTPUT"],"a") as f:f.write(f"year={y}\nmonth={m}\ntag={tag}\nskip=false\n")
