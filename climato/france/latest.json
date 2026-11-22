@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "month": "2026-11",
-  "generated_at": "2026-11-22T14:04:22.425970+01:00",
+  "generated_at": "2026-11-22T14:13:20.233428+01:00",
   "source": "Météo-France, observations quotidiennes",
   "method": "IDW, 150 km max nearest station, 2 stations within 200 km",
   "maps": [
@@ -9,25 +9,61 @@
       "file": "temperature-anomalie.png",
       "title": "Anomalie de température moyenne",
       "end": "2026-11-20",
-      "stations": 387
+      "stations": 387,
+      "zones": {
+        "nord_ouest": "temperature-anomalie-nord_ouest.png",
+        "nord_est": "temperature-anomalie-nord_est.png",
+        "sud_ouest": "temperature-anomalie-sud_ouest.png",
+        "sud_est": "temperature-anomalie-sud_est.png",
+        "alpes": "temperature-anomalie-alpes.png",
+        "pyrenees": "temperature-anomalie-pyrenees.png",
+        "massif_central": "temperature-anomalie-massif_central.png"
+      }
     },
     {
       "file": "pluie-anomalie.png",
       "title": "Anomalie de précipitations",
       "end": "2026-11-20",
-      "stations": 414
+      "stations": 414,
+      "zones": {
+        "nord_ouest": "pluie-anomalie-nord_ouest.png",
+        "nord_est": "pluie-anomalie-nord_est.png",
+        "sud_ouest": "pluie-anomalie-sud_ouest.png",
+        "sud_est": "pluie-anomalie-sud_est.png",
+        "alpes": "pluie-anomalie-alpes.png",
+        "pyrenees": "pluie-anomalie-pyrenees.png",
+        "massif_central": "pluie-anomalie-massif_central.png"
+      }
     },
     {
       "file": "soleil-anomalie.png",
       "title": "Anomalie d’ensoleillement",
       "end": "2026-11-20",
-      "stations": 46
+      "stations": 46,
+      "zones": {
+        "nord_ouest": "soleil-anomalie-nord_ouest.png",
+        "nord_est": "soleil-anomalie-nord_est.png",
+        "sud_ouest": "soleil-anomalie-sud_ouest.png",
+        "sud_est": "soleil-anomalie-sud_est.png",
+        "alpes": "soleil-anomalie-alpes.png",
+        "pyrenees": "soleil-anomalie-pyrenees.png",
+        "massif_central": "soleil-anomalie-massif_central.png"
+      }
     },
     {
       "file": "gel-anomalie.png",
       "title": "Anomalie du nombre de jours de gel",
       "end": "2026-11-20",
-      "stations": 388
+      "stations": 388,
+      "zones": {
+        "nord_ouest": "gel-anomalie-nord_ouest.png",
+        "nord_est": "gel-anomalie-nord_est.png",
+        "sud_ouest": "gel-anomalie-sud_ouest.png",
+        "sud_est": "gel-anomalie-sud_est.png",
+        "alpes": "gel-anomalie-alpes.png",
+        "pyrenees": "gel-anomalie-pyrenees.png",
+        "massif_central": "gel-anomalie-massif_central.png"
+      }
     },
     {
       "file": "temperature-observee.png",
@@ -37,7 +73,16 @@
       "mf_stations": 583,
       "static_stations": 0,
       "kind": "observed_fusion",
-      "source": "Météo-France ; Infoclimat StatIC via chom.engineering (LO 2.0)"
+      "source": "Météo-France ; Infoclimat StatIC via chom.engineering (LO 2.0)",
+      "zones": {
+        "nord_ouest": "temperature-observee-nord_ouest.png",
+        "nord_est": "temperature-observee-nord_est.png",
+        "sud_ouest": "temperature-observee-sud_ouest.png",
+        "sud_est": "temperature-observee-sud_est.png",
+        "alpes": "temperature-observee-alpes.png",
+        "pyrenees": "temperature-observee-pyrenees.png",
+        "massif_central": "temperature-observee-massif_central.png"
+      }
     },
     {
       "file": "pluie-observee.png",
@@ -47,7 +92,16 @@
       "mf_stations": 586,
       "static_stations": 0,
       "kind": "observed_fusion",
-      "source": "Météo-France ; Infoclimat StatIC via chom.engineering (LO 2.0)"
+      "source": "Météo-France ; Infoclimat StatIC via chom.engineering (LO 2.0)",
+      "zones": {
+        "nord_ouest": "pluie-observee-nord_ouest.png",
+        "nord_est": "pluie-observee-nord_est.png",
+        "sud_ouest": "pluie-observee-sud_ouest.png",
+        "sud_est": "pluie-observee-sud_est.png",
+        "alpes": "pluie-observee-alpes.png",
+        "pyrenees": "pluie-observee-pyrenees.png",
+        "massif_central": "pluie-observee-massif_central.png"
+      }
     },
     {
       "file": "gel-observe.png",
@@ -57,7 +111,16 @@
       "mf_stations": 584,
       "static_stations": 0,
       "kind": "observed_fusion",
-      "source": "Météo-France ; Infoclimat StatIC via chom.engineering (LO 2.0)"
+      "source": "Météo-France ; Infoclimat StatIC via chom.engineering (LO 2.0)",
+      "zones": {
+        "nord_ouest": "gel-observe-nord_ouest.png",
+        "nord_est": "gel-observe-nord_est.png",
+        "sud_ouest": "gel-observe-sud_ouest.png",
+        "sud_est": "gel-observe-sud_est.png",
+        "alpes": "gel-observe-alpes.png",
+        "pyrenees": "gel-observe-pyrenees.png",
+        "massif_central": "gel-observe-massif_central.png"
+      }
     },
     {
       "file": "neige-sol-max.png",
