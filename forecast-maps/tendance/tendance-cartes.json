@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "status": "illustrative_model_maps",
-  "generated_utc": "2026-11-22T08:39:53.744196+00:00",
-  "source_generated_utc": "2026-11-22T08:39:00.143426+00:00",
+  "generated_utc": "2026-11-22T08:43:35.162393+00:00",
+  "source_generated_utc": "2026-11-22T08:42:04.251155+00:00",
   "charts_generated_utc": "2026-11-22T07:43:28.481893+00:00",
   "source": "ECMWF Open Data (CC BY 4.0), NOAA GFS si disponible",
   "not_weekly_anomalies": true,
@@ -12,7 +12,7 @@
       "step_h": 72,
       "path": "forecast-maps/tendance/tendance-carte-j3.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j3.png",
-      "size_bytes": 569702,
+      "size_bytes": 573748,
       "run_utc": {
         "ifs": "2026-11-22T00:00Z",
         "aifs": "2026-11-22T00:00Z",
@@ -22,6 +22,7 @@
       "title": "J+3 — synthèse synoptique IFS / AIFS / GFS",
       "confidence_label": "Modérée (indicative)",
       "marked_phenomena": [
+        "gel",
         "pluie_forte"
       ],
       "not_official_warning": true,
@@ -54,8 +55,11 @@
           "reason": "Rafales maximales ECMWF IFS des 6 h précédentes, pas une vigilance officielle"
         },
         "gel": {
-          "status": "indisponible",
-          "reason": "Champs spécifiques non disponibles"
+          "status": "marque",
+          "severity": "severe",
+          "min": -12.25,
+          "unit": "°C (Tmin 2 m/6 h)",
+          "reason": "Minimum sur les 6 h précédentes, points terrestres"
         },
         "canicule": {
           "status": "indisponible",
@@ -74,6 +78,18 @@
       },
       "risk_markers": [
         {
+          "lon": 11.25,
+          "lat": 47.0,
+          "value": -12.253332519531227,
+          "kind": "gel"
+        },
+        {
+          "lon": 8.0,
+          "lat": 46.5,
+          "value": -11.863745117187477,
+          "kind": "gel"
+        },
+        {
           "lon": -4.5,
           "lat": 44.0,
           "value": 86.0,
@@ -90,6 +106,12 @@
           "lat": 46.25,
           "value": 75.1,
           "kind": "vent_fort"
+        },
+        {
+          "lon": 6.25,
+          "lat": 45.0,
+          "value": -6.113745117187477,
+          "kind": "gel"
         },
         {
           "lon": 4.0,
@@ -135,7 +157,7 @@
       "step_h": 168,
       "path": "forecast-maps/tendance/tendance-carte-j7.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j7.png",
-      "size_bytes": 586887,
+      "size_bytes": 588799,
       "run_utc": {
         "ifs": "2026-11-22T00:00Z",
         "aifs": "2026-11-22T00:00Z",
@@ -145,6 +167,7 @@
       "title": "J+7 — synthèse synoptique IFS / AIFS / GFS",
       "confidence_label": "Limitée (indicative)",
       "marked_phenomena": [
+        "gel",
         "pluie_forte"
       ],
       "not_official_warning": true,
@@ -177,8 +200,11 @@
           "reason": "Rafales maximales ECMWF IFS des 6 h précédentes, pas une vigilance officielle"
         },
         "gel": {
-          "status": "indisponible",
-          "reason": "Champs spécifiques non disponibles"
+          "status": "marque",
+          "severity": "severe",
+          "min": -19.88,
+          "unit": "°C (Tmin 2 m/6 h)",
+          "reason": "Minimum sur les 6 h précédentes, points terrestres"
         },
         "canicule": {
           "status": "indisponible",
@@ -196,6 +222,24 @@
         }
       },
       "risk_markers": [
+        {
+          "lon": 10.25,
+          "lat": 46.75,
+          "value": -19.879797363281227,
+          "kind": "gel"
+        },
+        {
+          "lon": 7.0,
+          "lat": 44.25,
+          "value": -16.879797363281227,
+          "kind": "gel"
+        },
+        {
+          "lon": 7.5,
+          "lat": 46.25,
+          "value": -12.629797363281227,
+          "kind": "gel"
+        },
         {
           "lon": -5.25,
           "lat": 53.0,
@@ -260,7 +304,7 @@
       "step_h": 240,
       "path": "forecast-maps/tendance/tendance-carte-j10.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j10.png",
-      "size_bytes": 559129,
+      "size_bytes": 565270,
       "run_utc": {
         "ifs": "2026-11-22T00:00Z",
         "aifs": "2026-11-22T00:00Z",
@@ -269,7 +313,9 @@
       "valid_utc": "2026-12-02T00:00:00+00:00",
       "title": "J+10 — synthèse synoptique IFS / AIFS / GFS",
       "confidence_label": "Faible (indicative)",
-      "marked_phenomena": [],
+      "marked_phenomena": [
+        "gel"
+      ],
       "not_official_warning": true,
       "gfs_available": true,
       "risk_status": "altitude_filtered_georeferenced",
@@ -300,8 +346,11 @@
           "reason": "Rafales maximales ECMWF IFS des 6 h précédentes, pas une vigilance officielle"
         },
         "gel": {
-          "status": "indisponible",
-          "reason": "Champs spécifiques non disponibles"
+          "status": "marque",
+          "severity": "severe",
+          "min": -15.48,
+          "unit": "°C (Tmin 2 m/6 h)",
+          "reason": "Minimum sur les 6 h précédentes, points terrestres"
         },
         "canicule": {
           "status": "indisponible",
@@ -319,6 +368,24 @@
         }
       },
       "risk_markers": [
+        {
+          "lon": 7.75,
+          "lat": 46.0,
+          "value": -15.479498291015602,
+          "kind": "gel"
+        },
+        {
+          "lon": 10.5,
+          "lat": 46.25,
+          "value": -11.729498291015602,
+          "kind": "gel"
+        },
+        {
+          "lon": 11.25,
+          "lat": 50.5,
+          "value": -11.229498291015602,
+          "kind": "gel"
+        },
         {
           "lon": 5.0,
           "lat": 43.25,
@@ -357,7 +424,7 @@
       "step_h": 360,
       "path": "forecast-maps/tendance/tendance-carte-j15.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j15.png",
-      "size_bytes": 551494,
+      "size_bytes": 555242,
       "run_utc": {
         "ifs": "2026-11-22T00:00Z",
         "aifs": "2026-11-22T00:00Z",
@@ -366,7 +433,9 @@
       "valid_utc": "2026-12-07T00:00:00+00:00",
       "title": "J+15 — synthèse synoptique IFS / AIFS / GFS",
       "confidence_label": "Très limitée (indicative)",
-      "marked_phenomena": [],
+      "marked_phenomena": [
+        "gel"
+      ],
       "not_official_warning": true,
       "gfs_available": true,
       "risk_status": "altitude_filtered_georeferenced",
@@ -397,8 +466,11 @@
           "reason": "Rafales maximales ECMWF IFS des 6 h précédentes, pas une vigilance officielle"
         },
         "gel": {
-          "status": "indisponible",
-          "reason": "Champs spécifiques non disponibles"
+          "status": "marque",
+          "severity": "severe",
+          "min": -15.23,
+          "unit": "°C (Tmin 2 m/6 h)",
+          "reason": "Minimum sur les 6 h précédentes, points terrestres"
         },
         "canicule": {
           "status": "indisponible",
@@ -416,6 +488,24 @@
         }
       },
       "risk_markers": [
+        {
+          "lon": 11.0,
+          "lat": 47.0,
+          "value": -15.232214355468727,
+          "kind": "gel"
+        },
+        {
+          "lon": 7.75,
+          "lat": 46.0,
+          "value": -14.732214355468727,
+          "kind": "gel"
+        },
+        {
+          "lon": 12.0,
+          "lat": 49.0,
+          "value": -14.482214355468727,
+          "kind": "gel"
+        },
         {
           "lon": 3.5,
           "lat": 44.0,
