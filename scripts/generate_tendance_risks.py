@@ -43,6 +43,16 @@ FOCUS=(-10,12,41,53)
 CATEGORIES=("neige","verglas","orage","tempete","gel","canicule","inondation","pluie_forte")
 COLORS={"vent_fort":"#FFCE66","tempete":"#FB765A","pluie_forte":"#37CFFF","neige":"#BCEBFF"}
 SNOW_ALT_MAX_M=800
+RED_MARKER_THRESHOLDS={"vent_fort":100.0,"pluie_forte":50.0,"neige":2.0}
+
+
+def red_marker(mark):
+    """Independent graphic severity threshold, not an official warning."""
+    kind=mark["kind"]
+    threshold=RED_MARKER_THRESHOLDS.get(kind)
+    if threshold is None:return False
+    value=float(mark["value"])
+    return value>threshold if kind=="pluie_forte" else value>=threshold
 ELEVATION_ENDPOINT="https://api.open-meteo.com/v1/elevation"
 _TERRAIN_CACHE={}
 _LAND_GEOMETRY=None
@@ -303,13 +313,8 @@ def render(id,run,fields,marks,risks):
                            xycoords=ccrs.PlateCarree()._as_mpl_transform(ax),
                            box_alignment=(0.5,0.5),frameon=False,pad=0,zorder=18)
         ax.add_artist(pin)
-        # Point d'exclamation rouge au voisinage des seuls pics atteignant
-        # les seuils "marqué" du calcul des risques ; pas une vigilance.
-        threshold={"pluie_forte":20.0,"vent_fort":70.0,"neige":2.0}.get(mark["kind"])
-        category={"pluie_forte":"pluie_forte","vent_fort":"tempete","neige":"neige"}.get(mark["kind"])
-        marked=(category and risks.get(category,{}).get("status")=="marque"
-                and threshold is not None and float(mark["value"])>=threshold)
-        if marked:
+        # Seuil graphique rouge indépendant du statut de risque du bulletin.
+        if red_marker(mark):
             ax.annotate("!",xy=(x,y),
                         xycoords=ccrs.PlateCarree()._as_mpl_transform(ax),
                         xytext=(13,13),textcoords="offset points",
@@ -376,15 +381,10 @@ def calculate(id,step,model,atlas,now):
              snow_markers)
     # Adjacent pin collision is undesirable even across different phenomena.
     selected=[]
-    # Les pics dépassant un seuil marqué sont prioritaires lorsque deux
-    # pictogrammes seraient trop proches ; ne pas comparer directement km/h et mm.
-    thresholds={"vent_fort":70.0,"pluie_forte":20.0,"neige":2.0}
-    keys={"vent_fort":"tempete","pluie_forte":"pluie_forte","neige":"neige"}
+    # Priorité aux pictogrammes rouges, puis aux pics normalisés par phénomène.
     def priority(p):
-        threshold=thresholds[p["kind"]]
-        is_marked=(risks.get(keys[p["kind"]],{}).get("status")=="marque"
-                   and p["value"]>=threshold)
-        return (is_marked,p["value"]/threshold)
+        threshold=RED_MARKER_THRESHOLDS[p["kind"]]
+        return (red_marker(p),p["value"]/threshold)
     for p in sorted(markers,key=priority,reverse=True):
         if all(distance_km(p["lon"],p["lat"],q["lon"],q["lat"])>=125 for q in selected):
             selected.append(p)
