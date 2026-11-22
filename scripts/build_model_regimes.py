@@ -20,7 +20,7 @@ from pathlib import Path
 import sys
 from collections import defaultdict
 
-from build_model_skill import MODELS, RUN_DAYS, request_json
+from build_model_skill import MODELS, RUN_DAYS, request_json, models_for_month, HISTORICAL_MODELS, historical_payload
 
 # Noeuds d'une grille multi-points stable, sur l'Atlantique Nord et l'Europe.
 # Indices construits à partir de gradients de pression au niveau marin (hPa).
@@ -135,17 +135,19 @@ def retrieve_truth(month, today):
 
 
 def retrieve_run(run, model):
+    if model in HISTORICAL_MODELS.values():
+        return normalize(historical_payload(run, model, list(POINTS.values()), (VAR,)))
     params = {**locate(), "models": model, "run": run.strftime("%Y-%m-%dT%H:%M"), "forecast_days": 16}
     return normalize(request_json("https://single-runs-api.open-meteo.com/v1/forecast", params))
 
 
-def empty_results():
+def empty_results(active_models):
     return {
         regime: [
             {"n": 0, "observed_event_n": 0, "observed_nonevent_n": 0,
              "event_runs": set(), "nonevent_runs": set(),
-             "errors": {model: 0.0 for model in MODELS},
-             "confusion": {model: {"tp": 0, "tn": 0, "fp": 0, "fn": 0} for model in MODELS}}
+             "errors": {model: 0.0 for model in active_models},
+             "confusion": {model: {"tp": 0, "tn": 0, "fp": 0, "fn": 0} for model in active_models}}
             for _ in range(15)
         ] for regime in REGIMES
     }
@@ -156,7 +158,8 @@ def build(month, today):
     if first > today:
         raise ValueError("Mois futur")
     reference = retrieve_truth(month, today)
-    scores = empty_results()
+    active_models = models_for_month(month)
+    scores = empty_results(active_models)
     runs = []
     failures = []
     for day in RUN_DAYS:
@@ -167,12 +170,12 @@ def build(month, today):
         if (run + timedelta(days=15)).date() > today - timedelta(days=5):
             continue
         models = {}
-        for model, api in MODELS.items():
+        for model, api in active_models.items():
             try:
                 models[model] = retrieve_run(run, api)
             except Exception as exc:
                 failures.append(f"{run.date()} {model}: {str(exc)[:150]}")
-        if len(models) != 4:
+        if len(models) != len(active_models):
             continue
         runs.append(run.date().isoformat())
         for lead in range(1, 16):
@@ -196,7 +199,7 @@ def build(month, today):
                     else:
                         cell["observed_nonevent_n"] += 1
                         cell["nonevent_runs"].add(run.date().isoformat())
-                    for model in MODELS:
+                    for model in active_models:
                         grad, event = predicted_features[model][regime]
                         cell["errors"][model] += abs(grad - true_grad)
                         category = "tp" if event and true_event else "fp" if event else "fn" if true_event else "tn"
@@ -209,15 +212,15 @@ def build(month, today):
         "generated_utc": datetime.now(timezone.utc).isoformat(),
         "territory": "Europe occidentale et Atlantique Nord, 8 centres de pression",
         "reference": "Réanalyse ERA5 pression au niveau marin (pas Z500)",
-        "source": "Open-Meteo Single Runs et Historical Weather",
-        "method": "Prévisions 00 UTC vs ERA5, J+1 à J+15, échéance 00/06/12/18 UTC, mêmes 8 positions pour 4 modèles; balanced accuracy seulement si classes suffisamment représentées",
+        "source": "Open-Meteo IFS HRES 9km, Dynamical AIFS/GFS, ERA5" if month < "2026-04" else "Open-Meteo Single Runs et Historical Weather",
+        "method": "Prévisions 00 UTC vs ERA5, J+1 à J+15, échéance 00/06/12/18 UTC, mêmes 8 positions pour les modèles disponibles; balanced accuracy seulement si classes suffisamment représentées",
         "notes": [
             "Scores de régimes de surface indicatifs, pas des indices scientifiques officiels de blocage 500 hPa ou jet 300 hPa.",
             "La balanced accuracy exige au minimum 4 occurrences, 4 absences et 2 dates de runs distinctes pour chaque classe. Les autres résultats sont null (non évaluables).",
             "MAE hPa des gradients barométriques diffusée même quand les événements sont trop rares pour produire un score.",
             "Échantillons horaires issus des mêmes runs : ils ne sont pas statistiquement indépendants.",
         ],
-        "models": MODELS,
+        "models": active_models,
         "points": POINTS,
         "run_dates": runs,
         "regimes": {},
@@ -225,16 +228,16 @@ def build(month, today):
     }
     for regime, definition in REGIMES.items():
         parts = scores[regime]
-        score = {model: [] for model in MODELS}
-        mae = {model: [] for model in MODELS}
-        matrices = {model: [] for model in MODELS}
+        score = {model: [] for model in active_models}
+        mae = {model: [] for model in active_models}
+        matrices = {model: [] for model in active_models}
         for cell in parts:
             enough = (
                 cell["n"] >= 10 and cell["observed_event_n"] >= 4 and
                 cell["observed_nonevent_n"] >= 4 and
                 len(cell["event_runs"]) >= 2 and len(cell["nonevent_runs"]) >= 2
             )
-            for model in MODELS:
+            for model in active_models:
                 matrix = cell["confusion"][model]
                 matrices[model].append(matrix)
                 mae[model].append(round(cell["errors"][model] / cell["n"], 3) if cell["n"] else None)

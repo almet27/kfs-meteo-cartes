@@ -39,13 +39,13 @@ jobs:
           from datetime import date, datetime, timezone, timedelta
           from pathlib import Path
           requested = os.environ.get("REQUESTED_MONTH", "").strip()
-          first = date(2026, 4, 1)
+          first = date(2025, 1, 1)
           today = datetime.now(timezone.utc).date()
           previous = today.replace(day=1) - timedelta(days=1)
           last = previous.strftime("%Y-%m")
           if requested:
-              if not re.fullmatch(r"20\d\d-(0[1-9]|1[0-2])", requested) or not "2026-04" <= requested <= last:
-                  raise SystemExit("Mois hors période commune des quatre modèles")
+              if not re.fullmatch(r"20\d\d-(0[1-9]|1[0-2])", requested) or not "2025-01" <= requested <= last:
+                  raise SystemExit("Mois hors période disponible")
               months = [requested]
           else:
               months = []
@@ -63,6 +63,10 @@ jobs:
                   if not usable(base / (month + ".json")) or not usable(base / (month + "-regimes.json"), True):
                       months.append(month)
                   current = date(current.year + (current.month == 12), current.month % 12 + 1, 1)
+              # Priorité à décembre 2025, demandé par le propriétaire.
+              if "2025-12" in months:
+                  months.remove("2025-12")
+                  months.insert(0, "2025-12")
               # Revalider aussi le dernier mois complet, dont les comparaisons
               # J+15 peuvent devenir disponibles après une première publication.
               if last >= "2026-04" and last not in months:
@@ -89,6 +93,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - name: Vérifier la syntaxe des calculateurs
+        run: python -m py_compile scripts/build_model_skill.py scripts/build_model_regimes.py
       - name: Vérifier les prévisions historiques face à ERA5
         env:
           REQUESTED_MONTH: ${{ matrix.month }}

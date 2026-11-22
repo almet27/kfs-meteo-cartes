@@ -26,6 +26,66 @@ MODELS = {
     "aigfs": "ncep_aigfs025",
     "gfs": "ncep_gfs_global",
 }
+
+HISTORICAL_MODELS = {
+    "ifs": "ecmwf_ifs",
+    "aifs": "ecmwf-aifs-single-forecast",
+    "gfs": "noaa-gfs-forecast",
+}
+
+def models_for_month(month):
+    return HISTORICAL_MODELS if month < "2026-04" else MODELS
+
+def historical_payload(run, model, points, variables):
+    """Return Open-Meteo-shaped arrays without interpolating missing leads."""
+    if model == "ecmwf_ifs":
+        return request_json("https://single-runs-api.open-meteo.com/v1/forecast", {
+            "latitude": ",".join(str(p[0]) for p in points),
+            "longitude": ",".join(str(p[1]) for p in points),
+            "timezone": "GMT", "cell_selection": "land",
+            "hourly": ",".join(variables), "models": model,
+            "run": run.strftime("%Y-%m-%dT%H:%M"), "forecast_days": 16,
+        })
+    mapping = {"temperature_2m": "temperature_2m",
+               "pressure_msl": "pressure_reduced_to_mean_sea_level"}
+    timestamp = run.strftime("%Y-%m-%dT%H:%M:%SZ")
+    output = []
+    # Keep each request small to limit archive API work units.
+    for i, (lat, lon) in enumerate(points):
+        query = {"dataProductId": model, "location": {"latitude": lat, "longitude": lon},
+                 "variables": [mapping[v] for v in variables],
+                 "initTime": timestamp, "maxLeadTimeHours": 360}
+        last = None
+        for attempt in range(4):
+            try:
+                req = Request("https://api.dynamical.org/v1/forecasts",
+                              data=json.dumps({"queries": [query]}).encode(),
+                              headers={"User-Agent": "KFS-Meteo-Verification/1.0",
+                                       "Content-Type": "application/json", "Accept": "application/json"})
+                with urlopen(req, timeout=80) as response:
+                    raw = json.load(response)
+                f = raw["results"][0]["forecasts"][0]
+                if f["initTime"][:16] != timestamp[:16]:
+                    raise ValueError("Run different de celui demande")
+                times = [t[:16] for t in f["validTimes"]]
+                hourly = {"time": times}
+                for var in variables:
+                    vals = f["data"][mapping[var]]
+                    if len(vals) != len(times):
+                        raise ValueError("Axe temporel incoherent")
+                    # Dynamical catalogue: Celsius and Pa; ERA5 via Open-Meteo: Celsius and hPa.
+                    factor = 0.01 if var == "pressure_msl" else 1.0
+                    hourly[var] = [float(v) * factor if isinstance(v, (float, int)) and math.isfinite(v) else None for v in vals]
+                output.append({"hourly": hourly})
+                break
+            except (HTTPError, URLError, TimeoutError, ValueError, KeyError, IndexError, TypeError) as exc:
+                last = exc
+                if attempt == 3 or getattr(exc, "code", None) in (400, 401, 403, 404, 422):
+                    raise RuntimeError(f"{model} point {i}: {last}") from exc
+                time.sleep(min(30, 3 * 2 ** attempt))
+        time.sleep(0.4)
+    return output
+
 VARIABLES = ("temperature_2m", "pressure_msl")
 SITES = (
     ("Brest", 48.3904, -4.4861),
@@ -105,6 +165,8 @@ def truth(month, current):
 
 
 def forecast(run, model):
+    if model in HISTORICAL_MODELS.values():
+        return normalize(historical_payload(run, model, [(s[1], s[2]) for s in SITES], VARIABLES))
     params = {
         **locations(),
         "models": model,
@@ -129,7 +191,8 @@ def build(month, today):
     if first > today:
         raise ValueError("Mois futur")
     observations = truth(month, today)
-    totals = {var: {m: [0.0] * 15 for m in MODELS} for var in VARIABLES}
+    active_models = models_for_month(month)
+    totals = {var: {m: [0.0] * 15 for m in active_models} for var in VARIABLES}
     counts = {var: [0] * 15 for var in VARIABLES}
     accepted_runs = []
     rejected = []
@@ -142,12 +205,12 @@ def build(month, today):
             # On ne publie pas les J+15 avant disponibilité fiable d'ERA5.
             continue
         bundle = {}
-        for key, api_id in MODELS.items():
+        for key, api_id in active_models.items():
             try:
                 bundle[key] = forecast(run, api_id)
             except Exception as exc:
                 rejected.append(f"{run.date()} {key}: {str(exc)[:160]}")
-        if len(bundle) != 4:
+        if len(bundle) != len(active_models):
             continue
         accepted_runs.append(run.date().isoformat())
         for lead in range(1, 16):
@@ -157,7 +220,7 @@ def build(month, today):
                     actual = numeric(observations[name][var].get(valid))
                     if actual is None:
                         continue
-                    values = {model: numeric(bundle[model][name][var].get(valid)) for model in MODELS}
+                    values = {model: numeric(bundle[model][name][var].get(valid)) for model in active_models}
                     if any(v is None for v in values.values()):
                         continue
                     for model, predicted in values.items():
@@ -170,11 +233,13 @@ def build(month, today):
         "generated_utc": datetime.now(timezone.utc).isoformat(),
         "territory": "France métropolitaine, Corse comprise",
         "reference": "Réanalyse ERA5 (référence modélisée, pas relevés de stations)",
-        "method": "MAE, 12 lieux; runs 00 UTC des jours 1, 5, 9, 13, 17, 21, 25, 29 du mois; validité 00 UTC à J+1..J+15; échantillon commun aux 4 modèles",
+        "method": "MAE, 12 lieux; runs 00 UTC des jours 1, 5, 9, 13, 17, 21, 25, 29 du mois; validité 00 UTC à J+1..J+15; échantillon commun aux modèles disponibles",
         "sites": [x[0] for x in SITES],
         "run_dates": accepted_runs,
         "requested_run_days": list(RUN_DAYS),
-        "models": MODELS,
+        "models": active_models,
+        "source": "Open-Meteo IFS HRES 9km, Dynamical AIFS/GFS, ERA5" if month < "2026-04" else "Open-Meteo Single Runs et ERA5",
+        "notes": ["AIGFS exclu avant avril 2026; résolution IFS historique différente"] if month < "2026-04" else [],
         "metrics": {},
         "errors": rejected[:35],
     }
@@ -187,7 +252,7 @@ def build(month, today):
                 model: [
                     round(totals[var][model][i] / counts[var][i], 3) if counts[var][i] else None
                     for i in range(15)
-                ] for model in MODELS
+                ] for model in active_models
             }
         }
     return result
