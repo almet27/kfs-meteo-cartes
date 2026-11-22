@@ -76,18 +76,20 @@ def station_dep(dep,cutoff):
     except Exception as e:logging.warning("Stations %s: %s",dep,e)
     return result
 def stations(cutoff):
-    deps=[f"{d:02d}" for d in range(1,96) if d!=20]+["2A","2B"]
+    deps=[f"{d:02d}" for d in range(1,96)]
     out={}
     with ThreadPoolExecutor(max_workers=8) as pool:
         for result in pool.map(lambda d:station_dep(d,cutoff),deps):out.update(result)
     n=(cutoff-START).days+1
     # A full-period zero requires all days; partial readings can only establish
     # a lower bound on the maximum and are excluded from the numeric overlay.
-    return [dict(x=r["x"],y=r["y"],name=r["name"],max=max(r["days"].values()),days=len(r["days"])) for r in out.values() if len(r["days"])==n]
+    return [dict(x=r["x"],y=r["y"],name=r["name"],max=max(r["days"].values()),days=len(r["days"]),complete=len(r["days"])==n) for r in out.values() if len(r["days"])==n or max(r["days"].values())>0]
 def ims_day(day,shape,transform):
-    # NSIDC GeoTIFF filename denotes production day, valid next day, per guide.
-    created=day-timedelta(days=1)
-    name=f"ims{created:%Y%j}_1km_GIS_v1.3.tif.gz"
+    # NSIDC renamed the archive using the VALID date at 00 UTC in 2022.
+    # Try the published naming convention across archive directory layouts.
+    stamp=f"{day:%Y%j}_00UTC"
+    names=[f"ims{stamp}_1km_GIS_v1.3.tif.gz",f"ims{stamp}_1km_v1.3.tif.gz"]
+    urls=[IMS+sub+name for sub in (f"1km/{day.year}/",f"{day.year}/",f"{day.year}/1km/") for name in names]
     cache=CACHE/f"{day.isoformat()}-{shape[0]}-{shape[1]}.npz"
     if cache.exists():
         try:
@@ -97,10 +99,17 @@ def ims_day(day,shape,transform):
     try:
         with tempfile.TemporaryDirectory() as td:
             raw=Path(td)/"ims.tif"
-            with requests.get(IMS+f"{created.year}/"+name,stream=True,timeout=(12,65)) as r:
-                r.raise_for_status();r.raw.decode_content=True
-                with gzip.GzipFile(fileobj=r.raw) as gz,raw.open("wb") as f:
-                    shutil.copyfileobj(gz,f,1024*1024)
+            fetched=False
+            for url in urls:
+                with requests.get(url,stream=True,timeout=(8,35)) as r:
+                    if r.status_code==404:continue
+                    r.raise_for_status();r.raw.decode_content=True
+                    with gzip.GzipFile(fileobj=r.raw) as gz,raw.open("wb") as f:
+                        shutil.copyfileobj(gz,f,1024*1024)
+                    fetched=True
+                    logging.info("IMS %s archive %s",day,url)
+                    break
+            if not fetched:raise FileNotFoundError("Archive IMS non trouvée (6 chemins testés)")
             dest=np.zeros(shape,dtype=np.uint8)
             with rasterio.open(raw) as ds:
                 if ds.crs is None:raise ValueError("IMS sans projection")
@@ -146,7 +155,7 @@ def main():
                 confirmed|=(a==4)&land
                 valid.append(d.isoformat())
     obs=stations(cutoff)
-    logging.info("SIM cells=%d cutoff=%s; IMS days=%d/%d; complete stations=%d",len(cells),cutoff,len(valid),(cutoff-START).days+1,len(obs))
+    logging.info("SIM cells=%d cutoff=%s; IMS days=%d/%d; stations with usable readings=%d",len(cells),cutoff,len(valid),(cutoff-START).days+1,len(obs))
     fig,ax=plt.subplots(figsize=(10,10),facecolor="#f5f7f8")
     ax.set_facecolor("#eaf1f4")
     for geom in geoms:
@@ -175,7 +184,7 @@ def main():
         if not (xmin<=x<=xmax and ymin<=y<=ymax):continue
         if any(math.hypot(x-a,y-b)<60000 for a,b in shown):continue
         shown.append((x,y))
-        ax.text(x,y,f'{r["max"]:g}',color="#172029",fontsize=8,ha="center",va="center",fontweight="bold",zorder=5,path_effects=[withStroke(linewidth=2,foreground="white")])
+        ax.text(x,y,f'{r["max"]:g}' if r["complete"] else f'≥{r["max"]:g}',color="#172029",fontsize=8,ha="center",va="center",fontweight="bold",zorder=5,path_effects=[withStroke(linewidth=2,foreground="white")])
     ax.set_xlim(xmin,xmax);ax.set_ylim(ymin,ymax);ax.set_aspect("equal");ax.axis("off")
     fig.suptitle("KFS MÉTÉO  |  CLIMATOLOGIE",y=.98,fontsize=15,fontweight="bold",color="#385064")
     ax.set_title("Hauteur maximale de neige au sol",fontsize=19,fontweight="bold",pad=12,color="#1c2a35")
@@ -183,7 +192,7 @@ def main():
     bar.set_ticklabels(["0","<1","1–5","5–10","10–20","20–50","50–100",">100"])
     bar.set_label("Épaisseur maximale estimée (cm) — grille SIM 8 km")
     if valid:ax.legend(handles=[Line2D([0],[0],color="#16866d",label="Neige détectée (IMS, au moins un jour)")],loc="lower left",fontsize=8,framealpha=.96)
-    fig.text(.5,.035,f"Du 1er au {cutoff:%d/%m/%Y} • chiffres : mesures Météo-France (cm) • {len(valid)}/{(cutoff-START).days+1} jours IMS",ha="center",fontsize=10,fontweight="bold")
+    fig.text(.5,.035,f"Du 1er au {cutoff:%d/%m/%Y} • chiffres : mesures Météo-France (cm), ≥ : série incomplète • {len(valid)}/{(cutoff-START).days+1} jours IMS",ha="center",fontsize=10,fontweight="bold")
     fig.text(.5,.015,"SIM : estimation, pas une mesure locale • gris foncé : données manquantes • en montagne, forte variabilité",ha="center",fontsize=8.5,color="#52606b")
     filename="neige-sol-max.png"
     fig.savefig(OUT/filename,dpi=150,bbox_inches="tight",pad_inches=.2);plt.close(fig)
