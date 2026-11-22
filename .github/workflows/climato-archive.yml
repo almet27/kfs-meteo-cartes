@@ -12,6 +12,8 @@ on:
   push:
     paths:
       - .github/workflows/climato-archive.yml
+      - scripts/climato_zones.py
+      - scripts/build_climato_archive.py
 permissions:
   contents: write
 concurrency:
@@ -40,7 +42,7 @@ jobs:
               years=[int(req)]
           elif os.environ.get("SCHEDULE")=="35 4 * * 0":
               years=[i for i in range(y-2,1949,-1) if not Path(f"climato/archive/{i}/annee/latest.json").exists()][:1]
-          else:years=[y-1,y]
+          else:years=[y,y-1]
           print(years)
           with open(os.environ["GITHUB_OUTPUT"],"a") as f:f.write("years="+json.dumps(years)+"\n")
           PY
@@ -59,11 +61,19 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: pip install matplotlib requests
+      - run: pip install matplotlib requests pyproj rasterio
       - name: Build archives
         env:
           YEAR: ${{ matrix.year }}
         run: python scripts/build_climato_archive.py "$YEAR"
+      - name: Prioritize January snow archive with regional zooms
+        if: github.event_name == 'push'
+        env:
+          YEAR: ${{ matrix.year }}
+        run: |
+          if [ "$YEAR" = "$(date +%Y)" ] && [ -f "climato/archive/$YEAR/01/latest.json" ]; then
+            python scripts/build_climato_snow.py --year "$YEAR" --month 1 || echo "::warning::January SIM/IMS snow generation failed; anomaly archives remain publishable"
+          fi
       - name: Publish only the generated year
         env:
           YEAR: ${{ matrix.year }}
