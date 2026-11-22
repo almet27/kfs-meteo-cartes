@@ -58,7 +58,7 @@ jobs:
                       if y<1958:continue
                       if m!="annee" and not 1<=int(m)<=12:continue
                       maps=json.loads(p.read_text()).get("maps",[])
-                      if not any(x.get("kind")=="snow_depth" for x in maps):candidates.append((y,13 if m=="annee" else int(m)))
+                      if not any(x.get("kind")=="snow_depth" and len(x.get("zones",{}))==7 for x in maps):candidates.append((y,13 if m=="annee" else int(m)))
                   except (OSError,ValueError):continue
               if not candidates:
                   print("Aucune archive mensuelle ou annuelle à harmoniser")
@@ -86,12 +86,12 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           dir="climato/archive/$YEAR/$TAG"
           backup="$(mktemp -d)"
-          cp "$dir/neige-sol-max.png" "$dir/latest.json" "$backup/"
+          cp "$dir"/neige-sol-max*.png "$dir/latest.json" "$backup/"
           export DIR="$dir" BACKUP="$backup"
           for i in 1 2 3 4 5 6; do
             git fetch origin main
             git reset --hard origin/main
-            cp "$backup/neige-sol-max.png" "$dir/"
+            cp "$backup"/neige-sol-max*.png "$dir/"
             python - <<'PY'
           import os,json
           from pathlib import Path
@@ -101,9 +101,10 @@ jobs:
           assert old["month"]==new["month"]
           snow=next(m for m in new["maps"] if m["file"]=="neige-sol-max.png" and m["kind"]=="snow_depth")
           old["maps"]=[m for m in old["maps"] if m["file"]!="neige-sol-max.png"]+[snow]
+          old["generated_at"]=new["generated_at"]
           d.write_text(json.dumps(old,ensure_ascii=False,indent=2))
           PY
-            git add "$dir/neige-sol-max.png" "$dir/latest.json"
+            git add "$dir"/neige-sol-max*.png "$dir/latest.json"
             if git diff --cached --quiet; then exit 0; fi
             git commit -m "Harmoniser neige France $YEAR/$TAG"
             if git push origin HEAD:main; then exit 0; fi
