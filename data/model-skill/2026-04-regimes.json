@@ -1,0 +1,1891 @@
+{
+  "schema": 1,
+  "period": "2026-04",
+  "generated_utc": "2026-11-22T14:05:59.226564+00:00",
+  "territory": "Europe occidentale et Atlantique Nord, 8 centres de pression",
+  "reference": "Réanalyse ERA5 pression au niveau marin (pas Z500)",
+  "source": "Open-Meteo Single Runs et Historical Weather",
+  "method": "Prévisions 00 UTC vs ERA5, J+1 à J+15, échéance 00/06/12/18 UTC, mêmes 8 positions pour 4 modèles; balanced accuracy seulement si classes suffisamment représentées",
+  "notes": [
+    "Scores de régimes de surface indicatifs, pas des indices scientifiques officiels de blocage 500 hPa ou jet 300 hPa.",
+    "La balanced accuracy exige au minimum 4 occurrences, 4 absences et 2 dates de runs distinctes pour chaque classe. Les autres résultats sont null (non évaluables).",
+    "MAE hPa des gradients barométriques diffusée même quand les événements sont trop rares pour produire un score.",
+    "Échantillons horaires issus des mêmes runs : ils ne sont pas statistiquement indépendants."
+  ],
+  "models": {
+    "ifs": "ecmwf_ifs025",
+    "aifs": "ecmwf_aifs025_single",
+    "aigfs": "ncep_aigfs025",
+    "gfs": "ncep_gfs_global"
+  },
+  "points": {
+    "greenland": [
+      63.0,
+      -42.0
+    ],
+    "iceland": [
+      65.0,
+      -20.0
+    ],
+    "azores": [
+      38.0,
+      -28.0
+    ],
+    "atlantic": [
+      52.0,
+      -26.0
+    ],
+    "scandi": [
+      62.0,
+      16.0
+    ],
+    "east": [
+      61.0,
+      34.0
+    ],
+    "uk": [
+      55.0,
+      -5.0
+    ],
+    "iberia": [
+      42.0,
+      -10.0
+    ]
+  },
+  "run_dates": [
+    "2026-04-05",
+    "2026-04-09",
+    "2026-04-13",
+    "2026-04-17",
+    "2026-04-21",
+    "2026-04-25",
+    "2026-04-29"
+  ],
+  "regimes": {
+    "blocage_atlantique": {
+      "title": "Configuration de hautes pressions nord-atlantiques",
+      "short": "Blocage Atlantique (proxy SLP)",
+      "definition": "Pression groenlandaise >= 1017 hPa, ecart Groenland-Açores >= -5 hPa, Groenland >= Atlantique central",
+      "disclaimer": "Proxy de blocage / NAO négative : PAS un indice météorologique de blocage à 500 hPa",
+      "unit": "hPa",
+      "thresholds": {
+        "greenland_min": 1017,
+        "greenland_minus_azores_min": -5,
+        "greenland_minus_atlantic_min": 0
+      },
+      "scores_pct": {
+        "ifs": [
+          null,
+          null,
+          93.8,
+          97.6,
+          null,
+          100.0,
+          91.7,
+          88.2,
+          89.1,
+          83.3,
+          84.4,
+          73.5,
+          71.7,
+          85.7,
+          null
+        ],
+        "aifs": [
+          null,
+          null,
+          93.8,
+          97.6,
+          null,
+          78.6,
+          60.4,
+          60.7,
+          41.3,
+          35.7,
+          58.3,
+          53.7,
+          23.9,
+          57.1,
+          null
+        ],
+        "aigfs": [
+          null,
+          null,
+          81.2,
+          97.6,
+          null,
+          97.6,
+          83.3,
+          78.9,
+          23.0,
+          31.0,
+          45.8,
+          51.1,
+          58.7,
+          61.9,
+          null
+        ],
+        "gfs": [
+          null,
+          null,
+          100.0,
+          95.2,
+          null,
+          97.6,
+          87.5,
+          97.1,
+          76.1,
+          31.0,
+          44.8,
+          48.9,
+          32.6,
+          59.5,
+          null
+        ]
+      },
+      "index_mae_hpa": {
+        "ifs": [
+          0.954,
+          2.021,
+          2.068,
+          4.129,
+          3.682,
+          6.114,
+          10.032,
+          15.471,
+          15.761,
+          18.086,
+          15.886,
+          15.014,
+          17.821,
+          12.861,
+          14.814
+        ],
+        "aifs": [
+          0.768,
+          1.296,
+          2.296,
+          3.639,
+          4.146,
+          5.836,
+          10.829,
+          15.525,
+          17.793,
+          22.382,
+          19.964,
+          18.361,
+          21.65,
+          22.275,
+          22.114
+        ],
+        "aigfs": [
+          0.982,
+          1.786,
+          3.718,
+          4.893,
+          6.796,
+          7.664,
+          12.579,
+          15.743,
+          20.839,
+          18.071,
+          9.971,
+          8.943,
+          13.039,
+          13.65,
+          16.829
+        ],
+        "gfs": [
+          1.004,
+          2.421,
+          2.082,
+          3.432,
+          5.046,
+          7.136,
+          9.979,
+          13.604,
+          15.661,
+          15.029,
+          14.782,
+          15.954,
+          16.796,
+          15.332,
+          15.143
+        ]
+      },
+      "confusion": {
+        "ifs": [
+          {
+            "tp": 4,
+            "tn": 24,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 4,
+            "tn": 24,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 7,
+            "tn": 20,
+            "fp": 0,
+            "fn": 1
+          },
+          {
+            "tp": 7,
+            "tn": 20,
+            "fp": 1,
+            "fn": 0
+          },
+          {
+            "tp": 4,
+            "tn": 22,
+            "fp": 2,
+            "fn": 0
+          },
+          {
+            "tp": 7,
+            "tn": 21,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 10,
+            "tn": 16,
+            "fp": 0,
+            "fn": 2
+          },
+          {
+            "tp": 11,
+            "tn": 13,
+            "fp": 4,
+            "fn": 0
+          },
+          {
+            "tp": 5,
+            "tn": 18,
+            "fp": 5,
+            "fn": 0
+          },
+          {
+            "tp": 7,
+            "tn": 14,
+            "fp": 7,
+            "fn": 0
+          },
+          {
+            "tp": 12,
+            "tn": 11,
+            "fp": 5,
+            "fn": 0
+          },
+          {
+            "tp": 11,
+            "tn": 8,
+            "fp": 9,
+            "fn": 0
+          },
+          {
+            "tp": 5,
+            "tn": 10,
+            "fp": 13,
+            "fn": 0
+          },
+          {
+            "tp": 7,
+            "tn": 15,
+            "fp": 6,
+            "fn": 0
+          },
+          {
+            "tp": 2,
+            "tn": 2,
+            "fp": 2,
+            "fn": 1
+          }
+        ],
+        "aifs": [
+          {
+            "tp": 4,
+            "tn": 24,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 4,
+            "tn": 24,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 7,
+            "tn": 20,
+            "fp": 0,
+            "fn": 1
+          },
+          {
+            "tp": 7,
+            "tn": 20,
+            "fp": 1,
+            "fn": 0
+          },
+          {
+            "tp": 4,
+            "tn": 22,
+            "fp": 2,
+            "fn": 0
+          },
+          {
+            "tp": 4,
+            "tn": 21,
+            "fp": 0,
+            "fn": 3
+          },
+          {
+            "tp": 4,
+            "tn": 14,
+            "fp": 2,
+            "fn": 8
+          },
+          {
+            "tp": 3,
+            "tn": 16,
+            "fp": 1,
+            "fn": 8
+          },
+          {
+            "tp": 0,
+            "tn": 19,
+            "fp": 4,
+            "fn": 5
+          },
+          {
+            "tp": 1,
+            "tn": 12,
+            "fp": 9,
+            "fn": 6
+          },
+          {
+            "tp": 8,
+            "tn": 8,
+            "fp": 8,
+            "fn": 4
+          },
+          {
+            "tp": 6,
+            "tn": 9,
+            "fp": 8,
+            "fn": 5
+          },
+          {
+            "tp": 0,
+            "tn": 11,
+            "fp": 12,
+            "fn": 5
+          },
+          {
+            "tp": 3,
+            "tn": 15,
+            "fp": 6,
+            "fn": 4
+          },
+          {
+            "tp": 1,
+            "tn": 3,
+            "fp": 1,
+            "fn": 2
+          }
+        ],
+        "aigfs": [
+          {
+            "tp": 4,
+            "tn": 24,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 4,
+            "tn": 24,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 5,
+            "tn": 20,
+            "fp": 0,
+            "fn": 3
+          },
+          {
+            "tp": 7,
+            "tn": 20,
+            "fp": 1,
+            "fn": 0
+          },
+          {
+            "tp": 4,
+            "tn": 17,
+            "fp": 7,
+            "fn": 0
+          },
+          {
+            "tp": 7,
+            "tn": 20,
+            "fp": 1,
+            "fn": 0
+          },
+          {
+            "tp": 8,
+            "tn": 16,
+            "fp": 0,
+            "fn": 4
+          },
+          {
+            "tp": 7,
+            "tn": 16,
+            "fp": 1,
+            "fn": 4
+          },
+          {
+            "tp": 1,
+            "tn": 6,
+            "fp": 17,
+            "fn": 4
+          },
+          {
+            "tp": 3,
+            "tn": 4,
+            "fp": 17,
+            "fn": 4
+          },
+          {
+            "tp": 8,
+            "tn": 4,
+            "fp": 12,
+            "fn": 4
+          },
+          {
+            "tp": 8,
+            "tn": 5,
+            "fp": 12,
+            "fn": 3
+          },
+          {
+            "tp": 5,
+            "tn": 4,
+            "fp": 19,
+            "fn": 0
+          },
+          {
+            "tp": 7,
+            "tn": 5,
+            "fp": 16,
+            "fn": 0
+          },
+          {
+            "tp": 2,
+            "tn": 1,
+            "fp": 3,
+            "fn": 1
+          }
+        ],
+        "gfs": [
+          {
+            "tp": 4,
+            "tn": 24,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 4,
+            "tn": 24,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 8,
+            "tn": 20,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 7,
+            "tn": 19,
+            "fp": 2,
+            "fn": 0
+          },
+          {
+            "tp": 4,
+            "tn": 19,
+            "fp": 5,
+            "fn": 0
+          },
+          {
+            "tp": 7,
+            "tn": 20,
+            "fp": 1,
+            "fn": 0
+          },
+          {
+            "tp": 9,
+            "tn": 16,
+            "fp": 0,
+            "fn": 3
+          },
+          {
+            "tp": 11,
+            "tn": 16,
+            "fp": 1,
+            "fn": 0
+          },
+          {
+            "tp": 5,
+            "tn": 12,
+            "fp": 11,
+            "fn": 0
+          },
+          {
+            "tp": 1,
+            "tn": 10,
+            "fp": 11,
+            "fn": 6
+          },
+          {
+            "tp": 4,
+            "tn": 9,
+            "fp": 7,
+            "fn": 8
+          },
+          {
+            "tp": 3,
+            "tn": 12,
+            "fp": 5,
+            "fn": 8
+          },
+          {
+            "tp": 0,
+            "tn": 15,
+            "fp": 8,
+            "fn": 5
+          },
+          {
+            "tp": 3,
+            "tn": 16,
+            "fp": 5,
+            "fn": 4
+          },
+          {
+            "tp": 1,
+            "tn": 3,
+            "fp": 1,
+            "fn": 2
+          }
+        ]
+      },
+      "n": [
+        28,
+        28,
+        28,
+        28,
+        28,
+        28,
+        28,
+        28,
+        28,
+        28,
+        28,
+        28,
+        28,
+        28,
+        7
+      ],
+      "event_n": [
+        4,
+        4,
+        8,
+        7,
+        4,
+        7,
+        12,
+        11,
+        5,
+        7,
+        12,
+        11,
+        5,
+        7,
+        3
+      ],
+      "nonevent_n": [
+        24,
+        24,
+        20,
+        21,
+        24,
+        21,
+        16,
+        17,
+        23,
+        21,
+        16,
+        17,
+        23,
+        21,
+        4
+      ],
+      "event_run_n": [
+        1,
+        1,
+        2,
+        2,
+        1,
+        2,
+        3,
+        3,
+        2,
+        2,
+        3,
+        3,
+        2,
+        2,
+        3
+      ],
+      "nonevent_run_n": [
+        6,
+        6,
+        5,
+        6,
+        6,
+        6,
+        4,
+        5,
+        6,
+        6,
+        4,
+        5,
+        6,
+        6,
+        4
+      ]
+    },
+    "anticyclone_scandinave": {
+      "title": "Anticyclone centré sur la Scandinavie",
+      "short": "Anticyclone scandinave (proxy SLP)",
+      "definition": "Pression scandinave >= 1022 hPa, >= 5 hPa au-dessus du Royaume-Uni et >= 3 hPa au-dessus du nord-ouest de la Russie",
+      "disclaimer": "Indicateur d'anticyclone de surface; ne certifie pas un blocage persistant",
+      "unit": "hPa",
+      "thresholds": {
+        "scandi_min": 1022,
+        "scandi_minus_uk_min": 5,
+        "scandi_minus_east_min": 3
+      },
+      "scores_pct": {
+        "ifs": [
+          null,
+          null,
+          69.6,
+          50.0,
+          null,
+          null,
+          50.0,
+          null,
+          null,
+          null,
+          50.0,
+          null,
+          null,
+          null,
+          null
+        ],
+        "aifs": [
+          null,
+          null,
+          77.8,
+          50.0,
+          null,
+          null,
+          50.0,
+          null,
+          null,
+          null,
+          77.8,
+          null,
+          null,
+          null,
+          null
+        ],
+        "aigfs": [
+          null,
+          null,
+          72.2,
+          67.8,
+          null,
+          null,
+          50.0,
+          null,
+          null,
+          null,
+          45.7,
+          null,
+          null,
+          null,
+          null
+        ],
+        "gfs": [
+          null,
+          null,
+          72.2,
+          50.0,
+          null,
+          null,
+          50.0,
+          null,
+          null,
+          null,
+          50.0,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      "index_mae_hpa": {
+        "ifs": [
+          0.657,
+          1.025,
+          1.586,
+          3.339,
+          3.904,
+          6.979,
+          8.004,
+          9.429,
+          8.557,
+          7.011,
+          5.693,
+          7.082,
+          8.514,
+          6.829,
+          10.743
+        ],
+        "aifs": [
+          0.714,
+          1.357,
+          1.304,
+          3.1,
+          3.386,
+          4.061,
+          4.632,
+          5.857,
+          7.093,
+          7.979,
+          6.968,
+          10.5,
+          14.136,
+          16.768,
+          16.557
+        ],
+        "aigfs": [
+          1.0,
+          1.6,
+          2.521,
+          2.907,
+          5.936,
+          9.507,
+          8.268,
+          11.507,
+          8.314,
+          10.454,
+          10.754,
+          12.7,
+          12.911,
+          9.464,
+          10.386
+        ],
+        "gfs": [
+          1.254,
+          1.932,
+          2.743,
+          4.475,
+          6.296,
+          9.4,
+          11.214,
+          13.343,
+          12.243,
+          19.393,
+          17.711,
+          18.668,
+          15.168,
+          10.132,
+          9.343
+        ]
+      },
+      "confusion": {
+        "ifs": [
+          {
+            "tp": 1,
+            "tn": 26,
+            "fp": 1,
+            "fn": 0
+          },
+          {
+            "tp": 2,
+            "tn": 26,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 4,
+            "tn": 18,
+            "fp": 1,
+            "fn": 5
+          },
+          {
+            "tp": 0,
+            "tn": 23,
+            "fp": 0,
+            "fn": 5
+          },
+          {
+            "tp": 1,
+            "tn": 25,
+            "fp": 2,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 27,
+            "fp": 1,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 23,
+            "fp": 0,
+            "fn": 5
+          },
+          {
+            "tp": 0,
+            "tn": 24,
+            "fp": 0,
+            "fn": 4
+          },
+          {
+            "tp": 0,
+            "tn": 25,
+            "fp": 0,
+            "fn": 3
+          },
+          {
+            "tp": 0,
+            "tn": 28,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 23,
+            "fp": 0,
+            "fn": 5
+          },
+          {
+            "tp": 0,
+            "tn": 24,
+            "fp": 0,
+            "fn": 4
+          },
+          {
+            "tp": 0,
+            "tn": 25,
+            "fp": 0,
+            "fn": 3
+          },
+          {
+            "tp": 0,
+            "tn": 25,
+            "fp": 3,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 6,
+            "fp": 1,
+            "fn": 0
+          }
+        ],
+        "aifs": [
+          {
+            "tp": 1,
+            "tn": 26,
+            "fp": 1,
+            "fn": 0
+          },
+          {
+            "tp": 2,
+            "tn": 26,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 5,
+            "tn": 19,
+            "fp": 0,
+            "fn": 4
+          },
+          {
+            "tp": 0,
+            "tn": 23,
+            "fp": 0,
+            "fn": 5
+          },
+          {
+            "tp": 0,
+            "tn": 27,
+            "fp": 0,
+            "fn": 1
+          },
+          {
+            "tp": 0,
+            "tn": 28,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 23,
+            "fp": 0,
+            "fn": 5
+          },
+          {
+            "tp": 0,
+            "tn": 24,
+            "fp": 0,
+            "fn": 4
+          },
+          {
+            "tp": 0,
+            "tn": 25,
+            "fp": 0,
+            "fn": 3
+          },
+          {
+            "tp": 0,
+            "tn": 24,
+            "fp": 4,
+            "fn": 0
+          },
+          {
+            "tp": 3,
+            "tn": 22,
+            "fp": 1,
+            "fn": 2
+          },
+          {
+            "tp": 1,
+            "tn": 24,
+            "fp": 0,
+            "fn": 3
+          },
+          {
+            "tp": 0,
+            "tn": 23,
+            "fp": 2,
+            "fn": 3
+          },
+          {
+            "tp": 0,
+            "tn": 24,
+            "fp": 4,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 6,
+            "fp": 1,
+            "fn": 0
+          }
+        ],
+        "aigfs": [
+          {
+            "tp": 1,
+            "tn": 26,
+            "fp": 1,
+            "fn": 0
+          },
+          {
+            "tp": 2,
+            "tn": 26,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 4,
+            "tn": 19,
+            "fp": 0,
+            "fn": 5
+          },
+          {
+            "tp": 2,
+            "tn": 22,
+            "fp": 1,
+            "fn": 3
+          },
+          {
+            "tp": 0,
+            "tn": 27,
+            "fp": 0,
+            "fn": 1
+          },
+          {
+            "tp": 0,
+            "tn": 28,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 23,
+            "fp": 0,
+            "fn": 5
+          },
+          {
+            "tp": 0,
+            "tn": 24,
+            "fp": 0,
+            "fn": 4
+          },
+          {
+            "tp": 0,
+            "tn": 25,
+            "fp": 0,
+            "fn": 3
+          },
+          {
+            "tp": 0,
+            "tn": 24,
+            "fp": 4,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 21,
+            "fp": 2,
+            "fn": 5
+          },
+          {
+            "tp": 0,
+            "tn": 24,
+            "fp": 0,
+            "fn": 4
+          },
+          {
+            "tp": 0,
+            "tn": 25,
+            "fp": 0,
+            "fn": 3
+          },
+          {
+            "tp": 0,
+            "tn": 28,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 6,
+            "fp": 1,
+            "fn": 0
+          }
+        ],
+        "gfs": [
+          {
+            "tp": 1,
+            "tn": 26,
+            "fp": 1,
+            "fn": 0
+          },
+          {
+            "tp": 2,
+            "tn": 26,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 4,
+            "tn": 19,
+            "fp": 0,
+            "fn": 5
+          },
+          {
+            "tp": 0,
+            "tn": 23,
+            "fp": 0,
+            "fn": 5
+          },
+          {
+            "tp": 0,
+            "tn": 27,
+            "fp": 0,
+            "fn": 1
+          },
+          {
+            "tp": 0,
+            "tn": 28,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 23,
+            "fp": 0,
+            "fn": 5
+          },
+          {
+            "tp": 0,
+            "tn": 24,
+            "fp": 0,
+            "fn": 4
+          },
+          {
+            "tp": 0,
+            "tn": 22,
+            "fp": 3,
+            "fn": 3
+          },
+          {
+            "tp": 0,
+            "tn": 26,
+            "fp": 2,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 23,
+            "fp": 0,
+            "fn": 5
+          },
+          {
+            "tp": 0,
+            "tn": 24,
+            "fp": 0,
+            "fn": 4
+          },
+          {
+            "tp": 0,
+            "tn": 23,
+            "fp": 2,
+            "fn": 3
+          },
+          {
+            "tp": 0,
+            "tn": 25,
+            "fp": 3,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 6,
+            "fp": 1,
+            "fn": 0
+          }
+        ]
+      },
+      "n": [
+        28,
+        28,
+        28,
+        28,
+        28,
+        28,
+        28,
+        28,
+        28,
+        28,
+        28,
+        28,
+        28,
+        28,
+        7
+      ],
+      "event_n": [
+        1,
+        2,
+        9,
+        5,
+        1,
+        0,
+        5,
+        4,
+        3,
+        0,
+        5,
+        4,
+        3,
+        0,
+        0
+      ],
+      "nonevent_n": [
+        27,
+        26,
+        19,
+        23,
+        27,
+        28,
+        23,
+        24,
+        25,
+        28,
+        23,
+        24,
+        25,
+        28,
+        7
+      ],
+      "event_run_n": [
+        1,
+        1,
+        3,
+        2,
+        1,
+        0,
+        2,
+        1,
+        2,
+        0,
+        2,
+        1,
+        2,
+        0,
+        0
+      ],
+      "nonevent_run_n": [
+        7,
+        7,
+        6,
+        6,
+        7,
+        7,
+        7,
+        6,
+        7,
+        7,
+        7,
+        6,
+        7,
+        7,
+        7
+      ]
+    },
+    "flux_zonal": {
+      "title": "Flux d'ouest dominant sur le proche Atlantique et l'Europe",
+      "short": "Circulation zonale (proxy SLP)",
+      "definition": "Gradient de pression Ibérie-Islande >= 18 hPa, signe favorable aux vents d'ouest sur le proche Atlantique",
+      "disclaimer": "Proxy barométrique du flux zonal, et NON mesure du courant-jet à 300 hPa",
+      "unit": "hPa",
+      "thresholds": {
+        "iberia_minus_iceland_min": 18
+      },
+      "scores_pct": {
+        "ifs": [
+          null,
+          100.0,
+          100.0,
+          95.8,
+          null,
+          null,
+          50.0,
+          50.0,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "aifs": [
+          null,
+          91.2,
+          100.0,
+          95.8,
+          null,
+          null,
+          56.2,
+          50.0,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "aigfs": [
+          null,
+          78.8,
+          100.0,
+          91.7,
+          null,
+          null,
+          71.2,
+          75.0,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "gfs": [
+          null,
+          75.0,
+          95.8,
+          83.3,
+          null,
+          null,
+          65.0,
+          46.2,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      "index_mae_hpa": {
+        "ifs": [
+          0.639,
+          1.507,
+          2.164,
+          3.125,
+          6.068,
+          8.239,
+          12.404,
+          10.293,
+          8.289,
+          8.432,
+          10.339,
+          17.993,
+          17.45,
+          12.511,
+          10.357
+        ],
+        "aifs": [
+          0.557,
+          1.282,
+          1.586,
+          2.221,
+          4.886,
+          7.871,
+          8.293,
+          8.989,
+          8.207,
+          10.0,
+          13.004,
+          14.179,
+          13.664,
+          20.457,
+          23.071
+        ],
+        "aigfs": [
+          1.164,
+          2.218,
+          3.239,
+          4.243,
+          6.104,
+          13.586,
+          13.918,
+          13.264,
+          11.454,
+          10.061,
+          7.882,
+          11.368,
+          17.986,
+          16.825,
+          12.743
+        ],
+        "gfs": [
+          1.661,
+          1.893,
+          2.486,
+          5.854,
+          5.111,
+          8.204,
+          14.254,
+          12.389,
+          10.282,
+          13.596,
+          11.879,
+          16.207,
+          13.525,
+          14.804,
+          18.014
+        ]
+      },
+      "confusion": {
+        "ifs": [
+          {
+            "tp": 2,
+            "tn": 26,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 8,
+            "tn": 20,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 12,
+            "tn": 16,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 11,
+            "tn": 16,
+            "fp": 0,
+            "fn": 1
+          },
+          {
+            "tp": 1,
+            "tn": 21,
+            "fp": 5,
+            "fn": 1
+          },
+          {
+            "tp": 0,
+            "tn": 21,
+            "fp": 3,
+            "fn": 4
+          },
+          {
+            "tp": 0,
+            "tn": 20,
+            "fp": 0,
+            "fn": 8
+          },
+          {
+            "tp": 0,
+            "tn": 20,
+            "fp": 0,
+            "fn": 8
+          },
+          {
+            "tp": 0,
+            "tn": 24,
+            "fp": 3,
+            "fn": 1
+          },
+          {
+            "tp": 4,
+            "tn": 24,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 4,
+            "tn": 24,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 4,
+            "tn": 23,
+            "fp": 1,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 18,
+            "fp": 8,
+            "fn": 2
+          },
+          {
+            "tp": 0,
+            "tn": 25,
+            "fp": 3,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 7,
+            "fp": 0,
+            "fn": 0
+          }
+        ],
+        "aifs": [
+          {
+            "tp": 1,
+            "tn": 26,
+            "fp": 0,
+            "fn": 1
+          },
+          {
+            "tp": 7,
+            "tn": 19,
+            "fp": 1,
+            "fn": 1
+          },
+          {
+            "tp": 12,
+            "tn": 16,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 11,
+            "tn": 16,
+            "fp": 0,
+            "fn": 1
+          },
+          {
+            "tp": 1,
+            "tn": 20,
+            "fp": 6,
+            "fn": 1
+          },
+          {
+            "tp": 0,
+            "tn": 22,
+            "fp": 2,
+            "fn": 4
+          },
+          {
+            "tp": 1,
+            "tn": 20,
+            "fp": 0,
+            "fn": 7
+          },
+          {
+            "tp": 0,
+            "tn": 20,
+            "fp": 0,
+            "fn": 8
+          },
+          {
+            "tp": 0,
+            "tn": 25,
+            "fp": 2,
+            "fn": 1
+          },
+          {
+            "tp": 4,
+            "tn": 24,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 4,
+            "tn": 22,
+            "fp": 2,
+            "fn": 0
+          },
+          {
+            "tp": 4,
+            "tn": 20,
+            "fp": 4,
+            "fn": 0
+          },
+          {
+            "tp": 2,
+            "tn": 20,
+            "fp": 6,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 20,
+            "fp": 8,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 5,
+            "fp": 2,
+            "fn": 0
+          }
+        ],
+        "aigfs": [
+          {
+            "tp": 1,
+            "tn": 25,
+            "fp": 1,
+            "fn": 1
+          },
+          {
+            "tp": 5,
+            "tn": 19,
+            "fp": 1,
+            "fn": 3
+          },
+          {
+            "tp": 12,
+            "tn": 16,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 10,
+            "tn": 16,
+            "fp": 0,
+            "fn": 2
+          },
+          {
+            "tp": 1,
+            "tn": 19,
+            "fp": 7,
+            "fn": 1
+          },
+          {
+            "tp": 0,
+            "tn": 16,
+            "fp": 8,
+            "fn": 4
+          },
+          {
+            "tp": 5,
+            "tn": 16,
+            "fp": 4,
+            "fn": 3
+          },
+          {
+            "tp": 4,
+            "tn": 20,
+            "fp": 0,
+            "fn": 4
+          },
+          {
+            "tp": 1,
+            "tn": 24,
+            "fp": 3,
+            "fn": 0
+          },
+          {
+            "tp": 4,
+            "tn": 24,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 4,
+            "tn": 24,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 3,
+            "tn": 24,
+            "fp": 0,
+            "fn": 1
+          },
+          {
+            "tp": 0,
+            "tn": 22,
+            "fp": 4,
+            "fn": 2
+          },
+          {
+            "tp": 0,
+            "tn": 26,
+            "fp": 2,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 7,
+            "fp": 0,
+            "fn": 0
+          }
+        ],
+        "gfs": [
+          {
+            "tp": 1,
+            "tn": 26,
+            "fp": 0,
+            "fn": 1
+          },
+          {
+            "tp": 4,
+            "tn": 20,
+            "fp": 0,
+            "fn": 4
+          },
+          {
+            "tp": 11,
+            "tn": 16,
+            "fp": 0,
+            "fn": 1
+          },
+          {
+            "tp": 8,
+            "tn": 16,
+            "fp": 0,
+            "fn": 4
+          },
+          {
+            "tp": 0,
+            "tn": 24,
+            "fp": 2,
+            "fn": 2
+          },
+          {
+            "tp": 4,
+            "tn": 24,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 4,
+            "tn": 16,
+            "fp": 4,
+            "fn": 4
+          },
+          {
+            "tp": 1,
+            "tn": 16,
+            "fp": 4,
+            "fn": 7
+          },
+          {
+            "tp": 0,
+            "tn": 27,
+            "fp": 0,
+            "fn": 1
+          },
+          {
+            "tp": 0,
+            "tn": 24,
+            "fp": 0,
+            "fn": 4
+          },
+          {
+            "tp": 0,
+            "tn": 24,
+            "fp": 0,
+            "fn": 4
+          },
+          {
+            "tp": 0,
+            "tn": 23,
+            "fp": 1,
+            "fn": 4
+          },
+          {
+            "tp": 1,
+            "tn": 24,
+            "fp": 2,
+            "fn": 1
+          },
+          {
+            "tp": 0,
+            "tn": 24,
+            "fp": 4,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 6,
+            "fp": 1,
+            "fn": 0
+          }
+        ]
+      },
+      "n": [
+        28,
+        28,
+        28,
+        28,
+        28,
+        28,
+        28,
+        28,
+        28,
+        28,
+        28,
+        28,
+        28,
+        28,
+        7
+      ],
+      "event_n": [
+        2,
+        8,
+        12,
+        12,
+        2,
+        4,
+        8,
+        8,
+        1,
+        4,
+        4,
+        4,
+        2,
+        0,
+        0
+      ],
+      "nonevent_n": [
+        26,
+        20,
+        16,
+        16,
+        26,
+        24,
+        20,
+        20,
+        27,
+        24,
+        24,
+        24,
+        26,
+        28,
+        7
+      ],
+      "event_run_n": [
+        2,
+        2,
+        3,
+        3,
+        2,
+        1,
+        2,
+        2,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        0
+      ],
+      "nonevent_run_n": [
+        7,
+        5,
+        4,
+        4,
+        7,
+        6,
+        5,
+        5,
+        7,
+        6,
+        6,
+        6,
+        7,
+        7,
+        7
+      ]
+    }
+  },
+  "errors": [
+    "2026-04-01 ifs: HTTPError: HTTP Error 400: Bad Request",
+    "2026-04-01 aifs: HTTPError: HTTP Error 400: Bad Request",
+    "2026-04-01 aigfs: HTTPError: HTTP Error 400: Bad Request",
+    "2026-04-01 gfs: HTTPError: HTTP Error 400: Bad Request"
+  ]
+}
