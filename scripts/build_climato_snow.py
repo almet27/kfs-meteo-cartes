@@ -1,5 +1,5 @@
 """Monthly maximum snow depth: native SIM 8 km + station measurements + IMS snow extent."""
-import csv,gzip,io,json,logging,math,shutil,tempfile
+import argparse,calendar,csv,gzip,io,json,logging,math,shutil,tempfile
 from collections import Counter,defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date,datetime,timedelta
@@ -24,7 +24,7 @@ logging.basicConfig(level=logging.INFO,format="%(levelname)s %(message)s")
 BASE="https://meteofrance.s3.sbg.io.cloud.ovh.net/data/"
 IMS="https://noaadata.apps.nsidc.org/NOAA/G02156/GIS/"
 OUT=Path("climato/france")
-CACHE=Path(".climato-cache/ims-fr-v1")
+CACHE=Path(".climato-cache/ims-fr-v2")
 CACHE.mkdir(parents=True,exist_ok=True)
 TODAY=datetime.now(ZoneInfo("Europe/Paris")).date()
 START=TODAY.replace(day=1)
@@ -40,7 +40,8 @@ def rows(url):
             yield from csv.DictReader(io.TextIOWrapper(g,encoding="utf-8-sig"),delimiter=";")
 def sim():
     daycells=defaultdict(dict)
-    for row in rows(BASE+"REF_CC/SIM/QUOT_SIM2_latest.csv.gz"):
+    url=BASE+("REF_CC/SIM/QUOT_SIM2_latest.csv.gz" if OUT==Path("climato/france") else f"REF_CC/SIM/QUOT_SIM2_{START.year}.csv.gz")
+    for row in rows(url):
         d=row["DATE"]
         if not START.strftime("%Y%m%d")<=d<=END.strftime("%Y%m%d"):continue
         try:
@@ -53,7 +54,8 @@ def sim():
         key=d.strftime("%Y%m%d")
         if len(daycells.get(key,{}))<8500:break
         good.append(key)
-    if not good:raise RuntimeError("Pas de journée SIM France complète pour ce mois")
+    if not good:raise RuntimeError("Pas de journée SIM France complète pour cette période")
+    if OUT!=Path("climato/france") and len(good)!=(END-START).days+1:raise RuntimeError("Archive SIM incomplète ; carte historique non remplacée")
     cells=set().union(*(daycells[d] for d in good))
     maxs={p:max(daycells[d][p] for d in good) for p in cells if all(p in daycells[d] for d in good)}
     if len(maxs)<8500:raise RuntimeError("Couverture SIM insuffisante")
@@ -61,35 +63,44 @@ def sim():
 def station_dep(dep,cutoff):
     result={}
     try:
-        url=BASE+f"synchro_ftp/BASE/QUOT/Q_{dep}_latest-{TODAY.year-1}-{TODAY.year}_autres-parametres.csv.gz"
+        period="previous-1950-2024" if START.year<=2024 else "latest-2025-2026"
+        url=BASE+f"synchro_ftp/BASE/QUOT/Q_{dep}_{period}_autres-parametres.csv.gz"
         for r in rows(url):
             d=r.get("AAAAMMJJ","")
             if not START.strftime("%Y%m%d")<=d<=cutoff.strftime("%Y%m%d"):continue
             try:
-                v=float(r["NEIGETOTX"]);q=r.get("QNEIGETOTX","").strip()
-                if q not in ("0","1","9") or not math.isfinite(v) or not 0<=v<=3000:continue
+                vals=[]
+                for key in ("NEIGETOTX","HTN"):
+                    try:
+                        v=float(r[key]);q=r.get("Q"+key,"").strip()
+                        if q in ("0","1","9") and math.isfinite(v) and 0<=v<=3000:vals.append((v,key))
+                    except (ValueError,KeyError,TypeError):continue
+                if not vals:continue
+                v,key=next((p for p in vals if p[1]=="NEIGETOTX"),vals[0])
                 x,y=TRANS.transform(float(r["LON"]),float(r["LAT"]))
                 sid=r["NUM_POSTE"]
                 rec=result.setdefault(sid,{"x":x,"y":y,"name":r.get("NOM_USUEL",sid),"days":{}})
                 rec["days"][d]=v
+                if key!="NEIGETOTX":rec["snapshot_only"]=True
             except (ValueError,KeyError,TypeError):continue
     except Exception as e:logging.warning("Stations %s: %s",dep,e)
     return result
 def stations(cutoff):
-    deps=[f"{d:02d}" for d in range(1,96)]
+    deps=[f"{d:02d}" for d in range(1,96) if d!=20]+["2A","2B","20"]
     out={}
     with ThreadPoolExecutor(max_workers=8) as pool:
         for result in pool.map(lambda d:station_dep(d,cutoff),deps):out.update(result)
     n=(cutoff-START).days+1
     # A full-period zero requires all days; partial readings can only establish
     # a lower bound on the maximum and are excluded from the numeric overlay.
-    return [dict(x=r["x"],y=r["y"],name=r["name"],max=max(r["days"].values()),days=len(r["days"]),complete=len(r["days"])==n) for r in out.values() if len(r["days"])==n or max(r["days"].values())>0]
+    return [dict(x=r["x"],y=r["y"],name=r["name"],max=max(r["days"].values()),days=len(r["days"]),complete=len(r["days"])==n and not r.get("snapshot_only",False)) for r in out.values() if len(r["days"])==n or max(r["days"].values())>0]
 def ims_day(day,shape,transform):
-    # NSIDC renamed the archive using the VALID date at 00 UTC in 2022.
-    # Try the published naming convention across archive directory layouts.
-    stamp=f"{day:%Y%j}_00UTC"
-    names=[f"ims{stamp}_1km_GIS_v1.3.tif.gz",f"ims{stamp}_1km_v1.3.tif.gz"]
-    urls=[IMS+sub+name for sub in (f"1km/{day.year}/",f"{day.year}/",f"{day.year}/1km/") for name in names]
+    # GeoTIFF archives use production date (one day before 00 UTC validity).
+    # Unlike ASCII files, the documented GeoTIFF filename omits 00UTC.
+    if day<date(2014,12,3):return day,None
+    produced=day-timedelta(days=1)
+    name=f"ims{produced:%Y%j}_1km_GIS_v1.3.tif.gz"
+    urls=[IMS+sub+name for sub in (f"1km/{produced.year}/",f"{produced.year}/",f"{produced.year}/1km/") ]
     cache=CACHE/f"{day.isoformat()}-{shape[0]}-{shape[1]}.npz"
     if cache.exists():
         try:
@@ -109,13 +120,13 @@ def ims_day(day,shape,transform):
                     fetched=True
                     logging.info("IMS %s archive %s",day,url)
                     break
-            if not fetched:raise FileNotFoundError("Archive IMS non trouvée (6 chemins testés)")
+            if not fetched:raise FileNotFoundError("Archive IMS GeoTIFF non trouvée (3 chemins testés)")
             dest=np.zeros(shape,dtype=np.uint8)
             with rasterio.open(raw) as ds:
                 if ds.crs is None:raise ValueError("IMS sans projection")
                 reproject(rasterio.band(ds,1),dest,src_transform=ds.transform,src_crs=ds.crs,
                           dst_transform=transform,dst_crs=CRS,src_nodata=0,dst_nodata=0,resampling=Resampling.nearest)
-            if not np.isin(dest,[0,1,2,3,4]).all() or (dest==2).sum()<10000:raise ValueError("Classes ou couverture IMS non conformes")
+            if not np.isin(dest,[0,1,2,3,4]).all() or np.isin(dest,[2,4]).sum()<10000:raise ValueError("Classes ou couverture IMS non conformes")
             np.savez_compressed(cache,classes=dest)
             return day,dest
     except Exception as e:
@@ -125,7 +136,8 @@ def main():
     if END<START:return
     manifest_path=OUT/"latest.json"
     manifest=json.loads(manifest_path.read_text())
-    if manifest.get("month")!=TODAY.strftime("%Y-%m"):raise RuntimeError("Manifeste climatologique périmé")
+    expected=TODAY.strftime("%Y-%m") if OUT==Path("climato/france") else f"{START.year}-{OUT.name}"
+    if manifest.get("month")!=expected:raise RuntimeError("Manifeste climatologique périmé")
     cells,cutoff=sim()
     x0=min(x for x,y in cells);x1=max(x for x,y in cells)
     y0=min(y for x,y in cells);y1=max(y for x,y in cells)
@@ -182,7 +194,7 @@ def main():
     for r in sorted(obs,key=lambda r:-r["max"]):
         x,y=r["x"],r["y"]
         if not (xmin<=x<=xmax and ymin<=y<=ymax):continue
-        if any(math.hypot(x-a,y-b)<60000 for a,b in shown):continue
+        if any(math.hypot(x-a,y-b)<42000 for a,b in shown):continue
         shown.append((x,y))
         ax.text(x,y,f'{r["max"]:g}' if r["complete"] else f'≥{r["max"]:g}',color="#172029",fontsize=8,ha="center",va="center",fontweight="bold",zorder=5,path_effects=[withStroke(linewidth=2,foreground="white")])
     ax.set_xlim(xmin,xmax);ax.set_ylim(ymin,ymax);ax.set_aspect("equal");ax.axis("off")
@@ -192,11 +204,25 @@ def main():
     bar.set_ticklabels(["0","<1","1–5","5–10","10–20","20–50","50–100",">100"])
     bar.set_label("Épaisseur maximale estimée (cm) — grille SIM 8 km")
     if valid:ax.legend(handles=[Line2D([0],[0],color="#16866d",label="Neige détectée (IMS, au moins un jour)")],loc="lower left",fontsize=8,framealpha=.96)
-    fig.text(.5,.035,f"Du 1er au {cutoff:%d/%m/%Y} • chiffres : mesures Météo-France (cm), ≥ : série incomplète • {len(valid)}/{(cutoff-START).days+1} jours IMS",ha="center",fontsize=10,fontweight="bold")
+    fig.text(.5,.035,f"{START:%d/%m/%Y} – {cutoff:%d/%m/%Y} • mesures MF (cm), ≥ : série partielle ou relevé à 6 h • {len(valid)}/{(cutoff-START).days+1} jours IMS",ha="center",fontsize=10,fontweight="bold")
     fig.text(.5,.015,"SIM : estimation, pas une mesure locale • gris foncé : données manquantes • en montagne, forte variabilité",ha="center",fontsize=8.5,color="#52606b")
     filename="neige-sol-max.png"
     fig.savefig(OUT/filename,dpi=150,bbox_inches="tight",pad_inches=.2);plt.close(fig)
     manifest["maps"]=[m for m in manifest["maps"] if m["file"]!=filename]
     manifest["maps"].append({"file":filename,"title":"Hauteur maximale de neige au sol estimée","end":cutoff.isoformat(),"stations":len(obs),"grid_cells":len(cells),"ims_days":len(valid),"ims_dates":valid,"kind":"snow_depth","source":"Météo-France SIM 8 km + stations; IMS 1 km si disponible"})
     manifest_path.write_text(json.dumps(manifest,ensure_ascii=False,indent=2))
-if __name__=="__main__":main()
+if __name__=="__main__":
+    parser=argparse.ArgumentParser()
+    parser.add_argument("--year",type=int)
+    parser.add_argument("--month",choices=["annee"]+[str(i) for i in range(1,13)])
+    args=parser.parse_args()
+    if args.year is not None:
+        if args.month is None or not 1958<=args.year<=TODAY.year:raise SystemExit("Archive SIM : année ≥ 1958 et mois requis")
+        year=args.year
+        if args.month=="annee":
+            START=date(year,1,1);END=date(year,12,31);tag="annee"
+        else:
+            month=int(args.month);START=date(year,month,1);END=date(year,month,calendar.monthrange(year,month)[1]);tag=f"{month:02d}"
+        if END>=TODAY:raise SystemExit("Période historique non terminée")
+        OUT=Path(f"climato/archive/{year}/{tag}")
+    main()
