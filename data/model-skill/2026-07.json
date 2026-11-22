@@ -1,10 +1,10 @@
 {
   "schema": 1,
   "period": "2026-07",
-  "generated_utc": "2026-11-22T14:25:55.793471+00:00",
+  "generated_utc": "2026-11-22T16:48:59.181717+00:00",
   "territory": "France métropolitaine, Corse comprise",
   "reference": "Réanalyse ERA5 (référence modélisée, pas relevés de stations)",
-  "method": "MAE, 12 lieux; runs 00 UTC des jours 1, 5, 9, 13, 17, 21, 25, 29 du mois; validité 00 UTC à J+1..J+15; échantillon commun aux 4 modèles",
+  "method": "MAE, 12 lieux; runs 00 UTC des jours 1, 5, 9, 13, 17, 21, 25, 29 du mois; validité 00 UTC à J+1..J+15; échantillon commun aux modèles disponibles",
   "sites": [
     "Brest",
     "Lille",
@@ -45,6 +45,8 @@
     "aigfs": "ncep_aigfs025",
     "gfs": "ncep_gfs_global"
   },
+  "source": "Open-Meteo Single Runs et ERA5",
+  "notes": [],
   "metrics": {
     "temperature_2m": {
       "unit": "°C",

@@ -1,11 +1,11 @@
 {
   "schema": 1,
   "period": "2026-07",
-  "generated_utc": "2026-11-22T14:33:18.830190+00:00",
+  "generated_utc": "2026-11-22T16:54:54.832738+00:00",
   "territory": "Europe occidentale et Atlantique Nord, 8 centres de pression",
   "reference": "Réanalyse ERA5 pression au niveau marin (pas Z500)",
   "source": "Open-Meteo Single Runs et Historical Weather",
-  "method": "Prévisions 00 UTC vs ERA5, J+1 à J+15, échéance 00/06/12/18 UTC, mêmes 8 positions pour 4 modèles; balanced accuracy seulement si classes suffisamment représentées",
+  "method": "Prévisions 00 UTC vs ERA5, J+1 à J+15, échéance 00/06/12/18 UTC, mêmes 8 positions pour les modèles disponibles; balanced accuracy seulement si classes suffisamment représentées",
   "notes": [
     "Scores de régimes de surface indicatifs, pas des indices scientifiques officiels de blocage 500 hPa ou jet 300 hPa.",
     "La balanced accuracy exige au minimum 4 occurrences, 4 absences et 2 dates de runs distinctes pour chaque classe. Les autres résultats sont null (non évaluables).",
