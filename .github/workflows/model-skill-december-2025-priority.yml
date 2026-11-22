@@ -1,0 +1,52 @@
+name: KFS priorité décembre 2025
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/model-skill-december-2025-priority.yml'
+permissions:
+  contents: write
+concurrency:
+  group: kfs-model-skill-december-priority
+  cancel-in-progress: false
+jobs:
+  verifier:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Calculer les cinq indicateurs historiques
+        run: |
+          python -m py_compile scripts/build_model_skill.py scripts/build_model_regimes.py
+          python scripts/build_model_skill.py --month 2025-12
+          python scripts/build_model_regimes.py --month 2025-12
+      - name: Valider les échantillons et publier
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          for suffix, group in [("", "metrics"), ("-regimes", "regimes")]:
+              obj = json.loads(Path(f"data/model-skill/2025-12{suffix}.json").read_text())
+              assert obj["period"] == "2025-12"
+              assert set(obj["models"]) == {"ifs", "aifs", "gfs"}
+              assert obj["run_dates"]
+              assert all(any(n > 0 for n in item["n"]) for item in obj[group].values())
+              print(suffix, obj["run_dates"], {k: v["n"] for k,v in obj[group].items()})
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add data/model-skill/2025-12.json data/model-skill/2025-12-regimes.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Publier statistiques vérifiées décembre 2025"
+          for n in 1 2 3 4 5; do
+            if git push origin HEAD:main; then exit 0; fi
+            git fetch origin main
+            git rebase origin/main || { git rebase --abort; exit 1; }
+            sleep 3
+          done
+          exit 1
