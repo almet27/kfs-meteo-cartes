@@ -8,6 +8,7 @@ from zoneinfo import ZoneInfo
 import requests
 from matplotlib.colors import TwoSlopeNorm
 import build_climato_france as core
+from climato_zones import zone_files
 
 YEAR=int(sys.argv[1])
 NOW=datetime.now(ZoneInfo("Europe/Paris")).date()
@@ -156,6 +157,9 @@ def main():
             manifest["maps"].append({"file":filename,"title":"Hauteur maximale de neige au sol mesurée","end":end.isoformat(),"stations":len(snow),"kind":"snow_observed"})
         if not any(m["file"]=="temperature-anomalie.png" for m in manifest["maps"]) or not any(m["file"]=="pluie-anomalie.png" for m in manifest["maps"]):
             logging.warning("Période %s insuffisante, non publiée",period);continue
+        for m in manifest["maps"]:
+            # Never label a point-only legacy snow map as an enhanced regional view.
+            if m.get("kind")!="snow_observed":m["zones"]=zone_files(folder,m["file"])
         (folder/"latest.json").write_text(json.dumps(manifest,ensure_ascii=False,indent=2))
         logging.info("Archive %s publiée localement",period)
 if __name__=="__main__":main()
