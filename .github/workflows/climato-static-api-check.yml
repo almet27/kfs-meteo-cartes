@@ -1,0 +1,42 @@
+name: Diagnostic API climatologique StatIC
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/climato-static-api-check.yml
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Contrôler le catalogue, les archives et la fraîcheur sans clé
+        run: |
+          python - <<'PY'
+          import datetime as dt, json, urllib.request, urllib.parse
+          base="https://climato.chom.engineering"
+          def load(path, params={}):
+              url=base+path+"?"+urllib.parse.urlencode(params)
+              with urllib.request.urlopen(urllib.request.Request(url,headers={"Accept":"application/json","User-Agent":"KFS-METEO-climato-diagnostic/1.0"}),timeout=25) as r:
+                  obj=json.load(r)
+              print(path, "HTTP 200", "keys",list(obj) if isinstance(obj,dict) else "array")
+              return obj
+          def rows(obj):
+              if isinstance(obj,list): return obj
+              for key in ("mesures","stations","data"):
+                  if isinstance(obj.get(key),list): return obj[key]
+              raise ValueError("Unrecognized response format")
+          catalog=load("/statIC/stations",{"departement":"27"})
+          stations=rows(catalog)
+          print("Catalogue Eure:",len(stations),"lignes")
+          assert stations and any(x.get("ic_id") and x.get("latitude") is not None for x in stations)
+          archive=load("/statIC/journaliere",{"station":"STATIC0253","from":"2025-01-01","to":"2025-04-01"})
+          historical=rows(archive)
+          print("Archive témoin:",len(historical),"jours")
+          assert historical and any(x.get("tn") is not None and x.get("tx") is not None for x in historical)
+          today=dt.date.today()
+          recent=load("/statIC/journaliere",{"station":"STATIC0253","from":str(today-dt.timedelta(days=14)),"to":str(today)})
+          print("Derniers jours station témoin:",len(rows(recent)), "date max", max((x["date"] for x in rows(recent)),default=None))
+          print("Couverture du fonds:",str(load("/coverage"))[:1000])
+          PY
