@@ -6,6 +6,7 @@ from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 from pathlib import Path
 import requests
+from climato_static_fusion import fetch_static, complete_static
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -72,7 +73,8 @@ def read_dep(dep, typ, historic, ids):
                             tm=val(row,"TM")
                             if tm is None: tm=val(row,"TNTXM")
                             tn=val(row,"TN")
-                            vals={"temp":tm,"rain":val(row,"RR"),"frost":None if tn is None else int(tn<=0)}
+                            tx=val(row,"TX")
+                            vals={"temp":tm,"temp_mid":None if tn is None or tx is None or tx<tn else (tn+tx)/2,"rain":val(row,"RR"),"frost":None if tn is None else int(tn<=0)}
                         else:
                             sun=val(row,"INST"); vals={"sun":None if sun is None else sun/60}
                         rows[sid][day]={k:v for k,v in vals.items() if v is not None}
@@ -121,7 +123,7 @@ def select(results,key,n,catalog):
             coverage.add(dep)
     return selected,len(coverage)
 
-def render(points,boundaries,title,units,cmap,norm,metric,cutoff,filename,period_label=None):
+def render(points,boundaries,title,units,cmap,norm,metric,cutoff,filename,period_label=None,source_label="Météo-France",method_label=None):
     import numpy as np
     from matplotlib.path import Path as MplPath
     from matplotlib.colors import BoundaryNorm
@@ -167,7 +169,7 @@ def render(points,boundaries,title,units,cmap,norm,metric,cutoff,filename,period
         elif metric=="frost": levels=[-10,-7,-5,-3,-1,-.5,.5,1,3,5,7,10]
         else: levels=[-100,-75,-50,-25,-10,10,25,50,75,100]
     else:
-        top=max(1,norm.vmax);levels=np.linspace(0,top,11)
+        levels=np.linspace(norm.vmin,max(norm.vmin+1,norm.vmax),11)
     cm=plt.get_cmap(cmap,len(levels)-1)
     norm=BoundaryNorm(levels,cm.N,clip=True)
     ax.pcolormesh(xx,yy,np.ma.masked_invalid(grid.reshape(xx.shape)),cmap=cm,norm=norm,shading="nearest",zorder=2)
@@ -186,7 +188,7 @@ def render(points,boundaries,title,units,cmap,norm,metric,cutoff,filename,period
         rgba=cm(norm(v))
         light=.2126*rgba[0]+.7152*rgba[1]+.0722*rgba[2]
         fg,bg=("#172029","white") if light>.52 else ("white","#20252b")
-        label=f"{v:+.1f}" if metric in ("temp","frost") else f"{v:+.0f}%"
+        label=(f"{v:+.1f}" if metric in ("temp","frost") else f"{v:+.0f}%") if "anomalie" in filename else (f"{v:.1f}" if metric=="temp" else f"{v:.0f}")
         ax.text(x,y,label,ha="center",va="center",fontsize=8.2,fontweight="bold",color=fg,zorder=4,
                 path_effects=[patheffects.withStroke(linewidth=1.7,foreground=bg)])
     ax.set_xlim(-5.7,9.9);ax.set_ylim(41.1,51.5);ax.set_aspect(1/math.cos(math.radians(46.5)));ax.set_xticks([]);ax.set_yticks([])
@@ -196,8 +198,8 @@ def render(points,boundaries,title,units,cmap,norm,metric,cutoff,filename,period
     sm=ScalarMappable(norm=norm,cmap=cm);sm.set_array([])
     bar=fig.colorbar(sm,ax=ax,orientation="horizontal",fraction=.045,pad=.035,aspect=32,extend="both",ticks=levels)
     bar.set_label(units)
-    fig.text(.5,.035,f"{period_label or cutoff.strftime('Du 1er au %d/%m/%Y')}  •  {len(points)} stations  •  Météo-France",ha="center",fontsize=11,fontweight="bold")
-    fig.text(.5,.015,"Zonage interpolé (IDW) • valeurs aux stations • normales 1991–2020 • gris : données insuffisantes",ha="center",fontsize=9,color="#52606b")
+    fig.text(.5,.035,f"{period_label or cutoff.strftime('Du 1er au %d/%m/%Y')}  •  {len(points)} stations  •  {source_label}",ha="center",fontsize=11,fontweight="bold")
+    fig.text(.5,.015,method_label or "Zonage interpolé (IDW) • valeurs aux stations • normales 1991–2020 • gris : données insuffisantes",ha="center",fontsize=9,color="#52606b")
     fig.savefig(OUT/filename,dpi=150,bbox_inches="tight",pad_inches=.2);plt.close(fig)
 
 def main():
@@ -213,6 +215,7 @@ def main():
     boundaries=fetch_json("https://raw.githubusercontent.com/gregoiredavid/france-geojson/master/departements-version-simplifiee.geojson")
     manifest={"schema":1,"month":TODAY.strftime("%Y-%m"),"generated_at":datetime.now(ZoneInfo("Europe/Paris")).isoformat(),"source":"Météo-France, observations quotidiennes","method":"IDW, 150 km max nearest station, 2 stations within 200 km","maps":[]}
     audit={}
+    observed_cutoffs={}
     for key,minimum in [("temp",15),("rain",15),("sun",8),("frost",15)]:
         picks={}
         for n in range(END.day,0,-1):
@@ -221,6 +224,7 @@ def main():
         else:
             logging.warning("Insufficient coverage for %s",key);continue
         cutoff=TODAY.replace(day=n)
+        observed_cutoffs[key]=cutoff
         audit[key]={"end":cutoff.isoformat(),"stations":[{"id":sid,"name":loc[2],"lon":loc[0],"lat":loc[1],"observed":round(r[0],4),"normal":round(r[1],4),"delta":round(r[0]-r[1],4),"reference_years":r[2]} for sid,(loc,r) in picks.items()]}
         if key=="temp":
             for row in audit[key]["stations"]:
@@ -238,6 +242,52 @@ def main():
             manifest["maps"].append({"file":filename,"title":title,"end":cutoff.isoformat(),"stations":len(points)})
     if not any(m["file"]=="temperature-anomalie.png" for m in manifest["maps"]) or not any(m["file"]=="pluie-anomalie.png" for m in manifest["maps"]):
         raise SystemExit("Couverture température/pluie insuffisante : ne pas publier de cartes incomplètes.")
+    # Observed maps are additional, never a replacement for the anomaly maps.
+    start=TODAY.replace(day=1)
+    try:
+        static=fetch_static(start,END,catalog)
+    except Exception as exc:
+        logging.warning("StatIC unavailable; observed maps MF only: %s",exc)
+        static={}
+    for key,filename,title,units,cmap in [
+        ("temp","temperature-observee.png","Température moyenne observée","°C","RdYlBu_r"),
+        ("rain","pluie-observee.png","Cumul de précipitations observé","mm","YlGnBu"),
+        ("frost","gel-observe.png","Nombre de jours de gel observés","jours","Blues")
+    ]:
+        if key not in observed_cutoffs:continue
+        cutoff=observed_cutoffs[key]
+        def mf_points(until):
+            points={}
+            for entries in results.values():
+                for sid,entry in entries.items():
+                    vals=[entry["obs"].get(f"{TODAY.year}{TODAY.month:02d}{d:02d}",{}).get("temp_mid" if key=="temp" else key) for d in range(1,until.day+1)]
+                    if vals and all(v is not None for v in vals):
+                        points[sid]=(catalog[sid],statistics.mean(vals) if key=="temp" else sum(vals))
+            return list(points.values())
+        mf=mf_points(cutoff);ic=complete_static(static,key,start,cutoff)
+        # Preserve freshness: only move back up to 7 days, and only if >= 3 StatIC
+        # stations have complete data and the MF network still has sufficient coverage.
+        if len(ic)<3:
+            for back in range(1,8):
+                older=cutoff-timedelta(days=back)
+                if older<start:break
+                trial=complete_static(static,key,start,older)
+                if len(trial)>=3:
+                    candidate=mf_points(older)
+                    if len(candidate)>=30:
+                        cutoff=older;mf=candidate;ic=trial;break
+        if len(mf)<15:continue
+        pts=mf+ic
+        v=[p[1] for p in pts]
+        lo=math.floor(min(v)) if key=="temp" else 0
+        hi=max(lo+1,math.ceil(max(v)))
+        if key=="temp":
+            lo=math.floor(lo/2)*2;hi=math.ceil(hi/2)*2
+        source=f"MF : {len(mf)}  •  StatIC : {len(ic)}"
+        method="IDW • jours complets • "+("moyenne (Tn+Tx)/2" if key=="temp" else "cumul ; fenêtres journalières différentes selon réseau" if key=="rain" else "Tn ≤ 0 °C") 
+        method+=" • données StatIC non certifiées" if ic else " • StatIC sans série complète"
+        render(pts,boundaries,title,units,cmap,Normalize(vmin=lo,vmax=hi),key,cutoff,filename,source_label=source,method_label=method)
+        manifest["maps"].append({"file":filename,"title":title,"end":cutoff.isoformat(),"stations":len(pts),"mf_stations":len(mf),"static_stations":len(ic),"kind":"observed_fusion","source":"Météo-France ; Infoclimat StatIC via chom.engineering (LO 2.0)"})
     (OUT/"station-audit.json").write_text(json.dumps(audit,ensure_ascii=False,separators=(",",":")))
     (OUT/"latest.json").write_text(json.dumps(manifest,ensure_ascii=False,indent=2))
 if __name__=="__main__":main()
