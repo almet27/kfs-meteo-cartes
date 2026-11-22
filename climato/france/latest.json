@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "month": "2026-11",
-  "generated_at": "2026-11-22T14:00:32.947044+01:00",
+  "generated_at": "2026-11-22T14:04:22.425970+01:00",
   "source": "Météo-France, observations quotidiennes",
   "method": "IDW, 150 km max nearest station, 2 stations within 200 km",
   "maps": [
@@ -65,8 +65,30 @@
       "end": "2026-11-21",
       "stations": 86,
       "grid_cells": 9892,
-      "ims_days": 0,
-      "ims_dates": [],
+      "ims_days": 21,
+      "ims_dates": [
+        "2026-11-01",
+        "2026-11-02",
+        "2026-11-03",
+        "2026-11-04",
+        "2026-11-05",
+        "2026-11-06",
+        "2026-11-07",
+        "2026-11-08",
+        "2026-11-09",
+        "2026-11-10",
+        "2026-11-11",
+        "2026-11-12",
+        "2026-11-13",
+        "2026-11-14",
+        "2026-11-15",
+        "2026-11-16",
+        "2026-11-17",
+        "2026-11-18",
+        "2026-11-19",
+        "2026-11-20",
+        "2026-11-21"
+      ],
       "kind": "snow_depth",
       "source": "Météo-France SIM 8 km + stations; IMS 1 km si disponible"
     }
