@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "month": "2026-06",
+  "period": "01/06/2026 – 30/06/2026",
+  "start": "2026-06-01",
+  "generated_at": "2026-11-22T14:02:14.534552+01:00",
+  "source": "Météo-France, archives quotidiennes",
+  "maps": [
+    {
+      "file": "temperature-anomalie.png",
+      "title": "Anomalie de température moyenne",
+      "end": "2026-06-30",
+      "stations": 393
+    },
+    {
+      "file": "pluie-anomalie.png",
+      "title": "Anomalie de précipitations",
+      "end": "2026-06-30",
+      "stations": 419
+    },
+    {
+      "file": "soleil-anomalie.png",
+      "title": "Anomalie d’ensoleillement",
+      "end": "2026-06-30",
+      "stations": 50
+    },
+    {
+      "file": "gel-anomalie.png",
+      "title": "Anomalie du nombre de jours de gel",
+      "end": "2026-06-30",
+      "stations": 393
+    },
+    {
+      "file": "neige-sol-max.png",
+      "title": "Hauteur maximale de neige au sol mesurée",
+      "end": "2026-06-30",
+      "stations": 81,
+      "kind": "snow_observed"
+    }
+  ]
+}
