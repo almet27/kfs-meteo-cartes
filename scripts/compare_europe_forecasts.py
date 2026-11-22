@@ -52,7 +52,7 @@ for step in STEPS:
                     d.text((34,110),"Image non exploitable : "+str(e)[:70],font=font,fill="#a32323")
             else:
                 d.text((35,105),("Séparation pluie / neige non disponible pour AIGFS" if field in ("rain6h","snow6h") and model=="aigfs" else "Carte indisponible pour cette échéance"),font=font,fill="#a32323")
-                if model=="ifs" and step==360:d.text((35,145),"IFS ouvert : pas de +360 h",font=font,fill="#6b6b6b")
+                if model=="ifs" and step==360:d.text((35,145),"En attente du dernier run IFS 00Z/12Z à +360 h",font=font,fill="#6b6b6b")
             panels.append(tile)
         if not successes:continue
         comparison=Image.new("RGB",(TILE_W*2,TILE_H*2+84),"white")
