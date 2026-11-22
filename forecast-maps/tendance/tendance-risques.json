@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_utc": "2026-11-22T08:54:09.652490+00:00",
+  "generated_utc": "2026-11-22T09:16:58.455752+00:00",
   "atlas_generated_utc": "2026-11-22T07:43:28.481893+00:00",
   "reference": "ECMWF Open Data, Copernicus DEM GLO-90 via Open-Meteo — champs géoréférencés",
   "stages": [
@@ -134,6 +134,7 @@
         "description": "Température à 850 hPa modélisée, pas température au sol"
       },
       "risk_scope": "France et secteurs proches, domaine rectangulaire terre + mer",
+      "zone": "europe",
       "method": "Rafales max 10 m, Tmin 2 m terrestre, pluie/neige sur les 6 h précédentes ; neige hors relief selon altitudes GLO-90 ; pas une vigilance officielle."
     },
     {
@@ -268,6 +269,7 @@
         "description": "Température à 850 hPa modélisée, pas température au sol"
       },
       "risk_scope": "France et secteurs proches, domaine rectangulaire terre + mer",
+      "zone": "europe",
       "method": "Rafales max 10 m, Tmin 2 m terrestre, pluie/neige sur les 6 h précédentes ; neige hors relief selon altitudes GLO-90 ; pas une vigilance officielle."
     },
     {
@@ -376,6 +378,7 @@
         "description": "Température à 850 hPa modélisée, pas température au sol"
       },
       "risk_scope": "France et secteurs proches, domaine rectangulaire terre + mer",
+      "zone": "europe",
       "method": "Rafales max 10 m, Tmin 2 m terrestre, pluie/neige sur les 6 h précédentes ; neige hors relief selon altitudes GLO-90 ; pas une vigilance officielle."
     },
     {
@@ -508,6 +511,403 @@
         "description": "Température à 850 hPa modélisée, pas température au sol"
       },
       "risk_scope": "France et secteurs proches, domaine rectangulaire terre + mer",
+      "zone": "europe",
+      "method": "Rafales max 10 m, Tmin 2 m terrestre, pluie/neige sur les 6 h précédentes ; neige hors relief selon altitudes GLO-90 ; pas une vigilance officielle."
+    }
+  ],
+  "france_stages": [
+    {
+      "id": "j3",
+      "step_h": 72,
+      "model": "ifs",
+      "run_utc": "2026-11-22T00:00:00+00:00",
+      "valid_utc": "2026-11-25T00:00:00+00:00",
+      "background_path": "forecast-maps/tendance/tendance-risques-fond-france-j3.png",
+      "risks": {
+        "neige": {
+          "status": "relief_uniquement",
+          "max": 0,
+          "unit": "mm équiv. eau/6h",
+          "reason": "Neige hors relief ≤ 800 m, hors vallée de montagne (Copernicus GLO-90) ; relief : 21 zones échantillonnées",
+          "mountain_signal": true,
+          "mountain_max": 7.9,
+          "lowland_sample_count": 0,
+          "highland_sample_count": 21,
+          "terrain_source": "Copernicus DEM GLO-90 via Open-Meteo"
+        },
+        "verglas": {
+          "status": "indisponible",
+          "reason": "Champs spécifiques non disponibles"
+        },
+        "orage": {
+          "status": "indisponible",
+          "reason": "Champs spécifiques non disponibles"
+        },
+        "tempete": {
+          "status": "possible",
+          "max": 63.7,
+          "unit": "km/h (rafales max 10 m/6 h)",
+          "reason": "Rafales maximales ECMWF IFS des 6 h précédentes, pas une vigilance officielle"
+        },
+        "gel": {
+          "status": "marque",
+          "severity": "marque",
+          "min": -8.0,
+          "unit": "°C (Tmin 2 m/6 h)",
+          "reason": "Minimum sur les 6 h précédentes, points terrestres"
+        },
+        "canicule": {
+          "status": "indisponible",
+          "reason": "Champs spécifiques non disponibles"
+        },
+        "inondation": {
+          "status": "indisponible",
+          "reason": "Crue non déductible d'un seul cumul de pluie de 6 h"
+        },
+        "pluie_forte": {
+          "status": "marque",
+          "max": 29.3,
+          "unit": "mm/6h",
+          "reason": "Cumul des 6 heures précédant l'échéance"
+        }
+      },
+      "markers": [
+        {
+          "lon": 7.0,
+          "lat": 45.5,
+          "value": -8.003332519531227,
+          "kind": "gel"
+        },
+        {
+          "lon": 4.0,
+          "lat": 44.0,
+          "value": 29.3,
+          "kind": "pluie_forte"
+        },
+        {
+          "lon": 0.0,
+          "lat": 42.75,
+          "value": -3.3637451171874773,
+          "kind": "gel"
+        },
+        {
+          "lon": -1.25,
+          "lat": 44.0,
+          "value": 12.5,
+          "kind": "pluie_forte"
+        },
+        {
+          "lon": 4.25,
+          "lat": 46.0,
+          "value": 10.5,
+          "kind": "pluie_forte"
+        },
+        {
+          "lon": 6.75,
+          "lat": 43.5,
+          "value": 10.3,
+          "kind": "pluie_forte"
+        },
+        {
+          "lon": 7.5,
+          "lat": 48.75,
+          "value": -1.8637451171874773,
+          "kind": "gel"
+        }
+      ],
+      "t850_shading": {
+        "enabled": true,
+        "level_hpa": 850,
+        "unit": "°C",
+        "fixed_scale_c": [
+          -20,
+          20
+        ],
+        "opacity": 0.92,
+        "palette": "kfs-spectrum-v1",
+        "description": "Température à 850 hPa modélisée, pas température au sol"
+      },
+      "risk_scope": "France métropolitaine et Corse",
+      "zone": "france",
+      "method": "Rafales max 10 m, Tmin 2 m terrestre, pluie/neige sur les 6 h précédentes ; neige hors relief selon altitudes GLO-90 ; pas une vigilance officielle."
+    },
+    {
+      "id": "j7",
+      "step_h": 168,
+      "model": "ifs",
+      "run_utc": "2026-11-22T00:00:00+00:00",
+      "valid_utc": "2026-11-29T00:00:00+00:00",
+      "background_path": "forecast-maps/tendance/tendance-risques-fond-france-j7.png",
+      "risks": {
+        "neige": {
+          "status": "absent",
+          "max": 0.0,
+          "unit": "mm équiv. eau/6h",
+          "reason": "Pas de neige ≥ 0,5 mm/6h sur le domaine terrestre"
+        },
+        "verglas": {
+          "status": "indisponible",
+          "reason": "Champs spécifiques non disponibles"
+        },
+        "orage": {
+          "status": "indisponible",
+          "reason": "Champs spécifiques non disponibles"
+        },
+        "tempete": {
+          "status": "absent",
+          "max": 48.1,
+          "unit": "km/h (rafales max 10 m/6 h)",
+          "reason": "Rafales maximales ECMWF IFS des 6 h précédentes, pas une vigilance officielle"
+        },
+        "gel": {
+          "status": "marque",
+          "severity": "severe",
+          "min": -16.88,
+          "unit": "°C (Tmin 2 m/6 h)",
+          "reason": "Minimum sur les 6 h précédentes, points terrestres"
+        },
+        "canicule": {
+          "status": "indisponible",
+          "reason": "Champs spécifiques non disponibles"
+        },
+        "inondation": {
+          "status": "indisponible",
+          "reason": "Crue non déductible d'un seul cumul de pluie de 6 h"
+        },
+        "pluie_forte": {
+          "status": "absent",
+          "max": 3.4,
+          "unit": "mm/6h",
+          "reason": "Cumul des 6 heures précédant l'échéance"
+        }
+      },
+      "markers": [
+        {
+          "lon": 7.0,
+          "lat": 44.25,
+          "value": -16.879797363281227,
+          "kind": "gel"
+        },
+        {
+          "lon": 6.75,
+          "lat": 46.25,
+          "value": -8.379797363281227,
+          "kind": "gel"
+        },
+        {
+          "lon": 7.25,
+          "lat": 48.5,
+          "value": -4.629797363281227,
+          "kind": "gel"
+        }
+      ],
+      "t850_shading": {
+        "enabled": true,
+        "level_hpa": 850,
+        "unit": "°C",
+        "fixed_scale_c": [
+          -20,
+          20
+        ],
+        "opacity": 0.92,
+        "palette": "kfs-spectrum-v1",
+        "description": "Température à 850 hPa modélisée, pas température au sol"
+      },
+      "risk_scope": "France métropolitaine et Corse",
+      "zone": "france",
+      "method": "Rafales max 10 m, Tmin 2 m terrestre, pluie/neige sur les 6 h précédentes ; neige hors relief selon altitudes GLO-90 ; pas une vigilance officielle."
+    },
+    {
+      "id": "j10",
+      "step_h": 240,
+      "model": "ifs",
+      "run_utc": "2026-11-22T00:00:00+00:00",
+      "valid_utc": "2026-12-02T00:00:00+00:00",
+      "background_path": "forecast-maps/tendance/tendance-risques-fond-france-j10.png",
+      "risks": {
+        "neige": {
+          "status": "absent",
+          "max": 0.0,
+          "unit": "mm équiv. eau/6h",
+          "reason": "Pas de neige ≥ 0,5 mm/6h sur le domaine terrestre"
+        },
+        "verglas": {
+          "status": "indisponible",
+          "reason": "Champs spécifiques non disponibles"
+        },
+        "orage": {
+          "status": "indisponible",
+          "reason": "Champs spécifiques non disponibles"
+        },
+        "tempete": {
+          "status": "absent",
+          "max": 43.8,
+          "unit": "km/h (rafales max 10 m/6 h)",
+          "reason": "Rafales maximales ECMWF IFS des 6 h précédentes, pas une vigilance officielle"
+        },
+        "gel": {
+          "status": "marque",
+          "severity": "severe",
+          "min": -11.48,
+          "unit": "°C (Tmin 2 m/6 h)",
+          "reason": "Minimum sur les 6 h précédentes, points terrestres"
+        },
+        "canicule": {
+          "status": "indisponible",
+          "reason": "Champs spécifiques non disponibles"
+        },
+        "inondation": {
+          "status": "indisponible",
+          "reason": "Crue non déductible d'un seul cumul de pluie de 6 h"
+        },
+        "pluie_forte": {
+          "status": "absent",
+          "max": 7.1,
+          "unit": "mm/6h",
+          "reason": "Cumul des 6 heures précédant l'échéance"
+        }
+      },
+      "markers": [
+        {
+          "lon": 7.0,
+          "lat": 45.5,
+          "value": -11.479498291015602,
+          "kind": "gel"
+        },
+        {
+          "lon": 1.75,
+          "lat": 42.5,
+          "value": -3.7294982910156023,
+          "kind": "gel"
+        },
+        {
+          "lon": 6.5,
+          "lat": 49.25,
+          "value": -3.2294982910156023,
+          "kind": "gel"
+        }
+      ],
+      "t850_shading": {
+        "enabled": true,
+        "level_hpa": 850,
+        "unit": "°C",
+        "fixed_scale_c": [
+          -20,
+          20
+        ],
+        "opacity": 0.92,
+        "palette": "kfs-spectrum-v1",
+        "description": "Température à 850 hPa modélisée, pas température au sol"
+      },
+      "risk_scope": "France métropolitaine et Corse",
+      "zone": "france",
+      "method": "Rafales max 10 m, Tmin 2 m terrestre, pluie/neige sur les 6 h précédentes ; neige hors relief selon altitudes GLO-90 ; pas une vigilance officielle."
+    },
+    {
+      "id": "j15",
+      "step_h": 360,
+      "model": "ifs",
+      "run_utc": "2026-11-22T00:00:00+00:00",
+      "valid_utc": "2026-12-07T00:00:00+00:00",
+      "background_path": "forecast-maps/tendance/tendance-risques-fond-france-j15.png",
+      "risks": {
+        "neige": {
+          "status": "possible",
+          "max": 1.5,
+          "unit": "mm équiv. eau/6h",
+          "reason": "Neige hors relief ≤ 800 m, hors vallée de montagne (Copernicus GLO-90) ; relief : 4 zones échantillonnées",
+          "mountain_signal": true,
+          "mountain_max": 1.5,
+          "lowland_sample_count": 2,
+          "highland_sample_count": 4,
+          "terrain_source": "Copernicus DEM GLO-90 via Open-Meteo"
+        },
+        "verglas": {
+          "status": "indisponible",
+          "reason": "Champs spécifiques non disponibles"
+        },
+        "orage": {
+          "status": "indisponible",
+          "reason": "Champs spécifiques non disponibles"
+        },
+        "tempete": {
+          "status": "absent",
+          "max": 40.5,
+          "unit": "km/h (rafales max 10 m/6 h)",
+          "reason": "Rafales maximales ECMWF IFS des 6 h précédentes, pas une vigilance officielle"
+        },
+        "gel": {
+          "status": "marque",
+          "severity": "severe",
+          "min": -12.98,
+          "unit": "°C (Tmin 2 m/6 h)",
+          "reason": "Minimum sur les 6 h précédentes, points terrestres"
+        },
+        "canicule": {
+          "status": "indisponible",
+          "reason": "Champs spécifiques non disponibles"
+        },
+        "inondation": {
+          "status": "indisponible",
+          "reason": "Crue non déductible d'un seul cumul de pluie de 6 h"
+        },
+        "pluie_forte": {
+          "status": "absent",
+          "max": 5.6,
+          "unit": "mm/6h",
+          "reason": "Cumul des 6 heures précédant l'échéance"
+        }
+      },
+      "markers": [
+        {
+          "lon": 6.25,
+          "lat": 45.0,
+          "value": -12.982214355468727,
+          "kind": "gel"
+        },
+        {
+          "lon": 7.25,
+          "lat": 48.5,
+          "value": -9.982214355468727,
+          "kind": "gel"
+        },
+        {
+          "lon": 4.75,
+          "lat": 50.0,
+          "value": -7.732214355468727,
+          "kind": "gel"
+        },
+        {
+          "lon": 3.5,
+          "lat": 44.0,
+          "value": 1.5,
+          "kind": "neige",
+          "altitude_m": 646,
+          "terrain_context": "hors relief marqué"
+        },
+        {
+          "lon": 3.5,
+          "lat": 45.75,
+          "value": 1.0,
+          "kind": "neige",
+          "altitude_m": 448,
+          "terrain_context": "hors relief marqué"
+        }
+      ],
+      "t850_shading": {
+        "enabled": true,
+        "level_hpa": 850,
+        "unit": "°C",
+        "fixed_scale_c": [
+          -20,
+          20
+        ],
+        "opacity": 0.92,
+        "palette": "kfs-spectrum-v1",
+        "description": "Température à 850 hPa modélisée, pas température au sol"
+      },
+      "risk_scope": "France métropolitaine et Corse",
+      "zone": "france",
       "method": "Rafales max 10 m, Tmin 2 m terrestre, pluie/neige sur les 6 h précédentes ; neige hors relief selon altitudes GLO-90 ; pas une vigilance officielle."
     }
   ]
