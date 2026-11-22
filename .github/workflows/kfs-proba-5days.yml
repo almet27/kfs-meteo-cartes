@@ -11,14 +11,81 @@ on:
       - tests/test-proba-ensembles.cjs
       - .github/workflows/kfs-proba-5days.yml
   schedule:
-    - cron: '10 5,11,17,23 * * *'
+    - cron: '*/15 * * * *'
 permissions:
   contents: write
 concurrency:
   group: kfs-proba-5days
   cancel-in-progress: false
 jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      rebuild: ${{ steps.cycles.outputs.rebuild }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check latest published ensemble cycles
+        id: cycles
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const now = Date.now();
+          const hour = 3600000;
+          const today = new Intl.DateTimeFormat('en-CA', {timeZone:'Europe/Paris',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(now));
+          let data = {};
+          try { data = JSON.parse(fs.readFileSync('proba/ensemble-probabilities.json','utf8')); }
+          catch (e) { console.log('No readable published dataset:', e.message); }
+          async function latest(id) {
+            try {
+              const r = await fetch('https://api.open-meteo.com/data/'+id+'/static/meta.json?ts='+now, {cache:'no-store',signal:AbortSignal.timeout(8000)});
+              if (!r.ok) throw Error('HTTP '+r.status);
+              const j = await r.json();
+              const millis = v => Number(v) > 1e12 ? Number(v) : Number(v)*1000;
+              const init = millis(j.last_run_initialisation_time), availability = millis(j.last_run_availability_time);
+              if (!Number.isFinite(init)||!Number.isFinite(availability)||availability<init||availability>now-600000||now-init>7*24*hour) return null;
+              const d = new Date(init);
+              if (![0,6,12,18].includes(d.getUTCHours())||d.getUTCMinutes()!==0) return null;
+              return {run:d.toISOString(),availability};
+            } catch(e) { console.log(id, e.message); return null; }
+          }
+          function needsUpdate(model, cycle) {
+            const acquired = Date.parse(model?.generated_at_utc);
+            if (!Number.isFinite(acquired)||model?.periods?.['0']?.start_day!==today) return true;
+            if (now-acquired>=6*hour) return true;
+            if (!cycle) return false;
+            const zones = model.periods?.['0']?.zones || {};
+            const values = Object.values(zones).flatMap(z=>z.pluie?.['1']||[]).filter(Boolean);
+            const runs = new Set(values.map(v=>v.run_utc).filter(Boolean));
+            if ([...runs].some(run=>Date.parse(run)<Date.parse(cycle.run))) return true;
+            // A model generation predating availability cannot contain the new cycle.
+            if (acquired<cycle.availability) return true;
+            // Retry missing provenance hourly, not every 15 minutes.
+            if ((!values.length||values.some(v=>!v.run_utc))&&now-acquired>=hour) return true;
+            return false;
+          }
+          (async()=>{
+            const ids=['ecmwf_ifs025_ensemble','ncep_gefs025'];
+            const cycles=await Promise.all(ids.map(latest));
+            const decisions=ids.map((id,i)=>{
+              const model=data.models?.[id], cycle=cycles[i], needed=needsUpdate(model,cycle);
+              console.log(id, 'available cycle:',cycle?.run||'unverified','published acquisition:',model?.generated_at_utc||'none','rebuild:',needed);
+              return needed;
+            });
+            const rebuild=process.env.EVENT_NAME!=='schedule'||decisions.some(Boolean);
+            fs.appendFileSync(process.env.GITHUB_OUTPUT,'rebuild='+rebuild+'\n');
+          })().catch(e=>{console.error(e);process.exitCode=1;});
+          NODE
   probabilities:
+    needs: check
+    if: needs.check.outputs.rebuild == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
