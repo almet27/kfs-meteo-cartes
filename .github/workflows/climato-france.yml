@@ -6,6 +6,7 @@ on:
   push:
     paths:
       - scripts/build_climato_france.py
+      - scripts/build_climato_snow.py
       - .github/workflows/climato-france.yml
 permissions:
   contents: write
@@ -22,7 +23,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Install dependencies
-        run: pip install matplotlib requests
+        run: pip install matplotlib requests pyproj rasterio
       - name: Cache climatological reference
         uses: actions/cache@v4
         with:
@@ -31,6 +32,9 @@ jobs:
           restore-keys: climato-france-daily-v1-
       - name: Build station maps
         run: python scripts/build_climato_france.py
+      - name: Build snow depth map
+        continue-on-error: true
+        run: python scripts/build_climato_snow.py
       - name: Publish maps
         run: |
           git config user.name "github-actions[bot]"
