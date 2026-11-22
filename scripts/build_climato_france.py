@@ -111,44 +111,79 @@ def stat(entry,key,n):
 
 def select(results,key,n,catalog):
     selected={}
+    coverage=set()
     for dep,entries in results.items():
-        candidates=[]
         for sid,entry in entries.items():
             r=stat(entry,key,n)
             if r is None:continue
             if key in ("rain","sun") and r[1]<=0:continue
-            candidates.append((r[2],sid,r))
-        if candidates:
-            _,sid,r=max(candidates,key=lambda x:(x[0],x[1]))
             selected[sid]=(catalog[sid],r)
-    return selected
+            coverage.add(dep)
+    return selected,len(coverage)
 
 def render(points,boundaries,title,units,cmap,norm,metric,cutoff,filename):
+    import numpy as np
+    from matplotlib.path import Path as MplPath
+    from matplotlib.colors import BoundaryNorm
     fig,ax=plt.subplots(figsize=(10,10),facecolor="#f5f7f8")
     ax.set_facecolor("#eaf1f4")
+    # Interpolation IDW on a roughly 5 km mesh. Do not extrapolate beyond
+    # 150 km of a station; require two stations within 200 km.
+    gx=np.linspace(-5.7,9.9,310); gy=np.linspace(41.1,51.5,260)
+    xx,yy=np.meshgrid(gx,gy)
+    coords=np.column_stack((xx.ravel(),yy.ravel()))
+    inside=np.zeros(len(coords),dtype=bool)
+    outlines=[]
     for f in boundaries["features"]:
         geo=f.get("geometry",{}); p=geo.get("coordinates",[])
         polys=[p] if geo.get("type")=="Polygon" else p if geo.get("type")=="MultiPolygon" else []
         for poly in polys:
             if not poly or not any(-6.5<x<10.5 and 41<y<52 for x,y,*_ in poly[0]):continue
-            ax.add_patch(Polygon(poly[0],closed=True,facecolor="#fafafa",edgecolor="#a4afb6",linewidth=.55,zorder=1))
-    values=[v for _,v in points]
-    if not values:raise ValueError("No points")
-    xs=[p[0] for p,_ in points];ys=[p[1] for p,_ in points]
-    ax.scatter(xs,ys,c=values,s=225,cmap=cmap,norm=norm,edgecolor="#36434a",linewidth=.6,zorder=3)
-    for (lon,lat,_),v in points:
-        rgba=plt.get_cmap(cmap)(norm(v)); lum=.2126*rgba[0]+.7152*rgba[1]+.0722*rgba[2]
-        label=f"{v:+.1f}" if metric=="temp" else f"{v:+.0f}" if "anomalie" in filename else f"{v:.0f}"
-        ax.text(lon,lat,label,ha="center",va="center",fontsize=7.3,fontweight="bold",color="#101820" if lum>.58 else "white",zorder=4)
+            outer=np.asarray(poly[0])[:,:2]
+            mask=MplPath(outer).contains_points(coords)
+            for hole in poly[1:]:
+                mask &= ~MplPath(np.asarray(hole)[:,:2]).contains_points(coords)
+            inside |= mask
+            outlines.append(outer)
+            ax.add_patch(Polygon(outer,closed=True,facecolor="#d9dee1",edgecolor="none",zorder=1))
+    xs=np.array([p[0] for p,_ in points]);ys=np.array([p[1] for p,_ in points])
+    values=np.array([v for _,v in points])
+    if len(values)<2:raise ValueError("Insufficient stations")
+    grid=np.full(len(coords),np.nan)
+    covered=np.flatnonzero(inside)
+    for block in np.array_split(covered,max(1,math.ceil(len(covered)/1000))):
+        if not len(block):continue
+        p=coords[block]
+        dx=(p[:,0,None]-xs[None,:])*111.2*np.cos(np.radians((p[:,1,None]+ys[None,:])/2))
+        dy=(p[:,1,None]-ys[None,:])*111.2
+        dist=np.hypot(dx,dy)
+        support=(dist<=200).sum(axis=1)>=2
+        support &= dist.min(axis=1)<=150
+        weights=np.where(dist<=200,1/np.maximum(dist,3)**2,0)
+        denom=weights.sum(axis=1)
+        grid[block[support]]= (weights[support]@values)/denom[support]
+    if "anomalie" in filename:
+        if metric=="temp": levels=[-5,-4,-3,-2,-1,-.5,.5,1,2,3,4,5]
+        elif metric=="frost": levels=[-10,-7,-5,-3,-1,-.5,.5,1,3,5,7,10]
+        else: levels=[-100,-75,-50,-25,-10,10,25,50,75,100]
+    else:
+        top=max(1,norm.vmax);levels=np.linspace(0,top,11)
+    cm=plt.get_cmap(cmap,len(levels)-1)
+    norm=BoundaryNorm(levels,cm.N,clip=True)
+    ax.pcolormesh(xx,yy,np.ma.masked_invalid(grid.reshape(xx.shape)),cmap=cm,norm=norm,shading="nearest",zorder=2)
+    for outer in outlines:
+        ax.plot(outer[:,0],outer[:,1],color="#65727b",linewidth=.48,alpha=.8,zorder=3)
+    # Small station markers preserve traceability without hiding the climate zones.
+    ax.scatter(xs,ys,s=8,facecolor="#222c33",edgecolor="white",linewidth=.35,alpha=.75,zorder=4)
     ax.set_xlim(-5.7,9.9);ax.set_ylim(41.1,51.5);ax.set_aspect(1/math.cos(math.radians(46.5)));ax.set_xticks([]);ax.set_yticks([])
     for spine in ax.spines.values():spine.set_visible(False)
     fig.suptitle("KFS MÉTÉO  |  CLIMATOLOGIE",x=.5,y=.975,fontsize=15,fontweight="bold",color="#385064")
     ax.set_title(title,fontsize=19,fontweight="bold",pad=14,color="#1c2a35")
-    sm=ScalarMappable(norm=norm,cmap=cmap);sm.set_array([])
-    bar=fig.colorbar(sm,ax=ax,orientation="horizontal",fraction=.045,pad=.035,aspect=32,extend="both")
+    sm=ScalarMappable(norm=norm,cmap=cm);sm.set_array([])
+    bar=fig.colorbar(sm,ax=ax,orientation="horizontal",fraction=.045,pad=.035,aspect=32,extend="both",ticks=levels)
     bar.set_label(units)
     fig.text(.5,.035,f"Du 1er au {cutoff.strftime('%d/%m/%Y')}  •  {len(points)} stations  •  Météo-France",ha="center",fontsize=11,fontweight="bold")
-    fig.text(.5,.015,"Observations ponctuelles • référence 1991–2020 sur les mêmes dates • aucune interpolation",ha="center",fontsize=9,color="#52606b")
+    fig.text(.5,.015,"Zonage interpolé (IDW) • normales 1991–2020 sur les mêmes dates • gris : données insuffisantes",ha="center",fontsize=9,color="#52606b")
     fig.savefig(OUT/filename,dpi=150,bbox_inches="tight",pad_inches=.2);plt.close(fig)
 
 def main():
@@ -162,12 +197,12 @@ def main():
                 dep,rows=job.result();results[dep]=rows;logging.info("%s %s stations",dep,len(rows))
             except Exception as e: logging.warning("%s: %s",jobs[job],e)
     boundaries=fetch_json("https://raw.githubusercontent.com/gregoiredavid/france-geojson/master/departements-version-simplifiee.geojson")
-    manifest={"schema":1,"month":TODAY.strftime("%Y-%m"),"generated_at":datetime.now(ZoneInfo("Europe/Paris")).isoformat(),"source":"Météo-France, observations quotidiennes","maps":[]}
+    manifest={"schema":1,"month":TODAY.strftime("%Y-%m"),"generated_at":datetime.now(ZoneInfo("Europe/Paris")).isoformat(),"source":"Météo-France, observations quotidiennes","method":"IDW, 150 km max nearest station, 2 stations within 200 km","maps":[]}
     for key,minimum in [("temp",15),("rain",15),("sun",8),("frost",15)]:
         picks={}
         for n in range(END.day,0,-1):
-            picks=select(results,key,n,catalog)
-            if len(picks)>=minimum:break
+            picks,coverage=select(results,key,n,catalog)
+            if coverage>=minimum:break
         else:
             logging.warning("Insufficient coverage for %s",key);continue
         cutoff=TODAY.replace(day=n)
