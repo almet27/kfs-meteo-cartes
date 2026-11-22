@@ -13,6 +13,12 @@ from functools import lru_cache
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 from matplotlib.offsetbox import OffsetImage
 
+# Identical fixed temperature scale for the map and its legend.
+AIR_STOPS=[(0.00,"#442088"),(.10,"#5426C9"),(.25,"#1554DD"),
+           (.40,"#00B5E8"),(.50,"#24B785"),(.60,"#79C63A"),
+           (.70,"#F2E62D"),(.80,"#FFC21A"),(.90,"#F77616"),
+           (1.00,"#BD1736")]
+
 
 @lru_cache(maxsize=12)
 def _emoji_pixels(symbol):

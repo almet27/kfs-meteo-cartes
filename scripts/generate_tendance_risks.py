@@ -22,7 +22,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patheffects as pe
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
-from kfs_synoptic_overlays import premium_pictogram, t850_celsius
+from kfs_synoptic_overlays import premium_pictogram, t850_celsius, AIR_STOPS
 from cartopy.io import shapereader
 from shapely.geometry import Point
 from shapely.ops import unary_union
@@ -271,35 +271,25 @@ def render(id,run,fields,marks,risks):
     xx,yy=lon[ix],lat[iy]
     pres=msl[np.ix_(iy,ix)]
     geop=gh[np.ix_(iy,ix)]
-    fig=plt.figure(figsize=(15.44,7.20),dpi=100,facecolor="#082D53")
+    fig=plt.figure(figsize=(16,7),dpi=100,facecolor="#E7E9EC")
     ax=fig.add_axes([0,0,1,1],projection=ccrs.PlateCarree())
     ax.set_extent(GEOGRAPHY,crs=ccrs.PlateCarree())
     ax.set_aspect("auto")
-    # Premium cartographic styling inspired by the supplied TV-weather reference:
-    # authentic natural-earth relief under genuine geopotential/isobars.
-    ax.set_facecolor("#06315A")
-    try:
-        ax.stock_img()
-    except Exception:
-        ax.add_feature(cfeature.OCEAN,facecolor="#06406B")
-        ax.add_feature(cfeature.LAND,facecolor="#73A56C")
-    # The filled palette now encodes REAL 850-hPa air temperature in Celsius.
-    # A fixed scale is used for J+3/J+7/J+10/J+15: equal colours = equal temperatures.
-    # 850-hPa temperature describes air aloft, not 2-m temperature or heatwave risk.
+    # Neutral cartographic base; genuine T850 colours remain dominant.
+    ax.set_facecolor("#E7E9EC")
+    ax.add_feature(cfeature.OCEAN,facecolor="#E7E9EC",zorder=0)
+    ax.add_feature(cfeature.LAND,facecolor="#DADDE0",zorder=1)
     temp850=t850_celsius(fields["t850"][2],fields["t850"][4])
     tc=temp850[np.ix_(iy,ix)]
-    palette=LinearSegmentedColormap.from_list("kfs_t850_masses_d_air",[
-        (0.00,"#142A82"), (0.20,"#2452BA"), (0.325,"#4B99D7"),
-        (0.425,"#91D8E8"), (0.50,"#75BEA5"), (0.625,"#F5DC85"),
-        (0.750,"#F1A05C"), (0.875,"#E9674A"), (1.00,"#B93451")])
+    palette=LinearSegmentedColormap.from_list("kfs_t850_masses_d_air",AIR_STOPS)
     temp_norm=Normalize(vmin=-20,vmax=20)
-    ax.contourf(xx,yy,tc,levels=np.arange(-30,32,2),
+    ax.contourf(xx,yy,tc,levels=np.arange(-20,21,1),
                 cmap=palette,norm=temp_norm,alpha=.92,
                 extend="both",transform=ccrs.PlateCarree(),zorder=2)
     # Keep subtle 500-hPa height contours but do NOT use them as heat colours.
     ax.contour(xx,yy,geop,levels=np.arange(470,610,10),
                colors="#EDF6FF",linewidths=.42,linestyles="dashed",
-               alpha=.22,transform=ccrs.PlateCarree(),zorder=3)
+               alpha=.12,transform=ccrs.PlateCarree(),zorder=3)
     # Légende T850 déplacée sous la carte, dans l'infographie finale.
     # Cyan precipitation veils are derived only from the 6-hour model field.
     if "rain6h" in fields:
@@ -312,9 +302,41 @@ def render(id,run,fields,marks,risks):
     cs=ax.contour(xx,yy,pres,levels=np.arange(940,1061,5),
                   colors="white",linewidths=1.05,transform=ccrs.PlateCarree(),zorder=7)
     labels=ax.clabel(cs,fmt="%d",inline=True,fontsize=8,colors="white",zorder=8)
-    for a in labels:a.set_path_effects([pe.Stroke(linewidth=2.5,foreground="#173147"),pe.Normal()])
+    for a in labels:
+        a.set_fontweight("bold")
+        a.set_path_effects([pe.Stroke(linewidth=2.5,foreground="#173147",alpha=.65),pe.Normal()])
     ax.coastlines("110m",linewidth=.85,color="#EFF6F9",zorder=10)
     ax.add_feature(cfeature.BORDERS,linewidth=.56,edgecolor="#E2EFF5",alpha=.82,zorder=10)
+    # D/H at genuine local MSL pressure extrema, never fabricated.
+    # Require a surrounding pressure contrast and enough room for the label.
+    centres=[]
+    dy=max(1,round(3.0/abs(float(yy[1]-yy[0]))))
+    dx=max(1,round(4.0/abs(float(xx[1]-xx[0]))))
+    for low in (True,False):
+        order=np.argsort(pres,axis=None)
+        if not low:order=order[::-1]
+        count=0
+        for n in order:
+            j,i=np.unravel_index(n,pres.shape)
+            if j<dy or i<dx or j>=len(yy)-dy or i>=len(xx)-dx:continue
+            x,y=float(xx[i]),float(yy[j])
+            if y>67 or y<34 or x<-41 or x>31:continue
+            v=float(pres[j,i])
+            if (low and v>1010) or (not low and v<1018):break
+            patch=pres[j-dy:j+dy+1,i-dx:i+dx+1]
+            extremum=float(np.min(patch) if low else np.max(patch))
+            if abs(v-extremum)>.02:continue
+            edge=np.concatenate((patch[0,:],patch[-1,:],patch[:,0],patch[:,-1]))
+            if (float(np.mean(edge))-v if low else v-float(np.mean(edge)))<2.0:continue
+            if any(distance_km(x,y,a,b)<950 for a,b in centres):continue
+            if any(distance_km(x,y,m["lon"],m["lat"])<400 for m in marks):continue
+            for text,offset,size in (("D" if low else "H",(0,7),27),(f"{v:.0f} hPa",(0,-18),11)):
+                artist=ax.annotate(text,xy=(x,y),xycoords=ccrs.PlateCarree()._as_mpl_transform(ax),
+                   xytext=offset,textcoords="offset points",ha="center",va="center",
+                   color="white",fontweight="bold",fontsize=size,zorder=14)
+                artist.set_path_effects([pe.Stroke(linewidth=3,foreground="#173147",alpha=.8),pe.Normal()])
+            centres.append((x,y));count+=1
+            if count==2:break
     for mark in marks:
         x,y=mark["lon"],mark["lat"]
         icon=weather_pictogram(mark["kind"])
@@ -444,7 +466,7 @@ def calculate(id,step,model,atlas,now):
             "valid_utc":(run+timedelta(hours=step)).isoformat(),
             "background_path":str(background),"risks":risks,"markers":selected,
             "t850_shading":{"enabled":True,"level_hpa":850,"unit":"°C",
-                            "fixed_scale_c":[-20,20],"opacity":0.92,
+                            "fixed_scale_c":[-20,20],"opacity":0.92,"palette":"kfs-spectrum-v1",
                             "description":"Température à 850 hPa modélisée, pas température au sol"},
             "risk_scope":"France et secteurs proches, domaine rectangulaire terre + mer",
             "method":"Rafales max 10 m, Tmin 2 m terrestre, pluie/neige sur les 6 h précédentes ; neige hors relief selon altitudes GLO-90 ; pas une vigilance officielle."}
