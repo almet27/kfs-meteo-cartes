@@ -1,0 +1,1508 @@
+{
+  "schema": 1,
+  "period": "2025-08",
+  "generated_utc": "2026-11-22T16:04:59.658277+00:00",
+  "territory": "Europe occidentale et Atlantique Nord, 8 centres de pression",
+  "reference": "Réanalyse ERA5 pression au niveau marin (pas Z500)",
+  "source": "Open-Meteo IFS HRES 9km, Dynamical AIFS/GFS, ERA5",
+  "method": "Prévisions 00 UTC vs ERA5, J+1 à J+15, échéance 00/06/12/18 UTC, mêmes 8 positions pour les modèles disponibles; balanced accuracy seulement si classes suffisamment représentées",
+  "notes": [
+    "Scores de régimes de surface indicatifs, pas des indices scientifiques officiels de blocage 500 hPa ou jet 300 hPa.",
+    "La balanced accuracy exige au minimum 4 occurrences, 4 absences et 2 dates de runs distinctes pour chaque classe. Les autres résultats sont null (non évaluables).",
+    "MAE hPa des gradients barométriques diffusée même quand les événements sont trop rares pour produire un score.",
+    "Échantillons horaires issus des mêmes runs : ils ne sont pas statistiquement indépendants."
+  ],
+  "models": {
+    "ifs": "ecmwf_ifs",
+    "aifs": "ecmwf-aifs-single-forecast",
+    "gfs": "noaa-gfs-forecast"
+  },
+  "points": {
+    "greenland": [
+      63.0,
+      -42.0
+    ],
+    "iceland": [
+      65.0,
+      -20.0
+    ],
+    "azores": [
+      38.0,
+      -28.0
+    ],
+    "atlantic": [
+      52.0,
+      -26.0
+    ],
+    "scandi": [
+      62.0,
+      16.0
+    ],
+    "east": [
+      61.0,
+      34.0
+    ],
+    "uk": [
+      55.0,
+      -5.0
+    ],
+    "iberia": [
+      42.0,
+      -10.0
+    ]
+  },
+  "run_dates": [
+    "2025-08-01",
+    "2025-08-05",
+    "2025-08-09",
+    "2025-08-13",
+    "2025-08-17",
+    "2025-08-21",
+    "2025-08-25",
+    "2025-08-29"
+  ],
+  "regimes": {
+    "blocage_atlantique": {
+      "title": "Configuration de hautes pressions nord-atlantiques",
+      "short": "Blocage Atlantique (proxy SLP)",
+      "definition": "Pression groenlandaise >= 1017 hPa, ecart Groenland-Açores >= -5 hPa, Groenland >= Atlantique central",
+      "disclaimer": "Proxy de blocage / NAO négative : PAS un indice météorologique de blocage à 500 hPa",
+      "unit": "hPa",
+      "thresholds": {
+        "greenland_min": 1017,
+        "greenland_minus_azores_min": -5,
+        "greenland_minus_atlantic_min": 0
+      },
+      "scores_pct": {
+        "ifs": [
+          98.1,
+          null,
+          null,
+          98.1,
+          96.3,
+          null,
+          null,
+          70.0,
+          48.1,
+          null,
+          null,
+          50.0,
+          50.0,
+          null,
+          null
+        ],
+        "aifs": [
+          100.0,
+          null,
+          null,
+          98.1,
+          98.1,
+          null,
+          null,
+          90.0,
+          54.4,
+          null,
+          null,
+          50.0,
+          60.0,
+          null,
+          null
+        ],
+        "gfs": [
+          100.0,
+          null,
+          null,
+          70.0,
+          88.1,
+          null,
+          null,
+          50.0,
+          50.0,
+          null,
+          null,
+          40.7,
+          37.0,
+          null,
+          null
+        ]
+      },
+      "index_mae_hpa": {
+        "ifs": [
+          0.559,
+          1.403,
+          2.672,
+          3.081,
+          4.659,
+          5.534,
+          7.278,
+          6.219,
+          7.944,
+          11.378,
+          8.619,
+          8.247,
+          10.0,
+          12.266,
+          10.088
+        ],
+        "aifs": [
+          0.719,
+          0.792,
+          1.511,
+          1.911,
+          4.065,
+          4.286,
+          6.961,
+          6.126,
+          7.686,
+          8.069,
+          7.059,
+          7.723,
+          5.973,
+          6.603,
+          8.615
+        ],
+        "gfs": [
+          1.099,
+          1.686,
+          3.379,
+          3.883,
+          3.939,
+          9.093,
+          9.979,
+          8.298,
+          11.23,
+          11.166,
+          11.167,
+          10.417,
+          12.018,
+          14.194,
+          14.555
+        ]
+      },
+      "confusion": {
+        "ifs": [
+          {
+            "tp": 5,
+            "tn": 26,
+            "fp": 1,
+            "fn": 0
+          },
+          {
+            "tp": 4,
+            "tn": 28,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 4,
+            "tn": 28,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 5,
+            "tn": 26,
+            "fp": 1,
+            "fn": 0
+          },
+          {
+            "tp": 5,
+            "tn": 25,
+            "fp": 2,
+            "fn": 0
+          },
+          {
+            "tp": 4,
+            "tn": 28,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 4,
+            "tn": 28,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 2,
+            "tn": 27,
+            "fp": 0,
+            "fn": 3
+          },
+          {
+            "tp": 0,
+            "tn": 26,
+            "fp": 1,
+            "fn": 5
+          },
+          {
+            "tp": 0,
+            "tn": 23,
+            "fp": 5,
+            "fn": 4
+          },
+          {
+            "tp": 0,
+            "tn": 28,
+            "fp": 0,
+            "fn": 4
+          },
+          {
+            "tp": 0,
+            "tn": 27,
+            "fp": 0,
+            "fn": 5
+          },
+          {
+            "tp": 0,
+            "tn": 27,
+            "fp": 0,
+            "fn": 5
+          },
+          {
+            "tp": 0,
+            "tn": 28,
+            "fp": 0,
+            "fn": 4
+          },
+          {
+            "tp": 0,
+            "tn": 7,
+            "fp": 0,
+            "fn": 1
+          }
+        ],
+        "aifs": [
+          {
+            "tp": 5,
+            "tn": 27,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 4,
+            "tn": 28,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 4,
+            "tn": 28,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 5,
+            "tn": 26,
+            "fp": 1,
+            "fn": 0
+          },
+          {
+            "tp": 5,
+            "tn": 26,
+            "fp": 1,
+            "fn": 0
+          },
+          {
+            "tp": 4,
+            "tn": 28,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 4,
+            "tn": 28,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 4,
+            "tn": 27,
+            "fp": 0,
+            "fn": 1
+          },
+          {
+            "tp": 1,
+            "tn": 24,
+            "fp": 3,
+            "fn": 4
+          },
+          {
+            "tp": 4,
+            "tn": 27,
+            "fp": 1,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 28,
+            "fp": 0,
+            "fn": 4
+          },
+          {
+            "tp": 0,
+            "tn": 27,
+            "fp": 0,
+            "fn": 5
+          },
+          {
+            "tp": 1,
+            "tn": 27,
+            "fp": 0,
+            "fn": 4
+          },
+          {
+            "tp": 4,
+            "tn": 28,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 7,
+            "fp": 0,
+            "fn": 1
+          }
+        ],
+        "gfs": [
+          {
+            "tp": 5,
+            "tn": 27,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 4,
+            "tn": 28,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 4,
+            "tn": 28,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 2,
+            "tn": 27,
+            "fp": 0,
+            "fn": 3
+          },
+          {
+            "tp": 4,
+            "tn": 26,
+            "fp": 1,
+            "fn": 1
+          },
+          {
+            "tp": 4,
+            "tn": 28,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 28,
+            "fp": 0,
+            "fn": 4
+          },
+          {
+            "tp": 0,
+            "tn": 27,
+            "fp": 0,
+            "fn": 5
+          },
+          {
+            "tp": 0,
+            "tn": 27,
+            "fp": 0,
+            "fn": 5
+          },
+          {
+            "tp": 0,
+            "tn": 28,
+            "fp": 0,
+            "fn": 4
+          },
+          {
+            "tp": 0,
+            "tn": 25,
+            "fp": 3,
+            "fn": 4
+          },
+          {
+            "tp": 0,
+            "tn": 22,
+            "fp": 5,
+            "fn": 5
+          },
+          {
+            "tp": 0,
+            "tn": 20,
+            "fp": 7,
+            "fn": 5
+          },
+          {
+            "tp": 0,
+            "tn": 22,
+            "fp": 6,
+            "fn": 4
+          },
+          {
+            "tp": 0,
+            "tn": 6,
+            "fp": 1,
+            "fn": 1
+          }
+        ]
+      },
+      "n": [
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        8
+      ],
+      "event_n": [
+        5,
+        4,
+        4,
+        5,
+        5,
+        4,
+        4,
+        5,
+        5,
+        4,
+        4,
+        5,
+        5,
+        4,
+        1
+      ],
+      "nonevent_n": [
+        27,
+        28,
+        28,
+        27,
+        27,
+        28,
+        28,
+        27,
+        27,
+        28,
+        28,
+        27,
+        27,
+        28,
+        7
+      ],
+      "event_run_n": [
+        2,
+        1,
+        1,
+        2,
+        2,
+        1,
+        1,
+        2,
+        2,
+        1,
+        1,
+        2,
+        2,
+        1,
+        1
+      ],
+      "nonevent_run_n": [
+        7,
+        7,
+        7,
+        7,
+        7,
+        7,
+        7,
+        7,
+        7,
+        7,
+        7,
+        7,
+        7,
+        7,
+        7
+      ]
+    },
+    "anticyclone_scandinave": {
+      "title": "Anticyclone centré sur la Scandinavie",
+      "short": "Anticyclone scandinave (proxy SLP)",
+      "definition": "Pression scandinave >= 1022 hPa, >= 5 hPa au-dessus du Royaume-Uni et >= 3 hPa au-dessus du nord-ouest de la Russie",
+      "disclaimer": "Indicateur d'anticyclone de surface; ne certifie pas un blocage persistant",
+      "unit": "hPa",
+      "thresholds": {
+        "scandi_min": 1022,
+        "scandi_minus_uk_min": 5,
+        "scandi_minus_east_min": 3
+      },
+      "scores_pct": {
+        "ifs": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "aifs": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "gfs": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      "index_mae_hpa": {
+        "ifs": [
+          0.494,
+          1.275,
+          1.722,
+          2.266,
+          3.791,
+          7.494,
+          9.281,
+          9.272,
+          8.684,
+          9.506,
+          8.887,
+          11.587,
+          15.522,
+          14.391,
+          17.475
+        ],
+        "aifs": [
+          0.509,
+          0.992,
+          1.499,
+          2.977,
+          3.592,
+          6.522,
+          8.253,
+          7.59,
+          8.05,
+          10.792,
+          12.061,
+          11.63,
+          12.577,
+          10.933,
+          10.24
+        ],
+        "gfs": [
+          1.358,
+          1.634,
+          2.08,
+          3.644,
+          5.241,
+          6.141,
+          9.101,
+          9.466,
+          10.344,
+          11.933,
+          12.533,
+          10.706,
+          14.279,
+          10.037,
+          12.15
+        ]
+      },
+      "confusion": {
+        "ifs": [
+          {
+            "tp": 0,
+            "tn": 32,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 32,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 32,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 32,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 32,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 32,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 32,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 32,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 32,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 32,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 32,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 32,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 32,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 32,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 8,
+            "fp": 0,
+            "fn": 0
+          }
+        ],
+        "aifs": [
+          {
+            "tp": 0,
+            "tn": 32,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 32,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 32,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 32,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 32,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 32,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 32,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 32,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 29,
+            "fp": 3,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 32,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 32,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 31,
+            "fp": 1,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 32,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 32,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 8,
+            "fp": 0,
+            "fn": 0
+          }
+        ],
+        "gfs": [
+          {
+            "tp": 0,
+            "tn": 32,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 32,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 32,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 28,
+            "fp": 4,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 31,
+            "fp": 1,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 32,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 32,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 32,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 32,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 31,
+            "fp": 1,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 31,
+            "fp": 1,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 29,
+            "fp": 3,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 32,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 32,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 8,
+            "fp": 0,
+            "fn": 0
+          }
+        ]
+      },
+      "n": [
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        8
+      ],
+      "event_n": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "nonevent_n": [
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        8
+      ],
+      "event_run_n": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "nonevent_run_n": [
+        8,
+        8,
+        8,
+        8,
+        8,
+        8,
+        8,
+        8,
+        8,
+        8,
+        8,
+        8,
+        8,
+        8,
+        8
+      ]
+    },
+    "flux_zonal": {
+      "title": "Flux d'ouest dominant sur le proche Atlantique et l'Europe",
+      "short": "Circulation zonale (proxy SLP)",
+      "definition": "Gradient de pression Ibérie-Islande >= 18 hPa, signe favorable aux vents d'ouest sur le proche Atlantique",
+      "disclaimer": "Proxy barométrique du flux zonal, et NON mesure du courant-jet à 300 hPa",
+      "unit": "hPa",
+      "thresholds": {
+        "iberia_minus_iceland_min": 18
+      },
+      "scores_pct": {
+        "ifs": [
+          93.1,
+          100.0,
+          83.3,
+          66.7,
+          53.3,
+          53.6,
+          80.4,
+          68.3,
+          85.5,
+          73.2,
+          59.0,
+          44.2,
+          39.7,
+          56.7,
+          null
+        ],
+        "aifs": [
+          93.1,
+          100.0,
+          86.7,
+          90.0,
+          90.8,
+          88.2,
+          83.7,
+          55.8,
+          31.8,
+          36.4,
+          50.8,
+          65.8,
+          67.9,
+          69.4,
+          null
+        ],
+        "gfs": [
+          95.5,
+          95.0,
+          83.7,
+          66.7,
+          79.2,
+          95.0,
+          80.0,
+          69.2,
+          70.0,
+          58.6,
+          54.1,
+          45.0,
+          64.3,
+          60.7,
+          null
+        ]
+      },
+      "index_mae_hpa": {
+        "ifs": [
+          0.547,
+          1.044,
+          3.116,
+          3.497,
+          6.291,
+          7.109,
+          5.219,
+          7.494,
+          7.178,
+          11.644,
+          10.522,
+          9.481,
+          11.137,
+          12.528,
+          11.088
+        ],
+        "aifs": [
+          0.661,
+          1.28,
+          2.118,
+          2.069,
+          3.034,
+          3.669,
+          5.03,
+          6.649,
+          12.859,
+          14.245,
+          11.442,
+          8.324,
+          10.302,
+          10.127,
+          10.967
+        ],
+        "gfs": [
+          0.769,
+          1.194,
+          2.648,
+          4.003,
+          3.062,
+          2.643,
+          6.887,
+          8.932,
+          9.016,
+          12.486,
+          11.585,
+          8.206,
+          9.861,
+          14.584,
+          14.088
+        ]
+      },
+      "confusion": {
+        "ifs": [
+          {
+            "tp": 10,
+            "tn": 20,
+            "fp": 1,
+            "fn": 1
+          },
+          {
+            "tp": 10,
+            "tn": 22,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 10,
+            "tn": 17,
+            "fp": 0,
+            "fn": 5
+          },
+          {
+            "tp": 5,
+            "tn": 17,
+            "fp": 0,
+            "fn": 10
+          },
+          {
+            "tp": 2,
+            "tn": 18,
+            "fp": 2,
+            "fn": 10
+          },
+          {
+            "tp": 3,
+            "tn": 17,
+            "fp": 5,
+            "fn": 7
+          },
+          {
+            "tp": 10,
+            "tn": 16,
+            "fp": 1,
+            "fn": 5
+          },
+          {
+            "tp": 8,
+            "tn": 14,
+            "fp": 6,
+            "fn": 4
+          },
+          {
+            "tp": 8,
+            "tn": 20,
+            "fp": 2,
+            "fn": 2
+          },
+          {
+            "tp": 6,
+            "tn": 19,
+            "fp": 3,
+            "fn": 4
+          },
+          {
+            "tp": 8,
+            "tn": 11,
+            "fp": 6,
+            "fn": 7
+          },
+          {
+            "tp": 4,
+            "tn": 11,
+            "fp": 9,
+            "fn": 8
+          },
+          {
+            "tp": 1,
+            "tn": 13,
+            "fp": 5,
+            "fn": 13
+          },
+          {
+            "tp": 5,
+            "tn": 14,
+            "fp": 4,
+            "fn": 9
+          },
+          {
+            "tp": 2,
+            "tn": 4,
+            "fp": 1,
+            "fn": 1
+          }
+        ],
+        "aifs": [
+          {
+            "tp": 10,
+            "tn": 20,
+            "fp": 1,
+            "fn": 1
+          },
+          {
+            "tp": 10,
+            "tn": 22,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 11,
+            "tn": 17,
+            "fp": 0,
+            "fn": 4
+          },
+          {
+            "tp": 12,
+            "tn": 17,
+            "fp": 0,
+            "fn": 3
+          },
+          {
+            "tp": 11,
+            "tn": 18,
+            "fp": 2,
+            "fn": 1
+          },
+          {
+            "tp": 9,
+            "tn": 19,
+            "fp": 3,
+            "fn": 1
+          },
+          {
+            "tp": 11,
+            "tn": 16,
+            "fp": 1,
+            "fn": 4
+          },
+          {
+            "tp": 5,
+            "tn": 14,
+            "fp": 6,
+            "fn": 7
+          },
+          {
+            "tp": 0,
+            "tn": 14,
+            "fp": 8,
+            "fn": 10
+          },
+          {
+            "tp": 0,
+            "tn": 16,
+            "fp": 6,
+            "fn": 10
+          },
+          {
+            "tp": 2,
+            "tn": 15,
+            "fp": 2,
+            "fn": 13
+          },
+          {
+            "tp": 5,
+            "tn": 18,
+            "fp": 2,
+            "fn": 7
+          },
+          {
+            "tp": 5,
+            "tn": 18,
+            "fp": 0,
+            "fn": 9
+          },
+          {
+            "tp": 7,
+            "tn": 16,
+            "fp": 2,
+            "fn": 7
+          },
+          {
+            "tp": 1,
+            "tn": 4,
+            "fp": 1,
+            "fn": 2
+          }
+        ],
+        "gfs": [
+          {
+            "tp": 10,
+            "tn": 21,
+            "fp": 0,
+            "fn": 1
+          },
+          {
+            "tp": 9,
+            "tn": 22,
+            "fp": 0,
+            "fn": 1
+          },
+          {
+            "tp": 11,
+            "tn": 16,
+            "fp": 1,
+            "fn": 4
+          },
+          {
+            "tp": 5,
+            "tn": 17,
+            "fp": 0,
+            "fn": 10
+          },
+          {
+            "tp": 7,
+            "tn": 20,
+            "fp": 0,
+            "fn": 5
+          },
+          {
+            "tp": 9,
+            "tn": 22,
+            "fp": 0,
+            "fn": 1
+          },
+          {
+            "tp": 9,
+            "tn": 17,
+            "fp": 0,
+            "fn": 6
+          },
+          {
+            "tp": 7,
+            "tn": 16,
+            "fp": 4,
+            "fn": 5
+          },
+          {
+            "tp": 4,
+            "tn": 22,
+            "fp": 0,
+            "fn": 6
+          },
+          {
+            "tp": 4,
+            "tn": 17,
+            "fp": 5,
+            "fn": 6
+          },
+          {
+            "tp": 3,
+            "tn": 15,
+            "fp": 2,
+            "fn": 12
+          },
+          {
+            "tp": 0,
+            "tn": 18,
+            "fp": 2,
+            "fn": 12
+          },
+          {
+            "tp": 4,
+            "tn": 18,
+            "fp": 0,
+            "fn": 10
+          },
+          {
+            "tp": 3,
+            "tn": 18,
+            "fp": 0,
+            "fn": 11
+          },
+          {
+            "tp": 0,
+            "tn": 5,
+            "fp": 0,
+            "fn": 3
+          }
+        ]
+      },
+      "n": [
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        8
+      ],
+      "event_n": [
+        11,
+        10,
+        15,
+        15,
+        12,
+        10,
+        15,
+        12,
+        10,
+        10,
+        15,
+        12,
+        14,
+        14,
+        3
+      ],
+      "nonevent_n": [
+        21,
+        22,
+        17,
+        17,
+        20,
+        22,
+        17,
+        20,
+        22,
+        22,
+        17,
+        20,
+        18,
+        18,
+        5
+      ],
+      "event_run_n": [
+        4,
+        3,
+        5,
+        5,
+        4,
+        3,
+        5,
+        5,
+        3,
+        3,
+        5,
+        5,
+        4,
+        4,
+        3
+      ],
+      "nonevent_run_n": [
+        7,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        7,
+        6,
+        6,
+        6,
+        7,
+        5,
+        5,
+        5
+      ]
+    }
+  },
+  "errors": []
+}
