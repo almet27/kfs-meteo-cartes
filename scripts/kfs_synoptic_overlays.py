@@ -62,12 +62,32 @@ def _windsock_pixels():
     return np.asarray(image.resize((128,128),Image.Resampling.LANCZOS))
 
 
+@lru_cache(maxsize=1)
+def _cold_thermometer_pixels():
+    """Blue liquid thermometer with transparent background."""
+    im=Image.new("RGBA",(384,384))
+    d=ImageDraw.Draw(im)
+    # Thick white glass body with navy border and a blue bulb.
+    d.rounded_rectangle((146,26,238,282),radius=46,fill="#F6FBFF",outline="#183A59",width=10)
+    d.ellipse((119,230,265,376),fill="#F6FBFF",outline="#183A59",width=10)
+    d.rectangle((156,224,228,285),fill="#F6FBFF")
+    d.rounded_rectangle((180,52,204,300),radius=12,fill="#C9E8F7")
+    d.rounded_rectangle((180,195,204,309),radius=12,fill="#258DE1")
+    d.ellipse((139,250,245,356),fill="#258DE1",outline="#1263A8",width=5)
+    d.ellipse((154,263,177,288),fill="#A4E4FF")
+    for y in (79,113,147,181):
+        d.line((211,y,225,y),fill="#5C819C",width=5)
+    return np.asarray(im.resize((128,128),Image.Resampling.LANCZOS))
+
+
 def premium_pictogram(kind):
     """Unicode weather emoji rendered in color, with transparent background."""
     if kind in ("vent_fort", "tempete"):
         return OffsetImage(_windsock_pixels(), zoom=.36, interpolation="lanczos")
+    if kind=="gel":
+        return OffsetImage(_cold_thermometer_pixels(), zoom=.36, interpolation="lanczos")
     symbols = {"pluie_forte":"💦", "neige":"❄️",
-               "orage":"⚡", "verglas":"🧊", "gel":"🥶",
+               "orage":"⚡", "verglas":"🧊",
                "canicule":"🌡️", "inondation":"🌊"}
     if kind not in symbols:
         raise ValueError("Phénomène météo inconnu : " + kind)

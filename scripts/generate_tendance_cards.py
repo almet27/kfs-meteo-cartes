@@ -371,11 +371,13 @@ def write_premium_stage(stage, meta, data, now, risk_document):
         xx=42+i*190
         if i:d.line((xx-8,907,xx-8,973),
                     fill=(102,157,195,150),width=2)
-        state=hazards["risks"][key]["status"]
+        risk=hazards["risks"][key]
+        state=risk["status"]
+        severe_gel=key=="gel" and risk.get("severity")=="severe"
         txt(d,(xx+3,906),label,17,"white",True)
-        txt(d,(xx+3,946),pretty.get(state,"Non calculé"),16,
+        txt(d,(xx+3,946),"Sévère" if severe_gel else pretty.get(state,"Non calculé"),16,
             palette.get(state,"muted"),True)
-        if state=="marque":
+        if severe_gel or (key!="gel" and state=="marque"):
             d.ellipse((xx+156,908,xx+182,934),
                       fill=(220,39,58,255),outline=(255,255,255,255),width=2)
             txt(d,(xx+164,908),"!",21,"white",True)

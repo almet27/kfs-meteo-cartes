@@ -43,7 +43,7 @@ FOCUS=(-10,12,41,53)
 CATEGORIES=("neige","verglas","orage","tempete","gel","canicule","inondation","pluie_forte")
 COLORS={"vent_fort":"#FFCE66","tempete":"#FB765A","pluie_forte":"#37CFFF","neige":"#BCEBFF"}
 SNOW_ALT_MAX_M=800
-RED_MARKER_THRESHOLDS={"vent_fort":100.0,"pluie_forte":50.0,"neige":2.0}
+RED_MARKER_THRESHOLDS={"vent_fort":100.0,"pluie_forte":50.0,"neige":2.0,"gel":10.0}
 
 
 def red_marker(mark):
@@ -52,6 +52,7 @@ def red_marker(mark):
     threshold=RED_MARKER_THRESHOLDS.get(kind)
     if threshold is None:return False
     value=float(mark["value"])
+    if kind=="gel":return value<=-threshold
     return value>threshold if kind=="pluie_forte" else value>=threshold
 ELEVATION_ENDPOINT="https://api.open-meteo.com/v1/elevation"
 _TERRAIN_CACHE={}
@@ -63,9 +64,10 @@ def when(value):
 def load(path,name):
     ds=xr.open_dataset(path,engine="cfgrib",backend_kwargs={"indexpath":""})
     try:
-        if name=="fg10":
-            matches=[v for v in ds.data_vars.values() if int(v.attrs.get("GRIB_paramId",-1))==49]
-            if len(matches)!=1:raise ValueError("Champ ECMWF 10fg non identifiable")
+        ids={"fg10":49,"mn2t3":228027,"mn2t6":122}
+        if name in ids:
+            matches=[v for v in ds.data_vars.values() if int(v.attrs.get("GRIB_paramId",-1))==ids[name]]
+            if len(matches)!=1:raise ValueError("Champ ECMWF non identifiable : "+name)
             z=matches[0].squeeze().load()
         else:
             z=ds[name].squeeze().load()
@@ -113,15 +115,17 @@ def verify(ref,fields):
 def peaks(lon,lat,field,threshold,kind,limit=3,km=210):
     ys,xs=np.where(np.isfinite(field) & (field>=threshold))
     points=[]
+    land=land_geometry() if kind=="gel" else None
     for j,i in zip(ys,xs):
         x,y=float(lon[i]),float(lat[j])
         if not (FOCUS[0]<=x<=FOCUS[1] and FOCUS[2]<=y<=FOCUS[3]):continue
+        if land is not None and not land.intersects(Point(x,y)):continue
         points.append((float(field[j,i]),x,y))
     points.sort(reverse=True)
     chosen=[]
     for value,x,y in points:
         if all(distance_km(x,y,p["lon"],p["lat"])>=km for p in chosen):
-            chosen.append({"lon":round(x,2),"lat":round(y,2),"value":round(value,1),"kind":kind})
+            chosen.append({"lon":round(x,2),"lat":round(y,2),"value":-value if kind=="gel" else round(value,1),"kind":kind})
         if len(chosen)>=limit:break
     return chosen
 
@@ -396,17 +400,41 @@ def calculate(id,step,model,atlas,now):
         snow_markers=[]
         snow_info={"status":"indisponible","reason":"Filtre altitude indisponible : "+str(exc)[:155]}
     risks["neige"]=snow_info
+    # Actual period minima, not instantaneous T2m or temperature at 850 hPa.
+    cold_markers=[]
+    try:
+        name="mn2t3" if step<=144 else "mn2t6"
+        mins=[single(client,model,h,run,name,name)
+              for h in ([step-3,step] if step<=144 else [step])]
+        verify(f["msl"],mins)
+        if any(v[4].strip().lower() not in {"k","kelvin"} for v in mins):
+            raise ValueError("Unité Tmin non reconnue")
+        tmin=np.minimum.reduce([v[2] for v in mins])-273.15
+        if not np.all(np.isfinite(tmin)) or np.min(tmin)<-100 or np.max(tmin)>65:
+            raise ValueError("Tmin 2 m non plausible")
+        cold_markers=peaks(x,y,-tmin,0,"gel",3)
+        if cold_markers:
+            low=min(p["value"] for p in cold_markers)
+            risks["gel"]={"status":"marque" if low<=-5 else "possible",
+                          "severity":"severe" if low<=-10 else "marque" if low<=-5 else "gel",
+                          "min":round(low,2),"unit":"°C (Tmin 2 m/6 h)",
+                          "reason":"Minimum sur les 6 h précédentes, points terrestres"}
+        else:
+            risks["gel"]={"status":"absent","reason":"Aucun point terrestre à 0 °C ou moins"}
+    except Exception as exc:
+        cold_markers=[]
+        risks["gel"]={"status":"indisponible","reason":"Tmin 2 m indisponible : "+str(exc)[:155]}
     risks["inondation"]={"status":"indisponible",
                          "reason":"Crue non déductible d'un seul cumul de pluie de 6 h"}
     markers=((peaks(x,y,wind,50,"vent_fort",3) if wind is not None else []) +
              peaks(x,y,rain,10,"pluie_forte",4) +
-             snow_markers)
+             snow_markers + cold_markers)
     # Adjacent pin collision is undesirable even across different phenomena.
     selected=[]
     # Priorité aux pictogrammes rouges, puis aux pics normalisés par phénomène.
     def priority(p):
         threshold=RED_MARKER_THRESHOLDS[p["kind"]]
-        return (red_marker(p),p["value"]/threshold)
+        return (red_marker(p),(-p["value"] if p["kind"]=="gel" else p["value"])/threshold)
     for p in sorted(markers,key=priority,reverse=True):
         if all(distance_km(p["lon"],p["lat"],q["lon"],q["lat"])>=125 for q in selected):
             selected.append(p)
@@ -419,7 +447,7 @@ def calculate(id,step,model,atlas,now):
                             "fixed_scale_c":[-20,20],"opacity":0.92,
                             "description":"Température à 850 hPa modélisée, pas température au sol"},
             "risk_scope":"France et secteurs proches, domaine rectangulaire terre + mer",
-            "method":"Rafales max 10 m, pluie/neige sur les 6 h précédentes ; neige hors relief selon altitudes GLO-90 ; pas une vigilance officielle."}
+            "method":"Rafales max 10 m, Tmin 2 m terrestre, pluie/neige sur les 6 h précédentes ; neige hors relief selon altitudes GLO-90 ; pas une vigilance officielle."}
 
 def main():
     now=datetime.now(timezone.utc)
