@@ -6,6 +6,7 @@ from datetime import date,datetime,timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
 import requests
+from climato_zones import ZONES, zone_filename, zone_files
 import numpy as np
 import matplotlib
 matplotlib.use("Agg")
@@ -190,14 +191,7 @@ def main():
         polys=[geom["coordinates"]] if geom["type"]=="Polygon" else geom["coordinates"]
         for poly in polys:
             p=np.asarray(poly[0]);ax.plot(p[:,0],p[:,1],color="#65727b",linewidth=.45,zorder=4)
-    shown=[]
-    for r in sorted(obs,key=lambda r:-r["max"]):
-        x,y=r["x"],r["y"]
-        if not (xmin<=x<=xmax and ymin<=y<=ymax):continue
-        if any(math.hypot(x-a,y-b)<42000 for a,b in shown):continue
-        shown.append((x,y))
-        ax.text(x,y,f'{r["max"]:g}' if r["complete"] else f'≥{r["max"]:g}',color="#172029",fontsize=8,ha="center",va="center",fontweight="bold",zorder=5,path_effects=[withStroke(linewidth=2,foreground="white")])
-    ax.set_xlim(xmin,xmax);ax.set_ylim(ymin,ymax);ax.set_aspect("equal");ax.axis("off")
+    ax.set_aspect("equal");ax.axis("off")
     fig.suptitle("KFS MÉTÉO  |  CLIMATOLOGIE",y=.98,fontsize=15,fontweight="bold",color="#385064")
     ax.set_title("Hauteur maximale de neige au sol",fontsize=19,fontweight="bold",pad=12,color="#1c2a35")
     bar=fig.colorbar(img,ax=ax,orientation="horizontal",fraction=.045,pad=.03,aspect=32,spacing="uniform",ticks=[.005,.5,3,7.5,15,35,75,1550])
@@ -207,9 +201,25 @@ def main():
     fig.text(.5,.035,f"{START:%d/%m/%Y} – {cutoff:%d/%m/%Y} • mesures MF (cm), ≥ : série partielle ou relevé à 6 h • {len(valid)}/{(cutoff-START).days+1} jours IMS",ha="center",fontsize=10,fontweight="bold")
     fig.text(.5,.015,"SIM : estimation, pas une mesure locale • gris foncé : données manquantes • en montagne, forte variabilité",ha="center",fontsize=8.5,color="#52606b")
     filename="neige-sol-max.png"
-    fig.savefig(OUT/filename,dpi=150,bbox_inches="tight",pad_inches=.2);plt.close(fig)
+    viewports={"france":("France",(xmin,ymin,xmax,ymax))}
+    for zone,(label,(west,east,south,north)) in ZONES.items():
+        viewports[zone]=(label,TRANS.transform_bounds(west,south,east,north,densify_pts=21))
+    for zone,(label,(left,bottom,right,top)) in viewports.items():
+        ax.set_xlim(left,right);ax.set_ylim(bottom,top)
+        ax.set_title("Hauteur maximale de neige au sol"+("" if zone=="france" else " — "+label),fontsize=17 if zone!="france" else 19,fontweight="bold",pad=12,color="#1c2a35")
+        spacing=42000 if zone=="france" else max(8000,42000*max((right-left)/(xmax-xmin),(top-bottom)/(ymax-ymin)))
+        shown=[];artists=[]
+        for r in sorted(obs,key=lambda r:-r["max"]):
+            x,y=r["x"],r["y"]
+            if not (left<=x<=right and bottom<=y<=top):continue
+            if any(math.hypot(x-a,y-b)<spacing for a,b in shown):continue
+            shown.append((x,y))
+            artists.append(ax.text(x,y,f'{r["max"]:g}' if r["complete"] else f'≥{r["max"]:g}',color="#172029",fontsize=8,ha="center",va="center",fontweight="bold",zorder=5,path_effects=[withStroke(linewidth=2,foreground="white")],clip_on=True))
+        fig.savefig(OUT/(filename if zone=="france" else zone_filename(filename,zone)),dpi=150,bbox_inches="tight",pad_inches=.2)
+        for artist in artists:artist.remove()
+    plt.close(fig)
     manifest["maps"]=[m for m in manifest["maps"] if m["file"]!=filename]
-    manifest["maps"].append({"file":filename,"title":"Hauteur maximale de neige au sol estimée","end":cutoff.isoformat(),"stations":len(obs),"grid_cells":len(cells),"ims_days":len(valid),"ims_dates":valid,"kind":"snow_depth","source":"Météo-France SIM 8 km + stations; IMS 1 km si disponible"})
+    manifest["maps"].append({"file":filename,"title":"Hauteur maximale de neige au sol estimée","end":cutoff.isoformat(),"stations":len(obs),"grid_cells":len(cells),"ims_days":len(valid),"ims_dates":valid,"kind":"snow_depth","zones":zone_files(OUT,filename),"source":"Météo-France SIM 8 km + stations; IMS 1 km si disponible"})
     manifest_path.write_text(json.dumps(manifest,ensure_ascii=False,indent=2))
 if __name__=="__main__":
     parser=argparse.ArgumentParser()
