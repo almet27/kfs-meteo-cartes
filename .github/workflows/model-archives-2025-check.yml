@@ -1,0 +1,59 @@
+name: Diagnostic archives modèles 2025
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/model-archives-2025-check.yml'
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Tester les runs individuels à J+1, J+7, J+15
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json, math
+          from datetime import datetime, timedelta, timezone
+          from urllib.request import Request, urlopen
+          from urllib.parse import urlencode
+          def get(url, body=None):
+              req = Request(url, data=None if body is None else json.dumps(body).encode(), headers={"User-Agent":"KFS-Meteo archive diagnostic", "Content-Type":"application/json", "Accept":"application/json"})
+              with urlopen(req, timeout=50) as resp:
+                  return json.load(resp)
+          def valid(v):
+              return isinstance(v,(float,int)) and math.isfinite(v)
+          def check(times, values, date):
+              required = [(datetime.fromisoformat(date+"T00:00")+timedelta(days=i)).strftime("%Y-%m-%dT%H:%M") for i in (1,7,15)]
+              mapped = {str(t)[:16]: v for t,v in zip(times,values)}
+              return {t:valid(mapped.get(t)) for t in required}
+          failures = 0
+          for date in ("2025-01-05","2025-03-05","2025-07-05","2025-12-21"):
+              for model, prod in (("AIFS","ecmwf-aifs-single-forecast"),("GFS","noaa-gfs-forecast"),("IFS HRES 9km","ecmwf_ifs")):
+                  try:
+                      if model.startswith("IFS"):
+                          params = dict(latitude=48.8566, longitude=2.3522, hourly="temperature_2m,pressure_msl", models=prod, run=date+"T00:00", forecast_days=16, timezone="GMT")
+                          data = get("https://single-runs-api.open-meteo.com/v1/forecast?"+urlencode(params))
+                          hourly = data["hourly"]
+                          times = hourly["time"]
+                          series = {v:hourly[v] for v in ("temperature_2m","pressure_msl")}
+                      else:
+                          q = {"dataProductId":prod,"location":{"latitude":48.8566,"longitude":2.3522},"variables":["temperature_2m","pressure_reduced_to_mean_sea_level"],"initTime":date+"T00:00:00Z","maxLeadTimeHours":360}
+                          result = get("https://api.dynamical.org/v1/forecasts",{"queries":[q]})["results"][0]
+                          f = result["forecasts"][0]
+                          assert f["initTime"][:16] == date+"T00:00", "Run différent de la date demandée"
+                          times = f["validTimes"]
+                          series = f["data"]
+                      status = {v:check(times, vals,date) for v,vals in series.items()}
+                      print(model,date,json.dumps(status),flush=True)
+                      if not all(all(s.values()) for s in status.values()):
+                          failures += 1
+                  except Exception as exc:
+                      failures += 1
+                      print("SOURCE_ERROR",model,date,str(exc),flush=True)
+          print("Tests incomplets ou en erreur:",failures)
+          if failures:
+              raise SystemExit(1)
+          PY
