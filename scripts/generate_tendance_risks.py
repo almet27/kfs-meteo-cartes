@@ -491,9 +491,14 @@ def build_risk(id,step,model,recorded,run,f,x,y,wind,wind_error,rain,snow,tmin,c
     def priority(p):
         threshold=RED_MARKER_THRESHOLDS[p["kind"]]
         return (red_marker(p),(-p["value"] if p["kind"]=="gel" else p["value"])/threshold)
+    # Europe : carte plus lisible, priorité aux signaux sévères et espacement accru.
+    # France : conserver la densité et la sélection existantes.
+    min_spacing_km=125 if france else 250
     for p in sorted(markers,key=priority,reverse=True):
-        if all(distance_km(p["lon"],p["lat"],q["lon"],q["lat"])>=125 for q in selected):
+        if all(distance_km(p["lon"],p["lat"],q["lon"],q["lat"])>=min_spacing_km for q in selected):
             selected.append(p)
+            if not france and len(selected)>=10:
+                break
     background=render(id,recorded,f,selected,risks,france=france)
     return {"id":id,"step_h":step,"model":model,"run_utc":recorded,
             "valid_utc":(run+timedelta(hours=step)).isoformat(),
