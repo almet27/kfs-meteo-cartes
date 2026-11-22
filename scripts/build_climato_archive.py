@@ -23,11 +23,11 @@ SPECS={
  "sun":("soleil-anomalie.png","Anomalie d’ensoleillement","Écart (%)","PuOr_r",100),
  "frost":("gel-anomalie.png","Anomalie du nombre de jours de gel","Écart (jours)","RdBu",10)}
 def download(dep,typ,period,ids,years):
-    result=defaultdict(dict)
+    result={ }
     url=core.BASE+f"BASE/QUOT/Q_{dep}_{period}_{typ}.csv.gz"
     for attempt in range(2):
         try:
-            result=defaultdict(dict)
+            result={ }
             with requests.get(url,stream=True,timeout=(20,150)) as r:
                 r.raise_for_status();r.raw.decode_content=True
                 with gzip.GzipFile(fileobj=r.raw) as gz:
@@ -48,12 +48,15 @@ def download(dep,typ,period,ids,years):
                         for k,value in data.items():
                             if value is None or k=="snow" and not 0<=value<=3000:continue
                             # Unique date per station; aggregate after reading.
-                            result[(sid,y,m,k)][day]=value
+                            key=(sid,y,m,k); bit=1<<(day-1)
+                            total,mask=result.get(key,(0,0))
+                            if mask&bit:continue
+                            result[key]=(max(total,value) if k=="snow" else total+value,mask|bit)
             aggregates={}
-            for key,days in result.items():
+            for key,(total,mask) in result.items():
                 sid,y,m,k=key
-                if len(days)!=calendar.monthrange(y,m)[1]:continue
-                aggregates[key]=max(days.values()) if k=="snow" else sum(days.values())
+                if mask!=(1<<calendar.monthrange(y,m)[1])-1:continue
+                aggregates[key]=total
             return aggregates
         except Exception as e:logging.warning("%s %s %s: %s",dep,typ,period,e)
     return {}
