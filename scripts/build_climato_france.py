@@ -7,6 +7,7 @@ from zoneinfo import ZoneInfo
 from pathlib import Path
 import requests
 from climato_static_fusion import fetch_static, complete_static
+from climato_zones import ZONES, zone_filename, zone_files
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -179,28 +180,40 @@ def render(points,boundaries,title,units,cmap,norm,metric,cutoff,filename,period
     # All eligible stations still enter the interpolation.
     from matplotlib import patheffects
     order=sorted(range(len(values)),key=lambda i:(-ys[i],xs[i]))
-    plotted=[]
-    for i in order:
-        x,y,v=xs[i],ys[i],values[i]
-        if any(math.hypot((x-px)*111.2*math.cos(math.radians((y+py)/2)),(y-py)*111.2)<65 for px,py in plotted):
-            continue
-        plotted.append((x,y))
-        rgba=cm(norm(v))
-        light=.2126*rgba[0]+.7152*rgba[1]+.0722*rgba[2]
-        fg,bg=("#172029","white") if light>.52 else ("white","#20252b")
-        label=(f"{v:+.1f}" if metric in ("temp","frost") else f"{v:+.0f}%") if "anomalie" in filename else (f"{v:.1f}" if metric=="temp" else f"{v:.0f}")
-        ax.text(x,y,label,ha="center",va="center",fontsize=8.2,fontweight="bold",color=fg,zorder=4,
-                path_effects=[patheffects.withStroke(linewidth=1.7,foreground=bg)])
-    ax.set_xlim(-5.7,9.9);ax.set_ylim(41.1,51.5);ax.set_aspect(1/math.cos(math.radians(46.5)));ax.set_xticks([]);ax.set_yticks([])
+    ax.set_aspect(1/math.cos(math.radians(46.5)));ax.set_xticks([]);ax.set_yticks([])
     for spine in ax.spines.values():spine.set_visible(False)
     fig.suptitle("KFS MÉTÉO  |  CLIMATOLOGIE",x=.5,y=.975,fontsize=15,fontweight="bold",color="#385064")
     ax.set_title(title,fontsize=19,fontweight="bold",pad=14,color="#1c2a35")
     sm=ScalarMappable(norm=norm,cmap=cm);sm.set_array([])
     bar=fig.colorbar(sm,ax=ax,orientation="horizontal",fraction=.045,pad=.035,aspect=32,extend="both",ticks=levels)
     bar.set_label(units)
-    fig.text(.5,.035,f"{period_label or cutoff.strftime('Du 1er au %d/%m/%Y')}  •  {len(points)} stations  •  {source_label}",ha="center",fontsize=11,fontweight="bold")
+    foot=fig.text(.5,.035,"",ha="center",fontsize=10,fontweight="bold")
     fig.text(.5,.015,method_label or "Zonage interpolé (IDW) • valeurs aux stations • normales 1991–2020 • gris : données insuffisantes",ha="center",fontsize=9,color="#52606b")
-    fig.savefig(OUT/filename,dpi=150,bbox_inches="tight",pad_inches=.2);plt.close(fig)
+    for zone,(label_zone,extent) in {"france":("France",(-5.7,9.9,41.1,51.5)),**ZONES}.items():
+        west,east,south,north=extent
+        spacing=65 if zone=="france" else max(14,65*max((east-west)/15.6,(north-south)/10.4))
+        local=int(((xs>=west)&(xs<=east)&(ys>=south)&(ys<=north)).sum())
+        ax.set_xlim(west,east);ax.set_ylim(south,north)
+        ax.set_title(title if zone=="france" else title+" — "+label_zone,fontsize=17 if zone!="france" else 19,fontweight="bold",pad=14,color="#1c2a35")
+        plotted=[]
+        artists=[]
+        for i in order:
+            x,y,v=xs[i],ys[i],values[i]
+            if not west<=x<=east or not south<=y<=north:continue
+            if any(math.hypot((x-px)*111.2*math.cos(math.radians((y+py)/2)),(y-py)*111.2)<spacing for px,py in plotted):
+                continue
+            plotted.append((x,y))
+            rgba=cm(norm(v))
+            light=.2126*rgba[0]+.7152*rgba[1]+.0722*rgba[2]
+            fg,bg=("#172029","white") if light>.52 else ("white","#20252b")
+            label=(f"{v:+.1f}" if metric in ("temp","frost") else f"{v:+.0f}%") if "anomalie" in filename else (f"{v:.1f}" if metric=="temp" else f"{v:.0f}")
+            artists.append(ax.text(x,y,label,ha="center",va="center",fontsize=8.2,fontweight="bold",color=fg,zorder=4,
+                    path_effects=[patheffects.withStroke(linewidth=1.7,foreground=bg)],clip_on=True))
+        source=source_label if zone=="france" or source_label=="Météo-France" else "Réseaux : Météo-France / StatIC (selon disponibilité)"
+        foot.set_text(f"{period_label or cutoff.strftime('Du 1er au %d/%m/%Y')}  •  {local} stations dans la zone  •  {source}")
+        fig.savefig(OUT/(filename if zone=="france" else zone_filename(filename,zone)),dpi=150,bbox_inches="tight",pad_inches=.2)
+        for artist in artists:artist.remove()
+    plt.close(fig)
 
 def main():
     if END.month!=TODAY.month:raise SystemExit("Pas encore de journée complète du mois.")
@@ -288,6 +301,7 @@ def main():
         method+=" • données StatIC non certifiées" if ic else " • StatIC sans série complète"
         render(pts,boundaries,title,units,cmap,Normalize(vmin=lo,vmax=hi),key,cutoff,filename,source_label=source,method_label=method)
         manifest["maps"].append({"file":filename,"title":title,"end":cutoff.isoformat(),"stations":len(pts),"mf_stations":len(mf),"static_stations":len(ic),"kind":"observed_fusion","source":"Météo-France ; Infoclimat StatIC via chom.engineering (LO 2.0)"})
+    for m in manifest["maps"]:m["zones"]=zone_files(OUT,m["file"])
     (OUT/"station-audit.json").write_text(json.dumps(audit,ensure_ascii=False,separators=(",",":")))
     (OUT/"latest.json").write_text(json.dumps(manifest,ensure_ascii=False,indent=2))
 if __name__=="__main__":main()
