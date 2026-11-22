@@ -121,7 +121,7 @@ def select(results,key,n,catalog):
             coverage.add(dep)
     return selected,len(coverage)
 
-def render(points,boundaries,title,units,cmap,norm,metric,cutoff,filename):
+def render(points,boundaries,title,units,cmap,norm,metric,cutoff,filename,period_label=None):
     import numpy as np
     from matplotlib.path import Path as MplPath
     from matplotlib.colors import BoundaryNorm
@@ -196,7 +196,7 @@ def render(points,boundaries,title,units,cmap,norm,metric,cutoff,filename):
     sm=ScalarMappable(norm=norm,cmap=cm);sm.set_array([])
     bar=fig.colorbar(sm,ax=ax,orientation="horizontal",fraction=.045,pad=.035,aspect=32,extend="both",ticks=levels)
     bar.set_label(units)
-    fig.text(.5,.035,f"Du 1er au {cutoff.strftime('%d/%m/%Y')}  •  {len(points)} stations  •  Météo-France",ha="center",fontsize=11,fontweight="bold")
+    fig.text(.5,.035,f"{period_label or cutoff.strftime('Du 1er au %d/%m/%Y')}  •  {len(points)} stations  •  Météo-France",ha="center",fontsize=11,fontweight="bold")
     fig.text(.5,.015,"Zonage interpolé (IDW) • valeurs aux stations • normales 1991–2020 • gris : données insuffisantes",ha="center",fontsize=9,color="#52606b")
     fig.savefig(OUT/filename,dpi=150,bbox_inches="tight",pad_inches=.2);plt.close(fig)
 
