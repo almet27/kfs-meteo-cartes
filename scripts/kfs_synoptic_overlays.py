@@ -7,73 +7,46 @@ Air-mass categories describe the 850 hPa temperature only, not air-mass origin.
 from __future__ import annotations
 import math
 import numpy as np
-import matplotlib.patheffects as pe
-from matplotlib.offsetbox import DrawingArea
-from matplotlib.lines import Line2D
-from matplotlib.path import Path
-from matplotlib.patches import PathPatch
 import cartopy.crs as ccrs
 
+from functools import lru_cache
+from PIL import Image, ImageDraw, ImageFont, ImageFilter
+from matplotlib.offsetbox import OffsetImage
+
+
+@lru_cache(maxsize=12)
+def _emoji_pixels(symbol):
+    """Render actual color emoji with the Ubuntu Noto Color Emoji font."""
+    font = ImageFont.truetype("/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf", 109)
+    image = Image.new("RGBA", (192, 192))
+    ImageDraw.Draw(image).text((18, 18), symbol, font=font, embedded_color=True)
+    bounds = image.getbbox()
+    if not bounds:
+        raise RuntimeError("Emoji météo non rendu : " + symbol)
+    image = image.crop(bounds)
+    if not np.any(np.ptp(np.asarray(image)[:,:,:3], axis=2)>20):
+        raise RuntimeError("Emoji météo sans couleur : " + symbol)
+    image.thumbnail((116,116), Image.Resampling.LANCZOS)
+    canvas = Image.new("RGBA", (128,128))
+    canvas.alpha_composite(image, ((128-image.width)//2,(128-image.height)//2))
+    # Thin outline retains legibility against both warm and cold air masses.
+    mask = canvas.getchannel("A").filter(ImageFilter.MaxFilter(5))
+    outline = Image.new("RGBA", canvas.size, (16,40,66,0))
+    outline.putalpha(mask.point(lambda a: int(a*.8)))
+    outline.alpha_composite(canvas)
+    return np.asarray(outline)
+
+
 def premium_pictogram(kind):
-    """Original compact weather-TV vector icons, with soft dark outlines."""
-    area = DrawingArea(48, 48, 0, 0)
-    ink = "#123452"
-
-    def curve(coords, color, width=2.8):
-        path = Path(coords, [Path.MOVETO] + [Path.CURVE4]*(len(coords)-1))
-        p = PathPatch(path, facecolor="none", edgecolor=color,
-                      linewidth=width, capstyle="round", joinstyle="round")
-        p.set_path_effects([pe.Stroke(linewidth=width+2.6, foreground=ink, alpha=.85), pe.Normal()])
-        area.add_artist(p)
-
-    def polygon(coords, codes, fill, edge=ink, width=1.35):
-        p = PathPatch(Path(coords, codes), facecolor=fill, edgecolor=edge,
-                      linewidth=width, joinstyle="round")
-        p.set_path_effects([pe.SimplePatchShadow(offset=(1,-1.4), alpha=.35), pe.Normal()])
-        area.add_artist(p)
-
-    def cloud():
-        verts = [(10,22),(5,22),(3,26),(4,30),
-                 (5,35),(9,37),(14,37),
-                 (16,44),(25,46),(30,41),
-                 (33,40),(35,37),(35,34),
-                 (42,35),(46,30),(43,25),
-                 (41,22),(39,22),(35,22),
-                 (10,22),(10,22)]
-        codes = [Path.MOVETO]+[Path.CURVE4]*18+[Path.LINETO,Path.CLOSEPOLY]
-        polygon(verts,codes,"#F4FAFF")
-
-    def flake(x,y,r):
-        for k in range(3):
-            t=math.radians(60*k)
-            dx,dy=r*math.cos(t),r*math.sin(t)
-            line=Line2D([x-dx,x+dx],[y-dy,y+dy],color="#EAFBFF",
-                        linewidth=1.6,solid_capstyle="round")
-            line.set_path_effects([pe.Stroke(linewidth=3.5,foreground=ink),pe.Normal()])
-            area.add_artist(line)
-
-    if kind in ("vent_fort","tempete"):
-        curve([(4,35),(12,35),(24,35),(32,35),
-               (41,35),(43,44),(35,44),(31,44),(29,41),(29,40)],
-              "#F5FAFF",3.4)
-        curve([(4,25),(13,25),(31,25),(40,25),
-               (47,25),(47,16),(41,16),(37,16),(35,18),(35,20)],
-              "#A9EBFF",3.0)
-        curve([(8,15),(12,15),(21,15),(26,15),
-               (33,15),(33,7),(26,7),(23,7),(21,9),(21,10)],
-              "#F5FAFF",2.8)
-    elif kind=="pluie_forte":
-        cloud()
-        for x,y in ((13,9),(24,5),(35,9)):
-            verts=[(x+2,y+8),(x+1,y+6),(x-3,y+2),(x-3,y),
-                   (x-3,y-4),(x+4,y-4),(x+4,y),
-                   (x+4,y+2),(x+3,y+5),(x+2,y+8),(x+2,y+8)]
-            polygon(verts,[Path.MOVETO]+[Path.CURVE4]*9+[Path.CLOSEPOLY],"#44BCF4",width=.9)
-    elif kind=="neige":
-        cloud()
-        for x,y in ((12,10),(24,6),(36,10)):
-            flake(x,y,4.2)
-    return area
+    """Unicode weather emoji rendered in color, with transparent background."""
+    symbols = {"pluie_forte":"🌧️", "neige":"🌨️",
+               "vent_fort":"💨", "tempete":"💨",
+               "orage":"⛈️", "verglas":"🧊", "gel":"🥶",
+               "canicule":"🌡️", "inondation":"🌊"}
+    if kind not in symbols:
+        raise ValueError("Phénomène météo inconnu : " + kind)
+    # Each call creates its own Matplotlib artist; only pixels are cached.
+    return OffsetImage(_emoji_pixels(symbols[kind]), zoom=.36, interpolation="lanczos")
 
 
 def t850_celsius(data, unit):

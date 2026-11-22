@@ -119,7 +119,7 @@ jobs:
       - name: Installer les decodeurs ECMWF et le moteur graphique
         run: |
           sudo apt-get update
-          sudo apt-get install -y libeccodes-dev
+          sudo apt-get install -y libeccodes-dev fonts-noto-color-emoji
           pip install ecmwf-opendata cfgrib eccodes xarray numpy matplotlib cartopy 'Pillow>=10,<13'
       - name: Extraire les diagnostics aux memes cycles que les cartes Europe
         run: python scripts/generate_tendance_analysis.py
