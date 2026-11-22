@@ -405,6 +405,15 @@
         "2025-12-31"
       ],
       "kind": "snow_depth",
+      "zones": {
+        "nord_ouest": "neige-sol-max-nord_ouest.png",
+        "nord_est": "neige-sol-max-nord_est.png",
+        "sud_ouest": "neige-sol-max-sud_ouest.png",
+        "sud_est": "neige-sol-max-sud_est.png",
+        "alpes": "neige-sol-max-alpes.png",
+        "pyrenees": "neige-sol-max-pyrenees.png",
+        "massif_central": "neige-sol-max-massif_central.png"
+      },
       "source": "Météo-France SIM 8 km + stations; IMS 1 km si disponible"
     }
   ]
