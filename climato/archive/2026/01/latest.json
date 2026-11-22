@@ -3,39 +3,120 @@
   "month": "2026-01",
   "period": "01/01/2026 – 31/01/2026",
   "start": "2026-01-01",
-  "generated_at": "2026-11-22T14:01:32.114969+01:00",
+  "generated_at": "2026-11-22T14:58:25.881766+01:00",
   "source": "Météo-France, archives quotidiennes",
   "maps": [
     {
       "file": "temperature-anomalie.png",
       "title": "Anomalie de température moyenne",
       "end": "2026-01-31",
-      "stations": 384
+      "stations": 384,
+      "zones": {
+        "nord_ouest": "temperature-anomalie-nord_ouest.png",
+        "nord_est": "temperature-anomalie-nord_est.png",
+        "sud_ouest": "temperature-anomalie-sud_ouest.png",
+        "sud_est": "temperature-anomalie-sud_est.png",
+        "alpes": "temperature-anomalie-alpes.png",
+        "pyrenees": "temperature-anomalie-pyrenees.png",
+        "massif_central": "temperature-anomalie-massif_central.png"
+      }
     },
     {
       "file": "pluie-anomalie.png",
       "title": "Anomalie de précipitations",
       "end": "2026-01-31",
-      "stations": 409
+      "stations": 409,
+      "zones": {
+        "nord_ouest": "pluie-anomalie-nord_ouest.png",
+        "nord_est": "pluie-anomalie-nord_est.png",
+        "sud_ouest": "pluie-anomalie-sud_ouest.png",
+        "sud_est": "pluie-anomalie-sud_est.png",
+        "alpes": "pluie-anomalie-alpes.png",
+        "pyrenees": "pluie-anomalie-pyrenees.png",
+        "massif_central": "pluie-anomalie-massif_central.png"
+      }
     },
     {
       "file": "soleil-anomalie.png",
       "title": "Anomalie d’ensoleillement",
       "end": "2026-01-31",
-      "stations": 48
+      "stations": 48,
+      "zones": {
+        "nord_ouest": "soleil-anomalie-nord_ouest.png",
+        "nord_est": "soleil-anomalie-nord_est.png",
+        "sud_ouest": "soleil-anomalie-sud_ouest.png",
+        "sud_est": "soleil-anomalie-sud_est.png",
+        "alpes": "soleil-anomalie-alpes.png",
+        "pyrenees": "soleil-anomalie-pyrenees.png",
+        "massif_central": "soleil-anomalie-massif_central.png"
+      }
     },
     {
       "file": "gel-anomalie.png",
       "title": "Anomalie du nombre de jours de gel",
       "end": "2026-01-31",
-      "stations": 384
+      "stations": 384,
+      "zones": {
+        "nord_ouest": "gel-anomalie-nord_ouest.png",
+        "nord_est": "gel-anomalie-nord_est.png",
+        "sud_ouest": "gel-anomalie-sud_ouest.png",
+        "sud_est": "gel-anomalie-sud_est.png",
+        "alpes": "gel-anomalie-alpes.png",
+        "pyrenees": "gel-anomalie-pyrenees.png",
+        "massif_central": "gel-anomalie-massif_central.png"
+      }
     },
     {
       "file": "neige-sol-max.png",
-      "title": "Hauteur maximale de neige au sol mesurée",
+      "title": "Hauteur maximale de neige au sol estimée",
       "end": "2026-01-31",
-      "stations": 112,
-      "kind": "snow_observed"
+      "stations": 408,
+      "grid_cells": 9892,
+      "ims_days": 31,
+      "ims_dates": [
+        "2026-01-01",
+        "2026-01-02",
+        "2026-01-03",
+        "2026-01-04",
+        "2026-01-05",
+        "2026-01-06",
+        "2026-01-07",
+        "2026-01-08",
+        "2026-01-09",
+        "2026-01-10",
+        "2026-01-11",
+        "2026-01-12",
+        "2026-01-13",
+        "2026-01-14",
+        "2026-01-15",
+        "2026-01-16",
+        "2026-01-17",
+        "2026-01-18",
+        "2026-01-19",
+        "2026-01-20",
+        "2026-01-21",
+        "2026-01-22",
+        "2026-01-23",
+        "2026-01-24",
+        "2026-01-25",
+        "2026-01-26",
+        "2026-01-27",
+        "2026-01-28",
+        "2026-01-29",
+        "2026-01-30",
+        "2026-01-31"
+      ],
+      "kind": "snow_depth",
+      "zones": {
+        "nord_ouest": "neige-sol-max-nord_ouest.png",
+        "nord_est": "neige-sol-max-nord_est.png",
+        "sud_ouest": "neige-sol-max-sud_ouest.png",
+        "sud_est": "neige-sol-max-sud_est.png",
+        "alpes": "neige-sol-max-alpes.png",
+        "pyrenees": "neige-sol-max-pyrenees.png",
+        "massif_central": "neige-sol-max-massif_central.png"
+      },
+      "source": "Météo-France SIM 8 km + stations; IMS 1 km si disponible"
     }
   ]
 }

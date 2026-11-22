@@ -3,32 +3,68 @@
   "month": "2026-05",
   "period": "01/05/2026 – 31/05/2026",
   "start": "2026-05-01",
-  "generated_at": "2026-11-22T14:02:06.004276+01:00",
+  "generated_at": "2026-11-22T14:59:48.517117+01:00",
   "source": "Météo-France, archives quotidiennes",
   "maps": [
     {
       "file": "temperature-anomalie.png",
       "title": "Anomalie de température moyenne",
       "end": "2026-05-31",
-      "stations": 389
+      "stations": 389,
+      "zones": {
+        "nord_ouest": "temperature-anomalie-nord_ouest.png",
+        "nord_est": "temperature-anomalie-nord_est.png",
+        "sud_ouest": "temperature-anomalie-sud_ouest.png",
+        "sud_est": "temperature-anomalie-sud_est.png",
+        "alpes": "temperature-anomalie-alpes.png",
+        "pyrenees": "temperature-anomalie-pyrenees.png",
+        "massif_central": "temperature-anomalie-massif_central.png"
+      }
     },
     {
       "file": "pluie-anomalie.png",
       "title": "Anomalie de précipitations",
       "end": "2026-05-31",
-      "stations": 417
+      "stations": 417,
+      "zones": {
+        "nord_ouest": "pluie-anomalie-nord_ouest.png",
+        "nord_est": "pluie-anomalie-nord_est.png",
+        "sud_ouest": "pluie-anomalie-sud_ouest.png",
+        "sud_est": "pluie-anomalie-sud_est.png",
+        "alpes": "pluie-anomalie-alpes.png",
+        "pyrenees": "pluie-anomalie-pyrenees.png",
+        "massif_central": "pluie-anomalie-massif_central.png"
+      }
     },
     {
       "file": "soleil-anomalie.png",
       "title": "Anomalie d’ensoleillement",
       "end": "2026-05-31",
-      "stations": 51
+      "stations": 51,
+      "zones": {
+        "nord_ouest": "soleil-anomalie-nord_ouest.png",
+        "nord_est": "soleil-anomalie-nord_est.png",
+        "sud_ouest": "soleil-anomalie-sud_ouest.png",
+        "sud_est": "soleil-anomalie-sud_est.png",
+        "alpes": "soleil-anomalie-alpes.png",
+        "pyrenees": "soleil-anomalie-pyrenees.png",
+        "massif_central": "soleil-anomalie-massif_central.png"
+      }
     },
     {
       "file": "gel-anomalie.png",
       "title": "Anomalie du nombre de jours de gel",
       "end": "2026-05-31",
-      "stations": 389
+      "stations": 389,
+      "zones": {
+        "nord_ouest": "gel-anomalie-nord_ouest.png",
+        "nord_est": "gel-anomalie-nord_est.png",
+        "sud_ouest": "gel-anomalie-sud_ouest.png",
+        "sud_est": "gel-anomalie-sud_est.png",
+        "alpes": "gel-anomalie-alpes.png",
+        "pyrenees": "gel-anomalie-pyrenees.png",
+        "massif_central": "gel-anomalie-massif_central.png"
+      }
     },
     {
       "file": "neige-sol-max.png",
