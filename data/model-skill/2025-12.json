@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "period": "2025-12",
-  "generated_utc": "2026-11-22T15:08:18.359134+00:00",
+  "generated_utc": "2026-11-23T20:25:51.550897+00:00",
   "territory": "France métropolitaine, Corse comprise",
   "reference": "Réanalyse ERA5 (référence modélisée, pas relevés de stations)",
   "method": "MAE, 12 lieux; runs 00 UTC des jours 1, 5, 9, 13, 17, 21, 25, 29 du mois; validité 00 UTC à J+1..J+15; échantillon commun aux modèles disponibles",
@@ -42,12 +42,25 @@
   "models": {
     "ifs": "ecmwf_ifs",
     "aifs": "ecmwf-aifs-single-forecast",
-    "gfs": "noaa-gfs-forecast"
+    "gfs": "noaa-gfs-forecast",
+    "aifs_control": "ecmwf-aifs-ens-forecast"
   },
-  "source": "Open-Meteo IFS HRES 9km, Dynamical AIFS/GFS, ERA5",
+  "source": "Open-Meteo IFS, Dynamical.org AIFS/GFS/AIFS ENS, ERA5",
   "notes": [
-    "AIGFS exclu avant avril 2026; résolution IFS historique différente"
+    "AIGFS exclu avant avril 2026; résolution IFS historique différente",
+    "AIFS ENS Control (membre 0) distinct d'AIFS Single ; échantillon optionnel, n par modèle."
   ],
+  "aifs_control_run_dates": [
+    "2025-12-01",
+    "2025-12-05",
+    "2025-12-09",
+    "2025-12-13",
+    "2025-12-17",
+    "2025-12-21",
+    "2025-12-25",
+    "2025-12-29"
+  ],
+  "aifs_control_attempted_utc": "2026-11-23T20:25:51.550925+00:00",
   "metrics": {
     "temperature_2m": {
       "unit": "°C",
@@ -119,6 +132,93 @@
           3.295,
           4.073,
           4.697
+        ],
+        "aifs_control": [
+          1.464,
+          1.417,
+          1.593,
+          1.96,
+          2.353,
+          2.618,
+          2.291,
+          2.576,
+          2.793,
+          2.908,
+          3.277,
+          3.175,
+          4.32,
+          4.565,
+          4.221
+        ]
+      },
+      "n_by_model": {
+        "ifs": [
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96
+        ],
+        "aifs": [
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96
+        ],
+        "gfs": [
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96
+        ],
+        "aifs_control": [
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96
         ]
       }
     },
@@ -192,6 +292,93 @@
           11.809,
           10.324,
           10.544
+        ],
+        "aifs_control": [
+          0.444,
+          0.82,
+          1.017,
+          2.373,
+          3.481,
+          3.66,
+          3.858,
+          5.705,
+          7.751,
+          7.852,
+          8.03,
+          9.473,
+          13.33,
+          11.837,
+          11.628
+        ]
+      },
+      "n_by_model": {
+        "ifs": [
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96
+        ],
+        "aifs": [
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96
+        ],
+        "gfs": [
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96
+        ],
+        "aifs_control": [
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96
         ]
       }
     }
