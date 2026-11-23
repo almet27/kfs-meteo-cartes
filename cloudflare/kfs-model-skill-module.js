@@ -11,7 +11,7 @@ function kfsSkillPreviousMonth(){
 }
 function kfsSkillMonthOK(month){
   return /^20\d\d-(0[1-9]|1[0-2])$/.test(month)&&
-    month>="2026-04"&&month<=kfsSkillPreviousMonth();
+    month>="2025-01"&&month<=kfsSkillPreviousMonth();
 }
 function kfsSkillOptions(){
   return [
@@ -67,7 +67,7 @@ async function kfsSkillLoad(month){
 function kfsSkillChart(data,metric,month){
   const series=data.metrics[metric];
   const unit=series.unit|| (metric==="pressure_msl"?"hPa":"°C");
-  const datasets=KFS_SKILL_KEYS.map(key=>({
+  const datasets=KFS_SKILL_KEYS.filter(key=>series.series?.[key]?.some(v=>typeof v==="number")).map(key=>({
     label:KFS_SKILL_NAMES[key],
     data:Array.from({length:15},(_,i)=>{
       const n=series.series?.[key]?.[i];
@@ -173,7 +173,7 @@ function kfsRegimeChart(r,month,key,score){
   const labels=Array.from({length:15},(_,i)=>"J+"+(i+1));
   const dataKey=score?"scores_pct":"index_mae_hpa";
   const unit=score?"%":"hPa";
-  const datasets=KFS_SKILL_KEYS.map(model=>({
+  const datasets=KFS_SKILL_KEYS.filter(model=>r[dataKey]?.[model]?.some(v=>typeof v==="number")).map(model=>({
     label:KFS_SKILL_NAMES[model],
     data:labels.map((_,i)=>{
       const n=r[dataKey]?.[model]?.[i];
@@ -238,35 +238,56 @@ async function kfsRegimeComplete(interaction,month,key){
     }
     const r=report.regimes?.[key];
     if(!r||!r.n?.some(n=>n>0))throw Error("Aucune comparaison exploitable pour "+key);
-    const anyScore=KFS_SKILL_KEYS.some(m=>r.scores_pct?.[m]?.some(v=>typeof v==="number"));
-    const charts=[];
-    if(anyScore){
-      const img=await kfsRenderEnsembleChart(kfsRegimeChart(r,month,key,true));
-      charts.push({filename:"kfs-fiabilite-"+key+".png",
-        description:"Score balanced accuracy de détection "+r.title,
-        bytes:img});
-    }
-    const errors=await kfsRenderEnsembleChart(kfsRegimeChart(r,month,key,false));
-    charts.push({filename:"kfs-gradient-"+key+".png",
-      description:"Erreur du gradient de pression "+r.title,bytes:errors});
+    const models=KFS_SKILL_KEYS.filter(m=>report.models?.[m]&&
+      r.index_mae_hpa?.[m]?.some(v=>typeof v==="number"));
+    if(!models.length)throw Error("Aucun modèle vérifié pour "+month);
+    const anyScore=models.some(m=>r.scores_pct?.[m]?.some(v=>typeof v==="number"));
     const i6=6;
     const comparable=Number(r.n[i6]||0);
     const trueCases=Number(r.event_n[i6]||0);
     const distinctRuns=report.run_dates?.length||0;
+    const atJ7=models.map(m=>{
+      const score=r.scores_pct?.[m]?.[i6];
+      const mae=r.index_mae_hpa?.[m]?.[i6];
+      return KFS_SKILL_NAMES[m]+" : "+
+        (typeof score==="number"?score.toFixed(1)+" %":"score non évaluable")+
+        " ; erreur "+(typeof mae==="number"?mae.toFixed(2)+" hPa":"non disponible");
+    });
     const msg=[
       "📊 **KFS MÉTÉO — "+r.title+" • "+month+"**",
-      "Comparaison réelle **ECMWF IFS · AIFS · AIGFS · GFS** à **J+1…J+15**.",
+      "Comparaison réelle **"+models.map(m=>KFS_SKILL_NAMES[m]).join(" · ")+"** à **J+1…J+15**.",
       "**"+distinctRuns+" runs 00 UTC** · à J+7 : "+comparable+
         " échéances horaires appariées, dont "+trueCases+" cas positifs selon ERA5.",
+      "**J+7 :**\n"+atJ7.join("\n"),
       anyScore?
-        "**Graphique 1 :** score de détection (balanced accuracy ; 100 % idéal, 50 % sans discrimination).":
-        "⚠️ **Score événementiel non calculable** : occurrences/absences trop peu représentées ce mois.",
-      "**Graphique "+(anyScore?"2":"1")+" :** erreur absolue moyenne de l'indice barométrique (hPa). Plus bas = meilleur.",
+        "**Graphique de détection :** balanced accuracy (100 % idéal, 50 % sans discrimination).":
+        "⚠️ **Score événementiel non calculable** : occurrences/absences trop peu représentées.",
+      "**Graphique des gradients :** erreur absolue moyenne de l'indice barométrique (hPa). Plus bas = meilleur.",
       "Définition : "+r.definition+".",
       "⚠️ **"+r.disclaimer+"**.",
       "Source : prévisions archivées et réanalyse ERA5. Un score absent signifie **échantillon insuffisant**, pas 0 %."
     ];
-    await kfsRegimeSend(interaction,{content:msg.join("\n"),allowed_mentions:{parse:[]}},charts);
+    const payload={content:msg.join("\n"),allowed_mentions:{parse:[]}};
+    // Répondre d'abord avec les valeurs : la génération de deux graphiques
+    // ne doit jamais laisser une interaction Discord sans réponse.
+    await kfsRegimeSend(interaction,payload);
+    const figures=[
+      ...(anyScore?[{score:true,filename:"kfs-fiabilite-"+key+".png",
+        description:"Score de détection "+r.title}]:[]),
+      {score:false,filename:"kfs-gradient-"+key+".png",
+        description:"Erreur du gradient de pression "+r.title}
+    ];
+    // Rendu parallèle : évite de dépasser la fenêtre de waitUntil Cloudflare.
+    const rendered=await Promise.allSettled(figures.map(async fig=>({
+      ...fig,bytes:await kfsRenderEnsembleChart(kfsRegimeChart(r,month,key,fig.score))
+    })));
+    const charts=rendered.filter(item=>item.status==="fulfilled").map(item=>item.value);
+    rendered.filter(item=>item.status==="rejected").forEach(item=>
+      console.warn("KFS_REGIME_CHART",String(item.reason).slice(0,250)));
+    if(charts.length){
+      await kfsRegimeSend(interaction,payload,charts).catch(e=>
+        console.error("KFS_REGIME_IMAGE_REPLY",String(e).slice(0,250)));
+    }
   }catch(error){
     console.error("KFS_REGIME_ERROR",String(error?.stack||error).slice(0,600));
     await kfsRegimeSend(interaction,{content:"⚠️ **/statistiques modeles** : "+
