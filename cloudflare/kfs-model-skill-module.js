@@ -2,8 +2,8 @@
    Les scores proviennent du pipeline scripts/build_model_skill.py.
    Aucune série fictive ou interpolation de résultats manquants. */
 let KFS_SKILL_SYNCED=false;
-const KFS_SKILL_COLORS={ifs:"#37bdf2",aifs:"#75e2a4",aigfs:"#f59ed5",gfs:"#fbbf67"};
-const KFS_SKILL_NAMES={ifs:"ECMWF IFS",aifs:"ECMWF AIFS",aigfs:"NOAA AIGFS",gfs:"NOAA GFS"};
+const KFS_SKILL_COLORS={ifs:"#37bdf2",aifs:"#75e2a4",aifs_control:"#ae91ff",aigfs:"#f59ed5",gfs:"#fbbf67"};
+const KFS_SKILL_NAMES={ifs:"ECMWF IFS",aifs:"ECMWF AIFS Single",aifs_control:"ECMWF AIFS ENS Control",aigfs:"NOAA AIGFS",gfs:"NOAA GFS"};
 const KFS_SKILL_KEYS=Object.keys(KFS_SKILL_NAMES);
 function kfsSkillPreviousMonth(){
   const d=new Date();d.setUTCDate(1);d.setUTCMonth(d.getUTCMonth()-1);
@@ -40,7 +40,7 @@ async function kfsSkillRegister(env){
     const old=existing?.options||[];
     if(old.some(o=>o.type!==1&&o.type!==2))
       throw Error("La commande /statistiques existe déjà avec des options simples : ne pas l'écraser");
-    const sub={type:1,name:"modeles",description:"Fiabilité des quatre modèles sur la France de J+1 à J+15",options:kfsSkillOptions()};
+    const sub={type:1,name:"modeles",description:"Fiabilité des modèles (dont AIFS ENS Control) de J+1 à J+15",options:kfsSkillOptions()};
     const options=[...old.filter(o=>o.name!=="modeles"),sub];
     const command={name:"statistiques",type:1,
       description:existing?.description||"Statistiques météorologiques KFS MÉTÉO",
@@ -105,7 +105,7 @@ async function kfsSkillSend(interaction,payload,image){
     form.append("payload_json",JSON.stringify({
       ...payload,
       attachments:[{id:0,filename:"KFS-statistiques-modeles.png",
-        description:"MAE des modèles ECMWF IFS, AIFS, NOAA AIGFS et GFS de J+1 à J+15"}]
+        description:"MAE des modèles ECMWF IFS, AIFS Single, AIFS ENS Control, NOAA AIGFS et GFS de J+1 à J+15"}]
     }));
     form.append("files[0]",new Blob([image],{type:"image/png"}),"KFS-statistiques-modeles.png");
     request={method:"PATCH",body:form,signal:AbortSignal.timeout(25000)};
@@ -143,6 +143,11 @@ async function kfsSkillComplete(interaction,month,metric){
       "Référence : réanalyse ERA5 (non relevés directs de stations).",
       "Échantillon : jours 1, 5, 9, 13, 17, 21, 25 et 29, selon disponibilité.",
       j15?"J+15 : "+j15+" comparaisons vérifiées.":"⚠️ J+15 : données insuffisantes, aucun chiffre inventé."];
+    const controlN=result.n_by_model?.aifs_control||[];
+    lines.push(controlN.some(n=>n>0)?
+      "AIFS ENS Control : membre 0, vérifié sur un sous-échantillon indépendant ("+
+        (controlN[6]||0)+" à J+7).":
+      "AIFS ENS Control : pas encore de vérification archivée pour ce mois ; aucune courbe fictive.");
     const image=await kfsRenderEnsembleChart(kfsSkillChart(data,metric,month));
     await kfsSkillSend(interaction,{content:lines.join("\n"),allowed_mentions:{parse:[]}},image);
   }catch(error){
@@ -265,7 +270,11 @@ async function kfsRegimeComplete(interaction,month,key){
       "**Graphique des gradients :** erreur absolue moyenne de l'indice barométrique (hPa). Plus bas = meilleur.",
       "Définition : "+r.definition+".",
       "⚠️ **"+r.disclaimer+"**.",
-      "Source : prévisions archivées et réanalyse ERA5. Un score absent signifie **échantillon insuffisant**, pas 0 %."
+      "Source : prévisions archivées et réanalyse ERA5. Un score absent signifie **échantillon insuffisant**, pas 0 %.",
+      models.includes("aifs_control")?
+        "AIFS ENS Control = membre 0 distinct d'AIFS Single ; effectifs propres, à J+7 : "+
+          (r.n_by_model?.aifs_control?.[6]||0)+" comparaisons.": 
+        "AIFS ENS Control : archives mensuelles non encore vérifiées ou indisponibles."
     ];
     const payload={content:msg.join("\n"),allowed_mentions:{parse:[]}};
     // Répondre d'abord avec les valeurs : la génération de deux graphiques
