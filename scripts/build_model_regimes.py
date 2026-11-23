@@ -6,7 +6,7 @@ ERA5 historique fournit ici la pression au sol, pas les champs Z500.
 Le signal "blocage nord-atlantique" est un proxy de configuration
 de pression, sans critère de persistence ni de gradients à 500 hPa.
 
-Échantillon commun aux quatre modèles, prévisions 00Z datées,
+Échantillon commun aux quatre modèles, avec AIFS ENS Control optionnel, runs 00Z datés,
 mêmes points, même échéance et même heure que ERA5.
 Les scores de détection de régimes demandent occurrences ET absences
 suffisamment représentées : sinon null, sans faux pourcentage.
@@ -20,7 +20,9 @@ from pathlib import Path
 import sys
 from collections import defaultdict
 
-from build_model_skill import MODELS, RUN_DAYS, request_json, models_for_month, HISTORICAL_MODELS, historical_payload
+from build_model_skill import (MODELS, RUN_DAYS, request_json, models_for_month,
+                               optional_models_for_month, HISTORICAL_MODELS,
+                               historical_payload, AIFS_CONTROL_ID)
 
 # Noeuds d'une grille multi-points stable, sur l'Atlantique Nord et l'Europe.
 # Indices construits à partir de gradients de pression au niveau marin (hPa).
@@ -135,7 +137,7 @@ def retrieve_truth(month, today):
 
 
 def retrieve_run(run, model):
-    if model in HISTORICAL_MODELS.values():
+    if model == AIFS_CONTROL_ID or model in HISTORICAL_MODELS.values():
         return normalize(historical_payload(run, model, list(POINTS.values()), (VAR,)))
     params = {**locate(), "models": model, "run": run.strftime("%Y-%m-%dT%H:%M"), "forecast_days": 16}
     return normalize(request_json("https://single-runs-api.open-meteo.com/v1/forecast", params))
@@ -159,7 +161,10 @@ def build(month, today):
         raise ValueError("Mois futur")
     reference = retrieve_truth(month, today)
     active_models = models_for_month(month)
+    optional_models = optional_models_for_month(month)
     scores = empty_results(active_models)
+    optional_scores = empty_results(optional_models)
+    optional_run_dates = set()
     runs = []
     failures = []
     for day in RUN_DAYS:
@@ -177,6 +182,13 @@ def build(month, today):
                 failures.append(f"{run.date()} {model}: {str(exc)[:150]}")
         if len(models) != len(active_models):
             continue
+        extra_models = {}
+        for model, api in optional_models.items():
+            try:
+                extra_models[model] = retrieve_run(run, api)
+                optional_run_dates.add(run.date().isoformat())
+            except Exception as exc:
+                failures.append(f"{run.date()} {model}: {str(exc)[:150]}")
         runs.append(run.date().isoformat())
         for lead in range(1, 16):
             for hour in (0, 6, 12, 18):
@@ -189,6 +201,8 @@ def build(month, today):
                     continue
                 truth_features = features(truth_pressure)
                 predicted_features = {model: features(values) for model, values in predictions.items()}
+                extra_predictions = {model: read_pressure(dataset, valid)
+                                     for model, dataset in extra_models.items()}
                 for regime in REGIMES:
                     cell = scores[regime][lead - 1]
                     true_grad, true_event = truth_features[regime]
@@ -204,6 +218,21 @@ def build(month, today):
                         cell["errors"][model] += abs(grad - true_grad)
                         category = "tp" if event and true_event else "fp" if event else "fn" if true_event else "tn"
                         cell["confusion"][model][category] += 1
+                    for model, values in extra_predictions.items():
+                        if values is None:
+                            continue
+                        extra = optional_scores[regime][lead - 1]
+                        grad, event = features(values)[regime]
+                        extra["n"] += 1
+                        if true_event:
+                            extra["observed_event_n"] += 1
+                            extra["event_runs"].add(run.date().isoformat())
+                        else:
+                            extra["observed_nonevent_n"] += 1
+                            extra["nonevent_runs"].add(run.date().isoformat())
+                        extra["errors"][model] += abs(grad - true_grad)
+                        category = "tp" if event and true_event else "fp" if event else "fn" if true_event else "tn"
+                        extra["confusion"][model][category] += 1
         print("REGIME_RUN_VERIFIE", run.date(), flush=True)
 
     report = {
@@ -212,15 +241,18 @@ def build(month, today):
         "generated_utc": datetime.now(timezone.utc).isoformat(),
         "territory": "Europe occidentale et Atlantique Nord, 8 centres de pression",
         "reference": "Réanalyse ERA5 pression au niveau marin (pas Z500)",
-        "source": "Open-Meteo IFS HRES 9km, Dynamical AIFS/GFS, ERA5" if month < "2026-04" else "Open-Meteo Single Runs et Historical Weather",
+        "source": "Open-Meteo Single Runs, Dynamical.org AIFS ENS Control, ERA5" if month >= "2026-04" else "Open-Meteo IFS, Dynamical.org AIFS/GFS/AIFS ENS, ERA5",
         "method": "Prévisions 00 UTC vs ERA5, J+1 à J+15, échéance 00/06/12/18 UTC, mêmes 8 positions pour les modèles disponibles; balanced accuracy seulement si classes suffisamment représentées",
         "notes": [
             "Scores de régimes de surface indicatifs, pas des indices scientifiques officiels de blocage 500 hPa ou jet 300 hPa.",
             "La balanced accuracy exige au minimum 4 occurrences, 4 absences et 2 dates de runs distinctes pour chaque classe. Les autres résultats sont null (non évaluables).",
             "MAE hPa des gradients barométriques diffusée même quand les événements sont trop rares pour produire un score.",
             "Échantillons horaires issus des mêmes runs : ils ne sont pas statistiquement indépendants.",
+            "AIFS ENS Control (membre 0) est distinct du modèle AIFS Single ; ses effectifs sont indépendants des quatre modèles de base.",
         ],
-        "models": active_models,
+        "models": {**active_models, **{m: api for m, api in optional_models.items()
+                                       if any(cell["n"] for cells in optional_scores.values() for cell in cells)}},
+        "aifs_control_run_dates": sorted(optional_run_dates),
         "points": POINTS,
         "run_dates": runs,
         "regimes": {},
@@ -228,16 +260,20 @@ def build(month, today):
     }
     for regime, definition in REGIMES.items():
         parts = scores[regime]
-        score = {model: [] for model in active_models}
-        mae = {model: [] for model in active_models}
-        matrices = {model: [] for model in active_models}
-        for cell in parts:
-            enough = (
-                cell["n"] >= 10 and cell["observed_event_n"] >= 4 and
-                cell["observed_nonevent_n"] >= 4 and
-                len(cell["event_runs"]) >= 2 and len(cell["nonevent_runs"]) >= 2
-            )
-            for model in active_models:
+        all_models = {**active_models, **optional_models}
+        score = {model: [] for model in all_models}
+        mae = {model: [] for model in all_models}
+        matrices = {model: [] for model in all_models}
+        n_by_model = {}
+        for model in all_models:
+            cells = optional_scores[regime] if model in optional_models else parts
+            n_by_model[model] = [cell["n"] for cell in cells]
+            for cell in cells:
+                enough = (
+                    cell["n"] >= 10 and cell["observed_event_n"] >= 4 and
+                    cell["observed_nonevent_n"] >= 4 and
+                    len(cell["event_runs"]) >= 2 and len(cell["nonevent_runs"]) >= 2
+                )
                 matrix = cell["confusion"][model]
                 matrices[model].append(matrix)
                 mae[model].append(round(cell["errors"][model] / cell["n"], 3) if cell["n"] else None)
@@ -252,6 +288,7 @@ def build(month, today):
             "scores_pct": score,
             "index_mae_hpa": mae,
             "confusion": matrices,
+            "n_by_model": n_by_model,
             "n": [cell["n"] for cell in parts],
             "event_n": [cell["observed_event_n"] for cell in parts],
             "nonevent_n": [cell["observed_nonevent_n"] for cell in parts],
