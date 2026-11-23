@@ -14,16 +14,15 @@ on:
       - 'scripts/generate_tendance_analysis.py'
       - '.github/workflows/tendance-analyse.yml'
   schedule:
-    # Générer AVANT le rendez-vous Discord de 08:30 Paris :
-    # préparation principale à 08:12 Paris, puis secours à 08:30 et 08:43.
+    # Génération principale à 08:45 heure de Paris (été comme hiver).
+    # Secours à 09:15 puis 09:30 en cas d'échec ou de carte encore périmée.
     # GitHub cron est en UTC; le filtre ne retient que la saison courante.
-    - cron: '12 6 * * *' # 08:12 CEST
-    - cron: '12 7 * * *' # 08:12 CET
-    - cron: '30 6 * * *'
-    - cron: '30 7 * * *'
-    # Secours : 08:43 Paris. Les schedules GitHub peuvent être retardés ou omis.
-    - cron: '43 6 * * *'
-    - cron: '43 7 * * *'
+    - cron: '45 6 * * *' # 08:45 CEST
+    - cron: '45 7 * * *' # 08:45 CET
+    - cron: '15 7 * * *' # 09:15 CEST
+    - cron: '15 8 * * *' # 09:15 CET
+    - cron: '30 7 * * *' # 09:30 CEST
+    - cron: '30 8 * * *' # 09:30 CET
     # Paris 20:42 (prepare les cartes AVANT la publication de 21 h).
     # 18:42 UTC ete / 19:42 UTC hiver, apres la mise a jour IFS/AIFS 12Z.
     - cron: '42 18 * * 1-6'
@@ -63,17 +62,26 @@ jobs:
             lancer=true
           else
             offset="$(TZ=Europe/Paris date +%z)"
-            if [[ "$offset" == "+0200" && ( "$KFS_CRON" == "12 6 * * *" || "$KFS_CRON" == "30 6 * * *" || "$KFS_CRON" == "43 6 * * *" || "$KFS_CRON" == "42 18 * * 1-6" || "$KFS_CRON" == "0 19 * * 1-6" || "$KFS_CRON" == "13 19 * * 1-6" || "$KFS_CRON" == "43 19 * * 1-6" ) ]]; then
+            if [[ "$offset" == "+0200" && ( "$KFS_CRON" == "45 6 * * *" || "$KFS_CRON" == "15 7 * * *" || "$KFS_CRON" == "30 7 * * *" || "$KFS_CRON" == "42 18 * * 1-6" || "$KFS_CRON" == "0 19 * * 1-6" || "$KFS_CRON" == "13 19 * * 1-6" || "$KFS_CRON" == "43 19 * * 1-6" ) ]]; then
               lancer=true
-            elif [[ "$offset" == "+0100" && ( "$KFS_CRON" == "12 7 * * *" || "$KFS_CRON" == "30 7 * * *" || "$KFS_CRON" == "43 7 * * *" || "$KFS_CRON" == "42 19 * * 1-6" || "$KFS_CRON" == "0 20 * * 1-6" || "$KFS_CRON" == "13 20 * * 1-6" || "$KFS_CRON" == "43 20 * * 1-6" ) ]]; then
+            elif [[ "$offset" == "+0100" && ( "$KFS_CRON" == "45 7 * * *" || "$KFS_CRON" == "15 8 * * *" || "$KFS_CRON" == "30 8 * * *" || "$KFS_CRON" == "42 19 * * 1-6" || "$KFS_CRON" == "0 20 * * 1-6" || "$KFS_CRON" == "13 20 * * 1-6" || "$KFS_CRON" == "43 20 * * 1-6" ) ]]; then
               lancer=true
             fi
           fi
-          # Les passages de 08:30 et 08:43 ne recalculent pas un manifeste
-          # déjà généré et vérifié après 07:55 heure de Paris.
+          # Ne pas devancer 08:45 sur un workflow_run nocturne/matinal.
+          # Le créneau de 08:45 est conservé comme génération principale.
+          if [[ "$lancer" == true && "$KFS_EVENT" == workflow_run ]]; then
+            paris_hm="$(TZ=Europe/Paris date +%H%M)"
+            if (( 10#$paris_hm >= 800 && 10#$paris_hm < 845 )); then
+              lancer=false
+              echo "Atlas reçu avant 08:45 : la génération attend le créneau du matin."
+            fi
+          fi
+          # Les secours ne recalculent pas un manifeste synchronisé aux cycles
+          # du catalogue Europe et généré après 08:40 (20:30 le soir).
           if [[ "$lancer" == true && ( "$KFS_EVENT" == workflow_run || "$KFS_EVENT" == schedule ) && \
-                ( "$KFS_EVENT" == workflow_run || "$KFS_CRON" == "30 6 * * *" || "$KFS_CRON" == "30 7 * * *" || \
-                  "$KFS_CRON" == "43 6 * * *" || "$KFS_CRON" == "43 7 * * *" || \
+                ( "$KFS_EVENT" == workflow_run || "$KFS_CRON" == "15 7 * * *" || "$KFS_CRON" == "15 8 * * *" || \
+                  "$KFS_CRON" == "30 7 * * *" || "$KFS_CRON" == "30 8 * * *" || \
                   "$KFS_CRON" == "0 19 * * 1-6" || "$KFS_CRON" == "0 20 * * 1-6" || \
                   "$KFS_CRON" == "13 19 * * 1-6" || "$KFS_CRON" == "13 20 * * 1-6" || \
                   "$KFS_CRON" == "43 19 * * 1-6" || "$KFS_CRON" == "43 20 * * 1-6" ) ]]; then
@@ -96,7 +104,7 @@ jobs:
               with open("/tmp/kfs-europe-current.json") as f:
                   atlas=json.load(f)
               created=datetime.fromisoformat(data["generated_utc"]).astimezone(ZoneInfo("Europe/Paris"))
-              gate=now.replace(hour=20 if evening else 7,minute=30 if evening else 55,second=0,microsecond=0)
+              gate=now.replace(hour=20 if evening else 8,minute=30 if evening else 40,second=0,microsecond=0)
               if (data.get("schema_version")==1 and data.get("status")=="illustrative_model_maps"
                   and len(data.get("period_maps",[]))==4
                   and {x.get("id") for x in data["period_maps"]}=={"j3","j7","j10","j15"}
