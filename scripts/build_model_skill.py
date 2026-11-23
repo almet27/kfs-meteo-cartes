@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""KFS: comparaison objective de quatre modèles sur 12 points français.
+"""KFS: vérification de quatre modèles, plus AIFS ENS Control quand archivé.
 
 Archives des runs 00 UTC (8 dates/mois), vérifiées par ERA5.
-Une comparaison est conservée seulement si les quatre prévisions et
-la référence sont toutes disponibles au même point et à la même échéance.
+Les quatre modèles de référence gardent un échantillon commun.
+AIFS ENS Control est vérifié sur un sous-échantillon propre, sans biaiser les quatre.
 Il n'est jamais créé de score de précision fictif ou de données interpolées.
 """
 from __future__ import annotations
@@ -27,6 +27,8 @@ MODELS = {
     "gfs": "ncep_gfs_global",
 }
 
+AIFS_CONTROL_ID = "ecmwf-aifs-ens-forecast"  # AIFS ENS membre 0, pas AIFS Single
+
 HISTORICAL_MODELS = {
     "ifs": "ecmwf_ifs",
     "aifs": "ecmwf-aifs-single-forecast",
@@ -35,6 +37,11 @@ HISTORICAL_MODELS = {
 
 def models_for_month(month):
     return HISTORICAL_MODELS if month < "2026-04" else MODELS
+
+
+def optional_models_for_month(month):
+    # AIFS ENS v1 opérationnel à partir du 1er juillet 2025 ; archive Dynamical dès le 2.
+    return {"aifs_control": AIFS_CONTROL_ID} if month >= "2025-07" else {}
 
 def historical_payload(run, model, points, variables):
     """Return Open-Meteo-shaped arrays without interpolating missing leads."""
@@ -69,8 +76,16 @@ def historical_payload(run, model, points, variables):
                     raise ValueError("Run different de celui demande")
                 times = [t[:16] for t in f["validTimes"]]
                 hourly = {"time": times}
+                if model == AIFS_CONTROL_ID:
+                    controls = [entry for entry in f.get("ensembleMembers", [])
+                                if entry.get("member") == 0]
+                    if len(controls) != 1:
+                        raise ValueError("Membre 0 AIFS ENS Control absent ou ambigu")
+                    fields = controls[0]["data"]
+                else:
+                    fields = f["data"]
                 for var in variables:
-                    vals = f["data"][mapping[var]]
+                    vals = fields[mapping[var]]
                     if len(vals) != len(times):
                         raise ValueError("Axe temporel incoherent")
                     # Dynamical catalogue: Celsius and Pa; ERA5 via Open-Meteo: Celsius and hPa.
@@ -165,7 +180,7 @@ def truth(month, current):
 
 
 def forecast(run, model):
-    if model in HISTORICAL_MODELS.values():
+    if model == AIFS_CONTROL_ID or model in HISTORICAL_MODELS.values():
         return normalize(historical_payload(run, model, [(s[1], s[2]) for s in SITES], VARIABLES))
     params = {
         **locations(),
@@ -192,8 +207,12 @@ def build(month, today):
         raise ValueError("Mois futur")
     observations = truth(month, today)
     active_models = models_for_month(month)
+    optional_models = optional_models_for_month(month)
     totals = {var: {m: [0.0] * 15 for m in active_models} for var in VARIABLES}
     counts = {var: [0] * 15 for var in VARIABLES}
+    extra_totals = {var: {m: [0.0] * 15 for m in optional_models} for var in VARIABLES}
+    extra_counts = {var: {m: [0] * 15 for m in optional_models} for var in VARIABLES}
+    extra_run_dates = set()
     accepted_runs = []
     rejected = []
     for day in RUN_DAYS:
@@ -212,6 +231,14 @@ def build(month, today):
                 rejected.append(f"{run.date()} {key}: {str(exc)[:160]}")
         if len(bundle) != len(active_models):
             continue
+        # L'absence du contrôle AIFS ne doit jamais invalider les modèles historiques.
+        extras = {}
+        for key, api_id in optional_models.items():
+            try:
+                extras[key] = forecast(run, api_id)
+                extra_run_dates.add(run.date().isoformat())
+            except Exception as exc:
+                rejected.append(f"{run.date()} {key}: {str(exc)[:160]}")
         accepted_runs.append(run.date().isoformat())
         for lead in range(1, 16):
             valid = (run + timedelta(days=lead)).strftime("%Y-%m-%dT%H:%M")
@@ -226,6 +253,11 @@ def build(month, today):
                     for model, predicted in values.items():
                         totals[var][model][lead - 1] += abs(predicted - actual)
                     counts[var][lead - 1] += 1
+                    for model, dataset in extras.items():
+                        predicted = numeric(dataset[name][var].get(valid))
+                        if predicted is not None:
+                            extra_totals[var][model][lead - 1] += abs(predicted - actual)
+                            extra_counts[var][model][lead - 1] += 1
         print(f"RUN_VERIFIE {run.date()} : {len(bundle)} modèles", flush=True)
     result = {
         "schema": 1,
@@ -237,9 +269,14 @@ def build(month, today):
         "sites": [x[0] for x in SITES],
         "run_dates": accepted_runs,
         "requested_run_days": list(RUN_DAYS),
-        "models": active_models,
-        "source": "Open-Meteo IFS HRES 9km, Dynamical AIFS/GFS, ERA5" if month < "2026-04" else "Open-Meteo Single Runs et ERA5",
-        "notes": ["AIGFS exclu avant avril 2026; résolution IFS historique différente"] if month < "2026-04" else [],
+        "models": {**active_models, **{m: api for m, api in optional_models.items()
+                                       if any(max(extra_counts[v][m]) for v in VARIABLES)}},
+        "source": ("Open-Meteo Single Runs, Dynamical.org AIFS ENS membre 0, ERA5"
+                   if month >= "2026-04" else "Open-Meteo IFS, Dynamical.org AIFS/GFS/AIFS ENS, ERA5"),
+        "notes": ((["AIGFS exclu avant avril 2026; résolution IFS historique différente"]
+                   if month < "2026-04" else []) +
+                  ["AIFS ENS Control (membre 0) distinct d'AIFS Single ; échantillon optionnel, n par modèle."]),
+        "aifs_control_run_dates": sorted(extra_run_dates),
         "metrics": {},
         "errors": rejected[:35],
     }
@@ -249,11 +286,20 @@ def build(month, today):
             "unit": unit,
             "n": counts[var],
             "series": {
-                model: [
+                **{model: [
                     round(totals[var][model][i] / counts[var][i], 3) if counts[var][i] else None
                     for i in range(15)
-                ] for model in active_models
-            }
+                ] for model in active_models},
+                **{model: [
+                    round(extra_totals[var][model][i] / extra_counts[var][model][i], 3)
+                    if extra_counts[var][model][i] else None
+                    for i in range(15)
+                ] for model in optional_models},
+            },
+            "n_by_model": {
+                **{model: counts[var] for model in active_models},
+                **extra_counts[var],
+            },
         }
     return result
 
