@@ -1,6 +1,10 @@
 name: KFS - diagnostics et cartes synchronises pour /tendance
 on:
   workflow_dispatch:
+  # Recalculer dès qu’un atlas Europe IFS/AIFS plus récent est publié.
+  workflow_run:
+    workflows: ["Cartes prévisions Europe IFS AIFS"]
+    types: [completed]
   push:
     branches: [main]
     paths:
@@ -40,6 +44,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   verifier-horaire:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     outputs:
       lancer: ${{ steps.filtre.outputs.lancer }}
@@ -66,14 +71,16 @@ jobs:
           fi
           # Les passages de 08:30 et 08:43 ne recalculent pas un manifeste
           # déjà généré et vérifié après 07:55 heure de Paris.
-          if [[ "$lancer" == true && "$KFS_EVENT" == schedule && \
-                ( "$KFS_CRON" == "30 6 * * *" || "$KFS_CRON" == "30 7 * * *" || \
+          if [[ "$lancer" == true && ( "$KFS_EVENT" == workflow_run || "$KFS_EVENT" == schedule ) && \
+                ( "$KFS_EVENT" == workflow_run || "$KFS_CRON" == "30 6 * * *" || "$KFS_CRON" == "30 7 * * *" || \
                   "$KFS_CRON" == "43 6 * * *" || "$KFS_CRON" == "43 7 * * *" || \
                   "$KFS_CRON" == "0 19 * * 1-6" || "$KFS_CRON" == "0 20 * * 1-6" || \
                   "$KFS_CRON" == "13 19 * * 1-6" || "$KFS_CRON" == "13 20 * * 1-6" || \
                   "$KFS_CRON" == "43 19 * * 1-6" || "$KFS_CRON" == "43 20 * * 1-6" ) ]]; then
             url="https://raw.githubusercontent.com/almet27/kfs-meteo-cartes/main/forecast-maps/tendance/tendance-cartes.json?check=$(date +%s)"
-            if curl -fsSL --max-time 15 "$url" -o /tmp/kfs-tendance-latest.json; then
+            atlas_url="https://raw.githubusercontent.com/almet27/kfs-meteo-cartes/main/forecast-maps/europe/metadata.json?check=$(date +%s)"
+            if curl -fsSL --max-time 15 "$url" -o /tmp/kfs-tendance-latest.json && \
+               curl -fsSL --max-time 15 "$atlas_url" -o /tmp/kfs-europe-current.json; then
               if python - "$KFS_CRON" <<'PY'
           import json,sys
           from datetime import datetime, timezone
@@ -86,12 +93,17 @@ jobs:
           try:
               with open("/tmp/kfs-tendance-latest.json") as f:
                   data=json.load(f)
+              with open("/tmp/kfs-europe-current.json") as f:
+                  atlas=json.load(f)
               created=datetime.fromisoformat(data["generated_utc"]).astimezone(ZoneInfo("Europe/Paris"))
               gate=now.replace(hour=20 if evening else 7,minute=30 if evening else 55,second=0,microsecond=0)
               if (data.get("schema_version")==1 and data.get("status")=="illustrative_model_maps"
                   and len(data.get("period_maps",[]))==4
                   and {x.get("id") for x in data["period_maps"]}=={"j3","j7","j10","j15"}
-                  and created.date()==now.date() and created>=gate):
+                  and created.date()==now.date() and created>=gate
+                  and data.get("charts_generated_utc")==atlas.get("generated_utc")
+                  and all(data["period_maps"][i]["run_utc"]["ifs"]==atlas["runs_utc"]["ifs"][h]
+                      for i,h in enumerate(("72","168","240","360")))):
                   print("Créneau /tendance déjà généré : "+created.isoformat())
                   sys.exit(0)
           except Exception as e:
