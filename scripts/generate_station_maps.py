@@ -31,13 +31,16 @@ METRICS = {
     "rafalesmax": ("Rafales maximales / 24 h", "km/h", "inferno"),
     "pluie": ("Cumul de pluie / 24 h", "mm", "turbo"),
 }
-# Palette de temperature absolue : meme valeur, meme couleur sur toutes les cartes.
-# Le bleu franc est reserve au gel marque ; autour de 0 C, la transition
-# cyan pale -> vert tendre evite une bascule brutale au bleu.
+# Echelle absolue et identique sur toutes les cartes de temperatures.
+# Sous 0 C : cyan des -1 C, puis davantage de nuances de bleu fonce.
+# A 0 C : vert pale neutre, sans bleu franc. Les points intermediaires
+# assurent un gradient continu (pas de changement brutal de teinte).
 TEMP_SCALE_MIN, TEMP_SCALE_MAX = -20, 35
 TEMPERATURE_STOPS = [
-    (-20, "#5a2d83"), (-15, "#414aa0"), (-10, "#286dcb"),
-    (-5, "#51a4d4"), (-2, "#9cced8"), (0, "#d8eac5"),
+    (-20, "#582f80"), (-15, "#3a3e8e"), (-12, "#30479e"),
+    (-10, "#2456b7"), (-8, "#2369c6"), (-7, "#2375cf"),
+    (-5, "#2988d4"), (-3, "#51a9e1"), (-2, "#76c7eb"),
+    (-1, "#9edff0"), (0, "#d8eac5"),
     (2, "#a4d7a4"), (5, "#65bd80"), (10, "#d6dc69"),
     (15, "#f3d26e"), (20, "#f2a24e"), (25, "#e87549"),
     (30, "#ca4f50"), (35, "#8f3357"),
@@ -561,11 +564,15 @@ def test():
     # Les temperatures de gel restent bleues et 0 C n'est pas bleu.
     temp_map, temp_norm = temperature_colormap()
     assert temp_norm.vmin == -20 and temp_norm.vmax == 35
+    deep_cold = temp_map(temp_norm(-10))
     cold = temp_map(temp_norm(-5))
+    light_cold = temp_map(temp_norm(-1))
     freezing = temp_map(temp_norm(0))
     mild = temp_map(temp_norm(5))
-    assert cold[2] > cold[0] and freezing[1] > freezing[2]
-    assert mild[1] > mild[2]
+    # La gamme bleue commence a -1 C et s'assombrit avec le froid.
+    assert all(c[2] > c[0] for c in (light_cold, cold, deep_cold))
+    assert sum(light_cold[:3]) > sum(cold[:3]) > sum(deep_cold[:3])
+    assert freezing[1] > freezing[2] and mild[1] > mild[2]
     # Test local du dégradé, sans réseau ni données météo fictives publiées.
     synthetic = [(-4, 48, 2), (0, 50, 8), (7, 48, 17),
                  (6, 43, 25), (-1, 43, 21), (2, 46, 13)]
