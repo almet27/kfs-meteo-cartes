@@ -1,23 +1,35 @@
 {
   "schema": 1,
   "period": "2026-10",
-  "generated_utc": "2026-11-23T19:38:23.578175+00:00",
+  "generated_utc": "2026-11-23T20:03:14.494152+00:00",
   "territory": "Europe occidentale et Atlantique Nord, 8 centres de pression",
   "reference": "Réanalyse ERA5 pression au niveau marin (pas Z500)",
-  "source": "Open-Meteo Single Runs et Historical Weather",
+  "source": "Open-Meteo Single Runs, Dynamical.org AIFS ENS Control, ERA5",
   "method": "Prévisions 00 UTC vs ERA5, J+1 à J+15, échéance 00/06/12/18 UTC, mêmes 8 positions pour les modèles disponibles; balanced accuracy seulement si classes suffisamment représentées",
   "notes": [
     "Scores de régimes de surface indicatifs, pas des indices scientifiques officiels de blocage 500 hPa ou jet 300 hPa.",
     "La balanced accuracy exige au minimum 4 occurrences, 4 absences et 2 dates de runs distinctes pour chaque classe. Les autres résultats sont null (non évaluables).",
     "MAE hPa des gradients barométriques diffusée même quand les événements sont trop rares pour produire un score.",
-    "Échantillons horaires issus des mêmes runs : ils ne sont pas statistiquement indépendants."
+    "Échantillons horaires issus des mêmes runs : ils ne sont pas statistiquement indépendants.",
+    "AIFS ENS Control (membre 0) est distinct du modèle AIFS Single ; ses effectifs sont indépendants des quatre modèles de base."
   ],
   "models": {
     "ifs": "ecmwf_ifs025",
     "aifs": "ecmwf_aifs025_single",
     "aigfs": "ncep_aigfs025",
-    "gfs": "ncep_gfs_global"
+    "gfs": "ncep_gfs_global",
+    "aifs_control": "ecmwf-aifs-ens-forecast"
   },
+  "aifs_control_run_dates": [
+    "2026-10-01",
+    "2026-10-05",
+    "2026-10-09",
+    "2026-10-13",
+    "2026-10-17",
+    "2026-10-21",
+    "2026-10-25",
+    "2026-10-29"
+  ],
   "points": {
     "greenland": [
       63.0,
@@ -142,6 +154,23 @@
           null,
           null,
           null
+        ],
+        "aifs_control": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
         ]
       },
       "index_mae_hpa": {
@@ -212,6 +241,23 @@
           23.641,
           23.234,
           17.625
+        ],
+        "aifs_control": [
+          0.972,
+          1.841,
+          1.799,
+          3.733,
+          5.237,
+          6.713,
+          12.543,
+          19.661,
+          17.459,
+          18.11,
+          19.002,
+          26.999,
+          25.659,
+          21.151,
+          14.385
         ]
       },
       "confusion": {
@@ -582,6 +628,185 @@
             "fp": 1,
             "fn": 1
           }
+        ],
+        "aifs_control": [
+          {
+            "tp": 0,
+            "tn": 32,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 32,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 32,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 32,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 32,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 32,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 29,
+            "fp": 3,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 28,
+            "fp": 4,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 28,
+            "fp": 4,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 30,
+            "fp": 2,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 26,
+            "fp": 2,
+            "fn": 4
+          },
+          {
+            "tp": 0,
+            "tn": 22,
+            "fp": 6,
+            "fn": 4
+          },
+          {
+            "tp": 0,
+            "tn": 24,
+            "fp": 4,
+            "fn": 4
+          },
+          {
+            "tp": 0,
+            "tn": 27,
+            "fp": 4,
+            "fn": 1
+          },
+          {
+            "tp": 0,
+            "tn": 7,
+            "fp": 0,
+            "fn": 1
+          }
+        ]
+      },
+      "n_by_model": {
+        "ifs": [
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          8
+        ],
+        "aifs": [
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          8
+        ],
+        "aigfs": [
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          8
+        ],
+        "gfs": [
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          8
+        ],
+        "aifs_control": [
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          8
         ]
       },
       "n": [
@@ -749,6 +974,23 @@
           null,
           null,
           null
+        ],
+        "aifs_control": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
         ]
       },
       "index_mae_hpa": {
@@ -819,6 +1061,23 @@
           11.706,
           11.778,
           14.337
+        ],
+        "aifs_control": [
+          0.575,
+          1.568,
+          1.915,
+          4.788,
+          5.764,
+          10.055,
+          15.689,
+          17.124,
+          11.904,
+          11.02,
+          19.748,
+          17.023,
+          15.297,
+          16.333,
+          14.22
         ]
       },
       "confusion": {
@@ -1189,6 +1448,185 @@
             "fp": 1,
             "fn": 0
           }
+        ],
+        "aifs_control": [
+          {
+            "tp": 0,
+            "tn": 32,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 32,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 1,
+            "tn": 30,
+            "fp": 1,
+            "fn": 0
+          },
+          {
+            "tp": 2,
+            "tn": 29,
+            "fp": 1,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 31,
+            "fp": 1,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 28,
+            "fp": 4,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 27,
+            "fp": 4,
+            "fn": 1
+          },
+          {
+            "tp": 0,
+            "tn": 28,
+            "fp": 1,
+            "fn": 3
+          },
+          {
+            "tp": 0,
+            "tn": 27,
+            "fp": 5,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 32,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 28,
+            "fp": 3,
+            "fn": 1
+          },
+          {
+            "tp": 0,
+            "tn": 29,
+            "fp": 0,
+            "fn": 3
+          },
+          {
+            "tp": 0,
+            "tn": 31,
+            "fp": 1,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 28,
+            "fp": 4,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 8,
+            "fp": 0,
+            "fn": 0
+          }
+        ]
+      },
+      "n_by_model": {
+        "ifs": [
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          8
+        ],
+        "aifs": [
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          8
+        ],
+        "aigfs": [
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          8
+        ],
+        "gfs": [
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          8
+        ],
+        "aifs_control": [
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          8
         ]
       },
       "n": [
@@ -1354,6 +1792,23 @@
           40.6,
           46.9,
           null
+        ],
+        "aifs_control": [
+          100.0,
+          95.0,
+          94.4,
+          90.0,
+          78.6,
+          78.1,
+          75.3,
+          85.8,
+          71.8,
+          68.8,
+          57.3,
+          40.6,
+          34.4,
+          62.5,
+          null
         ]
       },
       "index_mae_hpa": {
@@ -1424,6 +1879,23 @@
           23.637,
           25.834,
           21.9
+        ],
+        "aifs_control": [
+          1.081,
+          2.047,
+          2.669,
+          2.767,
+          6.444,
+          10.185,
+          11.957,
+          14.144,
+          15.222,
+          20.058,
+          16.161,
+          18.366,
+          24.234,
+          25.288,
+          23.515
         ]
       },
       "confusion": {
@@ -1794,6 +2266,185 @@
             "fp": 0,
             "fn": 3
           }
+        ],
+        "aifs_control": [
+          {
+            "tp": 22,
+            "tn": 10,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 18,
+            "tn": 12,
+            "fp": 0,
+            "fn": 2
+          },
+          {
+            "tp": 23,
+            "tn": 8,
+            "fp": 1,
+            "fn": 0
+          },
+          {
+            "tp": 22,
+            "tn": 8,
+            "fp": 2,
+            "fn": 0
+          },
+          {
+            "tp": 18,
+            "tn": 8,
+            "fp": 6,
+            "fn": 0
+          },
+          {
+            "tp": 13,
+            "tn": 12,
+            "fp": 4,
+            "fn": 3
+          },
+          {
+            "tp": 14,
+            "tn": 10,
+            "fp": 3,
+            "fn": 5
+          },
+          {
+            "tp": 16,
+            "tn": 11,
+            "fp": 1,
+            "fn": 4
+          },
+          {
+            "tp": 13,
+            "tn": 10,
+            "fp": 4,
+            "fn": 5
+          },
+          {
+            "tp": 11,
+            "tn": 11,
+            "fp": 5,
+            "fn": 5
+          },
+          {
+            "tp": 7,
+            "tn": 11,
+            "fp": 4,
+            "fn": 10
+          },
+          {
+            "tp": 2,
+            "tn": 11,
+            "fp": 5,
+            "fn": 14
+          },
+          {
+            "tp": 2,
+            "tn": 9,
+            "fp": 7,
+            "fn": 14
+          },
+          {
+            "tp": 8,
+            "tn": 12,
+            "fp": 4,
+            "fn": 8
+          },
+          {
+            "tp": 2,
+            "tn": 2,
+            "fp": 2,
+            "fn": 2
+          }
+        ]
+      },
+      "n_by_model": {
+        "ifs": [
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          8
+        ],
+        "aifs": [
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          8
+        ],
+        "aigfs": [
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          8
+        ],
+        "gfs": [
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          8
+        ],
+        "aifs_control": [
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          8
         ]
       },
       "n": [
