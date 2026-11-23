@@ -277,6 +277,7 @@ def build(month, today):
                    if month < "2026-04" else []) +
                   ["AIFS ENS Control (membre 0) distinct d'AIFS Single ; échantillon optionnel, n par modèle."]),
         "aifs_control_run_dates": sorted(extra_run_dates),
+        "aifs_control_attempted_utc": datetime.now(timezone.utc).isoformat() if optional_models else None,
         "metrics": {},
         "errors": rejected[:35],
     }
