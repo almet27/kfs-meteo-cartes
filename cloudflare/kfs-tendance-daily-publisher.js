@@ -1,11 +1,11 @@
 /* KFS METEO — publication quotidienne de /tendance en complément du dimanche.
    Fonction appelée par le déclenchement récurrent Cloudflare toutes les cinq minutes.
-   Une publication par période matin (après 08:30 Paris) / soir (après 21:00 Paris),
+   Une publication par période matin (après 09:00 Paris) / soir (après 21:00 Paris),
    et seulement pour les cartes fraîchement produites par GitHub Actions.
 */
 function kfsTendanceDailyWindow(time) {
   const hour=Number(time.hour),minute=Number(time.minute);
-  if((hour===8&&minute>=30)||hour===9||hour===10)return "matin";
+  if(hour===9||hour===10||hour===11)return "matin";
   if(time.weekday!=="Sun"&&(hour===21||hour===22))return "soir";
   return null;
 }
@@ -18,7 +18,12 @@ function kfsTendanceDailyFresh(m,now,slot){
   const local=kfsParisTime(dt),current=kfsParisTime(now);
   if(local.year!==current.year||local.month!==current.month||local.day!==current.day)return false;
   const h=Number(local.hour),min=Number(local.minute);
-  if(slot==="matin"&&(h<8||(h===8&&min<20)))return false;
+  if(slot==="matin"&&(h<8||(h===8&&min<45)))return false;
+  if(slot==="matin"){
+    const cycles=m.period_maps.map(x=>new Date(x.run_utc?.ifs));
+    const sameDay=(a,b)=>a.year===b.year&&a.month===b.month&&a.day===b.day;
+    if(cycles.some(t=>!Number.isFinite(t.getTime())||t.getUTCHours()!==0||!sameDay(kfsParisTime(t),current)))return false;
+  }
   if(slot==="soir"&&h<20)return false;
   return [["j3",72],["j7",168],["j10",240],["j15",360]].every(([id,step])=>{
     const src=m.period_maps.find(x=>x.id===id);
@@ -40,15 +45,18 @@ async function kfsTendanceDailyPublish(env,scheduledAt){
   }
   const stamp=time.year+time.month+time.day;
   const marker="KFS-TENDANCE-QUOTIDIENNE-"+stamp+"-"+slot.toUpperCase();
+  const cycle=new Date(manifest.period_maps.find(x=>x.id==="j15").run_utc.ifs);
+  const cycleKey=cycle.toISOString().replace(/[^0-9]/g,"").slice(0,10);
+  const batchMarker=slot==="matin"?marker+"-IFS-"+cycleKey:marker;
   const me=await kfsDiscordCall(env,"/users/@me");
   const history=await kfsDiscordCall(env,"/channels/"+KFS_TENDANCE_CHANNEL+"/messages?limit=100");
   const sentByBot=history.filter(m=>m.author?.id===me.id).map(m=>String(m.content||""));
-  if(sentByBot.some(s=>s.includes(marker+"-COMPLETE"))){
-    console.log("KFS_TENDANCE_DAILY_ALREADY_PUBLISHED",marker);return;
+  if(sentByBot.some(s=>s.includes(batchMarker+"-COMPLETE"))){
+    console.log("KFS_TENDANCE_DAILY_ALREADY_PUBLISHED",batchMarker);return;
   }
   const cards=[["j3",72],["j7",168],["j10",240],["j15",360]];
   for(let i=0;i<cards.length;i++){
-    const id=cards[i][0],piece=marker+"-"+id.toUpperCase();
+    const id=cards[i][0],piece=batchMarker+"-"+id.toUpperCase();
     if(sentByBot.some(s=>s.includes(piece)))continue;
     const card=manifest.period_maps.find(x=>x.id===id);
     await kfsPostTendanceMapToChannel(env,card,i+1,cards.length,piece);
@@ -59,8 +67,8 @@ async function kfsTendanceDailyPublish(env,scheduledAt){
   await kfsDiscordCall(env,"/channels/"+KFS_TENDANCE_CHANNEL+"/messages","POST",{
     content:"✅ **KFS MÉTÉO — Tendance du "+(slot==="matin"?"matin":"soir")+" publiée**\n"+
       "Échéances J+3, J+7, J+10 et J+15. Dernière génération : **"+stampFr+
-      "** (Paris). Sources des modèles précisées sur les cartes.\n_"+marker+"-COMPLETE_",
+      "** (Paris). IFS : **"+cycle.getUTCHours().toString().padStart(2,"0")+"Z**. Sources précisées sur les cartes.\n_"+batchMarker+"-COMPLETE_",
     allowed_mentions:{parse:[]}
   });
-  console.log("KFS_TENDANCE_DAILY_PUBLISHED",marker);
+  console.log("KFS_TENDANCE_DAILY_PUBLISHED",batchMarker);
 }
