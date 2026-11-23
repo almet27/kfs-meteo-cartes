@@ -31,6 +31,31 @@ METRICS = {
     "rafalesmax": ("Rafales maximales / 24 h", "km/h", "inferno"),
     "pluie": ("Cumul de pluie / 24 h", "mm", "turbo"),
 }
+# Palette de temperature absolue : meme valeur, meme couleur sur toutes les cartes.
+# Le bleu franc est reserve au gel marque ; autour de 0 C, la transition
+# cyan pale -> vert tendre evite une bascule brutale au bleu.
+TEMP_SCALE_MIN, TEMP_SCALE_MAX = -20, 35
+TEMPERATURE_STOPS = [
+    (-20, "#5a2d83"), (-15, "#414aa0"), (-10, "#286dcb"),
+    (-5, "#51a4d4"), (-2, "#9cced8"), (0, "#d8eac5"),
+    (2, "#a4d7a4"), (5, "#65bd80"), (10, "#d6dc69"),
+    (15, "#f3d26e"), (20, "#f2a24e"), (25, "#e87549"),
+    (30, "#ca4f50"), (35, "#8f3357"),
+]
+
+
+def temperature_colormap():
+    from matplotlib.colors import Normalize, LinearSegmentedColormap
+    cmap = LinearSegmentedColormap.from_list(
+        "kfs_temperature_degres_c_fixe",
+        [((value - TEMP_SCALE_MIN) / (TEMP_SCALE_MAX - TEMP_SCALE_MIN), color)
+         for value, color in TEMPERATURE_STOPS],
+        N=256)
+    cmap.set_under(TEMPERATURE_STOPS[0][1])
+    cmap.set_over(TEMPERATURE_STOPS[-1][1])
+    return cmap, Normalize(vmin=TEMP_SCALE_MIN, vmax=TEMP_SCALE_MAX)
+
+
 # Zones historiques de la commande Discord. Coordonnées : ouest, est, sud, nord.
 ZONES = {
     "fr": ("France entière", (-5.8, 10.0, 41.1, 51.6)),
@@ -388,7 +413,11 @@ def render(metric, zone, records, shapes, timestamp, hours):
         if low == high:
             low -= 1
             high += 1
-        if metric == "pluie":
+        if metric in TEMPERATURE_METRICS:
+            # Une valeur de 0 C conserve sa couleur neutre quelle que soit
+            # l'amplitude locale des observations, des Tmin ou des Tmax.
+            colors, normalized = temperature_colormap()
+        elif metric == "pluie":
             # Échelle stable entre toutes les zones, avec des détails dès 1 mm.
             stops = [(0, "#21354a"), (1, "#27629d"), (2, "#269dc2"),
                      (5, "#33c9af"), (10, "#8cda72"), (20, "#f1d457"),
@@ -455,6 +484,8 @@ def render(metric, zone, records, shapes, timestamp, hours):
         if metric == "pluie":
             cb.set_ticks([0, 1, 2, 5, 10, 20, 40, 60])
             cb.set_ticklabels(["0", "1", "2", "5", "10", "20", "40", "60+"])
+        elif metric in TEMPERATURE_METRICS:
+            cb.set_ticks([-15, -10, -5, 0, 5, 10, 15, 20, 25, 30, 35])
         cb.ax.tick_params(colors="#bfc8d9", labelsize=11)
     else:
         ax.text(.5, .5, "Aucune mesure disponible sur cette zone",
@@ -527,6 +558,14 @@ def test():
     missing = stations([{**sample[0], "properties": {
         **sample[0]["properties"], "dxi10": None, "dd": 180}}])
     assert map_values(missing, hourly, s)["rafales"][0][3] is None
+    # Les temperatures de gel restent bleues et 0 C n'est pas bleu.
+    temp_map, temp_norm = temperature_colormap()
+    assert temp_norm.vmin == -20 and temp_norm.vmax == 35
+    cold = temp_map(temp_norm(-5))
+    freezing = temp_map(temp_norm(0))
+    mild = temp_map(temp_norm(5))
+    assert cold[2] > cold[0] and freezing[1] > freezing[2]
+    assert mild[1] > mild[2]
     # Test local du dégradé, sans réseau ni données météo fictives publiées.
     synthetic = [(-4, 48, 2), (0, 50, 8), (7, 48, 17),
                  (6, 43, 25), (-1, 43, 21), (2, 46, 13)]
