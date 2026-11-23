@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "status": "illustrative_model_maps",
-  "generated_utc": "2026-11-23T09:17:01.162439+00:00",
-  "source_generated_utc": "2026-11-23T09:13:16.460466+00:00",
+  "generated_utc": "2026-11-23T09:20:00.388652+00:00",
+  "source_generated_utc": "2026-11-23T09:18:36.651779+00:00",
   "charts_generated_utc": "2026-11-23T07:38:41.755015+00:00",
   "source": "ECMWF Open Data (CC BY 4.0), NOAA GFS si disponible",
   "not_weekly_anomalies": true,
@@ -12,7 +12,7 @@
       "step_h": 72,
       "path": "forecast-maps/tendance/tendance-carte-j3.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j3.png",
-      "size_bytes": 627193,
+      "size_bytes": 632222,
       "run_utc": {
         "ifs": "2026-11-23T00:00Z",
         "aifs": "2026-11-23T00:00Z",
@@ -23,6 +23,7 @@
       "zone": "europe",
       "confidence_label": "Modérée (indicative)",
       "marked_phenomena": [
+        "neige",
         "gel"
       ],
       "not_official_warning": true,
@@ -30,8 +31,15 @@
       "risk_status": "altitude_filtered_georeferenced",
       "risks": {
         "neige": {
-          "status": "indisponible",
-          "reason": "Filtre altitude indisponible : Altitude Copernicus non accessible : <urlopen error _ssl.c:1001: The handshake operation timed out>"
+          "status": "marque",
+          "max": 3.7,
+          "unit": "mm équiv. eau/6h",
+          "reason": "Neige hors relief ≤ 500 m, hors vallée de montagne (Copernicus GLO-90) ; relief : 80 zones échantillonnées",
+          "mountain_signal": true,
+          "mountain_max": 13.5,
+          "lowland_sample_count": 14,
+          "highland_sample_count": 80,
+          "terrain_source": "Copernicus DEM GLO-90 via Open-Meteo"
         },
         "verglas": {
           "status": "indisponible",
@@ -71,6 +79,14 @@
       },
       "risk_markers": [
         {
+          "lon": 12.0,
+          "lat": 48.0,
+          "value": 3.7,
+          "kind": "neige",
+          "altitude_m": 485,
+          "terrain_context": "hors relief marqué"
+        },
+        {
           "lon": 6.75,
           "lat": 45.25,
           "value": -16.063757324218727,
@@ -81,12 +97,6 @@
           "lat": 43.5,
           "value": 90.4,
           "kind": "vent_fort"
-        },
-        {
-          "lon": 10.5,
-          "lat": 46.5,
-          "value": -6.821081542968727,
-          "kind": "gel"
         },
         {
           "lon": 4.5,
@@ -113,6 +123,14 @@
           "kind": "vent_fort"
         },
         {
+          "lon": 5.5,
+          "lat": 48.75,
+          "value": 1.3,
+          "kind": "neige",
+          "altitude_m": 271,
+          "terrain_context": "hors relief marqué"
+        },
+        {
           "lon": 11.25,
           "lat": 50.5,
           "value": -6.321081542968727,
@@ -123,12 +141,6 @@
           "lat": 45.25,
           "value": 61.4,
           "kind": "vent_fort"
-        },
-        {
-          "lon": 6.5,
-          "lat": 50.5,
-          "value": -6.071081542968727,
-          "kind": "gel"
         }
       ],
       "t850_shading": {
@@ -144,7 +156,7 @@
         "description": "Température à 850 hPa modélisée, pas température au sol"
       },
       "style": "kfs-editorial-plein-cadre-neutre-v11",
-      "summary": "Flux de nord-nord-ouest sur la France, avec air froid à 850 hpa. Signaux sur France et abords : pluie jusqu’à 19 mm/6 h, rafales jusqu’à 90 km/h, gel jusqu’à -16 °C. Non calculé : Neige hors relief. Confiance modérée.",
+      "summary": "Flux de nord-nord-ouest sur la France, avec air froid à 850 hpa. Signaux sur France et abords : pluie jusqu’à 19 mm/6 h, rafales jusqu’à 90 km/h, neige hors relief, gel jusqu’à -16 °C. Confiance modérée.",
       "note": "Carte géoréférencée bord à bord 1600x700, bandeau neutre et synthèse issue des champs IFS ; ! rouge = seuil KFS non officiel."
     },
     {
