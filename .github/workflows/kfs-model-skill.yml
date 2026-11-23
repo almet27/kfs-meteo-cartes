@@ -57,20 +57,40 @@ jobs:
                       try:
                           obj = json.loads(path.read_text())
                           groups = obj["regimes" if regime else "metrics"]
-                          return obj["period"] == month and bool(obj["run_dates"]) and bool(groups) and all(any(n > 0 for n in item["n"]) for item in groups.values())
+                          valid = obj["period"] == month and bool(obj["run_dates"]) and bool(groups) and all(any(n > 0 for n in item["n"]) for item in groups.values())
+                          if not valid or month < "2025-07":
+                              return valid
+                          # AIFS ENS Control n'existe pas dans les archives avant juillet 2025.
+                          has_control = any(
+                              any(v is not None for v in (
+                                  item.get("index_mae_hpa", {}) if regime else item.get("series", {})
+                              ).get("aifs_control", []))
+                              for item in groups.values()
+                          )
+                          if has_control:
+                              return True
+                          # En cas de source indisponible, pas de boucle de recalcul
+                          # à chaque workflow : une nouvelle tentative après sept jours.
+                          checked = obj.get("aifs_control_attempted_utc")
+                          return bool(checked and (datetime.now(timezone.utc) -
+                                      datetime.fromisoformat(checked)).total_seconds() < 7 * 86400)
                       except (OSError, ValueError, KeyError, TypeError):
                           return False
                   if not usable(base / (month + ".json")) or not usable(base / (month + "-regimes.json"), True):
                       months.append(month)
                   current = date(current.year + (current.month == 12), current.month % 12 + 1, 1)
-              # Priorité à décembre 2025, demandé par le propriétaire.
+              # Priorité au mois le plus récent puis décembre 2025.
               if "2025-12" in months:
                   months.remove("2025-12")
                   months.insert(0, "2025-12")
-              # Revalider aussi le dernier mois complet, dont les comparaisons
-              # J+15 peuvent devenir disponibles après une première publication.
-              if last >= "2026-04" and last not in months:
-                  months.append(last)
+              # Revalider le dernier mois complet (ERA5/J+15 parfois tardif).
+              if last >= "2026-04":
+                  if last in months:
+                      months.remove(last)
+                  months.insert(0, last)
+              # Deux mois maximum par lancement afin de ne pas saturer
+              # l'API d'ensembles à 51 membres et les quotas GitHub Actions.
+              months = months[:2]
           with open(os.environ["GITHUB_OUTPUT"], "a") as f:
               print("months=" + json.dumps(months), file=f)
           print("Mois à traiter:", months)
