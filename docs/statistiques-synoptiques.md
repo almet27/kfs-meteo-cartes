@@ -9,11 +9,11 @@
 - Anticyclone scandinave (proxy de pression de surface)
 - Circulation zonale Europe (proxy de pression de surface)
 
-Sélection du mois `AAAA-MM`, comparaison des quatre modèles ECMWF IFS, ECMWF AIFS, NOAA AIGFS, NOAA GFS, échéances J+1 à J+15.
+Sélection du mois `AAAA-MM`, comparaison des quatre modèles de base ECMWF IFS, ECMWF AIFS **Single**, NOAA AIGFS, NOAA GFS, **plus AIFS ENS Control (membre 0)** lorsqu'une archive vérifiée existe, échéances J+1 à J+15.
 
 ## Source et vérification
 
-Les prévisions sont tirées des **runs individuels archivés**, et non des cartes actuelles ou des prévisions recomposées. Elles sont mises en correspondance avec la pression ERA5 (réanalyse ECMWF) au même lieu et à la même échéance UTC via Open-Meteo. Les quatre modèles doivent disposer d'une valeur valide pour qu'un échantillon soit inclus. Six à huit runs 00 UTC sont prévus par mois (jours 1/5/9/13/17/21/25/29 selon maturité des observations). Chaque J+ est vérifié, dans la limite de la disponibilité native, à 00/06/12/18 UTC. **Ces heures issues d'un même run sont corrélées** : ne pas les interpréter comme autant de runs indépendants.
+Les prévisions sont tirées des **runs individuels archivés**, et non des cartes actuelles ou des prévisions recomposées. Elles sont mises en correspondance avec la pression ERA5 (réanalyse ECMWF) au même lieu et à la même échéance UTC via Open-Meteo. Les quatre modèles de base doivent disposer d'une valeur valide pour qu'un échantillon commun soit inclus. **AIFS ENS Control est calculé sur les mêmes dates/points disponibles, mais avec ses propres effectifs (`n_by_model`) : son absence ne supprime jamais les séries des quatre modèles de base.** Six à huit runs 00 UTC sont prévus par mois (jours 1/5/9/13/17/21/25/29 selon maturité des observations). Chaque J+ est vérifié, dans la limite de la disponibilité native, à 00/06/12/18 UTC. **Ces heures issues d'un même run sont corrélées** : ne pas les interpréter comme autant de runs indépendants.
 
 ## Définitions provisoires (indicateurs au sol)
 
@@ -33,6 +33,14 @@ Les seuils sont des **indicateurs heuristiques définis par KFS**, pas des crit�
 2. **Erreur d'indice (hPa)** : MAE du gradient de pression continu, affichable y compris lorsque les configurations événementielles sont trop rares. Plus bas = meilleur.
 
 La balanced accuracy à 50 % correspond à **aucune discrimination** (dans le sens de la moyenne des deux taux de reconnaissance), et non à une probabilité de prévision juste à 50 %. Ne pas déduire un classement robuste d'un seul mois ou d'un faible échantillon.
+
+## AIFS ENS Control : disponibilité et méthode
+
+- **AIFS Single** et **AIFS ENS Control** sont deux prévisions distinctes. Le contrôle est le **membre 0** de l'ensemble AIFS ; ce n'est pas la moyenne de l'ensemble.
+- Archive utilisée : [Dynamical.org AIFS ENS](https://dynamical.org/catalog/ecmwf-aifs-ens-forecast/), produit `ecmwf-aifs-ens-forecast`, disponible à partir de juillet 2025. Les données sont validées par l'heure d'initialisation exacte et par la présence du membre 0 avant calcul.
+- Pas de chiffres pour les mois antérieurs à juillet 2025. Si l'accès aux archives, un lieu ou une échéance manque, **pas d'interpolation ni de score inventé**.
+- Pour la comparabilité, les quatre modèles de base restent évalués sur leur ancien échantillon commun. Les scores d'AIFS Control utilisent leur propre effectif ; en particulier, une courbe AIFS Control avec moins de cas n'a pas strictement la même population statistique qu'une autre.
+- La vérification des régimes synoptiques exige également pour AIFS Control les nombres minimaux d'événements, de non-événements et de dates indépendantes avant de publier une balanced accuracy.
 
 ## Automatisation
 
