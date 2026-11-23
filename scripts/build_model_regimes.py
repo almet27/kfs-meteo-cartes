@@ -253,6 +253,7 @@ def build(month, today):
         "models": {**active_models, **{m: api for m, api in optional_models.items()
                                        if any(cell["n"] for cells in optional_scores.values() for cell in cells)}},
         "aifs_control_run_dates": sorted(optional_run_dates),
+        "aifs_control_attempted_utc": datetime.now(timezone.utc).isoformat() if optional_models else None,
         "points": POINTS,
         "run_dates": runs,
         "regimes": {},
