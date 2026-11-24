@@ -18,7 +18,8 @@ from matplotlib import colormaps
 import cartopy.crs as ccrs
 import cartopy.feature as cf
 from cartopy.mpl.path import shapely_to_path
-from kfs_surface_style import france_axes, mainland, TEMP_CMAP, TEMP_MIN, TEMP_MAX
+from kfs_surface_style import france_axes, mainland, TEMP_CMAP, TEMP_MIN, TEMP_MAX, symbols
+from shapely import contains_xy
 
 PARIS=ZoneInfo("Europe/Paris")
 EXTENT=(-6.6,10.3,41.0,51.7)
@@ -49,7 +50,7 @@ GUST_COLORS=("#d9effb","#a4d6f3","#69bce3","#4c9ac9","#4eaf9e",
 def iso(dt):
     return dt.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
-def render_daily(lon,lat,values,metric,model,run,day,folder,note,peaks=None):
+def render_daily(lon,lat,values,metric,model,run,day,folder,note,peaks=None,weather=None):
     if metric in ("tmin","tmax"):
         levels=np.linspace(TEMP_MIN,TEMP_MAX,113); cmap=TEMP_CMAP; norm=None
     elif metric=="gust":
@@ -97,6 +98,13 @@ def render_daily(lon,lat,values,metric,model,run,day,folder,note,peaks=None):
             ha="center",va="center",weight="bold",color="#1D2431",
             transform=ccrs.PlateCarree(),zorder=8)
         t.set_path_effects([pe.Stroke(linewidth=2.5,foreground="white"),pe.Normal()])
+    if metric in ("tmin","tmax") and weather is not None:
+        gx,gy=np.meshgrid(ix,iy)
+        mask=contains_xy(mainland(),gx,gy)&np.isfinite(weather)
+        coords=list(zip(gy[mask].tolist(),gx[mask].tolist()))
+        codes=weather[mask].astype(int).tolist()
+        count=symbols(ax,coords,codes,used,max_icons=9) if coords else 0
+        print("KFS_NATIVE_WEATHER_ICONS",model,day,metric,count,flush=True)
     ax.coastlines("10m",linewidth=.7,color="#182A3E",zorder=5)
     ax.add_feature(cf.BORDERS,linewidth=.6,edgecolor="#172A3B",zorder=5)
     ax.set_title("KFS MÉTÉO · FRANCE · "+model+
@@ -113,6 +121,30 @@ def render_daily(lon,lat,values,metric,model,run,day,folder,note,peaks=None):
     fig.savefig(path,dpi=115,facecolor=fig.get_facecolor())
     plt.close(fig)
     return str(path)
+
+def daily_weather(selected,lon,lat,run,stride,begin,end):
+    # Diagnostic, not a native WMO weather code. All fields must be from the same run.
+    by_field={}
+    for key in ("cloud","rain","snow"):
+        arrays=[]
+        for step,data in selected:
+            f=data.get(key)
+            if f is None or not np.array_equal(lon,f[0]) or not np.array_equal(lat,f[1]):
+                return None
+            a,b=run+timedelta(hours=step-stride),run+timedelta(hours=step)
+            weight=max(0,(min(b,end)-max(a,begin)).total_seconds())/(stride*3600)
+            arrays.append((np.asarray(f[2],dtype=float),weight))
+        if not arrays:return None
+        weight_sum=sum(w for v,w in arrays)
+        if not weight_sum:return None
+        total=sum(v*w for v,w in arrays)
+        by_field[key]=total/weight_sum if key=="cloud" else total
+    cloud,rain,snow=(by_field[k] for k in ("cloud","rain","snow"))
+    valid=np.isfinite(cloud)&np.isfinite(rain)&np.isfinite(snow)
+    code=np.where(cloud<.25,0,np.where(cloud<.75,2,3)).astype(float)
+    code=np.where(rain>=.5,61,code)
+    code=np.where((snow>=.2)&(snow>=rain),71,code)
+    return np.where(valid,code,np.nan)
 
 def make_daily(run,stride,steps,samples,model,folder):
     """Create maps for J0..J3. Never call a partial calendar day complete."""
@@ -187,9 +219,14 @@ def make_daily(run,stride,steps,samples,model,folder):
                 note+=" · heures de fin de créneau, pas heure exacte du pic"
             if metric=="rain" and model=="gfs":
                 note+=" · phase pluie/neige estimée par GFS"
+            weather=None
+            if metric in ("tmin","tmax"):
+                weather=daily_weather(selected,lon,lat,run,stride,from_utc,until_utc)
+                if weather is not None:
+                    note+=" · pictos indicatifs (nuages, pluie, neige du modèle)"
             try:
                 path=render_daily(lon,lat,values,metric,names[model],run,day,
-                                  folder,note,peak_labels)
+                                  folder,note,peak_labels,weather)
                 maps[metric]={"path":path,"note":note}
             except Exception as exc:
                 print("DAILY_DRAW_ERROR",model,d,metric,str(exc),flush=True)
