@@ -92,7 +92,7 @@ def field(g):
     if typ=="heightAboveGround" and level==2 and step=="instant" and (sn in ("2t","t2m","t") or param==(0,0,0)):return "temp"
     if typ=="heightAboveGround" and level==10 and step=="max" and (sn in ("10fg","fg10","fg","gust","gust10m","10fg6") or param==(0,2,22)):return "gust"
     if step=="accum" and (sn in ("tp","apcp") or param==(0,1,8)):return "precip"
-    if step=="accum" and (sn in ("sf","asnow","snowfall","sde") or param==(0,1,13)):return "snow"
+    if step=="accum" and (sn in ("sf","asnow","snowfall","tsnowp") or param==(0,1,13)):return "snow"
     if step in ("instant","avg") and (sn in ("tcc","tcdc") or param==(0,6,1)):return "cloud"
     return None
 
@@ -138,17 +138,25 @@ def read_group(uri,run,bounds,grid,rows,tmp):
                 if k=="temp" and units!="K":raise ValueError("Temperature unit "+units)
                 if k=="gust" and units not in ("m s**-1","m s-1","m/s"):raise ValueError("Gust unit "+units)
                 if k in ("precip","snow") and units not in ("kg m**-2","kg m-2","mm","m"):continue
-                if k=="cloud" and units not in ("%","(0 - 1)","1","Proportion"):continue
+                if k=="cloud" and units not in ("%","(0 - 1)","1","Proportion"):
+                    if (key(g,"discipline"),key(g,"parameterCategory"),key(g,"parameterNumber"))!=(0,6,1) or units!="unknown":continue
+                    # WMO 4.2: 0/6/1 = total cloud cover in percent, including ecCodes unknown shortName.
+                    units="%"
                 if grid is None:grid=Grid(g)
                 a=grid.values(g)
                 if k=="temp":a-=273.15
                 elif k=="gust":a*=3.6
                 elif k in ("precip","snow") and units=="m":a*=1000
-                elif k=="cloud" and units=="%":a/=100
+                elif k=="cloud":
+                    if units=="%":
+                        if np.nanmin(a)<-.1 or np.nanmax(a)>100.1:raise ValueError("Cloud cover outside percent range")
+                        a/=100
+                    elif np.nanmin(a)<-.01 or np.nanmax(a)>1.01:raise ValueError("Cloud fraction outside range")
                 if (k,h) in rows:raise ValueError("Duplicate field "+str((k,h)))
                 rows[k,h]=(a,s)
             finally:codes_release(g)
     print("KFS_AROME_SP1_INVENTORY",bounds,sorted(inventory),flush=True)
+    print("KFS_AROME_DECODED",bounds,{k:sum(1 for f,h in rows if f==k) for k in ("temp","cloud","snow","precip")},flush=True)
     file.unlink()
     return grid
 
@@ -170,7 +178,7 @@ def main():
     run,files=get_catalog()
     horizon=max(b for a,b in files)
     old=doc.get("models",{}).get("arome",{})
-    if old.get("source")=="Météo-France Open Data" and old.get("run_utc")==run.isoformat() and old.get("horizon_hours",0)>=horizon and os.getenv("KFS_FORCE")!="1" and all(v.get("maps",{}).get("tmin",{}).get("detail",{}).get("weather_schema")==1 for v in old.get("days",{}).values()):
+    if old.get("source")=="Météo-France Open Data" and old.get("run_utc")==run.isoformat() and old.get("horizon_hours",0)>=horizon and os.getenv("KFS_FORCE")!="1" and all((v.get("maps",{}).get("tmin",{}).get("detail",{}).get("weather") or {}).get("count",0)>0 for v in old.get("days",{}).values()):
         print("KFS_AROME_NO_NEW_RUN",run.isoformat());return
     rows={};grid=None
     with TemporaryDirectory() as tmp:
@@ -219,7 +227,9 @@ def main():
                 if wx is not None and metric in ("tmin","tmax"):
                     weather=np.full_like(wx,np.nan);weather[::5,::5]=wx[::5,::5]
                 detail=zoom_native(grid.lon,grid.lat,v) if metric in ("tmin","tmax") else None
-                if detail is not None:detail["weather"]=native_weather(grid.lon,grid.lat,wx)
+                if detail is not None:
+                    detail["weather"]=native_weather(grid.lon,grid.lat,wx)
+                    if wx is not None and not detail["weather"]:raise RuntimeError("Weather detail unexpectedly empty")
                 p=Path(render_daily(grid.lon,grid.lat,v,metric,"ARÔME 2,5 km",run,day,tmp,note,weather=weather,detail=detail))
                 name=f"daily-arome-{metric}-d{d}.png"
                 dest=Path(tmp)/name;p.rename(dest)
