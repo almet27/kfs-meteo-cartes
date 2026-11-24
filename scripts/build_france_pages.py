@@ -61,7 +61,7 @@ def main():
     args.output.mkdir(parents=True)
     if args.include_existing:
         for folder in ("forecast-maps/europe", "forecast-maps/tendance",
-                       "radar", "rainviewer", "cartes"):
+                       "radar", "rainviewer", "cartes", "site"):
             source = Path(folder)
             if source.is_dir():
                 shutil.copytree(source, args.output / folder, dirs_exist_ok=True)
