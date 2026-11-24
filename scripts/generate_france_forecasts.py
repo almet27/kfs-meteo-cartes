@@ -115,7 +115,7 @@ def area(da):
 def ecmwf_field(state, step, key, out):
     param = "t" if key == "t850" else key
     name = {"2t": "t2m", "10u": "u10", "10v": "v10",
-            "t850": "t", "sf": "sf", "tp": "tp", "msl": "msl"}[key]
+            "t850": "t", "sf": "sf", "tp": "tp", "msl": "msl", "tcc": "tcc"}[key]
     file = out / f"{param}-{step:03}-{key}.grib2"
     kwargs = dict(stream="oper", type="fc", date=state["cycle"].strftime("%Y-%m-%d"),
                   time=state["cycle"].hour, step=step, param=param,
@@ -468,7 +468,7 @@ def main():
     for step in steps:
         print("KFS FRANCE", args.model, iso(run), step, flush=True)
         fields = {}
-        requested = (("2t", "t850", "10u", "10v", "msl", "tp", "sf")
+        requested = (("2t", "t850", "10u", "10v", "msl", "tp", "sf", "tcc")
                      if state["kind"] == "ecmwf" else
                      ("2t","t850","10u","10v","msl","tp",
                       "crain","csnow","cfrzr","cicep") if args.model=="gfs" else
@@ -571,9 +571,15 @@ def main():
             candidates["gust"] = gust_field(state, step, tmp)
         except Exception as exc:
             errors[f"{step}-gust"] = str(exc)[:200]
+        if "tcc" in fields:
+            x,y,cloud,units,_=fields["tcc"]
+            if units.strip() in ("%","percent"):
+                cloud=cloud/100.
+            if np.isfinite(cloud).all() and np.min(cloud)>=-0.001 and np.max(cloud)<=1.001:
+                candidates["cloud"]=(x,y,np.clip(cloud,0,1),"couverture nuageuse")
         daily_samples.append((step, {
             key: val for key, val in candidates.items()
-            if key in ("t2m", "gust", "precip_total", "rain")
+            if key in ("t2m", "gust", "precip_total", "rain", "snow", "cloud")
         }))
         for metric, (lon, lat, values, note) in candidates.items():
             if metric not in VARS:
