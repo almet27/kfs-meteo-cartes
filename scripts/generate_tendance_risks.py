@@ -24,7 +24,7 @@ import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 from kfs_synoptic_overlays import premium_pictogram, t850_celsius, AIR_STOPS
 from cartopy.io import shapereader
-from shapely.geometry import Point
+from shapely.geometry import Point, box
 from shapely.ops import unary_union
 from shapely.prepared import prep
 from matplotlib.colors import LinearSegmentedColormap, Normalize
@@ -264,8 +264,19 @@ def weather_pictogram(kind):
     """Premium independent icon, no background circle."""
     return premium_pictogram(kind)
 
+def metropolitan_outline():
+    """Natural Earth 50 m: mainland France and Corsica, not overseas territories."""
+    source=shapereader.natural_earth(resolution="50m",category="cultural",name="admin_0_countries")
+    records=[rec.geometry for rec in shapereader.Reader(source).records()
+             if rec.attributes.get("ADM0_A3")=="FRA" or rec.attributes.get("ADMIN")=="France"]
+    if not records:raise RuntimeError("Contour France introuvable")
+    return unary_union(records).intersection(box(-6.5,41.0,10.0,52.0))
+
+
 def render(id,run,fields,marks,risks,france=False):
-    geography=FR_GEOGRAPHY if france else GEOGRAPHY
+    # The padded source domain covers the curved edges of the conformal map.
+    # It does not change the geographic mask used for risk statistics.
+    geography=(-25,30,32,62) if france else (-85,85,20,85)
     lon,lat=fields["msl"][0],fields["msl"][1]
     msl=fields["msl"][2]/100.0
     gh=fields["gh"][2]/10.0
@@ -275,9 +286,16 @@ def render(id,run,fields,marks,risks,france=False):
     pres=msl[np.ix_(iy,ix)]
     geop=gh[np.ix_(iy,ix)]
     fig=plt.figure(figsize=(16,9 if france else 7),dpi=100,facecolor="#E7E9EC")
-    ax=fig.add_axes([0,0,1,1],projection=ccrs.PlateCarree())
-    ax.set_extent(geography,crs=ccrs.PlateCarree())
-    ax.set_aspect("auto")
+    # Lambert conformal conic: equal projected scales, no horizontal stretching.
+    projection=ccrs.LambertConformal(central_longitude=2.5,
+        central_latitude=46.5 if france else 48.0,
+        standard_parallels=(44,49) if france else (37,65))
+    ax=fig.add_axes([0,0,1,1],projection=projection)
+    half_height=710000 if france else 1550000
+    half_width=half_height*16/(9 if france else 7)
+    ax.set_xlim(-half_width,half_width)
+    ax.set_ylim(-half_height,half_height)
+    ax.set_aspect("equal",adjustable="box")
     # Neutral cartographic base; genuine T850 colours remain dominant.
     ax.set_facecolor("#E7E9EC")
     ax.add_feature(cfeature.OCEAN,facecolor="#E7E9EC",zorder=0)
@@ -308,8 +326,18 @@ def render(id,run,fields,marks,risks,france=False):
     for a in labels:
         a.set_fontweight("bold")
         a.set_path_effects([pe.Stroke(linewidth=2.5,foreground="#173147",alpha=.65),pe.Normal()])
-    ax.coastlines("50m" if france else "110m",linewidth=.85,color="#EFF6F9",zorder=10)
-    ax.add_feature(cfeature.BORDERS.with_scale("50m" if france else "110m"),linewidth=.7 if france else .56,edgecolor="#E2EFF5",alpha=.82,zorder=10)
+    ax.coastlines("50m",linewidth=.85 if france else .65,color="#EFF6F9",zorder=10)
+    ax.add_feature(cfeature.BORDERS.with_scale("50m"),linewidth=.7 if france else .55,
+                   edgecolor="#E2EFF5",alpha=.82,zorder=10)
+    # The contrast outline remains readable on cold and warm T850 colours;
+    # no opaque land fill is added over the meteorological fields.
+    outline=metropolitan_outline()
+    ax.add_geometries([outline],ccrs.PlateCarree(),facecolor="none",
+                      edgecolor="#173147",linewidth=3.4 if france else 2.8,
+                      alpha=.92,zorder=11)
+    ax.add_geometries([outline],ccrs.PlateCarree(),facecolor="none",
+                      edgecolor="#FFFFFF",linewidth=1.55 if france else 1.3,
+                      alpha=.98,zorder=12)
     # D/H at genuine local MSL pressure extrema, never fabricated.
     # Require a surrounding pressure contrast and enough room for the label.
     centres=[]
