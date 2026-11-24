@@ -9,6 +9,7 @@ on:
       - .github/workflows/france-j5.yml
   schedule:
     - cron: '42 7,19 * * *'
+    - cron: '14 * * * *'
 permissions:
   contents: write
 concurrency:
@@ -40,6 +41,8 @@ jobs:
       - name: Valider le code avant appel API
         run: python -m py_compile scripts/generate_france_shortterm_risks.py scripts/generate_france_extended_daily.py scripts/kfs_weather_symbols.py
       - name: Préparer les cartes quotidiennes J+4 et J+5
+        env:
+          KFS_DETAIL_BACKFILL_ONLY: ${{ github.event.schedule == '14 * * * *' && '1' || '0' }}
         run: python scripts/generate_france_extended_daily.py
       - name: Sauvegarder les cartes
         if: always()
