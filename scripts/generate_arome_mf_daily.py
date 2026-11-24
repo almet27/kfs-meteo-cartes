@@ -13,6 +13,7 @@ import matplotlib
 matplotlib.use("Agg")
 from eccodes import codes_grib_new_from_file, codes_get, codes_get_array, codes_release
 from france_daily import render_daily, PARIS, iso
+from kfs_zoom_detail import native as zoom_native
 
 CATALOG="https://www.data.gouv.fr/api/1/datasets/paquets-arome-resolution-0-025deg/"
 OUT=Path("forecast-maps/france/shortterm-daily")
@@ -169,7 +170,7 @@ def main():
     run,files=get_catalog()
     horizon=max(b for a,b in files)
     old=doc.get("models",{}).get("arome",{})
-    if old.get("source")=="Météo-France Open Data" and old.get("run_utc")==run.isoformat() and old.get("horizon_hours",0)>=horizon and os.getenv("KFS_FORCE")!="1":
+    if old.get("source")=="Météo-France Open Data" and old.get("run_utc")==run.isoformat() and old.get("horizon_hours",0)>=horizon and os.getenv("KFS_FORCE")!="1" and all(v.get("maps",{}).get("tmin",{}).get("detail") for v in old.get("days",{}).values()):
         print("KFS_AROME_NO_NEW_RUN",run.isoformat());return
     rows={};grid=None
     with TemporaryDirectory() as tmp:
@@ -216,12 +217,14 @@ def main():
                 weather=None
                 if wx is not None and metric in ("tmin","tmax"):
                     weather=np.full_like(wx,np.nan);weather[::5,::5]=wx[::5,::5]
-                p=Path(render_daily(grid.lon,grid.lat,v,metric,"ARÔME 2,5 km",run,day,tmp,note,weather=weather))
+                detail=zoom_native(grid.lon,grid.lat,v) if metric in ("tmin","tmax") else None
+                p=Path(render_daily(grid.lon,grid.lat,v,metric,"ARÔME 2,5 km",run,day,tmp,note,weather=weather,detail=detail))
                 name=f"daily-arome-{metric}-d{d}.png"
                 dest=Path(tmp)/name;p.rename(dest)
                 if dest.stat().st_size<12000:raise ValueError("Invalid image")
                 staged.append(dest)
                 maps[metric]={"filename":name,"size_bytes":dest.stat().st_size,"date":day.isoformat(),"coverage":coverage,"url":"https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/shortterm-daily/"+name}
+                if detail is not None:maps[metric]["detail"]=detail
             days[str(d)]={"date":day.isoformat(),"coverage":coverage,"start_utc":iso(begin),"end_utc":iso(end),"hours":duration,"maps":maps}
         if not days:raise RuntimeError("No valid current days")
         for p in staged:shutil.copy2(p,OUT/p.name)
