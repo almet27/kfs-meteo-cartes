@@ -24,15 +24,25 @@ def url(run,field,h):
 def cycle():
     now=datetime.now(timezone.utc)
     start=now.replace(hour=now.hour//3*3,minute=0,second=0,microsecond=0)
-    for lag in range(5):
+    for lag in range(6):
         run=start-timedelta(hours=3*lag)
+        stamp=run.strftime("%Y%m%d%H")
         try:
             for field in FIELDS:
-                with urlopen(Request(url(run,field,HORIZON),headers=UA,method="HEAD"),timeout=30):pass
-            return run
+                directory=BASE+run.strftime("%H")+"/"+field+"/"
+                with urlopen(Request(directory,headers=UA),timeout=30) as r:
+                    listing=r.read(2*1024*1024).decode("utf-8")
+                required=range(0 if field=="t_2m" else 1,HORIZON+1)
+                missing=[h for h in required if url(run,field,h).rsplit("/",1)[1] not in listing]
+                if missing:
+                    print("KFS_DWD_INCOMPLETE_CYCLE",stamp,field,missing,flush=True)
+                    break
+            else:
+                print("KFS_DWD_COMPLETE_CYCLE",stamp,flush=True)
+                return run
         except HTTPError as e:
             if e.code!=404:raise
-    raise RuntimeError("No recent full 48h ICON-EU cycle")
+    raise RuntimeError("No recent full hourly 48h ICON-EU cycle")
 
 def step_hours(value):
     # ecCodes newer releases may return '0m', '60m' or '1h'.
@@ -42,8 +52,11 @@ def step_hours(value):
     return float(match[1])*{"":1,"h":1,"m":1/60,"s":1/3600,"d":24}[match[2]]
 
 def read_field(run,field,h):
-    with urlopen(Request(url(run,field,h),headers=UA),timeout=60) as r:
-        b=r.read(16*1024*1024+1)
+    try:
+        with urlopen(Request(url(run,field,h),headers=UA),timeout=60) as r:
+            b=r.read(16*1024*1024+1)
+    except HTTPError as exc:
+        raise RuntimeError(f"DWD {run.isoformat()} {field} +{h}h: HTTP {exc.code}") from exc
     if len(b)>16*1024*1024:raise ValueError("Oversized GRIB")
     with TemporaryFile() as f:
         f.write(bz2.decompress(b));f.seek(0)
