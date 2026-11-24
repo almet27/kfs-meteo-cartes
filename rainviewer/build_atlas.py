@@ -153,7 +153,30 @@ def obtain_tiles(host,path):
     with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
         return list(executor.map(fetch_tile,jobs))
 
-def build_frames(host,entries,lines):
+def website_layer(tiles):
+    """Couche radar transparente, projetée sur le SVG des stations (730 × 735).
+    Les tuiles manquantes et les pixels hors emprise sont grisés, jamais secs.
+    """
+    missing = (125, 145, 160, 110)
+    raw = Image.new('RGBA', (COLS*SIZE, ROWS*SIZE), missing)
+    for x, y, tile in tiles:
+        if tile is not None:
+            raw.paste(tile, ((x-X0)*SIZE, (y-Y0)*SIZE))
+    width, height = 730, 735
+    def src(x, y):
+        return location_pixel(-5.8+x/46, 51.6-y/65)
+    mesh = []
+    for top in range(0, height, 8):
+        bottom = min(height, top+8)
+        corners = (*src(0, top), *src(0, bottom),
+                   *src(width, bottom), *src(width, top))
+        mesh.append(((0, top, width, bottom), corners))
+    # Pillow MESH utilise l'ordre haut-gauche, bas-gauche, bas-droite, haut-droite.
+    return raw.transform((width,height), Image.Transform.MESH, mesh,
+                         resample=Image.Resampling.BILINEAR, fillcolor=missing)
+
+
+def build_frames(host,entries,lines,web_layers=None):
     base=make_base(lines)
     results=[]
     counts=[]
@@ -162,6 +185,8 @@ def build_frames(host,entries,lines):
         valid=sum(tile is not None for x,y,tile in tiles)
         if valid<3:
             raise RuntimeError('Moins de 3 tuiles utilisables : radar non genere')
+        if web_layers is not None:
+            web_layers.append(website_layer(tiles))
         image=base.copy()
         for x,y,tile in tiles:
             if tile is not None:
@@ -193,7 +218,8 @@ def run(output,now=None):
     now=int(time.time()) if now is None else int(now)
     meta=json.loads(request_bytes(API,maximum=1000000))
     host,entries=validate_catalog(meta,now)
-    frames,counts=build_frames(host,entries,borders())
+    layers=[]
+    frames,counts=build_frames(host,entries,borders(),layers)
     output.mkdir(parents=True,exist_ok=True)
     gif=output/'radar-rainviewer.gif'
     durations=[max(200,min(1500,(b[0]-a[0])*1000//900))
@@ -202,7 +228,13 @@ def run(output,now=None):
                    append_images=frames[1:],duration=durations,
                    loop=0,optimize=True,disposal=2)
     stamp=lambda ts:dt.datetime.fromtimestamp(ts,dt.timezone.utc).isoformat()
+    web_frames=[]
+    for (ts,_),layer in zip(entries,layers):
+        filename=f'web-radar-{ts}.png'
+        layer.save(output/filename,format='PNG',optimize=True)
+        web_frames.append({'file':filename,'observation_utc':stamp(ts)})
     manifest={
+        'web_projection':'KFS-stations-730x735-v1','web_frames':web_frames,
         'schema':1,'provider':'RainViewer','source':'https://www.rainviewer.com/',
         'projection':'EPSG:3857','zoom':ZOOM,'tile_size':SIZE,
         'x0':X0,'y0':Y0,'width':COLS*SIZE,'height':ROWS*SIZE,
