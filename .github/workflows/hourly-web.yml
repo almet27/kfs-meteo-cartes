@@ -1,0 +1,49 @@
+name: KFS - prévisions horaires web
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - scripts/build_hourly_web.py
+      - .github/workflows/hourly-web.yml
+  schedule:
+    - cron: '25 */3 * * *'
+permissions:
+  contents: write
+concurrency:
+  group: kfs-hourly-web
+  cancel-in-progress: false
+jobs:
+  hourly:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/cache/restore@v4
+        with:
+          path: .kfs-weather-cache
+          key: kfs-hourly-web-${{ github.run_id }}
+          restore-keys: kfs-hourly-web-
+      - name: Build forecast snapshots
+        run: python scripts/build_hourly_web.py
+      - uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: .kfs-weather-cache
+          key: kfs-hourly-web-${{ github.run_id }}
+      - name: Publish available models
+        run: |
+          git config user.name "KFS METEO Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add forecast-maps/france/hourly-web
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "KFS: hourly web forecasts"
+          for i in 1 2 3; do
+            git pull --rebase origin main && git push origin main && exit 0
+            sleep 3
+          done
+          exit 1
