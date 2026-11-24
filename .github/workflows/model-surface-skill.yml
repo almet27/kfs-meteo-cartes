@@ -1,0 +1,52 @@
+name: Scores KFS précipitations neige et vent
+on:
+  push:
+    paths: ['scripts/build_surface_skill.py', '.github/workflows/model-surface-skill.yml']
+  schedule:
+    - cron: '15 6 * * 2'
+  workflow_dispatch:
+    inputs:
+      month:
+        description: Mois à vérifier (AAAA-MM)
+        required: false
+permissions:
+  contents: write
+concurrency:
+  group: kfs-surface-skill
+  cancel-in-progress: false
+jobs:
+  scores:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Calculer et publier les scores vérifiés
+        env:
+          MONTH: ${{ inputs.month }}
+        run: |
+          set -eu
+          month=$(python - <<'PY'
+          import os,re
+          from pathlib import Path
+          base=Path("data/model-skill")
+          months=sorted(p.stem for p in base.glob("????-??.json") if p.stem >= "2026-04")
+          requested=os.environ.get("MONTH")
+          if requested and requested not in months:
+              raise SystemExit("Mois hors couverture")
+          print(requested or next((m for m in reversed(months) if not (base/(m+"-surface.json")).exists()),months[-1]))
+          PY
+          )
+          python scripts/build_surface_skill.py "$month"
+          file="data/model-skill/$month-surface.json"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- "$file"
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Publier les scores de surface $month"
+          for attempt in 1 2 3 4 5; do
+            git pull --rebase origin main
+            if git push origin HEAD:main; then exit 0; fi
+          done
+          exit 1
