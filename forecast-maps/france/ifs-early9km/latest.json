@@ -2,8 +2,8 @@
   "schema": 1,
   "model": "ecmwf_ifs",
   "run_utc": "2026-11-24T12:00:00+00:00",
-  "render_revision": "f7200f5c44fbabf2",
-  "generated_utc": "2026-11-24T18:13:07.815661+00:00",
+  "render_revision": "9e8f80f31fccf5d0",
+  "generated_utc": "2026-11-24T18:14:09.849670+00:00",
   "source": "Open-Meteo Single Runs API / ECMWF IFS HRES",
   "resolution_native_km": 9,
   "sample_spacing": "~35-60 km",
@@ -15,7 +15,7 @@
       "maps": {
         "tmin": {
           "file": "ifs9-tmin-j0.webp",
-          "bytes": 54864,
+          "bytes": 60544,
           "coverage_hours": 11,
           "detail": {
             "schema": 1,
@@ -38,12 +38,20 @@
                 -565929.588825367,
                 585500.4245312511
               ]
-            }
+            },
+            "weather": {
+              "schema": 1,
+              "format": "i16le-lon1000-lat100-wmo",
+              "count": 272,
+              "spacing_deg": 0.76,
+              "data": "HiNoEAMAoiGIEAMAmiSIEAMAbgWoEEcAZgioEAMAXguoEAMAmiSoEAMAAv7IEEcA+gDIED0A8gPIEAMA6gbIEAMA4gnIEAMAmiTIEAMACvvoED0AAv7oEFAA+gDoEAMA8gPoEAMA6gboEAMA4gnoEAMA2gzoED0AwhXoEAMAuhjoEFAAjvkIEVAAhvwIET0Afv8IET0AdgIIEQMAbgUIEQMAZggIEQMAXgsIET0AVg4IET0AThEIET0ARhQIEQMAPhcIEQMANhoIET0ACvsoEVAAAv4oEVAA+gAoEQMA8gMoEQMA6gYoEQMA4gkoEQMA2gwoEVAA0g8oET0AyhIoEQMAwhUoEQMAuhgoEQMAshsoET0ACvtIEVAAAv5IEVAA+gBIEQMA8gNIEQMA6gZIEQMA4glIEQMA2gxIEQMA0g9IET0AyhJIEQMAwhVIEQMAuhhIEQMACvtoEVAAAv5oEQMA+gBoEVAA8gNoEQMA6gZoEQMA4gloEQMA2gxoEQMA0g9oET0AyhJoEQMAwhVoEQMAuhhoEQMACvuIEVAAAv6IEQMA+gCIEVAA8gOIEQMA6gaIEQMA4gmIEQMA2gyIEQMA0g+IET0AyhKIEQMAwhWIEQMAuhiIEUcACvuoEVAAAv6oEQMA+gCoEQMA8gOoEQMA6gaoEQMA4gmoEQMA2gyoEQMA0g+oEQMAyhKoEQMAwhWoEQMAuhioEQMAhvzIEQMAfv/IEQMAdgLIEQMAbgXIEQMAZgjIEQMAXgvIEQMAVg7IEQMAThHIEVAARhTIEQMAPhfIEQMANhrIEQMAAv7oEQMA+gDoEQMA8gPoEQMA6gboEQMA4gnoEVAA2gzoEQMA0g/oEQMAyhLoEQMAwhXoEQMAuhjoEQMACvsIElAAAv4IEgMA+gAIEgMA8gMIEgMA6gYIEgMA4gkIEgMA2gwIEgMA0g8IEgMAyhIIEgMAwhUIEgMAuhgIEgMAjvkoElAAhvwoEgMAfv8oEgMAdgIoEgMAbgUoEgMAZggoEgMAXgsoEgMAVg4oEgMAThEoEgMARhQoEgMAPhcoEgMACvtIEgMAAv5IEgMA+gBIEgMA8gNIEgMA6gZIEgMA4glIEgMA2gxIEgMA0g9IEgMAyhJIEgMAwhVIEgMAEvhoEgMACvtoEgMAAv5oElAA+gBoEgMA8gNoEgMA6gZoEgMA4gloEgMA2gxoEgMA0g9oEgMAyhJoEgMAwhVoEgMAuhhoEgMAEviIEgMACvuIEgMAAv6IEgMA+gCIEgMA8gOIEgMA6gaIEgMA4gmIEgMA2gyIEgMA0g+IEgMAyhKIEgMAwhWIEgMAuhiIEgMAIvKoEj0AGvWoEgMAEvioEgMACvuoEgMAAv6oEgMA+gCoEgMA8gOoEgMA6gaoEgMA4gmoEgMA2gyoEgMA0g+oEgMAyhKoEgMAwhWoEgMAuhioEgMAshuoEgMAKu/IEj0AIvLIEj0AGvXIEgMAEvjIEgMACvvIEgMAAv7IEgMA+gDIEgMA8gPIEgMA6gbIEgMA4gnIEgMA2gzIEgMA0g/IEgMAyhLIEgMAwhXIEgMAuhjIEgMAshvIEi0AKu/oEj0AIvLoEgMAGvXoEgMAEvjoEgMACvvoEgMAAv7oEgMA+gDoEgMA8gPoEgMA6gboEgMA4gnoEgMA2gzoEgMA0g/oEgMAyhLoEgMAwhXoEgMAuhjoEgMAshvoEgMAKu8IEwMAIvIIEwMAGvUIEwMACvsIEwMAAv4IEwMA+gAIEwMA8gMIEwMA6gYIEwMA4gkIEwMA2gwIEwMA0g8IEwMAyhIIEwMAwhUIEwMAuhgIEwMAshsIEwMAqh4IEwIACvsoEwMAAv4oEwMA+gAoEwMA8gMoEwMA6gYoEwMA4gkoEwMA2gwoEwMA0g8oEwMAyhIoEwMAwhUoEwMAuhgoEwMAshsoEwIAqh4oEwIACvtIEwMAAv5IEwMA+gBIEwMA8gNIEwMA6gZIEwMA4glIEwMA2gxIEwMA0g9IEwMAyhJIEwIAwhVIEwIAuhhIEwIAdgJoEwMAbgVoEwMAZghoEwMAXgtoEwMAVg5oEwMAThFoEwIARhRoEwIAbgWIEwMAZgiIEwMAXguIEwIAVg6IEwIA6gaoEwMA4gmoEwIA2gyoEwIA6gbIEwIA4gnIEwIA6gboEwIA4gnoEwIA"
+            },
+            "weather_schema": 1
           }
         },
         "tmax": {
           "file": "ifs9-tmax-j0.webp",
-          "bytes": 56526,
+          "bytes": 62322,
           "coverage_hours": 11,
           "detail": {
             "schema": 1,
@@ -66,7 +74,15 @@
                 -565929.588825367,
                 585500.4245312511
               ]
-            }
+            },
+            "weather": {
+              "schema": 1,
+              "format": "i16le-lon1000-lat100-wmo",
+              "count": 272,
+              "spacing_deg": 0.76,
+              "data": "HiNoEAMAoiGIEAMAmiSIEAMAbgWoEEcAZgioEAMAXguoEAMAmiSoEAMAAv7IEEcA+gDIED0A8gPIEAMA6gbIEAMA4gnIEAMAmiTIEAMACvvoED0AAv7oEFAA+gDoEAMA8gPoEAMA6gboEAMA4gnoEAMA2gzoED0AwhXoEAMAuhjoEFAAjvkIEVAAhvwIET0Afv8IET0AdgIIEQMAbgUIEQMAZggIEQMAXgsIET0AVg4IET0AThEIET0ARhQIEQMAPhcIEQMANhoIET0ACvsoEVAAAv4oEVAA+gAoEQMA8gMoEQMA6gYoEQMA4gkoEQMA2gwoEVAA0g8oET0AyhIoEQMAwhUoEQMAuhgoEQMAshsoET0ACvtIEVAAAv5IEVAA+gBIEQMA8gNIEQMA6gZIEQMA4glIEQMA2gxIEQMA0g9IET0AyhJIEQMAwhVIEQMAuhhIEQMACvtoEVAAAv5oEQMA+gBoEVAA8gNoEQMA6gZoEQMA4gloEQMA2gxoEQMA0g9oET0AyhJoEQMAwhVoEQMAuhhoEQMACvuIEVAAAv6IEQMA+gCIEVAA8gOIEQMA6gaIEQMA4gmIEQMA2gyIEQMA0g+IET0AyhKIEQMAwhWIEQMAuhiIEUcACvuoEVAAAv6oEQMA+gCoEQMA8gOoEQMA6gaoEQMA4gmoEQMA2gyoEQMA0g+oEQMAyhKoEQMAwhWoEQMAuhioEQMAhvzIEQMAfv/IEQMAdgLIEQMAbgXIEQMAZgjIEQMAXgvIEQMAVg7IEQMAThHIEVAARhTIEQMAPhfIEQMANhrIEQMAAv7oEQMA+gDoEQMA8gPoEQMA6gboEQMA4gnoEVAA2gzoEQMA0g/oEQMAyhLoEQMAwhXoEQMAuhjoEQMACvsIElAAAv4IEgMA+gAIEgMA8gMIEgMA6gYIEgMA4gkIEgMA2gwIEgMA0g8IEgMAyhIIEgMAwhUIEgMAuhgIEgMAjvkoElAAhvwoEgMAfv8oEgMAdgIoEgMAbgUoEgMAZggoEgMAXgsoEgMAVg4oEgMAThEoEgMARhQoEgMAPhcoEgMACvtIEgMAAv5IEgMA+gBIEgMA8gNIEgMA6gZIEgMA4glIEgMA2gxIEgMA0g9IEgMAyhJIEgMAwhVIEgMAEvhoEgMACvtoEgMAAv5oElAA+gBoEgMA8gNoEgMA6gZoEgMA4gloEgMA2gxoEgMA0g9oEgMAyhJoEgMAwhVoEgMAuhhoEgMAEviIEgMACvuIEgMAAv6IEgMA+gCIEgMA8gOIEgMA6gaIEgMA4gmIEgMA2gyIEgMA0g+IEgMAyhKIEgMAwhWIEgMAuhiIEgMAIvKoEj0AGvWoEgMAEvioEgMACvuoEgMAAv6oEgMA+gCoEgMA8gOoEgMA6gaoEgMA4gmoEgMA2gyoEgMA0g+oEgMAyhKoEgMAwhWoEgMAuhioEgMAshuoEgMAKu/IEj0AIvLIEj0AGvXIEgMAEvjIEgMACvvIEgMAAv7IEgMA+gDIEgMA8gPIEgMA6gbIEgMA4gnIEgMA2gzIEgMA0g/IEgMAyhLIEgMAwhXIEgMAuhjIEgMAshvIEi0AKu/oEj0AIvLoEgMAGvXoEgMAEvjoEgMACvvoEgMAAv7oEgMA+gDoEgMA8gPoEgMA6gboEgMA4gnoEgMA2gzoEgMA0g/oEgMAyhLoEgMAwhXoEgMAuhjoEgMAshvoEgMAKu8IEwMAIvIIEwMAGvUIEwMACvsIEwMAAv4IEwMA+gAIEwMA8gMIEwMA6gYIEwMA4gkIEwMA2gwIEwMA0g8IEwMAyhIIEwMAwhUIEwMAuhgIEwMAshsIEwMAqh4IEwIACvsoEwMAAv4oEwMA+gAoEwMA8gMoEwMA6gYoEwMA4gkoEwMA2gwoEwMA0g8oEwMAyhIoEwMAwhUoEwMAuhgoEwMAshsoEwIAqh4oEwIACvtIEwMAAv5IEwMA+gBIEwMA8gNIEwMA6gZIEwMA4glIEwMA2gxIEwMA0g9IEwMAyhJIEwIAwhVIEwIAuhhIEwIAdgJoEwMAbgVoEwMAZghoEwMAXgtoEwMAVg5oEwMAThFoEwIARhRoEwIAbgWIEwMAZgiIEwMAXguIEwIAVg6IEwIA6gaoEwMA4gmoEwIA2gyoEwIA6gbIEwIA4gnIEwIA6gboEwIA4gnoEwIA"
+            },
+            "weather_schema": 1
           }
         }
       }
@@ -76,7 +92,7 @@
       "maps": {
         "tmin": {
           "file": "ifs9-tmin-j1.webp",
-          "bytes": 55518,
+          "bytes": 63704,
           "coverage_hours": 24,
           "detail": {
             "schema": 1,
@@ -99,12 +115,20 @@
                 -565929.588825367,
                 585500.4245312511
               ]
-            }
+            },
+            "weather": {
+              "schema": 1,
+              "format": "i16le-lon1000-lat100-wmo",
+              "count": 272,
+              "spacing_deg": 0.76,
+              "data": "HiNoED0AoiGIED0AmiSIED0AbgWoEEcAZgioEEcAXguoED0AmiSoEFAAAv7IEEcA+gDIED0A8gPIED0A6gbIED0A4gnIED0AmiTIEFAACvvoED0AAv7oED0A+gDoED0A8gPoED0A6gboED0A4gnoED0A2gzoED0AwhXoED0AuhjoEF8AjvkIET0AhvwIEV8Afv8IET0AdgIIET0AbgUIET0AZggIET0AXgsIET0AVg4IET0AThEIET0ARhQIET0APhcIET0ANhoIET0ACvsoET0AAv4oET0A+gAoEVAA8gMoEVAA6gYoET0A4gkoET0A2gwoET0A0g8oET0AyhIoET0AwhUoET0AuhgoET0AshsoET0ACvtIET0AAv5IET0A+gBIEVAA8gNIET0A6gZIET0A4glIET0A2gxIEVAA0g9IET0AyhJIET0AwhVIET0AuhhIET0ACvtoET0AAv5oET0A+gBoET0A8gNoEVAA6gZoET0A4gloET0A2gxoET0A0g9oET0AyhJoET0AwhVoET0AuhhoET0ACvuIET0AAv6IET0A+gCIEVAA8gOIEVAA6gaIET0A4gmIET0A2gyIEVAA0g+IET0AyhKIET0AwhWIEUcAuhiIEUcACvuoET0AAv6oEVAA+gCoEVAA8gOoEQMA6gaoET0A4gmoET0A2gyoEVAA0g+oEVAAyhKoET0AwhWoET0AuhioET0AhvzIET0Afv/IET0AdgLIEVAAbgXIET0AZgjIET0AXgvIET0AVg7IEVAAThHIEVAARhTIET0APhfIET0ANhrIEUcAAv7oET0A+gDoEQMA8gPoEVAA6gboET0A4gnoEVAA2gzoET0A0g/oET0AyhLoET0AwhXoET0AuhjoET0ACvsIEj0AAv4IEj0A+gAIEgMA8gMIEgMA6gYIElAA4gkIElAA2gwIEj0A0g8IEj0AyhIIEj0AwhUIEj0AuhgIEj0AjvkoEj0AhvwoEj0Afv8oEj0AdgIoEgMAbgUoEgMAZggoElAAXgsoElAAVg4oEj0AThEoEj0ARhQoEj0APhcoEj0ACvtIElAAAv5IEj0A+gBIElAA8gNIElAA6gZIElAA4glIEj0A2gxIEj0A0g9IEj0AyhJIEj0AwhVIEj0AEvhoElAACvtoElAAAv5oElAA+gBoEj0A8gNoEj0A6gZoElAA4gloEj0A2gxoEj0A0g9oEj0AyhJoEj0AwhVoEj0AuhhoEj0AEviIElAACvuIEgMAAv6IEj0A+gCIEj0A8gOIEj0A6gaIEj0A4gmIEj0A2gyIEj0A0g+IEj0AyhKIEj0AwhWIEj0AuhiIEj0AIvKoEgIAGvWoEgMAEvioElAACvuoEgMAAv6oEj0A+gCoEj0A8gOoEj0A6gaoEj0A4gmoEj0A2gyoEj0A0g+oEj0AyhKoEj0AwhWoEj0AuhioEj0AshuoElAAKu/IEgIAIvLIEgMAGvXIEgMAEvjIEgMACvvIElAAAv7IEj0A+gDIEj0A8gPIEj0A6gbIEj0A4gnIEj0A2gzIEj0A0g/IEj0AyhLIEj0AwhXIEj0AuhjIEj0AshvIEj0AKu/oEj0AIvLoEj0AGvXoEj0AEvjoElAACvvoElAAAv7oEj0A+gDoEj0A8gPoEj0A6gboEj0A4gnoEj0A2gzoEj0A0g/oEj0AyhLoEj0AwhXoEj0AuhjoElAAshvoElAAKu8IEz0AIvIIEz0AGvUIEz0ACvsIEz0AAv4IEz0A+gAIEz0A8gMIEz0A6gYIEz0A4gkIEz0A2gwIEz0A0g8IEz0AyhIIEz0AwhUIEz0AuhgIE1AAshsIEwMAqh4IEwMACvsoEz0AAv4oEz0A+gAoEz0A8gMoEz0A6gYoEz0A4gkoEz0A2gwoEz0A0g8oEz0AyhIoEz0AwhUoEz0AuhgoE1AAshsoEwMAqh4oEwMACvtIEz0AAv5IE1AA+gBIE1AA8gNIEz0A6gZIEz0A4glIEz0A2gxIEz0A0g9IEz0AyhJIEz0AwhVIEz0AuhhIEwMAdgJoE1AAbgVoEz0AZghoEz0AXgtoEz0AVg5oEz0AThFoEz0ARhRoE1AAbgWIE1AAZgiIEz0AXguIEz0AVg6IEz0A6gaoE1AA4gmoE1AA2gyoEz0A6gbIE1AA4gnIEz0A6gboEwMA4gnoEwMA"
+            },
+            "weather_schema": 1
           }
         },
         "tmax": {
           "file": "ifs9-tmax-j1.webp",
-          "bytes": 57316,
+          "bytes": 66170,
           "coverage_hours": 24,
           "detail": {
             "schema": 1,
@@ -127,27 +151,35 @@
                 -565929.588825367,
                 585500.4245312511
               ]
-            }
+            },
+            "weather": {
+              "schema": 1,
+              "format": "i16le-lon1000-lat100-wmo",
+              "count": 272,
+              "spacing_deg": 0.76,
+              "data": "HiNoED0AoiGIED0AmiSIED0AbgWoEEcAZgioEEcAXguoED0AmiSoEFAAAv7IEEcA+gDIED0A8gPIED0A6gbIED0A4gnIED0AmiTIEFAACvvoED0AAv7oED0A+gDoED0A8gPoED0A6gboED0A4gnoED0A2gzoED0AwhXoED0AuhjoEF8AjvkIET0AhvwIEV8Afv8IET0AdgIIET0AbgUIET0AZggIET0AXgsIET0AVg4IET0AThEIET0ARhQIET0APhcIET0ANhoIET0ACvsoET0AAv4oET0A+gAoEVAA8gMoEVAA6gYoET0A4gkoET0A2gwoET0A0g8oET0AyhIoET0AwhUoET0AuhgoET0AshsoET0ACvtIET0AAv5IET0A+gBIEVAA8gNIET0A6gZIET0A4glIET0A2gxIEVAA0g9IET0AyhJIET0AwhVIET0AuhhIET0ACvtoET0AAv5oET0A+gBoET0A8gNoEVAA6gZoET0A4gloET0A2gxoET0A0g9oET0AyhJoET0AwhVoET0AuhhoET0ACvuIET0AAv6IET0A+gCIEVAA8gOIEVAA6gaIET0A4gmIET0A2gyIEVAA0g+IET0AyhKIET0AwhWIEUcAuhiIEUcACvuoET0AAv6oEVAA+gCoEVAA8gOoEQMA6gaoET0A4gmoET0A2gyoEVAA0g+oEVAAyhKoET0AwhWoET0AuhioET0AhvzIET0Afv/IET0AdgLIEVAAbgXIET0AZgjIET0AXgvIET0AVg7IEVAAThHIEVAARhTIET0APhfIET0ANhrIEUcAAv7oET0A+gDoEQMA8gPoEVAA6gboET0A4gnoEVAA2gzoET0A0g/oET0AyhLoET0AwhXoET0AuhjoET0ACvsIEj0AAv4IEj0A+gAIEgMA8gMIEgMA6gYIElAA4gkIElAA2gwIEj0A0g8IEj0AyhIIEj0AwhUIEj0AuhgIEj0AjvkoEj0AhvwoEj0Afv8oEj0AdgIoEgMAbgUoEgMAZggoElAAXgsoElAAVg4oEj0AThEoEj0ARhQoEj0APhcoEj0ACvtIElAAAv5IEj0A+gBIElAA8gNIElAA6gZIElAA4glIEj0A2gxIEj0A0g9IEj0AyhJIEj0AwhVIEj0AEvhoElAACvtoElAAAv5oElAA+gBoEj0A8gNoEj0A6gZoElAA4gloEj0A2gxoEj0A0g9oEj0AyhJoEj0AwhVoEj0AuhhoEj0AEviIElAACvuIEgMAAv6IEj0A+gCIEj0A8gOIEj0A6gaIEj0A4gmIEj0A2gyIEj0A0g+IEj0AyhKIEj0AwhWIEj0AuhiIEj0AIvKoEgIAGvWoEgMAEvioElAACvuoEgMAAv6oEj0A+gCoEj0A8gOoEj0A6gaoEj0A4gmoEj0A2gyoEj0A0g+oEj0AyhKoEj0AwhWoEj0AuhioEj0AshuoElAAKu/IEgIAIvLIEgMAGvXIEgMAEvjIEgMACvvIElAAAv7IEj0A+gDIEj0A8gPIEj0A6gbIEj0A4gnIEj0A2gzIEj0A0g/IEj0AyhLIEj0AwhXIEj0AuhjIEj0AshvIEj0AKu/oEj0AIvLoEj0AGvXoEj0AEvjoElAACvvoElAAAv7oEj0A+gDoEj0A8gPoEj0A6gboEj0A4gnoEj0A2gzoEj0A0g/oEj0AyhLoEj0AwhXoEj0AuhjoElAAshvoElAAKu8IEz0AIvIIEz0AGvUIEz0ACvsIEz0AAv4IEz0A+gAIEz0A8gMIEz0A6gYIEz0A4gkIEz0A2gwIEz0A0g8IEz0AyhIIEz0AwhUIEz0AuhgIE1AAshsIEwMAqh4IEwMACvsoEz0AAv4oEz0A+gAoEz0A8gMoEz0A6gYoEz0A4gkoEz0A2gwoEz0A0g8oEz0AyhIoEz0AwhUoEz0AuhgoE1AAshsoEwMAqh4oEwMACvtIEz0AAv5IE1AA+gBIE1AA8gNIEz0A6gZIEz0A4glIEz0A2gxIEz0A0g9IEz0AyhJIEz0AwhVIEz0AuhhIEwMAdgJoE1AAbgVoEz0AZghoEz0AXgtoEz0AVg5oEz0AThFoEz0ARhRoE1AAbgWIE1AAZgiIEz0AXguIEz0AVg6IEz0A6gaoE1AA4gmoE1AA2gyoEz0A6gbIE1AA4gnIEz0A6gboEwMA4gnoEwMA"
+            },
+            "weather_schema": 1
           }
         },
         "gust": {
           "file": "ifs9-gust-j1.webp",
-          "bytes": 57600,
+          "bytes": 64332,
           "coverage_hours": 24
         },
         "precip": {
           "file": "ifs9-precip-j1.webp",
-          "bytes": 55144,
+          "bytes": 64666,
           "coverage_hours": 24
         },
         "rain": {
           "file": "ifs9-rain-j1.webp",
-          "bytes": 52372,
+          "bytes": 61696,
           "coverage_hours": 24
         },
         "neige_frais": {
           "file": "ifs9-neige_frais-j1.webp",
-          "bytes": 50792,
+          "bytes": 61918,
           "coverage_hours": 24
         }
       }
@@ -157,7 +189,7 @@
       "maps": {
         "tmin": {
           "file": "ifs9-tmin-j2.webp",
-          "bytes": 56308,
+          "bytes": 63702,
           "coverage_hours": 24,
           "detail": {
             "schema": 1,
@@ -180,12 +212,20 @@
                 -565929.588825367,
                 585500.4245312511
               ]
-            }
+            },
+            "weather": {
+              "schema": 1,
+              "format": "i16le-lon1000-lat100-wmo",
+              "count": 272,
+              "spacing_deg": 0.76,
+              "data": "HiNoED0AoiGIEF8AmiSIED0AbgWoEEcAZgioEEcAXguoEAIAmiSoEFAAAv7IEEcA+gDIED0A8gPIED0A6gbIED0A4gnIED0AmiTIED0ACvvoED0AAv7oED0A+gDoED0A8gPoED0A6gboED0A4gnoEAMA2gzoEAIAwhXoEAIAuhjoEAIAjvkIET0AhvwIET0Afv8IET0AdgIIET0AbgUIET0AZggIEQMAXgsIEVAAVg4IEQIAThEIEQIARhQIEQMAPhcIEQIANhoIEQIACvsoET0AAv4oEVAA+gAoEVAA8gMoET0A6gYoEQMA4gkoET0A2gwoEQIA0g8oEQIAyhIoEQIAwhUoEQMAuhgoEVAAshsoEVAACvtIET0AAv5IEQIA+gBIEVAA8gNIEVAA6gZIEVAA4glIEVAA2gxIEQMA0g9IEQIAyhJIEQMAwhVIEQMAuhhIEUcACvtoET0AAv5oEQMA+gBoEVAA8gNoEVAA6gZoEVAA4gloEVAA2gxoEQMA0g9oEQMAyhJoEQMAwhVoEVAAuhhoEQMACvuIEVAAAv6IEQMA+gCIEVAA8gOIEVAA6gaIEVAA4gmIEVAA2gyIEVAA0g+IET0AyhKIEVAAwhWIEVAAuhiIEUcACvuoEQMAAv6oEVAA+gCoEVAA8gOoEQMA6gaoEVAA4gmoET0A2gyoET0A0g+oET0AyhKoET0AwhWoET0AuhioEUcAhvzIEQMAfv/IEVAAdgLIEVAAbgXIEVAAZgjIEVAAXgvIEVAAVg7IET0AThHIET0ARhTIEVAAPhfIEQMANhrIEUcAAv7oEVAA+gDoEQMA8gPoEVAA6gboEVAA4gnoET0A2gzoEVAA0g/oET0AyhLoEVAAwhXoEQMAuhjoEVAACvsIEgMAAv4IElAA+gAIEgMA8gMIElAA6gYIEj0A4gkIEj0A2gwIEj0A0g8IElAAyhIIEgMAwhUIEi0AuhgIEgIAjvkoEgMAhvwoEgMAfv8oElAAdgIoElAAbgUoElAAZggoElAAXgsoElAAVg4oElAAThEoElAARhQoEgIAPhcoEgMACvtIEgMAAv5IElAA+gBIElAA8gNIElAA6gZIElAA4glIElAA2gxIEgMA0g9IEgIAyhJIEgIAwhVIEgIAEvhoEgMACvtoEgMAAv5oEgMA+gBoEgMA8gNoElAA6gZoElAA4gloEgMA2gxoEgIA0g9oEgIAyhJoEgAAwhVoEgIAuhhoEgIAEviIEgMACvuIEgMAAv6IEgMA+gCIElAA8gOIElAA6gaIEgMA4gmIEgMA2gyIEgIA0g+IEgIAyhKIEgAAwhWIEgIAuhiIEgIAIvKoEgMAGvWoElAAEvioEgMACvuoEgMAAv6oEgMA+gCoElAA8gOoEgMA6gaoEgIA4gmoEgIA2gyoEgAA0g+oEgAAyhKoEgAAwhWoEgIAuhioEgMAshuoEgIAKu/IEgMAIvLIEgMAGvXIElAAEvjIEgMACvvIEgMAAv7IEgMA+gDIEgMA8gPIEgMA6gbIEgIA4gnIEgIA2gzIEgAA0g/IEgAAyhLIEgAAwhXIEgAAuhjIEgAAshvIEgIAKu/oEgMAIvLoEgMAGvXoElAAEvjoEgIACvvoEgMAAv7oEgMA+gDoEgMA8gPoEgIA6gboEgIA4gnoEgAA2gzoEgAA0g/oEgAAyhLoEgAAwhXoEgAAuhjoEgAAshvoEgIAKu8IEwMAIvIIE1AAGvUIE1AACvsIEwIAAv4IEwIA+gAIEwIA8gMIEwIA6gYIEwAA4gkIEwAA2gwIEwAA0g8IEwAAyhIIEwAAwhUIEwAAuhgIEwIAshsIEwIAqh4IEwIACvsoEwIAAv4oEwIA+gAoEwIA8gMoEwAA6gYoEwAA4gkoEwAA2gwoEwAA0g8oEwAAyhIoEwAAwhUoEwAAuhgoEwIAshsoEwIAqh4oEwIACvtIEwIAAv5IEwIA+gBIEwAA8gNIEwAA6gZIEwAA4glIEwAA2gxIEwAA0g9IEwAAyhJIEwAAwhVIEwAAuhhIEwIAdgJoEwAAbgVoEwAAZghoEwAAXgtoEwAAVg5oEwAAThFoEwAARhRoEwIAbgWIEwAAZgiIEwAAXguIEwAAVg6IEwAA6gaoEwIA4gmoEwIA2gyoEwIA6gbIEwIA4gnIEwIA6gboEwIA4gnoEwIA"
+            },
+            "weather_schema": 1
           }
         },
         "tmax": {
           "file": "ifs9-tmax-j2.webp",
-          "bytes": 55626,
+          "bytes": 62968,
           "coverage_hours": 24,
           "detail": {
             "schema": 1,
@@ -208,27 +248,35 @@
                 -565929.588825367,
                 585500.4245312511
               ]
-            }
+            },
+            "weather": {
+              "schema": 1,
+              "format": "i16le-lon1000-lat100-wmo",
+              "count": 272,
+              "spacing_deg": 0.76,
+              "data": "HiNoED0AoiGIEF8AmiSIED0AbgWoEEcAZgioEEcAXguoEAIAmiSoEFAAAv7IEEcA+gDIED0A8gPIED0A6gbIED0A4gnIED0AmiTIED0ACvvoED0AAv7oED0A+gDoED0A8gPoED0A6gboED0A4gnoEAMA2gzoEAIAwhXoEAIAuhjoEAIAjvkIET0AhvwIET0Afv8IET0AdgIIET0AbgUIET0AZggIEQMAXgsIEVAAVg4IEQIAThEIEQIARhQIEQMAPhcIEQIANhoIEQIACvsoET0AAv4oEVAA+gAoEVAA8gMoET0A6gYoEQMA4gkoET0A2gwoEQIA0g8oEQIAyhIoEQIAwhUoEQMAuhgoEVAAshsoEVAACvtIET0AAv5IEQIA+gBIEVAA8gNIEVAA6gZIEVAA4glIEVAA2gxIEQMA0g9IEQIAyhJIEQMAwhVIEQMAuhhIEUcACvtoET0AAv5oEQMA+gBoEVAA8gNoEVAA6gZoEVAA4gloEVAA2gxoEQMA0g9oEQMAyhJoEQMAwhVoEVAAuhhoEQMACvuIEVAAAv6IEQMA+gCIEVAA8gOIEVAA6gaIEVAA4gmIEVAA2gyIEVAA0g+IET0AyhKIEVAAwhWIEVAAuhiIEUcACvuoEQMAAv6oEVAA+gCoEVAA8gOoEQMA6gaoEVAA4gmoET0A2gyoET0A0g+oET0AyhKoET0AwhWoET0AuhioEUcAhvzIEQMAfv/IEVAAdgLIEVAAbgXIEVAAZgjIEVAAXgvIEVAAVg7IET0AThHIET0ARhTIEVAAPhfIEQMANhrIEUcAAv7oEVAA+gDoEQMA8gPoEVAA6gboEVAA4gnoET0A2gzoEVAA0g/oET0AyhLoEVAAwhXoEQMAuhjoEVAACvsIEgMAAv4IElAA+gAIEgMA8gMIElAA6gYIEj0A4gkIEj0A2gwIEj0A0g8IElAAyhIIEgMAwhUIEi0AuhgIEgIAjvkoEgMAhvwoEgMAfv8oElAAdgIoElAAbgUoElAAZggoElAAXgsoElAAVg4oElAAThEoElAARhQoEgIAPhcoEgMACvtIEgMAAv5IElAA+gBIElAA8gNIElAA6gZIElAA4glIElAA2gxIEgMA0g9IEgIAyhJIEgIAwhVIEgIAEvhoEgMACvtoEgMAAv5oEgMA+gBoEgMA8gNoElAA6gZoElAA4gloEgMA2gxoEgIA0g9oEgIAyhJoEgAAwhVoEgIAuhhoEgIAEviIEgMACvuIEgMAAv6IEgMA+gCIElAA8gOIElAA6gaIEgMA4gmIEgMA2gyIEgIA0g+IEgIAyhKIEgAAwhWIEgIAuhiIEgIAIvKoEgMAGvWoElAAEvioEgMACvuoEgMAAv6oEgMA+gCoElAA8gOoEgMA6gaoEgIA4gmoEgIA2gyoEgAA0g+oEgAAyhKoEgAAwhWoEgIAuhioEgMAshuoEgIAKu/IEgMAIvLIEgMAGvXIElAAEvjIEgMACvvIEgMAAv7IEgMA+gDIEgMA8gPIEgMA6gbIEgIA4gnIEgIA2gzIEgAA0g/IEgAAyhLIEgAAwhXIEgAAuhjIEgAAshvIEgIAKu/oEgMAIvLoEgMAGvXoElAAEvjoEgIACvvoEgMAAv7oEgMA+gDoEgMA8gPoEgIA6gboEgIA4gnoEgAA2gzoEgAA0g/oEgAAyhLoEgAAwhXoEgAAuhjoEgAAshvoEgIAKu8IEwMAIvIIE1AAGvUIE1AACvsIEwIAAv4IEwIA+gAIEwIA8gMIEwIA6gYIEwAA4gkIEwAA2gwIEwAA0g8IEwAAyhIIEwAAwhUIEwAAuhgIEwIAshsIEwIAqh4IEwIACvsoEwIAAv4oEwIA+gAoEwIA8gMoEwAA6gYoEwAA4gkoEwAA2gwoEwAA0g8oEwAAyhIoEwAAwhUoEwAAuhgoEwIAshsoEwIAqh4oEwIACvtIEwIAAv5IEwIA+gBIEwAA8gNIEwAA6gZIEwAA4glIEwAA2gxIEwAA0g9IEwAAyhJIEwAAwhVIEwAAuhhIEwIAdgJoEwAAbgVoEwAAZghoEwAAXgtoEwAAVg5oEwAAThFoEwAARhRoEwIAbgWIEwAAZgiIEwAAXguIEwAAVg6IEwAA6gaoEwIA4gmoEwIA2gyoEwIA6gbIEwIA4gnIEwIA6gboEwIA4gnoEwIA"
+            },
+            "weather_schema": 1
           }
         },
         "gust": {
           "file": "ifs9-gust-j2.webp",
-          "bytes": 56370,
+          "bytes": 62840,
           "coverage_hours": 24
         },
         "precip": {
           "file": "ifs9-precip-j2.webp",
-          "bytes": 49546,
+          "bytes": 58354,
           "coverage_hours": 24
         },
         "rain": {
           "file": "ifs9-rain-j2.webp",
-          "bytes": 47898,
+          "bytes": 57024,
           "coverage_hours": 24
         },
         "neige_frais": {
           "file": "ifs9-neige_frais-j2.webp",
-          "bytes": 49154,
+          "bytes": 59546,
           "coverage_hours": 24
         }
       }
