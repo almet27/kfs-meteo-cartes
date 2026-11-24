@@ -289,6 +289,7 @@ def short_daily_values(data,indices,key,aggregation):
 
 def short_plot_daily(model,metric,day,coords,values,coverage,start,end,run,weather_codes=None):
     from matplotlib.colors import Normalize
+    from kfs_surface_style import france_axes, surface as draw_surface, labels, symbols
     lons=np.unique(np.array([p[1] for p in coords],dtype=float))
     lats=np.unique(np.array([p[0] for p in coords],dtype=float))
     index_lon={round(float(v),3):i for i,v in enumerate(lons)}
@@ -311,36 +312,16 @@ def short_plot_daily(model,metric,day,coords,values,coverage,start,end,run,weath
         norm=BoundaryNorm([0,.2,.5,1,2,4,7,12,20,35,60],cmap.N)
         unit="mm"
     title="ARÔME France" if model=="arome" else "ICON Europe"
-    fig=plt.figure(figsize=(11,9),dpi=115,facecolor="#09233e")
-    ax=fig.add_axes((.075,.15,.85,.70),projection=ccrs.PlateCarree())
-    ax.set_extent((-5.9,9.9,41.1,51.9),crs=ccrs.PlateCarree())
+    fig=plt.figure(figsize=(10,10),dpi=115,facecolor="#09233e")
+    ax=france_axes(fig)
     ax.add_feature(cfeature.OCEAN,facecolor="#0d3656",zorder=0)
     ax.add_feature(cfeature.LAND,facecolor="#e3e9e2",zorder=0)
-    surface=ax.pcolormesh(lons,lats,np.ma.masked_invalid(matrix),cmap=cmap,
-        norm=norm,shading="nearest",transform=ccrs.PlateCarree(),zorder=1)
+    surface=draw_surface(ax,coords,values,metric,cmap,norm)
     ax.coastlines("110m",linewidth=.75,color="#223646",zorder=3)
     ax.add_feature(cfeature.BORDERS,linewidth=.65,edgecolor="#334c60",zorder=3)
-    for x,y,name in SHORT_CITIES:
-        k=min(range(len(coords)),key=lambda j:
-              (coords[j][0]-y)**2+(coords[j][1]-x)**2)
-        v=values[k]
-        if not np.isfinite(v):
-            continue
-        number=(f"{v:+.0f}°" if metric in ("tmin","tmax") else
-                f"{v:.0f}" if metric=="gust" else f"{v:.1f}")
-        txt=ax.text(x,y,number,fontsize=8.2,color="#152439",weight="bold",
-              ha="center",va="center",zorder=6,transform=ccrs.PlateCarree())
-        txt.set_path_effects([pe.Stroke(linewidth=2.5,foreground="white"),pe.Normal()])
+    protected=labels(ax,coords,values,metric)
     if weather_codes:
-        try:
-            marked_cities=[(x,y) for x,y,name in SHORT_CITIES
-                if np.isfinite(values[min(range(len(coords)),key=lambda j:
-                    (coords[j][0]-y)**2+(coords[j][1]-x)**2)])]
-            added=draw_wmo_icons(ax,coords,weather_codes,max_icons=8,
-                                 protected=marked_cities)
-            if added:print("KFS_WMO_ICONS_DAILY",model,metric,day,added,flush=True)
-        except Exception as exc:
-            print("KFS_WMO_ICON_SKIPPED",str(exc)[:110],flush=True)
+        symbols(ax,coords,weather_codes,protected,max_icons=9)
     cb=fig.colorbar(surface,ax=ax,orientation="horizontal",shrink=.74,pad=.04)
     cb.set_label(unit,color="white",fontsize=9)
     cb.ax.tick_params(colors="white",labelsize=8)
@@ -351,7 +332,7 @@ def short_plot_daily(model,metric,day,coords,values,coverage,start,end,run,weath
     day_label=start.astimezone(PARIS_ZONE).strftime("%d/%m/%Y")
     fig.text(.07,.870,day_label+" · "+("journée complète" if coverage=="complete" else
              "période partielle"),color="#cde6ef",fontsize=11)
-    fig.text(.07,.072,"Échantillonnage terrestre ~25–35 km (pas la grille native).",
+    fig.text(.07,.072,"Couleurs interpolées entre échantillons ~25–35 km (pas la grille native).",
              color="#d2e4f2",fontsize=9)
     fig.text(.07,.044,"Intervalle UTC "+start.strftime("%d/%m %Hh")+" – "+
              end.strftime("%d/%m %Hh")+" | run modèle "+str(run or "non vérifié"),

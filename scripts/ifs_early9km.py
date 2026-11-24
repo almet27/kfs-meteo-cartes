@@ -124,33 +124,20 @@ def draw(cycle,date,day,metric,coords,values,codes,hours):
  import cartopy.crs as ccrs
  import cartopy.feature as cf
  from PIL import Image
- from kfs_weather_symbols import overlay
+ from kfs_surface_style import france_axes, surface, labels, symbols
  name,field,unit,vmin,vmax,cmap=METRICS[metric]
  good=[(lon,lat,v) for (lat,lon),v in zip(coords,values) if valid(v)]
  if len(good)<len(coords)*.9:raise RuntimeError("Données terrestres incomplètes")
  xx,yy,zz=zip(*good)
- fig=plt.figure(figsize=(11.2,9.4),dpi=115,facecolor="#081f35")
- ax=fig.add_axes((.065,.15,.87,.69),projection=ccrs.PlateCarree())
- ax.set_extent((-5.8,9.8,41.2,51.8))
+ fig=plt.figure(figsize=(10,10),dpi=115,facecolor="#081f35")
+ ax=france_axes(fig)
  ax.add_feature(cf.LAND,facecolor="#e8ede3",zorder=0)
  ax.add_feature(cf.OCEAN,facecolor="#153c59",zorder=0)
  ax.coastlines("110m",linewidth=.75,color="#20364a")
  ax.add_feature(cf.BORDERS,linewidth=.6,edgecolor="#29485e")
- plot=ax.scatter(xx,yy,c=zz,cmap=cmap,norm=Normalize(vmin,vmax),
-     s=92,edgecolors="none",transform=ccrs.PlateCarree(),zorder=2)
- protected=[]
- for lon,lat in CITIES:
-  near=min(range(len(coords)),key=lambda i:
-    (coords[i][0]-lat)**2+(coords[i][1]-lon)**2)
-  v=values[near]
-  if not valid(v):continue
-  text=(f"{v:+.0f}°" if metric in ("tmin","tmax") else
-        f"{v:.0f}" if metric=="gust" else f"{v:.1f}")
-  a=ax.text(lon,lat,text,fontsize=9,color="#132f44",fontweight="bold",
-     ha="center",va="center",transform=ccrs.PlateCarree(),zorder=11)
-  a.set_path_effects([pe.withStroke(linewidth=2.5,foreground="white")])
-  protected.append((lon,lat))
- overlay(ax,coords,codes,max_icons=7,protected=protected)
+ plot=surface(ax,coords,values,metric,cmap,Normalize(vmin,vmax))
+ protected=labels(ax,coords,values,metric)
+ symbols(ax,coords,codes,protected,max_icons=9)
  cb=fig.colorbar(plot,ax=ax,orientation="horizontal",shrink=.8,pad=.04)
  cb.set_label(unit,color="white")
  cb.ax.tick_params(colors="white")
@@ -163,7 +150,7 @@ def draw(cycle,date,day,metric,coords,values,codes,hours):
   fontsize=10,color="#d0e9f3")
  fig.text(.055,.064,"Source : ECMWF via Open-Meteo (CC BY 4.0) • usage non commercial",
   fontsize=9,color="#c4dbeb")
- fig.text(.055,.038,"Échantillons ~35-60 km ; ne pas confondre avec la grille native 9 km.",
+ fig.text(.055,.038,"Couleurs interpolées entre échantillons ~35–60 km ; pas la grille native 9 km.",
   fontsize=9,color="#c4dbeb")
  filename=f"ifs9-{metric}-j{day}.webp";dest=OUT/filename
  b=BytesIO()
