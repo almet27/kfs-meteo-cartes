@@ -406,6 +406,121 @@ def france_mask(x,y):
     _FR_MASK=mask
     return mask
 
+def synoptic_consensus(fields, step, run):
+    """Blend genuine synoptic fields at an identical UTC validity.
+    IFS hazards stay separate. In large disagreement select a real scenario.
+    Every additional field must cover the full projected map domain.
+    """
+    from generate_tendance_cards import weighted_analysis
+    valid=run+timedelta(hours=step)
+    analysis=json.loads((OUT/"tendance-analyse-donnees.json").read_text(encoding="utf-8"))
+    consensus=weighted_analysis(analysis,str(step),valid.isoformat())
+    lon,lat=fields["msl"][:2]
+    ix=np.flatnonzero((lon>=-85)&(lon<=85))
+    iy=np.flatnonzero((lat>=20)&(lat<=85))
+    target_lon,target_lat=lon[ix],lat[iy]
+    names=("msl","gh","t850")
+    reference={k:np.asarray(fields[k][2][np.ix_(iy,ix)],dtype=float) for k in names}
+    # Units: Pa, geopotential height metres, K.
+    if not all(np.isfinite(v).all() for v in reference.values()):
+        return fields,{"method":"ifs_reference","models":["ifs"],"weights":{"ifs":1.0},
+                       "reason":"Grille de référence incomplète"}
+    active={}
+    excluded={}
+    def regrid(x,y,v):
+        x=np.asarray(x,dtype=float);y=np.asarray(y,dtype=float);v=np.asarray(v,dtype=float)
+        a=np.argsort(x);b=np.argsort(y)
+        x=x[a];y=y[b];v=v[np.ix_(b,a)]
+        if np.any(np.diff(x)<=0) or np.any(np.diff(y)<=0):
+            raise ValueError("Coordonnées non uniques")
+        if x[0]>target_lon[0] or x[-1]<target_lon[-1] or y[0]>target_lat[0] or y[-1]<target_lat[-1]:
+            raise ValueError("Couverture géographique incomplète")
+        out=xr.DataArray(v,coords={"lat":y,"lon":x},dims=("lat","lon")).interp(
+            lat=target_lat,lon=target_lon).values
+        if not np.isfinite(out).all():raise ValueError("Grille interpolée incomplète")
+        return out
+    def noaa_field(key,issue,lead,product,pattern):
+        from herbie import Herbie
+        dataset=Herbie(issue.replace(tzinfo=None),model=key,product=product,
+                       fxx=lead,verbose=False).xarray(pattern,remove_grib=True)
+        if not isinstance(dataset,xr.Dataset) or len(dataset.data_vars)!=1:
+            raise ValueError("Champ NOAA non unique")
+        try:
+            d=next(iter(dataset.data_vars.values())).squeeze()
+            for coord,expected in (("time",issue),("valid_time",valid)):
+                if coord not in d.coords or np.asarray(d[coord].values).size!=1:
+                    raise ValueError("Horodatage GRIB absent")
+                actual=np.asarray(d[coord].values).astype("datetime64[s]").reshape(-1)[0]
+                if actual!=np.datetime64(expected.replace(tzinfo=None),"s"):
+                    raise ValueError("Cycle ou validité NOAA incorrecte")
+            x=(np.asarray(d.longitude.values)+180)%360-180
+            y=np.asarray(d.latitude.values)
+            return x,y,np.asarray(d.transpose("latitude","longitude").values)
+        finally:dataset.close()
+    for key,item in consensus.get("models",{}).items():
+        if not item.get("weight",0):continue
+        if key=="ifs":
+            active[key]=reference
+            continue
+        try:
+            issue=when(item["run_utc"])
+            lead=int((valid-issue).total_seconds()/3600)
+            if issue+timedelta(hours=lead)!=valid or lead<0:
+                raise ValueError("Échéance non alignée")
+            got={}
+            if key=="aifs-single":
+                client=Client(source="ecmwf",model=key,resol="0p25")
+                for name,param,var,level in (("msl","msl","msl",None),("gh","gh","gh",500),("t850","t","t",850)):
+                    g=single(client,key,lead,issue,param,var,level)
+                    if when(g[3])!=issue:raise ValueError("Cycle ECMWF incorrect")
+                    got[name]=regrid(g[0],g[1],g[2])
+            elif key in ("gfs","aigfs"):
+                upper="pgrb2.0p25" if key=="gfs" else "pres"
+                surface="pgrb2.0p25" if key=="gfs" else "sfc"
+                for name,product,pattern in (("msl",surface,":PRMSL:mean sea level:"),
+                      ("gh",upper,":HGT:500 mb:"),("t850",upper,":TMP:850 mb:")):
+                    x,y,v=noaa_field(key,issue,lead,product,pattern)
+                    got[name]=regrid(x,y,v)
+            else:continue
+            if not (90000<np.median(got["msl"])<110000 and
+                    4000<np.median(got["gh"])<6500 and 150<np.median(got["t850"])<340):
+                raise ValueError("Unités synoptiques non plausibles")
+            active[key]=got
+        except Exception as exc:
+            excluded[key]=str(exc)[:180]
+            print("Consensus carte : exclusion",key,str(exc)[:180],flush=True)
+    if len(active)<2:
+        return fields,{"method":"ifs_reference","models":["ifs"],"weights":{"ifs":1.0},
+                       "excluded":excluded,"reason":"Moins de deux grilles complètes à validité identique"}
+    weights={k:consensus["models"][k]["weight"] for k in active}
+    total=sum(weights.values());weights={k:v/total for k,v in weights.items()}
+    # Normalized domain differences: heuristic, not calibrated regime skill.
+    area=np.broadcast_to(np.cos(np.radians(target_lat))[:,None],reference["msl"].shape)
+    scales={"msl":1200.0,"gh":120.0,"t850":5.0}
+    def distance(a,b):
+        return math.sqrt(sum(np.average(((active[a][k]-active[b][k])/scales[k])**2,
+                         weights=area) for k in names)/len(names))
+    spread=max(distance(a,b) for a in active for b in active)
+    medoid=None
+    if spread>=1 or consensus.get("agreement")=="forte divergence":
+        medoid=min(active,key=lambda a:(sum(weights[b]*distance(a,b) for b in active),-weights[a]))
+        chosen=active[medoid]
+        method="weighted_representative"
+    else:
+        chosen={k:sum(weights[m]*active[m][k] for m in active) for k in names}
+        method="weighted_blend"
+    result=dict(fields)
+    for name in names:
+        original=fields[name]
+        v=np.array(original[2],copy=True,dtype=float)
+        v[np.ix_(iy,ix)]=chosen[name]
+        result[name]=(original[0],original[1],v,original[3],original[4])
+    return result,{"method":method,"models":list(active),"weights":weights,
+                   "representative":medoid,"normalized_spread":round(spread,3),
+                   "excluded":excluded,"valid_utc":valid.isoformat(),
+                   "risk_source":"ifs","weight_method":consensus.get("method")}
+
+
 def calculate(id,step,model,atlas,now):
     recorded=atlas["runs_utc"][model][str(step)]
     run=when(recorded)
@@ -466,6 +581,14 @@ def calculate(id,step,model,atlas,now):
         tmin=None
         cold_error=str(exc)[:155]
     f["rain6h"]=(x,y,rain,recorded,"mm")
+    # Blend only T850, MSLP and Z500 after all IFS hazard calculations.
+    try:
+        f,synoptic=synoptic_consensus(f,step,run)
+    except Exception as exc:
+        synoptic={"method":"ifs_reference","models":["ifs"],"weights":{"ifs":1.0},
+                  "reason":str(exc)[:180]}
+        print("Consensus carte : repli IFS",str(exc)[:180],flush=True)
+    f["_synoptic_consensus"]=synoptic
     args=(id,step,model,recorded,run,f,x,y,wind,wind_error,rain,snow,tmin,cold_error)
     return build_risk(*args,france=False),build_risk(*args,france=True)
 
@@ -531,6 +654,7 @@ def build_risk(id,step,model,recorded,run,f,x,y,wind,wind_error,rain,snow,tmin,c
     return {"id":id,"step_h":step,"model":model,"run_utc":recorded,
             "valid_utc":(run+timedelta(hours=step)).isoformat(),
             "background_path":str(background),"risks":risks,"markers":selected,
+            "synoptic_consensus":f.get("_synoptic_consensus",{}),
             "t850_shading":{"enabled":True,"level_hpa":850,"unit":"°C",
                             "fixed_scale_c":[-20,20],"opacity":0.92,"palette":"kfs-spectrum-v1",
                             "description":"Température à 850 hPa modélisée, pas température au sol"},
