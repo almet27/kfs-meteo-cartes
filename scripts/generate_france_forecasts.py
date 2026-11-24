@@ -147,6 +147,7 @@ def gfs_field(state, step, key):
         "10v": r":VGRD:10 m above ground:",
         "msl": r":PRMSL:mean sea level:",
         "tp": r":APCP:surface:",
+        "tcc": r":TCDC:entire atmosphere(?: \\(considered as a single layer\\))?:[0-9]+ hour fcst:",
         "crain": r":CRAIN:surface:[0-9]+ hour fcst:",
         "csnow": r":CSNOW:surface:[0-9]+ hour fcst:",
         "cicep": r":CICEP:surface:[0-9]+ hour fcst:",
@@ -471,7 +472,7 @@ def main():
         requested = (("2t", "t850", "10u", "10v", "msl", "tp", "sf", "tcc")
                      if state["kind"] == "ecmwf" else
                      ("2t","t850","10u","10v","msl","tp",
-                      "crain","csnow","cfrzr","cicep") if args.model=="gfs" else
+                      "crain","csnow","cfrzr","cicep","tcc") if args.model=="gfs" else
                      ("2t","t850","10u","10v","msl","tp"))
         for param in requested:
             try:
@@ -573,7 +574,7 @@ def main():
             errors[f"{step}-gust"] = str(exc)[:200]
         if "tcc" in fields:
             x,y,cloud,units,_=fields["tcc"]
-            if units.strip() in ("%","percent"):
+            if units.strip().lower() in ("%","percent","percentage"):
                 cloud=cloud/100.
             if np.isfinite(cloud).all() and np.min(cloud)>=-0.001 and np.max(cloud)<=1.001:
                 candidates["cloud"]=(x,y,np.clip(cloud,0,1),"couverture nuageuse")
