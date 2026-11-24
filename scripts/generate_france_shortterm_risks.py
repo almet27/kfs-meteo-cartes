@@ -14,7 +14,8 @@ from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
-import json, math, time
+import json, math, time, shutil
+from tempfile import TemporaryDirectory
 
 import matplotlib
 matplotlib.use("Agg")
@@ -26,7 +27,7 @@ import cartopy.feature as cfeature
 from cartopy.io import shapereader
 from shapely.geometry import Point
 from shapely.prepared import prep
-from check_france_risk_runs import run_info
+from check_france_risk_runs import run_info, get_run, META
 from kfs_weather_cache import cached, validate_rows, record_quota, prune, utc_hour
 from kfs_weather_symbols import overlay as draw_wmo_icons, representative as wmo_representative
 
@@ -390,52 +391,86 @@ def generate_short_daily(model,data,coords,run,document):
                 if np.isfinite(v) and isnum(row.get("elevation"))]
     document["models"][model]={"name":CODES[model],"run_utc":run,"days":days}
 
+def load_catalog(path,defaults):
+    try:
+        old=json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(old.get("models"),dict):raise ValueError("Invalid catalog")
+        return {**defaults,**old}
+    except (OSError,ValueError,TypeError):
+        return defaults
+
 def main():
+    global OUT, SHORT_OUT
     timestamp=datetime.now(timezone.utc)
-    # Source runs explicitly tagged; no invented run hours on the maps.
     prune()
-    source_runs=run_info()
-    window=utc_hour()
     coords=points()
-    daily_document={"schema":1,"generated_utc":timestamp.isoformat(),
-      "source":"Open-Meteo, modèles explicites ARÔME France et ICON EU",
-      "not_native_grid":True,"models":{}}
-    document={"schema":1,"generated_utc":timestamp.isoformat(),
-      "model_runs":source_runs,
+    risk_out,daily_out=OUT,SHORT_OUT
+    daily_document=load_catalog(daily_out/"latest.json",{"schema":1,"not_native_grid":True,"models":{}})
+    document=load_catalog(risk_out/"latest.json",{"schema":1,"model_runs":{},
       "source":"Open-Meteo, modèles natifs ARÔME France et DWD ICON Europe",
       "spatial_sampling":"Points terrestres esp. 0.38° lon / 0.32° lat ; pas une grille native",
       "not_official_warning":True,"not_thunderstorm_probability":True,
-      "horizons":[6,12,24,36,48],"models":{}}
+      "horizons":[6,12,24,36,48],"models":{}})
+    successes=[]
+    daily_changed=False
     for model in CODES:
-        data=fetch_model(model,coords,source_runs[model]["run_utc"],window)
-        if utc_hour()!=window:
-            raise RuntimeError("Fenêtre horaire changée : conserver les cartes précédentes")
-        views={}
-        for period in PERIODS:
-            values=compute(model,data,period)
-            window_weather=get_wmo_codes(data,range(period[0],period[1]))
-            for kind in ("orage","neige_sol"):
-                key=kind+"_h"+str(period[1])
-                views[key]=plot(model,kind,period,coords,values[kind],timestamp,
-                                window_weather)
-        document["models"][model]={"name":CODES[model],"fields":list(COMMON+EXTRA[model]),
-                                   "maps":views}
         try:
-            generate_short_daily(model,data,coords,
-                                 source_runs.get(model,{}).get("run_utc"),daily_document)
+            source=get_run(model,META[model])
+            previous=document.get("model_runs",{}).get(model,{})
+            # Keep valid products for the same source run; forced rerender on push/manual.
+            import os
+            if os.getenv("GITHUB_EVENT_NAME")=="schedule" and previous.get("run_utc")==source["run_utc"]:
+                print("KFS_REGIONAL_NO_NEW_RUN",model,flush=True)
+                continue
+            window=utc_hour()
+            data=fetch_model(model,coords,source["run_utc"],window)
+            if utc_hour()!=window:
+                raise RuntimeError("Fenêtre horaire changée : conserver les cartes précédentes")
+            with TemporaryDirectory() as tmp:
+                OUT=Path(tmp)/"risques";OUT.mkdir()
+                SHORT_OUT=Path(tmp)/"daily";SHORT_OUT.mkdir()
+                views={}
+                for period in PERIODS:
+                    values=compute(model,data,period)
+                    window_weather=get_wmo_codes(data,range(period[0],period[1]))
+                    for kind in ("orage","neige_sol"):
+                        key=kind+"_h"+str(period[1])
+                        views[key]=plot(model,kind,period,coords,values[kind],timestamp,window_weather)
+                native_icon=(model=="icon_eu" and daily_document["models"].get(model,{}).get("source")=="DWD Open Data")
+                staged_daily={"models":{}}
+                if not native_icon:
+                    try:
+                        generate_short_daily(model,data,coords,source["run_utc"],staged_daily)
+                    except Exception as exc:
+                        print("KFS_FRANCE_SHORT_DAILY_ERROR",model,str(exc)[:200],flush=True)
+                if get_run(model,META[model])!=source:
+                    raise RuntimeError("Run source changé pendant le téléchargement")
+                for p in OUT.glob("*.png"):shutil.copy2(p,risk_out/p.name)
+                document["models"][model]={"name":CODES[model],"fields":list(COMMON+EXTRA[model]),
+                    "maps":views,"generated_utc":timestamp.isoformat()}
+                document.setdefault("model_runs",{})[model]=source
+                product=staged_daily["models"].get(model,{})
+                if product.get("days"):
+                    for p in SHORT_OUT.glob("*.png"):shutil.copy2(p,daily_out/p.name)
+                    product.update(source="Open-Meteo",native_grid=False,generated_utc=timestamp.isoformat())
+                    daily_document["models"][model]=product
+                    daily_changed=True
+                successes.append(model)
+                print("KFS_FRANCE_RISK_MODEL_OK",model,len(coords),"points",flush=True)
         except Exception as exc:
-            # Le nouveau produit quotidien ne doit jamais interrompre
-            # la publication des cartes de risques déjà en production.
-            print("KFS_FRANCE_SHORT_DAILY_ERROR",model,str(exc)[:200],flush=True)
-        print("KFS_FRANCE_RISK_MODEL_OK",model,len(coords),"points",flush=True)
-    if run_info()!=source_runs:
-        raise RuntimeError("Run source changé pendant le téléchargement : aucune publication")
-    (OUT/"latest.json").write_text(
-        json.dumps(document,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
-    if any(model.get("days") for model in daily_document["models"].values()):
-        (SHORT_OUT/"latest.json").write_text(
-            json.dumps(daily_document,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
-    print("KFS_FRANCE_SHORTTERM_RISKS_OK",timestamp.isoformat(),flush=True)
+            print("KFS_FRANCE_MODEL_DEFERRED",model,type(exc).__name__,str(exc)[:250],flush=True)
+        finally:
+            OUT,SHORT_OUT=risk_out,daily_out
+    if successes:
+        document["generated_utc"]=timestamp.isoformat()
+        (OUT/"latest.json").write_text(json.dumps(document,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
+    if daily_changed:
+        daily_document["generated_utc"]=timestamp.isoformat()
+        daily_document["source"]="ARÔME via Open-Meteo ; ICON-EU via DWD Open Data ou Open-Meteo (source par modèle)"
+        (SHORT_OUT/"latest.json").write_text(json.dumps(daily_document,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
+    print("KFS_FRANCE_MODELS_PUBLISHED",successes,flush=True)
+    if not successes:
+        print("KFS_FRANCE_NO_NEW_PRODUCTS; previous valid maps retained",flush=True)
 
 if __name__=="__main__":
     main()
