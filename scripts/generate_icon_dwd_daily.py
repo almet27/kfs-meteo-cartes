@@ -92,16 +92,16 @@ def optional_weather(run,h,lon,lat):
         return h,None
 
 def daily_codes(weather,hs,shape):
-    from kfs_weather_symbols import PRIORITY,kind
+    from kfs_weather_symbols import DETAIL_PRIORITY,detailed_kind
     best=np.full(shape,np.nan)
     rank=np.full(shape,-1,dtype=int)
     for h in hs:
         values=weather.get(h)
         if values is None:continue
         for raw in np.unique(values):
-            mode=kind(raw)
+            mode=detailed_kind(raw)
             if mode is None:continue
-            p=PRIORITY[mode]
+            p=DETAIL_PRIORITY[mode]
             mask=(values==raw)&(p>rank)
             best[mask]=raw;rank[mask]=p
     return best if np.isfinite(best).any() else None
@@ -112,7 +112,7 @@ def main():
     doc=json.loads(cat.read_text()) if cat.exists() else {"schema":1,"models":{}}
     run=cycle()
     old=doc.get("models",{}).get("icon_eu",{})
-    if old.get("source")=="DWD Open Data" and old.get("run_utc")==run.isoformat() and os.getenv("KFS_FORCE")!="1" and all(v.get("maps",{}).get("tmin",{}).get("detail") for v in old.get("days",{}).values()):
+    if old.get("source")=="DWD Open Data" and old.get("run_utc")==run.isoformat() and os.getenv("KFS_FORCE")!="1" and all(v.get("maps",{}).get("tmin",{}).get("detail",{}).get("weather_schema")==1 for v in old.get("days",{}).values()):
         print("KFS_DWD_DAILY_NO_NEW_RUN",run.isoformat());return
     jobs=[(f,h) for f in FIELDS for h in range(0 if f=="t_2m" else 1,HORIZON+1)]
     with ThreadPoolExecutor(max_workers=4) as pool:
