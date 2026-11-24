@@ -140,7 +140,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libeccodes-dev fonts-noto-color-emoji
-          pip install ecmwf-opendata cfgrib eccodes xarray numpy matplotlib cartopy 'Pillow>=10,<13'
+          pip install ecmwf-opendata cfgrib eccodes xarray numpy scipy matplotlib cartopy herbie-data 'Pillow>=10,<13'
       - name: Extraire les diagnostics aux memes cycles que les cartes Europe
         run: python scripts/generate_tendance_analysis.py
       # Inclut les masses d'air à 850 hPa et les fronts thermiques potentiels J+3/J+7.
