@@ -436,7 +436,7 @@ def main():
                     for kind in ("orage","neige_sol"):
                         key=kind+"_h"+str(period[1])
                         views[key]=plot(model,kind,period,coords,values[kind],timestamp,window_weather)
-                native_icon=(model=="icon_eu" and daily_document["models"].get(model,{}).get("source")=="DWD Open Data") or (model=="arome" and daily_document["models"].get(model,{}).get("source")=="Météo-France Open Data" and any(day.get("date","")>=datetime.now(PARIS).date().isoformat() for day in daily_document["models"].get(model,{}).get("days",{}).values()))
+                native_icon=(model=="icon_eu" and daily_document["models"].get(model,{}).get("source")=="DWD Open Data") or (model=="arome" and daily_document["models"].get(model,{}).get("source")=="Météo-France Open Data" and any(day.get("date","")>=datetime.now(PARIS_ZONE).date().isoformat() for day in daily_document["models"].get(model,{}).get("days",{}).values()))
                 staged_daily={"models":{}}
                 if not native_icon:
                     try:
