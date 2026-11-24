@@ -626,6 +626,86 @@ def test():
     print("Self-test: mesures + directions vent/rafales + dégradés IDW OK")
 
 
+def daily_records(current, hourly_samples, names, now):
+    from zoneinfo import ZoneInfo
+
+    start = now.astimezone(ZoneInfo("Europe/Paris")).replace(
+        hour=0, minute=0, second=0, microsecond=0).astimezone(timezone.utc)
+    best = {}
+    rain = {}
+    last_hour = (now - timedelta(minutes=18)).replace(minute=0, second=0, microsecond=0)
+    hours_due = int((last_hour - start).total_seconds() // 3600)
+
+    def consider(metric, value, sid, props, at):
+        if value is None or not math.isfinite(value):
+            return
+        old = best.get(metric)
+        if old and (value >= old["value"] if metric == "tmin" else value <= old["value"]):
+            return
+        name = names.get(sid.zfill(8)) or props.get("nom_usuel") or props.get("nom_station") or f"Station {sid}"
+        best[metric] = {"value": value, "place": name, "time": at.isoformat()}
+
+    for hourly, group in [(True, stations(s)) for s in hourly_samples] + [(False, current)]:
+        for sid, (_, _, p) in group.items():
+            try:
+                at = datetime.fromisoformat(str(p["validity_time"]).replace("Z", "+00:00"))
+                if at.tzinfo is None or not start <= at <= now:
+                    continue
+            except (KeyError, ValueError):
+                continue
+            temp = kelvin(p.get("t"))
+            consider("tmin", temp, sid, p, at)
+            consider("tmax", temp, sid, p, at)
+            if hourly and at - timedelta(hours=1) >= start:
+                consider("gust", hourly_gust(p)[0], sid, p, at)
+                amount = as_number(p.get("rr1"))
+                if amount is not None and 0 <= amount <= 400 and at <= last_hour:
+                    rain.setdefault(sid, {})[at] = amount
+            if not hourly and at - timedelta(minutes=10) >= start:
+                consider("gust", kmh(p.get("fxi10")), sid, p, at)
+    for sid, by_hour in rain.items():
+        if hours_due > 0 and len(by_hour) == hours_due:
+            consider("rain", sum(by_hour.values()), sid, current.get(sid, (0, 0, {}))[2], last_hour)
+    return {"day": start.astimezone(ZoneInfo("Europe/Paris")).date().isoformat(), "values": best}
+
+
+def estimated_snow_record(now):
+    from zoneinfo import ZoneInfo
+
+    sites = [("Chamonix", 45.92, 6.87), ("Aiguille du Midi", 45.88, 6.89),
+             ("Val Thorens", 45.30, 6.58), ("Tignes", 45.47, 6.91), ("Isola 2000", 44.19, 7.16),
+             ("La Plagne", 45.51, 6.68), ("La Grave", 45.05, 6.31), ("Montgenèvre", 44.93, 6.72),
+             ("Pic du Midi de Bigorre", 42.94, 0.14), ("Cauterets", 42.89, -0.11),
+             ("Font-Romeu", 42.50, 2.04), ("Les Rousses", 46.48, 6.06), ("Le Grand-Bornand", 45.94, 6.43),
+             ("Le Lioran", 45.08, 2.75), ("Le Mont-Dore", 45.57, 2.81), ("Le Markstein", 47.92, 7.03),
+             ("Ballon d’Alsace", 47.82, 6.85), ("Haut-Asco", 42.40, 8.92)]
+    start = now.astimezone(ZoneInfo("Europe/Paris")).replace(hour=0, minute=0, second=0, microsecond=0)
+    query = urllib.parse.urlencode({"latitude": ",".join(str(p[1]) for p in sites),
+                                   "longitude": ",".join(str(p[2]) for p in sites),
+                                   "hourly": "snow_depth", "past_days": 1, "forecast_days": 1,
+                                   "timeformat": "unixtime", "timezone": "GMT"})
+    data = http_json("https://api.open-meteo.com/v1/forecast?" + query, retries=1)
+    if not isinstance(data, list) or len(data) != len(sites):
+        return None
+    best = None
+    count = 0
+    for (place, _, _), row in zip(sites, data):
+        hourly = row.get("hourly", {})
+        if row.get("hourly_units", {}).get("snow_depth") != "m":
+            continue
+        values = [(v, t) for v, t in zip(hourly.get("snow_depth", []), hourly.get("time", []))
+                  if isinstance(v, (int, float)) and v >= 0 and start.timestamp() <= t <= now.timestamp()]
+        if values:
+            count += 1
+            depth, stamp = max(values)
+            if best is None or depth * 100 > best["value"]:
+                best = {"place": place, "value": depth * 100,
+                        "time": datetime.fromtimestamp(stamp, timezone.utc).isoformat()}
+    if best:
+        best["sites"] = count
+    return best
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--self-test", action="store_true")
@@ -727,7 +807,13 @@ def main():
             continue
         web_weather.append([round(lon, 5), round(lat, 5), stamp, rain, vis,
                             sun, clouds if cloud_stamp else None, cloud_stamp, sid])
+    records = daily_records(current, hourly_samples, official_names, now)
+    try:
+        records["values"]["snow"] = estimated_snow_record(now)
+    except (RuntimeError, TypeError, ValueError, KeyError) as exc:
+        print(f"INFO neige du jour indisponible : {exc}", file=sys.stderr)
     metadata = {
+        "daily_records": records,
         "generated_utc": now.isoformat().replace("+00:00","Z"),
         "observation_utc": observation_time.isoformat().replace("+00:00","Z"),
         "source": "Météo-France / API Package Observations",
