@@ -6,7 +6,7 @@ from pathlib import Path
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError
 from tempfile import TemporaryFile, TemporaryDirectory
-import bz2, json, os, shutil
+import bz2, json, os, shutil, re
 import numpy as np
 import matplotlib
 matplotlib.use("Agg")
@@ -34,6 +34,13 @@ def cycle():
             if e.code!=404:raise
     raise RuntimeError("No recent full 48h ICON-EU cycle")
 
+def step_hours(value):
+    # ecCodes newer releases may return '0m', '60m' or '1h'.
+    if isinstance(value,(int,float)):return float(value)
+    match=re.fullmatch(r"([0-9]+(?:\.[0-9]+)?)([smhd]?)",str(value).strip())
+    if not match:raise ValueError("Unknown GRIB step "+str(value))
+    return float(match[1])*{"":1,"h":1,"m":1/60,"s":1/3600,"d":24}[match[2]]
+
 def read_field(run,field,h):
     with urlopen(Request(url(run,field,h),headers=UA),timeout=60) as r:
         b=r.read(16*1024*1024+1)
@@ -45,7 +52,7 @@ def read_field(run,field,h):
         try:
             get=lambda k:codes_get(g,k)
             if (int(get("dataDate"))!=int(run.strftime("%Y%m%d")) or int(get("dataTime"))!=run.hour*100
-                or int(get("endStep"))!=h or get("stepType")!=FIELDS[field] or get("gridType")!="regular_ll"):
+                or step_hours(get("endStep"))!=h or get("stepType")!=FIELDS[field] or get("gridType")!="regular_ll"):
                 raise ValueError("Unexpected run, lead, interval or grid")
             a=np.asarray(codes_get_array(g,"latitudes"))
             b=np.asarray(codes_get_array(g,"longitudes"))
@@ -57,7 +64,7 @@ def read_field(run,field,h):
             if len(v)!=len(xs)*len(ys) or not np.isfinite(v).all() or np.max(np.abs(v))>1e6:
                 raise ValueError("Incomplete French native grid")
             order=np.lexsort((b,a))
-            return (xs,ys,v[order].reshape(len(ys),len(xs)),int(get("startStep")),str(get("units")))
+            return (xs,ys,v[order].reshape(len(ys),len(xs)),step_hours(get("startStep")),str(get("units")))
         finally:codes_release(g)
 
 def main():
