@@ -58,7 +58,9 @@ jobs:
           }
           function needsUpdate(model, cycle) {
             const acquired = Date.parse(model?.generated_at_utc);
-            if (!Number.isFinite(acquired)||model?.periods?.['0']?.start_day!==today) return true;
+            const finalDay = new Date(Date.parse(today+'T12:00:00Z')+5*24*hour).toISOString().slice(0,10);
+            if (!Number.isFinite(acquired)||model?.periods?.['0']?.start_day!==today||
+                model?.periods?.['5']?.end_day!==finalDay||model?.periods?.['6']?.end_day!==finalDay) return true;
             if (now-acquired>=6*hour) return true;
             if (!cycle) return false;
             const zones = model.periods?.['0']?.zones || {};
