@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "generated_utc": "2026-11-24T12:29:25.645023+00:00",
-  "rendered_utc": "2026-11-24T13:09:40.899037+00:00",
+  "generated_utc": "2026-11-24T18:00:00+00:00",
+  "rendered_utc": "2026-11-24T18:03:11.727588+00:00",
   "source": "Modèles ECMWF IFS et NOAA GFS via Open-Meteo",
   "sampling": "0.38° longitude, 0.32° latitude, points terrestres uniquement",
   "not_native_grib": true,
@@ -14,35 +14,81 @@
           "maps": {
             "tmin": {
               "filename": "daily-ifs-tmin-d0.webp",
-              "bytes": 74726,
+              "bytes": 74634,
               "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/daily-extended/daily-ifs-tmin-d0.webp",
               "date": "2026-11-24",
-              "valid_points": 543
+              "valid_points": 543,
+              "detail": {
+                "schema": 1,
+                "format": "i16le-lon1000-lat100-temp10",
+                "count": 543,
+                "spacing_deg": 0.38,
+                "data": "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",
+                "geometry": {
+                  "axes": [
+                    0.132642271204177,
+                    0.15,
+                    0.7347154575916459,
+                    0.7
+                  ],
+                  "xlim": [
+                    -685186.4978335418,
+                    618133.9112180956
+                  ],
+                  "ylim": [
+                    -565929.588825367,
+                    585500.4245312511
+                  ]
+                }
+              }
             },
             "tmax": {
               "filename": "daily-ifs-tmax-d0.webp",
-              "bytes": 76388,
+              "bytes": 76164,
               "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/daily-extended/daily-ifs-tmax-d0.webp",
               "date": "2026-11-24",
-              "valid_points": 543
+              "valid_points": 543,
+              "detail": {
+                "schema": 1,
+                "format": "i16le-lon1000-lat100-temp10",
+                "count": 543,
+                "spacing_deg": 0.38,
+                "data": "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",
+                "geometry": {
+                  "axes": [
+                    0.132642271204177,
+                    0.15,
+                    0.7347154575916459,
+                    0.7
+                  ],
+                  "xlim": [
+                    -685186.4978335418,
+                    618133.9112180956
+                  ],
+                  "ylim": [
+                    -565929.588825367,
+                    585500.4245312511
+                  ]
+                }
+              }
             },
             "gust": {
               "filename": "daily-ifs-gust-d0.webp",
-              "bytes": 75654,
+              "bytes": 75628,
               "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/daily-extended/daily-ifs-gust-d0.webp",
               "date": "2026-11-24",
               "valid_points": 543
             },
             "precip": {
               "filename": "daily-ifs-precip-d0.webp",
-              "bytes": 60296,
+              "bytes": 60344,
               "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/daily-extended/daily-ifs-precip-d0.webp",
               "date": "2026-11-24",
               "valid_points": 543
             },
             "rain": {
               "filename": "daily-ifs-rain-d0.webp",
-              "bytes": 59774,
+              "bytes": 59768,
               "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/daily-extended/daily-ifs-rain-d0.webp",
               "date": "2026-11-24",
               "valid_points": 543
@@ -54,35 +100,81 @@
           "maps": {
             "tmin": {
               "filename": "daily-ifs-tmin-d1.webp",
-              "bytes": 74508,
+              "bytes": 74512,
               "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/daily-extended/daily-ifs-tmin-d1.webp",
               "date": "2026-11-25",
-              "valid_points": 543
+              "valid_points": 543,
+              "detail": {
+                "schema": 1,
+                "format": "i16le-lon1000-lat100-temp10",
+                "count": 543,
+                "spacing_deg": 0.38,
+                "data": "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",
+                "geometry": {
+                  "axes": [
+                    0.132642271204177,
+                    0.15,
+                    0.7347154575916459,
+                    0.7
+                  ],
+                  "xlim": [
+                    -685186.4978335418,
+                    618133.9112180956
+                  ],
+                  "ylim": [
+                    -565929.588825367,
+                    585500.4245312511
+                  ]
+                }
+              }
             },
             "tmax": {
               "filename": "daily-ifs-tmax-d1.webp",
-              "bytes": 77338,
+              "bytes": 77058,
               "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/daily-extended/daily-ifs-tmax-d1.webp",
               "date": "2026-11-25",
-              "valid_points": 543
+              "valid_points": 543,
+              "detail": {
+                "schema": 1,
+                "format": "i16le-lon1000-lat100-temp10",
+                "count": 543,
+                "spacing_deg": 0.38,
+                "data": "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",
+                "geometry": {
+                  "axes": [
+                    0.132642271204177,
+                    0.15,
+                    0.7347154575916459,
+                    0.7
+                  ],
+                  "xlim": [
+                    -685186.4978335418,
+                    618133.9112180956
+                  ],
+                  "ylim": [
+                    -565929.588825367,
+                    585500.4245312511
+                  ]
+                }
+              }
             },
             "gust": {
               "filename": "daily-ifs-gust-d1.webp",
-              "bytes": 75364,
+              "bytes": 75970,
               "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/daily-extended/daily-ifs-gust-d1.webp",
               "date": "2026-11-25",
               "valid_points": 543
             },
             "precip": {
               "filename": "daily-ifs-precip-d1.webp",
-              "bytes": 67536,
+              "bytes": 67400,
               "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/daily-extended/daily-ifs-precip-d1.webp",
               "date": "2026-11-25",
               "valid_points": 543
             },
             "rain": {
               "filename": "daily-ifs-rain-d1.webp",
-              "bytes": 67264,
+              "bytes": 67034,
               "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/daily-extended/daily-ifs-rain-d1.webp",
               "date": "2026-11-25",
               "valid_points": 543
@@ -94,35 +186,81 @@
           "maps": {
             "tmin": {
               "filename": "daily-ifs-tmin-d2.webp",
-              "bytes": 75884,
+              "bytes": 75958,
               "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/daily-extended/daily-ifs-tmin-d2.webp",
               "date": "2026-11-26",
-              "valid_points": 543
+              "valid_points": 543,
+              "detail": {
+                "schema": 1,
+                "format": "i16le-lon1000-lat100-temp10",
+                "count": 543,
+                "spacing_deg": 0.38,
+                "data": "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",
+                "geometry": {
+                  "axes": [
+                    0.132642271204177,
+                    0.15,
+                    0.7347154575916459,
+                    0.7
+                  ],
+                  "xlim": [
+                    -685186.4978335418,
+                    618133.9112180956
+                  ],
+                  "ylim": [
+                    -565929.588825367,
+                    585500.4245312511
+                  ]
+                }
+              }
             },
             "tmax": {
               "filename": "daily-ifs-tmax-d2.webp",
-              "bytes": 74806,
+              "bytes": 74790,
               "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/daily-extended/daily-ifs-tmax-d2.webp",
               "date": "2026-11-26",
-              "valid_points": 543
+              "valid_points": 543,
+              "detail": {
+                "schema": 1,
+                "format": "i16le-lon1000-lat100-temp10",
+                "count": 543,
+                "spacing_deg": 0.38,
+                "data": "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",
+                "geometry": {
+                  "axes": [
+                    0.132642271204177,
+                    0.15,
+                    0.7347154575916459,
+                    0.7
+                  ],
+                  "xlim": [
+                    -685186.4978335418,
+                    618133.9112180956
+                  ],
+                  "ylim": [
+                    -565929.588825367,
+                    585500.4245312511
+                  ]
+                }
+              }
             },
             "gust": {
               "filename": "daily-ifs-gust-d2.webp",
-              "bytes": 73826,
+              "bytes": 74080,
               "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/daily-extended/daily-ifs-gust-d2.webp",
               "date": "2026-11-26",
               "valid_points": 543
             },
             "precip": {
               "filename": "daily-ifs-precip-d2.webp",
-              "bytes": 63486,
+              "bytes": 63626,
               "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/daily-extended/daily-ifs-precip-d2.webp",
               "date": "2026-11-26",
               "valid_points": 543
             },
             "rain": {
               "filename": "daily-ifs-rain-d2.webp",
-              "bytes": 62778,
+              "bytes": 63028,
               "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/daily-extended/daily-ifs-rain-d2.webp",
               "date": "2026-11-26",
               "valid_points": 543
@@ -134,35 +272,81 @@
           "maps": {
             "tmin": {
               "filename": "daily-ifs-tmin-d3.webp",
-              "bytes": 76162,
+              "bytes": 77184,
               "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/daily-extended/daily-ifs-tmin-d3.webp",
               "date": "2026-11-27",
-              "valid_points": 543
+              "valid_points": 543,
+              "detail": {
+                "schema": 1,
+                "format": "i16le-lon1000-lat100-temp10",
+                "count": 543,
+                "spacing_deg": 0.38,
+                "data": "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",
+                "geometry": {
+                  "axes": [
+                    0.132642271204177,
+                    0.15,
+                    0.7347154575916459,
+                    0.7
+                  ],
+                  "xlim": [
+                    -685186.4978335418,
+                    618133.9112180956
+                  ],
+                  "ylim": [
+                    -565929.588825367,
+                    585500.4245312511
+                  ]
+                }
+              }
             },
             "tmax": {
               "filename": "daily-ifs-tmax-d3.webp",
-              "bytes": 74374,
+              "bytes": 74314,
               "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/daily-extended/daily-ifs-tmax-d3.webp",
               "date": "2026-11-27",
-              "valid_points": 543
+              "valid_points": 543,
+              "detail": {
+                "schema": 1,
+                "format": "i16le-lon1000-lat100-temp10",
+                "count": 543,
+                "spacing_deg": 0.38,
+                "data": "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yhIIExwARhQIExAAwhUIEwoAPhcIExAAuhgIExAANhoIExUAshsIExAALh0IEwwAqh4IExUAjvkoE1kACvsoE00AhvwoE0oAAv4oE0AAfv8oEz0A+gAoEzEAdgIoEx0A8gMoExsAbgUoExkA6gYoExcAZggoEx4A4gkoExwAXgsoEx8A2gwoExgAVg4oExAA0g8oExkAThEoExYAyhIoExcARhQoEw4AwhUoEwUAPhcoEwwAuhgoExEANhooEw4AshsoExEALh0oEw0Aqh4oEwQAjvlIE1YACvtIE1kAhvxIE1MAAv5IE0UAfv9IEz8A+gBIEykAdgJIExsA8gNIEyEAbgVIExcA6gZIExwAZghIEx0A4glIEx4AXgtIEx8A2gxIExUAVg5IExYA0g9IExUAThFIExYAyhJIExQARhRIExMAwhVIEw8APhdIEwkAuhhIEw0A+gBoEyQAdgJoExcA8gNoExYAbgVoExAA6gZoExAAZghoExcA4gloExoAXgtoExcA2gxoExkAVg5oExsA0g9oExYAThFoExEAyhJoEwsARhRoExIA8gOIEyAAbgWIExsA6gaIExcAZgiIExQA4gmIExUAXguIExYA2gyIExYAVg6IExUA0g+IExIA6gaoEx0AZgioExkA4gmoExQAXguoExYA2gyoExcAVg6oExkA6gbIExgAZgjIEw0A4gnIExQAXgvIExEA6gboEx0AZgjoExMA4gnoExAA",
+                "geometry": {
+                  "axes": [
+                    0.132642271204177,
+                    0.15,
+                    0.7347154575916459,
+                    0.7
+                  ],
+                  "xlim": [
+                    -685186.4978335418,
+                    618133.9112180956
+                  ],
+                  "ylim": [
+                    -565929.588825367,
+                    585500.4245312511
+                  ]
+                }
+              }
             },
             "gust": {
               "filename": "daily-ifs-gust-d3.webp",
-              "bytes": 73508,
+              "bytes": 73476,
               "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/daily-extended/daily-ifs-gust-d3.webp",
               "date": "2026-11-27",
               "valid_points": 543
             },
             "precip": {
               "filename": "daily-ifs-precip-d3.webp",
-              "bytes": 60290,
+              "bytes": 60238,
               "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/daily-extended/daily-ifs-precip-d3.webp",
               "date": "2026-11-27",
               "valid_points": 543
             },
             "rain": {
               "filename": "daily-ifs-rain-d3.webp",
-              "bytes": 59780,
+              "bytes": 59686,
               "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/daily-extended/daily-ifs-rain-d3.webp",
               "date": "2026-11-27",
               "valid_points": 543
@@ -174,35 +358,81 @@
           "maps": {
             "tmin": {
               "filename": "daily-ifs-tmin-d4.webp",
-              "bytes": 77126,
+              "bytes": 77314,
               "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/daily-extended/daily-ifs-tmin-d4.webp",
               "date": "2026-11-28",
-              "valid_points": 543
+              "valid_points": 543,
+              "detail": {
+                "schema": 1,
+                "format": "i16le-lon1000-lat100-temp10",
+                "count": 543,
+                "spacing_deg": 0.38,
+                "data": "HiNoEPj/miRoEEMAoiGIEE8AHiOIEBcAmiSIEPn/+gCoEN//bgWoEJb/6gaoELL/ZgioEN3/4gmoECYAXguoEEcAHiOoEHoAmiSoECcAhvzIENr/Av7IELj/fv/IEOX/+gDIEAsAdgLIEAoA8gPIEA8AbgXIEPb/6gbIEAcAZgjIEAQA4gnIEBEAXgvIECQAmiTIEGsAjvnoEDAACvvoEBMAhvzoEC8AAv7oEB0Afv/oEBMA+gDoEAkAdgLoEP//8gPoEAsAbgXoEAwA6gboEA0AZgjoEBcA4gnoEB0AXgvoEB8A2gzoECYAVg7oEAQAwhXoEBEAPhfoECAAuhjoEAoANhroEC8AjvkIESwACvsIER0AhvwIERkAAv4IESEAfv8IEScA+gAIERQAdgIIEQsA8gMIEQYAbgUIEQQA6gYIEQ4AZggIESEA4gkIEQIAXgsIEdX/2gwIERYAVg4IEfb/0g8IEQYAThEIEREAyhIIEQgARhQIEfT/whUIEdv/PhcIEfv/uhgIEfj/NhoIESAAshsIETQACvsoESgAhvwoER8AAv4oERcAfv8oEQ8A+gAoEQ8AdgIoERoA8gMoERMAbgUoEQ4A6gYoEf//ZggoEf7/4gkoEfL/XgsoEen/2gwoEdf/Vg4oEdT/0g8oEfL/ThEoEQQAyhIoEQsARhQoEef/whUoEfb/PhcoEff/uhgoEbn/NhooEcr/shsoEdX/Lh0oEf7/CvtIEScAhvxIERsAAv5IERsAfv9IEREA+gBIERAAdgJIEQ0A8gNIERMAbgVIEQYA6gZIEfP/ZghIEeb/4glIEeX/XgtIEd7/2gxIEdX/Vg5IEcH/0g9IEeL/ThFIEQYAyhJIEQEARhRIEev/whVIEdf/PhdIEez/uhhIEbP/NhpIEWL/CvtoESAAhvxoER4AAv5oERAAfv9oERUA+gBoEQ4AdgJoEQUA8gNoEf3/bgVoEfT/6gZoEfT/ZghoEfX/4gloEdT/XgtoEd3/2gxoEdr/Vg5oEcL/0g9oEev/ThFoEfj/yhJoEf3/RhRoEdD/whVoEcr/PhdoEdX/uhhoEcj/NhpoEXf/CvuIETwAhvyIERYAAv6IERUAfv+IEQ8A+gCIEQYAdgKIEf7/8gOIEfP/bgWIEe3/6gaIEdr/ZgiIEdP/4gmIEdv/XguIEdz/2gyIEcj/Vg6IEcz/0g+IEcj/ThGIEcH/yhKIEef/RhSIEc3/whWIEbL/PheIEYn/uhiIEVz/NhqIEW7/CvuoERAAhvyoEQ4AAv6oERAAfv+oEQwA+gCoEQAAdgKoEfX/8gOoEe3/bgWoEd7/6gaoEdj/ZgioEdb/4gmoEen/XguoEcb/2gyoEb3/Vg6oEcH/0g+oEdT/ThGoEcD/yhKoEeT/RhSoEeP/whWoEb3/PheoEbv/uhioEXX/NhqoEYr/hvzIERYAAv7IEQ0Afv/IEQkA+gDIEf3/dgLIEfT/8gPIEev/bgXIEeH/6gbIEeT/ZgjIEd3/4gnIEdv/XgvIEcv/2gzIEdb/Vg7IEbb/0g/IEdL/ThHIEcH/yhLIEdf/RhTIEeH/whXIEd7/PhfIEfX/uhjIEZj/NhrIEUr/hvzoEQwAAv7oEQUAfv/oEQIA+gDoEf3/dgLoEfP/8gPoEej/bgXoEej/6gboEfX/ZgjoEdT/4gnoEcn/XgvoEcv/2gzoEdX/Vg7oEdn/0g/oEeH/ThHoEcP/yhLoEc7/RhToEej/whXoEeT/PhfoEfb/uhjoEdX/NhroEZb/CvsIEggAhvwIEgYAAv4IEgIAfv8IEvv/+gAIEvH/dgIIEuz/8gMIEuP/bgUIEub/6gYIEtv/ZggIEtT/4gkIEtP/XgsIEsb/2gwIEtP/Vg4IEtP/0g8IEtH/ThEIEr//yhIIEt//RhQIEtH/whUIEtb/PhcIEvX/uhgIEvT/NhoIEpb/jvkoEiIACvsoEhAAhvwoEgwAAv4oEgIAfv8oEvX/+gAoEu7/dgIoEu7/8gMoEun/bgUoEuj/6gYoEuD/ZggoEtv/4gkoEtn/XgsoEtv/2gwoEtb/Vg4oEtP/0g8oEtT/ThEoEs//yhIoEtL/RhQoEtL/whUoEs//PhcoErH/jvlIEh4ACvtIEgoAhvxIEgUAAv5IEvT/fv9IEvP/+gBIEu7/dgJIEuv/8gNIEuz/bgVIEuT/6gZIEuL/ZghIEt3/4glIEtz/XgtIEtX/2gxIEtP/Vg5IEtj/0g9IEtX/ThFIEtj/yhJIEt3/RhRIEtP/whVIEtP/PhdIEtz/EvhoEi8AjvloEh8ACvtoEgsAhvxoEgEAAv5oEvX/fv9oEvP/+gBoEu7/dgJoEun/8gNoEuv/bgVoEuH/6gZoEt3/ZghoEtv/4gloEtr/XgtoEtv/2gxoEtL/Vg5oEtb/0g9oEsb/ThFoEtL/yhJoEtH/RhRoEt//whVoEt3/PhdoEuP/uhhoEtr/lvaIEi0AEviIEigAjvmIEhgACvuIEgAAhvyIEvr/Av6IEvn/fv+IEvT/+gCIEur/dgKIEuT/8gOIEuP/bgWIEt//6gaIEtz/ZgiIEtv/4gmIEtX/XguIEt//2gyIEtb/Vg6IEtH/0g+IEtH/ThGIEtv/yhKIEtL/RhSIEuD/whWIEuH/PheIEtr/uhiIEtj/NhqIEtX/IvKoEm8AnvOoEloAGvWoEjkAlvaoEi4AEvioEiAAjvmoEhcACvuoEvz/hvyoEvb/Av6oEvD/fv+oEu7/+gCoEuj/dgKoEuP/8gOoEuD/bgWoEt//6gaoEtz/ZgioEtv/4gmoEtr/XguoEtn/2gyoEtP/Vg6oEtP/0g+oEtj/ThGoEtj/yhKoEtj/RhSoEtL/whWoEtj/PheoEtP/uhioEtf/NhqoEtL/shuoEtf/Lh2oEtz/Ku/IEngApvDIEm4AIvLIElMAnvPIEkkAGvXIEjQAlvbIEioAEvjIEhkAjvnIEhIACvvIEvj/hvzIEvH/Av7IEur/fv/IEuf/+gDIEuP/dgLIEuT/8gPIEtr/bgXIEtz/6gbIEtz/ZgjIEtj/4gnIEtv/XgvIEtz/2gzIEt7/Vg7IEtP/0g/IEtf/ThHIEtz/yhLIEtX/RhTIEtf/whXIEtn/PhfIEtX/uhjIEtT/NhrIEs3/shvIEsv/Lh3IEtv/Ku/oEmwApvDoElcAIvLoElMAnvPoEkcAGvXoEjsAlvboEi0AEvjoEhsAjvnoEg8ACvvoEv3/hvzoEvD/Av7oEuf/fv/oEub/+gDoEuH/dgLoEt7/8gPoEtz/bgXoEuD/6gboEt3/ZgjoEt7/4gnoEtz/XgvoEt//2gzoEuD/Vg7oEtr/0g/oEt7/ThHoEuL/yhLoEuH/RhToEt7/whXoEtL/PhfoEtD/uhjoEtP/NhroEtH/shvoEsn/Lh3oEtv/Ku8IE3YApvAIE20AIvIIE18AnvMIE1YAGvUIE1gAlvYIEzQACvsIEwMAhvwIE/X/Av4IE+//fv8IE/L/+gAIE+X/dgIIE93/8gMIE+D/bgUIE97/6gYIE93/ZggIE97/4gkIE+D/XgsIE9//2gwIE97/Vg4IE9v/0g8IE9//ThEIE9z/yhIIE97/RhQIE9z/whUIE9b/PhcIE9//uhgIE9z/NhoIE+H/shsIE9//Lh0IE93/qh4IE+n/jvkoExQACvsoEwYAhvwoEwAAAv4oE/X/fv8oE/j/+gAoE/P/dgIoE+H/8gMoE9//bgUoE+D/6gYoE+H/ZggoE+X/4gkoE+H/XgsoE+H/2gwoE93/Vg4oE9j/0g8oE+L/ThEoE+X/yhIoE+H/RhQoE9z/whUoE9H/PhcoE9v/uhgoE+L/NhooE+H/shsoE9//Lh0oE9v/qh4oE9X/jvlIEyQACvtIExEAhvxIEwcAAv5IE/3/fv9IE/z/+gBIE+3/dgJIE+P/8gNIE+j/bgVIE97/6gZIE+D/ZghIE9z/4glIE93/XgtIE+H/2gxIE93/Vg5IE+D/0g9IE+H/ThFIE+P/yhJIE+D/RhRIE+H/whVIE93/PhdIE9r/uhhIE9z/+gBoE+7/dgJoE+n/8gNoE+X/bgVoE9z/6gZoE9z/ZghoE9z/4gloE+H/XgtoE97/2gxoE+D/Vg5oE+X/0g9oE+f/ThFoE+D/yhJoE9r/RhRoE+H/8gOIE+//bgWIE+n/6gaIE+P/ZgiIE97/4gmIE9z/XguIE+D/2gyIE+D/Vg6IE+T/0g+IE+L/6gaoE+f/ZgioE+X/4gmoE+D/XguoE97/2gyoE9//Vg6oE+X/6gbIE+r/ZgjIE93/4gnIE+H/XgvIE97/6gboE+//ZgjoE+X/4gnoE93/",
+                "geometry": {
+                  "axes": [
+                    0.132642271204177,
+                    0.15,
+                    0.7347154575916459,
+                    0.7
+                  ],
+                  "xlim": [
+                    -685186.4978335418,
+                    618133.9112180956
+                  ],
+                  "ylim": [
+                    -565929.588825367,
+                    585500.4245312511
+                  ]
+                }
+              }
             },
             "tmax": {
               "filename": "daily-ifs-tmax-d4.webp",
-              "bytes": 74578,
+              "bytes": 72962,
               "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/daily-extended/daily-ifs-tmax-d4.webp",
               "date": "2026-11-28",
-              "valid_points": 543
+              "valid_points": 543,
+              "detail": {
+                "schema": 1,
+                "format": "i16le-lon1000-lat100-temp10",
+                "count": 543,
+                "spacing_deg": 0.38,
+                "data": "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yhIIEyAARhQIExQAwhUIExEAPhcIExwAuhgIEx4ANhoIEx4AshsIExkALh0IExwAqh4IEygAjvkoE0IACvsoEzsAhvwoEzgAAv4oEzAAfv8oEzcA+gAoEzAAdgIoEyEA8gMoEx8AbgUoEx0A6gYoExkAZggoEx0A4gkoEx4AXgsoEyAA2gwoExcAVg4oExIA0g8oExoAThEoExwAyhIoExsARhQoExcAwhUoEw4APhcoExgAuhgoEx0ANhooExwAshsoExwALh0oExgAqh4oExIAjvlIE0QACvtIE0QAhvxIE0EAAv5IEzoAfv9IEzYA+gBIEy0AdgJIEx8A8gNIEyUAbgVIExsA6gZIExsAZghIEx4A4glIEx8AXgtIEyAA2gxIExkAVg5IExoA0g9IExwAThFIExoAyhJIExgARhRIExwAwhVIExoAPhdIExQAuhhIExkA+gBoEygAdgJoExsA8gNoExoAbgVoExEA6gZoExQAZghoExkA4gloExwAXgtoExgA2gxoExgAVg5oExoA0g9oExcAThFoExgAyhJoExIARhRoExkA8gOIEyQAbgWIEx8A6gaIExsAZgiIExgA4gmIExcAXguIExMA2gyIExUAVg6IExQA0g+IExQA6gaoExwAZgioExsA4gmoExYAXguoEx8A2gyoEx4AVg6oEx8A6gbIExwAZgjIExkA4gnIEx0AXgvIEyIA6gboEyEAZgjoEx4A4gnoEx4A",
+                "geometry": {
+                  "axes": [
+                    0.132642271204177,
+                    0.15,
+                    0.7347154575916459,
+                    0.7
+                  ],
+                  "xlim": [
+                    -685186.4978335418,
+                    618133.9112180956
+                  ],
+                  "ylim": [
+                    -565929.588825367,
+                    585500.4245312511
+                  ]
+                }
+              }
             },
             "gust": {
               "filename": "daily-ifs-gust-d4.webp",
-              "bytes": 74080,
+              "bytes": 74438,
               "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/daily-extended/daily-ifs-gust-d4.webp",
               "date": "2026-11-28",
               "valid_points": 543
             },
             "precip": {
               "filename": "daily-ifs-precip-d4.webp",
-              "bytes": 59508,
+              "bytes": 60292,
               "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/daily-extended/daily-ifs-precip-d4.webp",
               "date": "2026-11-28",
               "valid_points": 543
             },
             "rain": {
               "filename": "daily-ifs-rain-d4.webp",
-              "bytes": 59918,
+              "bytes": 59734,
               "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/daily-extended/daily-ifs-rain-d4.webp",
               "date": "2026-11-28",
               "valid_points": 543
@@ -214,17 +444,63 @@
           "maps": {
             "tmin": {
               "filename": "daily-ifs-tmin-d5.webp",
-              "bytes": 76008,
+              "bytes": 76344,
               "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/daily-extended/daily-ifs-tmin-d5.webp",
               "date": "2026-11-29",
-              "valid_points": 543
+              "valid_points": 543,
+              "detail": {
+                "schema": 1,
+                "format": "i16le-lon1000-lat100-temp10",
+                "count": 543,
+                "spacing_deg": 0.38,
+                "data": "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",
+                "geometry": {
+                  "axes": [
+                    0.132642271204177,
+                    0.15,
+                    0.7347154575916459,
+                    0.7
+                  ],
+                  "xlim": [
+                    -685186.4978335418,
+                    618133.9112180956
+                  ],
+                  "ylim": [
+                    -565929.588825367,
+                    585500.4245312511
+                  ]
+                }
+              }
             },
             "tmax": {
               "filename": "daily-ifs-tmax-d5.webp",
-              "bytes": 76826,
+              "bytes": 74726,
               "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/daily-extended/daily-ifs-tmax-d5.webp",
               "date": "2026-11-29",
-              "valid_points": 543
+              "valid_points": 543,
+              "detail": {
+                "schema": 1,
+                "format": "i16le-lon1000-lat100-temp10",
+                "count": 543,
+                "spacing_deg": 0.38,
+                "data": "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",
+                "geometry": {
+                  "axes": [
+                    0.132642271204177,
+                    0.15,
+                    0.7347154575916459,
+                    0.7
+                  ],
+                  "xlim": [
+                    -685186.4978335418,
+                    618133.9112180956
+                  ],
+                  "ylim": [
+                    -565929.588825367,
+                    585500.4245312511
+                  ]
+                }
+              }
             },
             "gust": {
               "filename": "daily-ifs-gust-d5.webp",
@@ -235,14 +511,14 @@
             },
             "precip": {
               "filename": "daily-ifs-precip-d5.webp",
-              "bytes": 60796,
+              "bytes": 60304,
               "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/daily-extended/daily-ifs-precip-d5.webp",
               "date": "2026-11-29",
               "valid_points": 543
             },
             "rain": {
               "filename": "daily-ifs-rain-d5.webp",
-              "bytes": 60190,
+              "bytes": 59766,
               "url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/daily-extended/daily-ifs-rain-d5.webp",
               "date": "2026-11-29",
               "valid_points": 543
@@ -250,8 +526,8 @@
           }
         }
       },
-      "generated_utc": "2026-11-24T12:00:00+00:00",
-      "rendered_utc": "2026-11-24T13:09:40.899037+00:00"
+      "generated_utc": "2026-11-24T18:00:00+00:00",
+      "rendered_utc": "2026-11-24T18:03:11.727588+00:00"
     },
     "gfs": {
       "source": "ncep_gfs_global",
