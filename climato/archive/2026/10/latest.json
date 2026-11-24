@@ -68,10 +68,55 @@
     },
     {
       "file": "neige-sol-max.png",
-      "title": "Hauteur maximale de neige au sol mesurée",
+      "title": "Hauteur maximale de neige au sol estimée",
       "end": "2026-10-31",
-      "stations": 105,
-      "kind": "snow_observed"
+      "stations": 279,
+      "grid_cells": 9892,
+      "ims_days": 31,
+      "ims_dates": [
+        "2026-10-01",
+        "2026-10-02",
+        "2026-10-03",
+        "2026-10-04",
+        "2026-10-05",
+        "2026-10-06",
+        "2026-10-07",
+        "2026-10-08",
+        "2026-10-09",
+        "2026-10-10",
+        "2026-10-11",
+        "2026-10-12",
+        "2026-10-13",
+        "2026-10-14",
+        "2026-10-15",
+        "2026-10-16",
+        "2026-10-17",
+        "2026-10-18",
+        "2026-10-19",
+        "2026-10-20",
+        "2026-10-21",
+        "2026-10-22",
+        "2026-10-23",
+        "2026-10-24",
+        "2026-10-25",
+        "2026-10-26",
+        "2026-10-27",
+        "2026-10-28",
+        "2026-10-29",
+        "2026-10-30",
+        "2026-10-31"
+      ],
+      "kind": "snow_depth",
+      "zones": {
+        "nord_ouest": "neige-sol-max-nord_ouest.png",
+        "nord_est": "neige-sol-max-nord_est.png",
+        "sud_ouest": "neige-sol-max-sud_ouest.png",
+        "sud_est": "neige-sol-max-sud_est.png",
+        "alpes": "neige-sol-max-alpes.png",
+        "pyrenees": "neige-sol-max-pyrenees.png",
+        "massif_central": "neige-sol-max-massif_central.png"
+      },
+      "source": "Météo-France SIM 8 km + stations; IMS 1 km si disponible"
     }
   ]
 }
