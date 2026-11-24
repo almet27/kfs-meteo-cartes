@@ -127,10 +127,10 @@ def render(model,metric,offset,date,coords,vals,codes=None):
              color="#b5c6d9",fontsize=9)
     path=OUT/("daily-"+model+"-"+metric+"-d"+str(offset)+".webp")
     buf=BytesIO()
-    detail=None
+    from kfs_zoom_detail import samples,geometry,weather_samples
+    detail=samples(coords,numbers,.38,metric=metric);detail["geometry"]=geometry(ax)
     if metric in ("tmin","tmax"):
-        from kfs_zoom_detail import samples,geometry,weather_samples
-        detail=samples(coords,numbers,.38);detail["geometry"]=geometry(ax);detail["weather"]=weather_samples(coords,codes,.38);detail["weather_schema"]=1
+        detail["weather"]=weather_samples(coords,codes,.38);detail["weather_schema"]=1
     fig.savefig(buf,format="png",dpi=120,facecolor=fig.get_facecolor())
     plt.close(fig)
     buf.seek(0)
