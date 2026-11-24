@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""J+4/J+5 France: real daily IFS/GFS fields on a stated ~25–35 km grid.
+"""J+0 à J+5 France: real daily IFS/GFS fields on a stated ~25–35 km grid.
 
 Deliberately separate from the 0–72 h native-GRIB maps. No false hourly
 gust time or high-resolution detail is invented.
@@ -138,7 +138,7 @@ def main():
     for model in SOURCE:
         records=fetch_all(model,coords)
         maps={}
-        for day in (4,5):
+        for day in range(6):
             target=(date+timedelta(days=day)).isoformat()
             fields={}
             day_codes=[]
