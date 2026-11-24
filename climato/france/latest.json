@@ -1,14 +1,14 @@
 {
   "schema": 1,
   "month": "2026-11",
-  "generated_at": "2026-11-23T23:45:06.881767+01:00",
+  "generated_at": "2026-11-24T22:23:25.394625+01:00",
   "source": "Météo-France, observations quotidiennes",
   "method": "IDW, 150 km max nearest station, 2 stations within 200 km",
   "maps": [
     {
       "file": "temperature-anomalie.png",
       "title": "Anomalie de température moyenne",
-      "end": "2026-11-21",
+      "end": "2026-11-22",
       "stations": 388,
       "zones": {
         "nord_ouest": "temperature-anomalie-nord_ouest.png",
@@ -23,8 +23,8 @@
     {
       "file": "pluie-anomalie.png",
       "title": "Anomalie de précipitations",
-      "end": "2026-11-21",
-      "stations": 413,
+      "end": "2026-11-22",
+      "stations": 410,
       "zones": {
         "nord_ouest": "pluie-anomalie-nord_ouest.png",
         "nord_est": "pluie-anomalie-nord_est.png",
@@ -38,8 +38,8 @@
     {
       "file": "soleil-anomalie.png",
       "title": "Anomalie d’ensoleillement",
-      "end": "2026-11-21",
-      "stations": 46,
+      "end": "2026-11-22",
+      "stations": 47,
       "zones": {
         "nord_ouest": "soleil-anomalie-nord_ouest.png",
         "nord_est": "soleil-anomalie-nord_est.png",
@@ -53,8 +53,8 @@
     {
       "file": "gel-anomalie.png",
       "title": "Anomalie du nombre de jours de gel",
-      "end": "2026-11-21",
-      "stations": 388,
+      "end": "2026-11-22",
+      "stations": 389,
       "zones": {
         "nord_ouest": "gel-anomalie-nord_ouest.png",
         "nord_est": "gel-anomalie-nord_est.png",
@@ -68,9 +68,9 @@
     {
       "file": "temperature-observee.png",
       "title": "Température moyenne observée",
-      "end": "2026-11-21",
-      "stations": 583,
-      "mf_stations": 583,
+      "end": "2026-11-22",
+      "stations": 584,
+      "mf_stations": 584,
       "static_stations": 0,
       "kind": "observed_fusion",
       "source": "Météo-France ; Infoclimat StatIC via chom.engineering (LO 2.0)",
@@ -87,9 +87,9 @@
     {
       "file": "pluie-observee.png",
       "title": "Cumul de précipitations observé",
-      "end": "2026-11-21",
-      "stations": 586,
-      "mf_stations": 586,
+      "end": "2026-11-22",
+      "stations": 582,
+      "mf_stations": 582,
       "static_stations": 0,
       "kind": "observed_fusion",
       "source": "Météo-France ; Infoclimat StatIC via chom.engineering (LO 2.0)",
@@ -106,9 +106,9 @@
     {
       "file": "gel-observe.png",
       "title": "Nombre de jours de gel observés",
-      "end": "2026-11-21",
-      "stations": 584,
-      "mf_stations": 584,
+      "end": "2026-11-22",
+      "stations": 585,
+      "mf_stations": 585,
       "static_stations": 0,
       "kind": "observed_fusion",
       "source": "Météo-France ; Infoclimat StatIC via chom.engineering (LO 2.0)",
@@ -125,10 +125,10 @@
     {
       "file": "neige-sol-max.png",
       "title": "Hauteur maximale de neige au sol estimée",
-      "end": "2026-11-22",
+      "end": "2026-11-23",
       "stations": 88,
       "grid_cells": 9892,
-      "ims_days": 22,
+      "ims_days": 23,
       "ims_dates": [
         "2026-11-01",
         "2026-11-02",
@@ -151,7 +151,8 @@
         "2026-11-19",
         "2026-11-20",
         "2026-11-21",
-        "2026-11-22"
+        "2026-11-22",
+        "2026-11-23"
       ],
       "kind": "snow_depth",
       "zones": {
