@@ -661,6 +661,35 @@ def main():
             points.append([round(lon, 4), round(lat, 4), round(val, 1),
                            record[3] if len(record) > 3 else None, label])
         web_points[metric] = points
+    # Observations indépendantes pour confronter les METAR au sol.
+    # rr_per = précipitations réellement mesurées sur 6 minutes (mm).
+    # n = nébulosité horaire en octas ; ne jamais confondre absence et zéro.
+    def bounded(p, key, low, high):
+        v = as_number(p.get(key))
+        return v if v is not None and low <= v <= high else None
+    def obs_stamp(p):
+        try:
+            t = datetime.fromisoformat(str(p.get("validity_time")).replace("Z", "+00:00"))
+            return t.isoformat().replace("+00:00", "Z") if t.tzinfo is not None else None
+        except (ValueError, TypeError):
+            return None
+    web_weather = []
+    for sid, (lon, lat, p) in current.items():
+        if not (-5.8 <= lon <= 10.0 and 41.1 <= lat <= 51.6):
+            continue
+        stamp = obs_stamp(p)
+        if not stamp:
+            continue
+        hourly_props = last_hourly.get(sid, (None, None, {}))[2]
+        rain = bounded(p, "rr_per", 0, 100)
+        vis = bounded(p, "vv", 0, 100000)
+        sun = bounded(p, "insolh", 0, 6)
+        clouds = bounded(hourly_props, "n", 0, 8)
+        cloud_stamp = obs_stamp(hourly_props) if clouds is not None else None
+        if rain is None and vis is None and sun is None and cloud_stamp is None:
+            continue
+        web_weather.append([round(lon, 5), round(lat, 5), stamp, rain, vis,
+                            sun, clouds if cloud_stamp else None, cloud_stamp, sid])
     metadata = {
         "generated_utc": now.isoformat().replace("+00:00","Z"),
         "observation_utc": observation_time.isoformat().replace("+00:00","Z"),
@@ -668,6 +697,8 @@ def main():
         "hourly_snapshots": len(hourly_samples),
         "web_points_schema": 1,
         "web_points": web_points,
+        "web_weather_schema": 1,
+        "web_weather": web_weather,
         "metric_details": {k: v[0] for k, v in METRICS.items()},
         "stations": stations_count,
         "zones": {k:v[0] for k,v in ZONES.items()},
