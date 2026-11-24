@@ -46,8 +46,8 @@ def cycle_value(raw):
    raise ValueError("Sélectionner un run 00Z ou 12Z")
   return dt
  now=datetime.now(timezone.utc)
- dt=now.replace(hour=12,minute=0,second=0,microsecond=0)
- return dt if now.hour>=16 else dt-timedelta(days=1)
+ dt=now.replace(hour=12 if now.hour>=16 else 0,minute=0,second=0,microsecond=0)
+ return dt if now.hour>=4 else dt-timedelta(hours=12)
 
 def get(cycle,locations):
  qs=urlencode({
