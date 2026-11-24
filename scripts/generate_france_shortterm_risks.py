@@ -325,7 +325,7 @@ def short_plot_daily(model,metric,day,coords,values,coverage,start,end,run,weath
     ax.add_feature(cfeature.BORDERS,linewidth=.65,edgecolor="#334c60",zorder=3)
     protected=labels(ax,coords,values,metric)
     if weather_codes:
-        symbols(ax,coords,weather_codes,protected,max_icons=9)
+        symbols(ax,coords,weather_codes,protected,max_icons=29)
     cb=fig.colorbar(surface,ax=ax,orientation="horizontal",shrink=.74,pad=.04)
     cb.set_label(unit,color="white",fontsize=9)
     cb.ax.tick_params(colors="white",labelsize=8)
@@ -345,8 +345,8 @@ def short_plot_daily(model,metric,day,coords,values,coverage,start,end,run,weath
     target=SHORT_OUT/filename
     detail=None
     if metric in ("tmin","tmax"):
-        from kfs_zoom_detail import samples,geometry
-        detail=samples(coords,values,.38);detail["geometry"]=geometry(ax)
+        from kfs_zoom_detail import samples,geometry,weather_samples
+        detail=samples(coords,values,.38);detail["geometry"]=geometry(ax);detail["weather"]=weather_samples(coords,weather_codes,.38);detail["weather_schema"]=1
     fig.savefig(target,dpi=115,facecolor=fig.get_facecolor())
     plt.close(fig)
     if target.stat().st_size<12000:
