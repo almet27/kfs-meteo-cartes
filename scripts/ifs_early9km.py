@@ -157,10 +157,10 @@ def draw(cycle,date,day,metric,coords,values,codes,hours):
   fontsize=9,color="#c4dbeb")
  filename=f"ifs9-{metric}-j{day}.webp";dest=OUT/filename
  b=BytesIO()
- detail=None
+ from kfs_zoom_detail import samples,geometry,weather_samples
+ detail=samples(coords,values,.76,metric=metric);detail["geometry"]=geometry(ax)
  if metric in ("tmin","tmax"):
-  from kfs_zoom_detail import samples,geometry,weather_samples
-  detail=samples(coords,values,.76);detail["geometry"]=geometry(ax);detail["weather"]=weather_samples(coords,codes,.76);detail["weather_schema"]=1
+  detail["weather"]=weather_samples(coords,codes,.76);detail["weather_schema"]=1
  fig.savefig(b,format="png",dpi=115,facecolor=fig.get_facecolor())
  plt.close(fig);b.seek(0)
  Image.open(b).convert("RGB").save(dest,"WEBP",quality=84,method=4)
