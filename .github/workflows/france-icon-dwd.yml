@@ -10,7 +10,7 @@ on:
 permissions:
   contents: write
 concurrency:
-  group: kfs-france-risques-48h
+  group: kfs-france-icon-native
   cancel-in-progress: false
 jobs:
   icon:
@@ -40,11 +40,35 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add forecast-maps/france/shortterm-daily/latest.json forecast-maps/france/shortterm-daily/daily-icon_eu-*.png
-          if git diff --cached --quiet; then exit 0; fi
-          git commit -m 'Actualiser ICON-EU natif DWD et préserver ARÔME'
+          # Keep only this model's generated products; merge into the current
+          # catalog on each push attempt, never overwrite concurrent ARÔME.
+          export STAGED_ICON="$(mktemp -d)"
+          cp forecast-maps/france/shortterm-daily/latest.json "$STAGED_ICON/"
+          cp forecast-maps/france/shortterm-daily/daily-icon_eu-*.png "$STAGED_ICON/"
           for attempt in 1 2 3 4 5; do
-            if ! git pull --rebase origin main; then git rebase --abort || true; exit 1; fi
+            git fetch origin main
+            git reset --hard origin/main
+            python - <<'PY'
+          import json,os,shutil
+          from pathlib import Path
+          src=Path(os.environ["STAGED_ICON"])
+          dest=Path("forecast-maps/france/shortterm-daily")
+          new=json.loads((src/"latest.json").read_text())
+          current=json.loads((dest/"latest.json").read_text())
+          model=new["models"]["icon_eu"]
+          prev=current.get("models",{}).get("icon_eu",{})
+          if prev.get("generated_utc","")<=model.get("generated_utc",""):
+              current.setdefault("models",{})["icon_eu"]=model
+              current["generated_utc"]=max(current.get("generated_utc",""),new.get("generated_utc",""))
+              for day in model["days"].values():
+                  for entry in day["maps"].values():
+                      name=entry["filename"]
+                      shutil.copy2(src/name,dest/name)
+              (dest/"latest.json").write_text(json.dumps(current,ensure_ascii=False,indent=2)+"\n")
+          PY
+            git add forecast-maps/france/shortterm-daily/latest.json forecast-maps/france/shortterm-daily/daily-icon_eu-*.png
+            if git diff --cached --quiet; then exit 0; fi
+            git commit -m 'Actualiser ICON-EU natif DWD sans écraser ARÔME'
             if git push origin HEAD:main; then exit 0; fi
             sleep 5
           done
