@@ -65,7 +65,7 @@ def read_field(run,field,h):
         try:
             get=lambda k:codes_get(g,k)
             if (int(get("dataDate"))!=int(run.strftime("%Y%m%d")) or int(get("dataTime"))!=run.hour*100
-                or step_hours(get("endStep"))!=h or get("stepType")!=FIELDS[field] or get("gridType")!="regular_ll"):
+                or step_hours(get("endStep"))!=h or get("stepType")!=(FIELDS.get(field,"instant")) or get("gridType")!="regular_ll"):
                 raise ValueError("Unexpected run, lead, interval or grid")
             a=np.asarray(codes_get_array(g,"latitudes"))
             b=np.asarray(codes_get_array(g,"longitudes"))
@@ -79,6 +79,31 @@ def read_field(run,field,h):
             order=np.lexsort((b,a))
             return (xs,ys,v[order].reshape(len(ys),len(xs)),step_hours(get("startStep")),str(get("units")))
         finally:codes_release(g)
+
+def optional_weather(run,h,lon,lat):
+    try:
+        x,y,v,_,_=read_field(run,"ww",h)
+        if not np.array_equal(x,lon) or not np.array_equal(y,lat):
+            raise ValueError("Weather grid differs")
+        return h,v
+    except Exception as exc:
+        print("KFS_DWD_WW_MISSING",h,str(exc)[:120],flush=True)
+        return h,None
+
+def daily_codes(weather,hs,shape):
+    from kfs_weather_symbols import PRIORITY,kind
+    best=np.full(shape,np.nan)
+    rank=np.full(shape,-1,dtype=int)
+    for h in hs:
+        values=weather.get(h)
+        if values is None:continue
+        for raw in np.unique(values):
+            mode=kind(raw)
+            if mode is None:continue
+            p=PRIORITY[mode]
+            mask=(values==raw)&(p>rank)
+            best[mask]=raw;rank[mask]=p
+    return best if np.isfinite(best).any() else None
 
 def main():
     OUT.mkdir(parents=True,exist_ok=True)
@@ -97,6 +122,8 @@ def main():
         if field=="t_2m" and unit!="K":raise ValueError("Temperature unit "+unit)
         if field=="vmax_10m" and (unit!="m s**-1" or s!=h-1):raise ValueError("Gust interval/unit")
         if field=="tot_prec" and unit!="kg m**-2":raise ValueError("Precipitation unit "+unit)
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        weather=dict(pool.map(lambda h:optional_weather(run,h,lon,lat),range(1,HORIZON+1)))
     increments={}
     for h in range(1,HORIZON+1):
         _,_,v,s,_=rows[("tot_prec",h)]
@@ -126,16 +153,19 @@ def main():
                 "gust":np.maximum.reduce([rows[("vmax_10m",h)][2]*3.6 for h in hs]),
                 "precip":np.sum([increments[h] for h in hs],axis=0)}
             maps={}
+            wx=daily_codes(weather,hs,t.shape[1:])
             for metric,v in metrics.items():
                 note="DWD Open Data · grille native ICON-EU · "+("journée complète" if coverage=="complete" else "période partielle")
                 if metric in ("tmin","tmax"):note+=" · extrema des températures horaires"
-                p=Path(render_daily(lon,lat,v,metric,"ICON-EU",run,day,tmp,note))
+                if metric in ("tmin","tmax"):
+                    note+=" · pictos WW DWD (heures disponibles)" if wx is not None else " · temps sensible indisponible"
+                p=Path(render_daily(lon,lat,v,metric,"ICON-EU",run,day,tmp,note,weather=wx))
                 name=f"daily-icon_eu-{metric}-d{d}.png"
                 dest=Path(tmp)/name;p.rename(dest)
                 if dest.stat().st_size<12000:raise ValueError("Invalid render")
                 staged.append(dest)
                 maps[metric]={"filename":name,"size_bytes":dest.stat().st_size,"date":day.isoformat(),
-                    "coverage":coverage,"url":"https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/shortterm-daily/"+name}
+                    "coverage":coverage,"weather_codes_available":bool(wx is not None) if metric in ("tmin","tmax") else False,"url":"https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/shortterm-daily/"+name}
             days[str(d)]={"date":day.isoformat(),"coverage":coverage,"start_utc":iso(begin),"end_utc":iso(finish),"hours":hours,"maps":maps}
         if not days:raise RuntimeError("No valid calendar days")
         for p in staged:shutil.copy2(p,OUT/p.name)
