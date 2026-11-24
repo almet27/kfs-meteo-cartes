@@ -228,9 +228,11 @@ def make_daily(run,stride,steps,samples,model,folder):
                 if weather is not None:
                     note+=" · pictos indicatifs (nuages, pluie, neige du modèle)"
             try:
+                from kfs_zoom_detail import native
+                detail=native(lon,lat,values) if metric in ("tmin","tmax") else None
                 path=render_daily(lon,lat,values,metric,names[model],run,day,
-                                  folder,note,peak_labels,weather)
-                maps[metric]={"path":path,"note":note}
+                                  folder,note,peak_labels,weather,detail=detail)
+                maps[metric]={"path":path,"note":note,**({"detail":detail} if detail is not None else {})}
             except Exception as exc:
                 print("DAILY_DRAW_ERROR",model,d,metric,str(exc),flush=True)
         if maps:
