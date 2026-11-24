@@ -103,6 +103,94 @@ def select(meta, data, stage, model):
     if not flow or t850 is None or msl is None:raise RuntimeError("Diagnostic France incomplet")
     return path,details,flow,float(t850),float(msl)
 
+def weighted_analysis(data, step, valid):
+    """Regional consensus only; do not claim that the IFS grid is blended."""
+    valid=parsed(valid)
+    sources={"ifs":"IFS","aifs-single":"AIFS","gfs":"GFS","aigfs":"AIGFS"}
+    records={}
+    all_models=dict(data.get("models",{}))
+    try:
+        noaa=json.loads((EU/"noaa-diagnostics.json").read_text(encoding="utf-8"))
+        catalogue=json.loads((EU/"noaa-metadata.json").read_text(encoding="utf-8"))
+        for key in ("gfs","aigfs"):
+            records_noaa={}
+            for h,item in noaa.get("models",{}).get(key,{}).items():
+                declared=catalogue.get("runs_utc",{}).get(key,{}).get(h)
+                if declared and parsed(declared)==parsed(item["run_utc"]):
+                    records_noaa[h]=item
+            all_models[key]=records_noaa
+    except (OSError,ValueError,KeyError,TypeError):
+        pass
+    for key,label in sources.items():
+        for h,item in all_models.get(key,{}).items():
+            try:
+                if parsed(item["valid_utc"])!=valid:continue
+                lead=(valid-parsed(item["run_utc"])).total_seconds()/86400
+                if not 1<=lead<=15.5:continue
+                fields=item["fields"]
+                t=float(fields["t850"]["france"]["mean"])
+                p=float(fields["msl"]["france"]["mean"])
+                z=float(fields["z500"]["france"]["mean"])
+                if not (-80<t<50 and 850<p<1100 and 400<z<650):continue
+                records[key]={"name":label,"run_utc":item["run_utc"],"lead":lead,
+                              "t850":t,"msl":p,"z500":z,
+                              "flow":item.get("flow_850",{}).get("france",{})}
+            except (KeyError,TypeError,ValueError):continue
+    if not records:return {"summary":"Aucun scénario comparable à validité identique.","models":{}}
+    month=valid.astimezone(timezone.utc).date().replace(day=1)
+    # Only completed months at forecast production time, not future valid time.
+    month=min(month,datetime.now(timezone.utc).date().replace(day=1))
+    history=[]
+    for _ in range(3):
+        month=(month-timedelta(days=1)).replace(day=1)
+        try:
+            doc=json.loads((Path("data/model-skill")/(month.strftime("%Y-%m")+".json")).read_text(encoding="utf-8"))
+            if doc.get("period")==month.strftime("%Y-%m"):history.append(doc)
+        except (OSError,ValueError):continue
+    # MAE MSLP France as a proxy for synoptic skill, not a direct T850 score.
+    # Common samples and identical integer lead bins for scored models only.
+    scored={}
+    for key,item in records.items():
+        k="aifs" if key=="aifs-single" else key
+        idx=max(0,min(14,round(item["lead"])-1))
+        sample=[]
+        for doc in history:
+            metric=doc.get("metrics",{}).get("pressure_msl",{})
+            try:
+                n=metric["n_by_model"][k][idx]
+                mae=metric["series"][k][idx]
+                if n>=48 and n==metric["n"][idx] and math.isfinite(mae) and mae>0:
+                    sample.append((float(mae),n))
+            except (KeyError,IndexError,TypeError):continue
+        if sample:scored[key]=sum(v*n for v,n in sample)/sum(n for _,n in sample)
+    # No unsupported numerical advantage for a model without comparable scores.
+    if len(scored)>=2:
+        raw={k:1/max(.25,v) for k,v in scored.items()}
+        method="Inverse MAE pression France, 3 derniers mois complets ; poids indicatifs"
+    else:
+        raw={k:1.0 for k in records}
+        method="Poids égaux : scores comparables insuffisants"
+    total=sum(raw.values())
+    weights={k:v/total for k,v in raw.items()}
+    t=sum(records[k]["t850"]*v for k,v in weights.items())
+    p=sum(records[k]["msl"]*v for k,v in weights.items())
+    span=max(x["t850"] for x in records.values())-min(x["t850"] for x in records.values())
+    pspan=max(x["msl"] for x in records.values())-min(x["msl"] for x in records.values())
+    # Spread is descriptive, not a calibrated probability.
+    disagreement="forte divergence" if span>=5 or pspan>=12 else "divergence modérée" if span>=2.5 or pspan>=6 else "accord relatif"
+    if len(records)==1:disagreement="comparaison impossible (un seul modèle)"
+    labels=" / ".join(records[k]["name"] for k in records)
+    summary=(f"{labels} : {disagreement}. T850 France {t:+.1f} °C, pression {p:.0f} hPa "
+             f"(moyennes régionales pondérées). Écart T850 {span:.1f} °C.")
+    for k,item in records.items():
+        item["weight"]=round(weights.get(k,0),4)
+        item["mae_msl_hpa"]=scored.get(k)
+    return {"summary":summary,"method":method,"models":records,"valid_utc":valid.isoformat(),
+            "t850_france":round(t,2),"msl_france":round(p,2),"t850_spread":round(span,2),
+            "msl_spread":round(pspan,2),"agreement":disagreement,
+            "note":"Consensus régional indicatif ; fond et risques IFS, sans moyenne de grilles ni probabilité calibrée."}
+
+
 def map_crop(path, size):
     with Image.open(path) as im:
         im=im.convert("RGB")
@@ -402,6 +490,12 @@ def write_premium_stage(stage, meta, data, now, risk_document, france=False):
     else:sentence+=" Aucun signal notable parmi les données disponibles."
     missing=[label for k,_,label,_,_ in entries if risks[k].get("status")=="indisponible"]
     if missing:sentence+=" Non calculé : "+", ".join(missing)+"."
+    consensus=weighted_analysis(data,step,details["valid_utc"])
+    # Keep the on-map summary compact; full IFS hazard text remains in JSON.
+    if len(consensus["models"])>=2:
+        map_sentence=consensus["summary"]+" Risques : IFS."
+    else:
+        map_sentence=sentence+" Confiance "+stage["confidence"].lower()+"."
     sentence+=" Confiance "+stage["confidence"].lower()+"."
     pill(1058,712,"Synthèse")
     def wrap_px(s,width,sz):
@@ -414,9 +508,9 @@ def write_premium_stage(stage, meta, data, now, risk_document, france=False):
         if current:lines.append(current)
         return lines
     sz=20
-    lines=wrap_px(sentence,513,sz)
+    lines=wrap_px(map_sentence,513,sz)
     while len(lines)>7 and sz>15:
-        sz-=1;lines=wrap_px(sentence,513,sz)
+        sz-=1;lines=wrap_px(map_sentence,513,sz)
     for i,line in enumerate(lines):
         txt(d,(1058,750+i*(sz+4)),line,sz,ink)
     d.line((22,911,1578,911),fill="#D5D9DF",width=1)
@@ -448,7 +542,7 @@ def write_premium_stage(stage, meta, data, now, risk_document, france=False):
        "gfs_available":gfs_ready,
        "risk_status":"altitude_filtered_georeferenced", "risks":hazards["risks"], "risk_markers":hazards["markers"],
        "t850_shading":hazards.get("t850_shading",{}),
-       "style":"kfs-editorial-plein-cadre-neutre-v11","summary":sentence,
+       "style":"kfs-editorial-lambert-consensus-v12","summary":consensus["summary"]+" "+sentence,"analysis":consensus,
        "note":"Carte géoréférencée bord à bord 1600x700, bandeau neutre et synthèse issue des champs IFS ; ! rouge = seuil KFS non officiel."}
 
 def main():
@@ -476,7 +570,8 @@ def main():
       "charts_generated_utc":meta["generated_utc"],
       "source":"ECMWF Open Data (CC BY 4.0), NOAA GFS si disponible",
       "not_weekly_anomalies":True,"period_maps":maps,"france_maps":france_maps,"public":True,
-      "graphic_style":"KFS PREMIUM 16:9 — 4 échéances, champs réels",
+      "graphic_style":"KFS PREMIUM Lambert — consensus régional pondéré, fond IFS",
+      "analysis_summary":" ".join(x["id"].upper()+" : "+x["analysis"]["summary"] for x in maps),
       "note":"Cartes ECMWF IFS/AIFS et comparaison GFS si run NOAA vérifié ; ! rouge = signal modélisé marqué, pas de vigilance officielle. Aucun front inventé ni extrapolation à 4 semaines."}
     (OUT/"tendance-cartes.json").write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
     print(json.dumps({"generated_utc":manifest["generated_utc"],
