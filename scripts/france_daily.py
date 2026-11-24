@@ -121,7 +121,7 @@ def render_daily(lon,lat,values,metric,model,run,day,folder,note,peaks=None,weat
     if detail is not None:
         from kfs_zoom_detail import geometry
         detail['geometry']=geometry(ax)
-        if 'weather' not in detail:
+        if metric in ("tmin","tmax") and 'weather' not in detail:
             from kfs_zoom_detail import native_weather
             detail['weather']=native_weather(lon,lat,weather)
         detail['weather_schema']=1
@@ -233,7 +233,7 @@ def make_daily(run,stride,steps,samples,model,folder):
                     note+=" · pictos indicatifs (nuages, pluie, neige du modèle)"
             try:
                 from kfs_zoom_detail import native
-                detail=native(lon,lat,values) if metric in ("tmin","tmax") else None
+                detail=native(lon,lat,values,metric=metric)
                 path=render_daily(lon,lat,values,metric,names[model],run,day,
                                   folder,note,peak_labels,weather,detail=detail)
                 maps[metric]={"path":path,"note":note,**({"detail":detail} if detail is not None else {})}
