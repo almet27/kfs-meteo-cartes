@@ -1,0 +1,46 @@
+name: AROME HD - Reflectivite simulee
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '20,50 * * * *'
+  push:
+    branches: [main]
+    paths: ['scripts/generate_arome_reflectivity.py', '.github/workflows/arome-reflectivity.yml']
+permissions:
+  contents: write
+concurrency:
+  group: arome-reflectivity
+  cancel-in-progress: false
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install numpy pillow eccodes
+      - name: Read previous manifest
+        run: gh release download arome-reflectivity --pattern manifest.json --output previous-reflectivity.json || true
+      - run: python scripts/generate_arome_reflectivity.py
+      - name: Publish a coherent run
+        run: |
+          if [ ! -s arome-reflectivity/manifest.json ]; then exit 0; fi
+          if ! gh release view arome-reflectivity >/dev/null 2>&1; then
+            gh release create arome-reflectivity --title "AROME HD - Reflectivite simulee" --notes "Source : Météo-France, SP2 0,01 degré. Licence Ouverte." --prerelease
+          fi
+          gh release upload arome-reflectivity arome-reflectivity/*.png --clobber
+          gh release upload arome-reflectivity arome-reflectivity/manifest.json --clobber
+          python - <<'PY'
+          import json, subprocess
+          from pathlib import Path
+          keep={p.name for p in Path("arome-reflectivity").glob("*.png")}
+          assets=json.loads(subprocess.check_output(["gh","release","view","arome-reflectivity","--json","assets"]))["assets"]
+          for a in assets:
+              name=a["name"]
+              if name.startswith("reflect-") and name not in keep:
+                  subprocess.run(["gh","release","delete-asset","arome-reflectivity",name,"--yes"],check=False)
+          PY
