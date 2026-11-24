@@ -343,12 +343,16 @@ def short_plot_daily(model,metric,day,coords,values,coverage,start,end,run,weath
              color="#c9d8e6",fontsize=8)
     filename=f"daily-{model}-{metric}-d{day}.png"
     target=SHORT_OUT/filename
+    detail=None
+    if metric in ("tmin","tmax"):
+        from kfs_zoom_detail import samples,geometry
+        detail=samples(coords,values,.38);detail["geometry"]=geometry(ax)
     fig.savefig(target,dpi=115,facecolor=fig.get_facecolor())
     plt.close(fig)
     if target.stat().st_size<12000:
         raise RuntimeError("Image courte invalide "+filename)
     return {"filename":filename,"size_bytes":target.stat().st_size,
-            "date":day_label,"coverage":coverage,
+            "date":day_label,"coverage":coverage,**({"detail":detail} if detail is not None else {}),
             "url":"https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/shortterm-daily/"+filename}
 
 def generate_short_daily(model,data,coords,run,document):
