@@ -135,20 +135,35 @@ def icon(code):
 
 def symbols(ax,coords,codes,protected,max_icons=9):
     if codes is None or len(codes)!=len(coords):return 0
+    ax.apply_aspect()
+    ll=np.asarray(coords,dtype=float)
     xy=projected(ax,coords)
     px=ax.transData.transform(xy)
+    valid=np.array([bool(kind(c)) for c in codes])&np.isfinite(px).all(axis=1)
+    # Reserve actual icon and numeric-label footprints, not an oversized exclusion zone.
+    scale=ax.figure.dpi/72.
+    if len(protected):
+        delta=np.abs(px[:,None,:]-np.asarray(protected)[None,:,:])
+        valid &= ~np.any((delta[:,:,0]<30*scale)&(delta[:,:,1]<25*scale),axis=1)
+    used=[]
     anchors=[(-3.2,48.1),(-.3,49.6),(2.4,50.2),(5.8,49.1),
              (-2.0,46.1),(2.2,46.6),(6.2,46.4),(-.2,44.2),(3.2,44.4),(6.5,43.8),(9,42.2)]
-    used=[]
+    def place(i):
+        graphic=icon(codes[i])
+        ax.add_artist(AnnotationBbox(graphic,xy[i],xycoords="data",frameon=False,zorder=12,pad=0))
+        used.append(px[i])
+        valid[:] &= np.linalg.norm(px-px[i],axis=1)>=44*scale
     for lon,lat in anchors:
-        distance=np.array([math.hypot((lo-lon)*.72,la-lat) for la,lo in coords])
-        for i in np.argsort(distance):
-            if distance[i]>1.25:break
-            if not kind(codes[i]):continue
-            if any(abs(px[i][0]-q[0])<46 and abs(px[i][1]-q[1])<42 for q in protected):continue
-            if any(np.linalg.norm(px[i]-q)<86 for q in used):continue
-            graphic=icon(codes[i])
-            ax.add_artist(AnnotationBbox(graphic,xy[i],xycoords="data",frameon=False,zorder=12,pad=0))
-            used.append(px[i]);break
-        if len(used)>=max_icons:break
+        candidates=np.flatnonzero(valid)
+        if not len(candidates) or len(used)>=max_icons:break
+        dist=np.hypot((ll[candidates,1]-lon)*.72,ll[candidates,0]-lat)
+        k=int(np.argmin(dist))
+        if dist[k]<=1.6:place(int(candidates[k]))
+    # Fill remaining free positions using genuine weather samples.
+    while len(used)<max_icons:
+        candidates=np.flatnonzero(valid)
+        if not len(candidates):break
+        p=px[candidates]
+        distance=np.min(np.linalg.norm(p[:,None,:]-np.asarray(used)[None,:,:],axis=2),axis=1) if used else -np.linalg.norm(p-np.median(p,axis=0),axis=1)
+        place(int(candidates[np.argmax(distance)]))
     return len(used)
