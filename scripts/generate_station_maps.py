@@ -632,6 +632,8 @@ def daily_records(current, hourly_samples, names, now):
     start = now.astimezone(ZoneInfo("Europe/Paris")).replace(
         hour=0, minute=0, second=0, microsecond=0).astimezone(timezone.utc)
     best = {}
+    points = {k: {} for k in ('tmin', 'tmax', 'gust', 'rain')}
+    locations = {}
     rain = {}
     last_hour = (now - timedelta(minutes=18)).replace(minute=0, second=0, microsecond=0)
     hours_due = int((last_hour - start).total_seconds() // 3600)
@@ -639,14 +641,21 @@ def daily_records(current, hourly_samples, names, now):
     def consider(metric, value, sid, props, at):
         if value is None or not math.isfinite(value):
             return
-        old = best.get(metric)
+        lon, lat = locations[sid]
+        old = points[metric].get(sid)
         if old and (value >= old["value"] if metric == "tmin" else value <= old["value"]):
             return
         name = names.get(sid.zfill(8)) or props.get("nom_usuel") or props.get("nom_station") or f"Station {sid}"
-        best[metric] = {"value": value, "place": name, "time": at.isoformat()}
+        record = {"value": value, "place": name, "time": at.isoformat(),
+                  "lon": round(lon, 4), "lat": round(lat, 4), "id": sid}
+        points[metric][sid] = record
+        old = best.get(metric)
+        if not old or (value < old["value"] if metric == "tmin" else value > old["value"]):
+            best[metric] = record
 
     for hourly, group in [(True, stations(s)) for s in hourly_samples] + [(False, current)]:
-        for sid, (_, _, p) in group.items():
+        for sid, (lon, lat, p) in group.items():
+            locations[sid] = (lon, lat)
             try:
                 at = datetime.fromisoformat(str(p["validity_time"]).replace("Z", "+00:00"))
                 if at.tzinfo is None or not start <= at <= now:
@@ -666,10 +675,11 @@ def daily_records(current, hourly_samples, names, now):
     for sid, by_hour in rain.items():
         if hours_due > 0 and len(by_hour) == hours_due:
             consider("rain", sum(by_hour.values()), sid, current.get(sid, (0, 0, {}))[2], last_hour)
-    return {"day": start.astimezone(ZoneInfo("Europe/Paris")).date().isoformat(), "values": best}
+    return {"day": start.astimezone(ZoneInfo("Europe/Paris")).date().isoformat(), "values": best,
+            "points": {k: list(v.values()) for k, v in points.items()}}
 
 
-def estimated_snow_record(now):
+def estimated_snow_record(now, points=None):
     from zoneinfo import ZoneInfo
 
     sites = [("Chamonix", 45.92, 6.87), ("Aiguille du Midi", 45.88, 6.89),
@@ -689,7 +699,7 @@ def estimated_snow_record(now):
         return None
     best = None
     count = 0
-    for (place, _, _), row in zip(sites, data):
+    for (place, lat, lon), row in zip(sites, data):
         hourly = row.get("hourly", {})
         if row.get("hourly_units", {}).get("snow_depth") != "m":
             continue
@@ -698,9 +708,12 @@ def estimated_snow_record(now):
         if values:
             count += 1
             depth, stamp = max(values)
-            if best is None or depth * 100 > best["value"]:
-                best = {"place": place, "value": depth * 100,
-                        "time": datetime.fromtimestamp(stamp, timezone.utc).isoformat()}
+            record = {"place": place, "value": depth * 100, "lat": lat, "lon": lon,
+                      "id": place, "time": datetime.fromtimestamp(stamp, timezone.utc).isoformat()}
+            if points is not None:
+                points.append(record)
+            if best is None or record["value"] > best["value"]:
+                best = dict(record)
     if best:
         best["sites"] = count
     return best
@@ -809,7 +822,8 @@ def main():
                             sun, clouds if cloud_stamp else None, cloud_stamp, sid])
     records = daily_records(current, hourly_samples, official_names, now)
     try:
-        records["values"]["snow"] = estimated_snow_record(now)
+        records["points"]["snow"] = []
+        records["values"]["snow"] = estimated_snow_record(now, records["points"]["snow"])
     except (RuntimeError, TypeError, ValueError, KeyError) as exc:
         print(f"INFO neige du jour indisponible : {exc}", file=sys.stderr)
     metadata = {
