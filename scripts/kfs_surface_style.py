@@ -17,7 +17,7 @@ import cartopy.crs as ccrs
 from cartopy.io import shapereader
 from cartopy.mpl.path import shapely_to_path
 from shapely.geometry import box
-from kfs_weather_symbols import kind
+from kfs_weather_symbols import kind, detailed_kind
 
 GEO = ccrs.PlateCarree()
 TEMP_MIN, TEMP_MAX = -16, 40
@@ -101,7 +101,7 @@ def labels(ax,coords,values,metric):
     return [px[i] for i in chosen]
 
 def icon(code):
-    mode=kind(code)
+    mode=detailed_kind(code)
     if mode is None:return None
     area=DrawingArea(34,34,0,0)
     def line(points,col,w=1.8):
@@ -120,50 +120,65 @@ def icon(code):
     else:
         if mode=="partly":sun(10,23)
         cloud()
-        if mode=="rain":
-            for x in (10,18,26):line([(x,9),(x-3,3)],"#1598e5",2.4)
-        elif mode=="snow":
-            for x in (9,18,27):
+        if mode in ("drizzle","rain","heavy_rain","showers","freezing","mixed"):
+            xs=(13,23) if mode=="drizzle" else (9,17,25,32) if mode=="heavy_rain" else (10,18,26)
+            for x in xs:
+                if mode=="drizzle":area.add_artist(Circle((x,6),1.2,facecolor="#1598e5",edgecolor="none"))
+                else:line([(x,9),(x-3,3)],"#1598e5",2.4)
+            if mode=="freezing":line([(9,1),(28,1)],"#e2f7ff",2.6)
+            if mode=="mixed":line([(16,3),(22,3)],"#fff",2);line([(19,0),(19,6)],"#fff",2)
+            if mode=="showers":line([(6,22),(10,25)],"#ffce61",2.4)
+        elif mode in ("snow","heavy_snow","snow_grains"):
+            for x in ((7,14,21,28) if mode=="heavy_snow" else (9,18,27)):
                 for j in range(3):
                     a=j*math.pi/3
                     line([(x-3*math.cos(a),5-3*math.sin(a)),(x+3*math.cos(a),5+3*math.sin(a))],"#e9faff",1.5)
-        elif mode=="fog":
+        elif mode in ("fog","rime_fog"):
             for y in (9,5,1):line([(5,y),(28,y)],"#e3eef7",1.6)
-        elif mode=="storm":
+        elif mode in ("storm","hail_storm"):
             area.add_artist(Polygon([(18,12),(12,5),(17,6),(14,0),(24,8),(19,7)],closed=True,facecolor="#ffce55",edgecolor="#a96b14",linewidth=.7))
+            if mode=="hail_storm":
+                for x in (8,25,31):area.add_artist(Circle((x,5),2.2,facecolor="#e9faff",edgecolor="#284b65",linewidth=.7))
     return area
 
-def symbols(ax,coords,codes,protected,max_icons=9):
+# Large-city anchors, nationwide. Temperature labels and icons are offset independently.
+WEATHER_CITIES=[(-4.49,48.38),(-1.55,47.22),(-.58,44.84),(1.44,43.60),
+ (2.35,48.86),(3.06,50.63),(1.10,49.44),(4.84,45.76),(5.37,43.30),
+ (7.75,48.58),(7.26,43.71),(-1.68,48.12),(-.37,49.18),(5.04,47.32),
+ (3.09,45.78),(1.26,45.83),(.10,47.99),(4.03,49.26),(6.18,48.69),
+ (3.88,43.61),(.34,46.58),(-.37,43.30),(2.89,42.70),(8.74,41.92),
+ (9.45,42.70),(4.39,45.44),(6.13,45.90),(4.36,43.84),(2.30,47.08)]
+def symbols(ax,coords,codes,protected,max_icons=29):
     if codes is None or len(codes)!=len(coords):return 0
     ax.apply_aspect()
     ll=np.asarray(coords,dtype=float)
     xy=projected(ax,coords)
     px=ax.transData.transform(xy)
-    valid=np.array([bool(kind(c)) for c in codes])&np.isfinite(px).all(axis=1)
-    # Reserve actual icon and numeric-label footprints, not an oversized exclusion zone.
+    valid=np.array([bool(detailed_kind(c)) for c in codes])&np.isfinite(px).all(axis=1)
+    indices=np.flatnonzero(valid)
+    if not len(indices):return 0
     scale=ax.figure.dpi/72.
-    if len(protected):
-        delta=np.abs(px[:,None,:]-np.asarray(protected)[None,:,:])
-        valid &= ~np.any((delta[:,:,0]<30*scale)&(delta[:,:,1]<25*scale),axis=1)
-    used=[]
-    anchors=[(-3.2,48.1),(-.3,49.6),(2.4,50.2),(5.8,49.1),
-             (-2.0,46.1),(2.2,46.6),(6.2,46.4),(-.2,44.2),(3.2,44.4),(6.5,43.8),(9,42.2)]
-    def place(i):
+    used=[];reserved=np.asarray(protected)
+    taken=set()
+    for lon,lat in WEATHER_CITIES:
+        if len(used)>=max_icons:break
+        dist=np.hypot((ll[indices,1]-lon)*.72,ll[indices,0]-lat)
+        k=int(np.argmin(dist));i=int(indices[k])
+        if dist[k]>.55 or i in taken:continue
+        # Keep the selected code at its actual sampled position. A small offset only moves the drawing.
+        offsets=[(0,17),(0,-17),(18,0),(-18,0),(16,16),(-16,16),(16,-16),(-16,-16),(0,0)]
+        best=None
+        for ox,oy in offsets:
+            p=px[i]+np.array([ox,oy])*scale
+            if any(np.linalg.norm(p-q)<34*scale for q in used):continue
+            if len(reserved) and np.any((np.abs(reserved[:,0]-p[0])<17*scale)&(np.abs(reserved[:,1]-p[1])<14*scale)):continue
+            if not ax.bbox.contains(*p):continue
+            best=(ox,oy,p);break
+        if best is None:continue
+        ox,oy,p=best
         graphic=icon(codes[i])
-        ax.add_artist(AnnotationBbox(graphic,xy[i],xycoords="data",frameon=False,zorder=12,pad=0))
-        used.append(px[i])
-        valid[:] &= np.linalg.norm(px-px[i],axis=1)>=44*scale
-    for lon,lat in anchors:
-        candidates=np.flatnonzero(valid)
-        if not len(candidates) or len(used)>=max_icons:break
-        dist=np.hypot((ll[candidates,1]-lon)*.72,ll[candidates,0]-lat)
-        k=int(np.argmin(dist))
-        if dist[k]<=1.6:place(int(candidates[k]))
-    # Fill remaining free positions using genuine weather samples.
-    while len(used)<max_icons:
-        candidates=np.flatnonzero(valid)
-        if not len(candidates):break
-        p=px[candidates]
-        distance=np.min(np.linalg.norm(p[:,None,:]-np.asarray(used)[None,:,:],axis=2),axis=1) if used else -np.linalg.norm(p-np.median(p,axis=0),axis=1)
-        place(int(candidates[np.argmax(distance)]))
+        ax.add_artist(AnnotationBbox(graphic,xy[i],xybox=(ox,oy),xycoords="data",
+            boxcoords="offset points",frameon=False,zorder=12,pad=0,
+            arrowprops=dict(arrowstyle="-",color="#385268",lw=.5) if ox or oy else None))
+        used.append(p);taken.add(i)
     return len(used)
