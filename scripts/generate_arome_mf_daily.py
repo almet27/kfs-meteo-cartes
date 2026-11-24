@@ -35,12 +35,42 @@ def get_catalog():
         uri=item.get("url")
         if isinstance(uri,str) and uri.startswith("https://"):
             cycles.setdefault(run,{})[(a,b)]=uri
+    # The data.gouv catalog rotates each slot separately. The object store
+    # keeps dated files; check missing slots by their exact cycle, never mix runs.
+    from concurrent.futures import ThreadPoolExecutor
     now=datetime.now(timezone.utc)
-    available=[(r,files) for r,files in cycles.items() if set(GROUPS)<=files.keys() and timedelta(0)<=now-r<=timedelta(hours=20)]
-    if not available:
-        print("KFS_AROME_CATALOG_CYCLES",[(r.isoformat(),sorted(g)) for r,g in cycles.items()],flush=True)
-        raise RuntimeError("No recent complete SP1 cycle in data.gouv.fr catalog")
-    return max(available,key=lambda x:x[0])
+    recent=sorted((r for r in cycles if timedelta(0)<=now-r<=timedelta(hours=20)),reverse=True)
+    anchor=now.replace(hour=now.hour//3*3,minute=0,second=0,microsecond=0)
+    recent=sorted(set(recent+[anchor-timedelta(hours=3*i) for i in range(1,6)]),reverse=True)
+    def direct(run,bounds):
+        stamp=run.strftime("%Y-%m-%dT%H:00:00Z")
+        a,b=bounds
+        return f"https://object.data.gouv.fr/meteofrance-pnt/pnt/{stamp}/arome/0025/SP1/arome__0025__SP1__{a:02d}H{b:02d}H__{stamp}.grib2"
+    def probe(run,bounds):
+        uri=cycles.get(run,{}).get(bounds) or direct(run,bounds)
+        try:
+            with urlopen(Request(uri,headers=UA,method="HEAD"),timeout=12) as r:
+                if r.status==200 and int(r.headers.get("Content-Length","0"))>1000:return bounds,uri
+        except Exception as exc:
+            print("KFS_AROME_SLOT_PENDING",run.isoformat(),bounds,str(exc)[:110],flush=True)
+        return bounds,None
+    partial=[]
+    for run in recent:
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            files=dict(pool.map(lambda b:probe(run,b),GROUPS))
+        contiguous={}
+        for b in GROUPS:
+            if not files.get(b):break
+            contiguous[b]=files[b]
+        if len(contiguous)==len(GROUPS):
+            return run,contiguous
+        if len(contiguous)>=3:partial.append((run,contiguous))
+    if partial:
+        run,files=max(partial,key=lambda x:x[0])
+        print("KFS_AROME_PARTIAL_CYCLE",run.isoformat(),max(b for a,b in files),flush=True)
+        return run,files
+    print("KFS_AROME_CATALOG_CYCLES",[(r.isoformat(),sorted(g)) for r,g in cycles.items()],flush=True)
+    raise RuntimeError("No recent coherent SP1 cycle available")
 
 def key(g,k,default=None):
     try:return codes_get(g,k)
@@ -121,9 +151,9 @@ def read_group(uri,run,bounds,grid,rows,tmp):
     file.unlink()
     return grid
 
-def increments(rows,k):
+def increments(rows,k,horizon):
     output={}
-    for h in range(1,49):
+    for h in range(1,horizon+1):
         a,s=rows[k,h]
         if s==h-1 or (h==1 and s==0):v=a
         elif s==0 and rows[k,h-1][1]==0:v=a-rows[k,h-1][0]
@@ -137,32 +167,33 @@ def main():
     catalog=OUT/"latest.json"
     doc=json.loads(catalog.read_text()) if catalog.exists() else {"schema":1,"models":{}}
     run,files=get_catalog()
+    horizon=max(b for a,b in files)
     old=doc.get("models",{}).get("arome",{})
-    if old.get("source")=="Météo-France Open Data" and old.get("run_utc")==run.isoformat() and os.getenv("KFS_FORCE")!="1":
+    if old.get("source")=="Météo-France Open Data" and old.get("run_utc")==run.isoformat() and old.get("horizon_hours",0)>=horizon and os.getenv("KFS_FORCE")!="1":
         print("KFS_AROME_NO_NEW_RUN",run.isoformat());return
     rows={};grid=None
     with TemporaryDirectory() as tmp:
-        for bounds in GROUPS:
+        for bounds in files:
             grid=read_group(files[bounds],run,bounds,grid,rows,tmp)
         for k in ("temp","gust","precip"):
-            required=range(0 if k=="temp" else 1,49)
+            required=range(0 if k=="temp" else 1,horizon+1)
             missing=[h for h in required if (k,h) not in rows]
             if missing:raise RuntimeError("Incomplete "+k+" leads "+str(missing))
-        for h in range(1,49):
+        for h in range(1,horizon+1):
             if rows["gust",h][1]!=h-1:raise RuntimeError("Gust is not an hourly maximum")
-        precip=increments(rows,"precip")
-        try:snow=increments(rows,"snow")
+        precip=increments(rows,"precip",horizon)
+        try:snow=increments(rows,"snow",horizon)
         except (KeyError,ValueError):snow=None
         today=datetime.now(PARIS).date();days={};staged=[]
         for d in range(3):
             day=today+timedelta(days=d);tomorrow=day+timedelta(days=1)
             left=datetime(day.year,day.month,day.day,tzinfo=PARIS).astimezone(timezone.utc)
             right=datetime(tomorrow.year,tomorrow.month,tomorrow.day,tzinfo=PARIS).astimezone(timezone.utc)
-            begin,end=max(left,run),min(right,run+timedelta(hours=48))
+            begin,end=max(left,run),min(right,run+timedelta(hours=horizon))
             duration=int((end-begin).total_seconds()/3600)
             if duration<4:continue
-            hs=[h for h in range(1,49) if begin<run+timedelta(hours=h)<=end]
-            ts=[h for h in range(49) if begin<=run+timedelta(hours=h)<end]
+            hs=[h for h in range(1,horizon+1) if begin<run+timedelta(hours=h)<=end]
+            ts=[h for h in range(horizon+1) if begin<=run+timedelta(hours=h)<end]
             if len(hs)!=duration or len(ts)!=duration:raise ValueError("Incomplete calendar interval")
             coverage="complete" if begin==left and end==right else "partial"
             total=np.sum([precip[h] for h in hs],axis=0)
@@ -195,7 +226,7 @@ def main():
         if not days:raise RuntimeError("No valid current days")
         for p in staged:shutil.copy2(p,OUT/p.name)
     now=datetime.now(timezone.utc).isoformat()
-    doc.setdefault("models",{})["arome"]={"name":"ARÔME","source":"Météo-France Open Data","native_grid":True,"resolution_degrees":.025,"run_utc":run.isoformat(),"generated_utc":now,"days":days}
+    doc.setdefault("models",{})["arome"]={"name":"ARÔME","source":"Météo-France Open Data","native_grid":True,"resolution_degrees":.025,"horizon_hours":horizon,"run_utc":run.isoformat(),"generated_utc":now,"days":days}
     doc.update(generated_utc=now,source="Sources par modèle : Météo-France / DWD / Open-Meteo")
     catalog.write_text(json.dumps(doc,ensure_ascii=False,indent=2)+"\n")
     print("KFS_AROME_NATIVE_DAILY_OK",run.isoformat(),len(days),len(grid.lon),len(grid.lat),flush=True)
