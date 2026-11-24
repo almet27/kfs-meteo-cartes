@@ -127,6 +127,10 @@ def render(model,metric,offset,date,coords,vals,codes=None):
              color="#b5c6d9",fontsize=9)
     path=OUT/("daily-"+model+"-"+metric+"-d"+str(offset)+".webp")
     buf=BytesIO()
+    detail=None
+    if metric in ("tmin","tmax"):
+        from kfs_zoom_detail import samples,geometry
+        detail=samples(coords,numbers,.38);detail["geometry"]=geometry(ax)
     fig.savefig(buf,format="png",dpi=120,facecolor=fig.get_facecolor())
     plt.close(fig)
     buf.seek(0)
@@ -135,7 +139,7 @@ def render(model,metric,offset,date,coords,vals,codes=None):
     if path.stat().st_size<10000:raise RuntimeError("Carte WebP vide")
     return {"filename":path.name,"bytes":path.stat().st_size,
             "url":"https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/daily-extended/"+path.name,
-            "date":date,"valid_points":len(zs)}
+            "date":date,"valid_points":len(zs),**({"detail":detail} if detail is not None else {})}
 
 def main():
     global OUT
