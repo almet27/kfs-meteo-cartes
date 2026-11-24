@@ -129,8 +129,8 @@ def render(model,metric,offset,date,coords,vals,codes=None):
     buf=BytesIO()
     detail=None
     if metric in ("tmin","tmax"):
-        from kfs_zoom_detail import samples,geometry
-        detail=samples(coords,numbers,.38);detail["geometry"]=geometry(ax)
+        from kfs_zoom_detail import samples,geometry,weather_samples
+        detail=samples(coords,numbers,.38);detail["geometry"]=geometry(ax);detail["weather"]=weather_samples(coords,codes,.38);detail["weather_schema"]=1
     fig.savefig(buf,format="png",dpi=120,facecolor=fig.get_facecolor())
     plt.close(fig)
     buf.seek(0)
