@@ -103,7 +103,7 @@ def render_daily(lon,lat,values,metric,model,run,day,folder,note,peaks=None,weat
         mask=contains_xy(mainland(),gx,gy)&np.isfinite(weather)
         coords=list(zip(gy[mask].tolist(),gx[mask].tolist()))
         codes=weather[mask].astype(int).tolist()
-        count=symbols(ax,coords,codes,used,max_icons=9) if coords else 0
+        count=symbols(ax,coords,codes,used,max_icons=29) if coords else 0
         print("KFS_NATIVE_WEATHER_ICONS",model,day,metric,count,flush=True)
     ax.coastlines("10m",linewidth=.7,color="#182A3E",zorder=5)
     ax.add_feature(cf.BORDERS,linewidth=.6,edgecolor="#172A3B",zorder=5)
@@ -121,6 +121,10 @@ def render_daily(lon,lat,values,metric,model,run,day,folder,note,peaks=None,weat
     if detail is not None:
         from kfs_zoom_detail import geometry
         detail['geometry']=geometry(ax)
+        if 'weather' not in detail:
+            from kfs_zoom_detail import native_weather
+            detail['weather']=native_weather(lon,lat,weather)
+        detail['weather_schema']=1
     fig.savefig(path,dpi=115,facecolor=fig.get_facecolor())
     plt.close(fig)
     return str(path)
