@@ -21,11 +21,11 @@ CITIES = (
     (1.10, 49.44), (4.84, 45.76), (5.37, 43.30),
     (7.75, 48.58), (7.26, 43.71),
 )
-PRIORITY = {"sun":0,"partly":1,"cloud":2,"fog":3,"rime_fog":4,
+DETAIL_PRIORITY = {"sun":0,"partly":1,"cloud":2,"fog":3,"rime_fog":4,
             "drizzle":5,"rain":6,"heavy_rain":7,"showers":7,"snow":8,
             "heavy_snow":9,"snow_grains":9,"mixed":9,"freezing":10,
             "storm":11,"hail_storm":12}
-def kind(code):
+def detailed_kind(code):
     if code is None or isinstance(code,bool):return None
     try:
         c=int(code)
@@ -48,9 +48,14 @@ def kind(code):
     if c in (95,97):return "storm"
     if c in (96,99):return "hail_storm"
     return None
+PRIORITY = {"sun":0,"partly":1,"cloud":2,"fog":3,"rain":4,"snow":5,"storm":6}
+def kind(code):
+    k=detailed_kind(code)
+    return {"rime_fog":"fog","drizzle":"rain","heavy_rain":"rain","showers":"rain",
+            "freezing":"rain","heavy_snow":"snow","snow_grains":"snow","mixed":"snow","hail_storm":"storm"}.get(k,k)
 def representative(codes):
-    valid=[int(x) for x in codes if kind(x)]
-    return max(valid,key=lambda x:(PRIORITY[kind(x)],x)) if valid else None
+    valid=[int(x) for x in codes if detailed_kind(x)]
+    return max(valid,key=lambda x:(DETAIL_PRIORITY[detailed_kind(x)],x)) if valid else None
 
 def _weather_icon(code,size=32):
     mode=kind(code)
