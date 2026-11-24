@@ -112,7 +112,7 @@ def main():
     doc=json.loads(cat.read_text()) if cat.exists() else {"schema":1,"models":{}}
     run=cycle()
     old=doc.get("models",{}).get("icon_eu",{})
-    if old.get("source")=="DWD Open Data" and old.get("run_utc")==run.isoformat() and os.getenv("KFS_FORCE")!="1" and all(v.get("maps",{}).get("tmin",{}).get("detail",{}).get("weather_schema")==1 for v in old.get("days",{}).values()):
+    if old.get("source")=="DWD Open Data" and old.get("run_utc")==run.isoformat() and os.getenv("KFS_FORCE")!="1" and all(v.get("maps",{}).get("tmin",{}).get("detail",{}).get("weather_schema")==1 for v in old.get("days",{}).values()) and all(v.get("maps",{}).get(k,{}).get("detail",{}).get("count",0)>0 for v in old.get("days",{}).values() for k in ("gust","precip")):
         print("KFS_DWD_DAILY_NO_NEW_RUN",run.isoformat());return
     jobs=[(f,h) for f in FIELDS for h in range(0 if f=="t_2m" else 1,HORIZON+1)]
     with ThreadPoolExecutor(max_workers=4) as pool:
@@ -160,7 +160,7 @@ def main():
                 if metric in ("tmin","tmax"):note+=" · extrema des températures horaires"
                 if metric in ("tmin","tmax"):
                     note+=" · pictos WW DWD (heures disponibles)" if wx is not None else " · temps sensible indisponible"
-                detail=zoom_native(lon,lat,v) if metric in ("tmin","tmax") else None
+                detail=zoom_native(lon,lat,v,metric=metric)
                 p=Path(render_daily(lon,lat,v,metric,"ICON-EU",run,day,tmp,note,weather=wx,detail=detail))
                 name=f"daily-icon_eu-{metric}-d{d}.png"
                 dest=Path(tmp)/name;p.rename(dest)
