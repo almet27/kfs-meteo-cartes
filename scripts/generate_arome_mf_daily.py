@@ -42,7 +42,8 @@ def get_catalog():
     now=datetime.now(timezone.utc)
     recent=sorted((r for r in cycles if timedelta(0)<=now-r<=timedelta(hours=20)),reverse=True)
     anchor=now.replace(hour=now.hour//3*3,minute=0,second=0,microsecond=0)
-    recent=sorted(set(recent+[anchor-timedelta(hours=3*i) for i in range(1,6)]),reverse=True)
+    # Probe the current 3-hour cycle even before the rolling catalog lists it.
+    recent=sorted(set(recent+[anchor-timedelta(hours=3*i) for i in range(0,6)]),reverse=True)
     def direct(run,bounds):
         stamp=run.strftime("%Y-%m-%dT%H:00:00Z")
         a,b=bounds
