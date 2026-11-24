@@ -17,6 +17,8 @@ from matplotlib.colors import BoundaryNorm, ListedColormap
 from matplotlib import colormaps
 import cartopy.crs as ccrs
 import cartopy.feature as cf
+from cartopy.mpl.path import shapely_to_path
+from kfs_surface_style import france_axes, mainland, TEMP_CMAP, TEMP_MIN, TEMP_MAX
 
 PARIS=ZoneInfo("Europe/Paris")
 EXTENT=(-6.6,10.3,41.0,51.7)
@@ -25,7 +27,11 @@ CITIES=[
  (1.44,43.60,"Toulouse"),(2.35,48.86,"Paris"),(3.06,50.63,"Lille"),
  (1.10,49.44,"Rouen"),(1.26,45.83,"Limoges"),(3.09,45.78,"Clermont"),
  (4.84,45.76,"Lyon"),(5.37,43.30,"Marseille"),(3.88,43.61,"Montpellier"),
- (7.75,48.58,"Strasbourg"),(5.04,47.32,"Dijon"),(7.26,43.71,"Nice")]
+ (7.75,48.58,"Strasbourg"),(5.04,47.32,"Dijon"),(7.26,43.71,"Nice"),
+ (-2.76,48.51,"Saint-Brieuc"),(-1.09,49.12,"Saint-Lô"),(.10,47.99,"Le Mans"),
+ (-.46,46.32,"Niort"),(-.37,43.30,"Pau"),(1.81,44.35,"Cahors"),
+ (3.13,46.99,"Nevers"),(4.03,49.26,"Reims"),(6.18,48.69,"Nancy"),
+ (6.15,45.9,"Annecy"),(2.89,42.70,"Perpignan"),(8.74,41.92,"Ajaccio")]
 LABELS={
  "tmin":"Températures minimales (°C)",
  "tmax":"Températures maximales (°C)",
@@ -45,16 +51,15 @@ def iso(dt):
 
 def render_daily(lon,lat,values,metric,model,run,day,folder,note,peaks=None):
     if metric in ("tmin","tmax"):
-        levels=np.arange(-24,43,2); cmap=colormaps["turbo"]; norm=None
+        levels=np.linspace(TEMP_MIN,TEMP_MAX,113); cmap=TEMP_CMAP; norm=None
     elif metric=="gust":
         levels=GUST_LEVELS;cmap=ListedColormap(GUST_COLORS);norm=BoundaryNorm(levels,cmap.N)
     else:
         levels=RAIN_LEVELS;cmap=ListedColormap(RAIN_COLORS);norm=BoundaryNorm(levels,cmap.N)
-    fig=plt.figure(figsize=(9.8,7.8),dpi=115)
-    ax=fig.add_subplot(111,projection=ccrs.PlateCarree())
-    ax.set_extent(EXTENT,crs=ccrs.PlateCarree())
+    fig=plt.figure(figsize=(10,10),dpi=115,facecolor="#09233e")
+    ax=france_axes(fig)
     ax.add_feature(cf.LAND,facecolor="#EDF0EC",zorder=0)
-    ax.add_feature(cf.OCEAN,facecolor="#D7E8F3",zorder=0)
+    ax.add_feature(cf.OCEAN,facecolor="#173e5d",zorder=0)
     arr=np.asarray(values,dtype=float)
     invalid=np.isnan(arr) if metric=="rain" else None
     if metric in ("precip","rain"):
@@ -66,14 +71,18 @@ def render_daily(lon,lat,values,metric,model,run,day,folder,note,peaks=None):
         ax.contourf(lon,lat,grey,levels=[.5,1.5],colors=["#8F949C"],
                     alpha=.74,transform=ccrs.PlateCarree(),zorder=1)
     shade=ax.contourf(lon,lat,arr,levels=levels,**kwargs)
-    if metric in ("tmin","tmax"):
-        isolines=tuple(range(-25,41,5))
-        cs=ax.contour(lon,lat,values,levels=isolines,
-          linewidths=[1.1 if x in (-10,-5,0) else .48 for x in isolines],
-          colors="#263442",transform=ccrs.PlateCarree(),zorder=4)
-        ax.clabel(cs,inline=True,fontsize=7,fmt="%d")
+    clip=shapely_to_path(ax.projection.project_geometry(mainland(),ccrs.PlateCarree()))
+    if hasattr(shade,"set_clip_path"):
+        shade.set_clip_path(clip,ax.transData)
+    else:
+        for collection in shade.collections: collection.set_clip_path(clip,ax.transData)
     ix=np.asarray(lon,dtype=float);iy=np.asarray(lat,dtype=float)
+    ax.apply_aspect()
+    used=[]
     for x,y,city in CITIES:
+        xy=ax.projection.transform_point(x,y,ccrs.PlateCarree())
+        px=ax.transData.transform(xy)
+        if any(np.linalg.norm(px-q)<(45 if metric in ("tmin","tmax") else 58) for q in used): continue
         i=int(np.abs(ix-x).argmin());j=int(np.abs(iy-y).argmin())
         v=np.asarray(values)[j,i]
         if not np.isfinite(v) or metric in ("precip","rain") and v<.1:
@@ -83,7 +92,8 @@ def render_daily(lon,lat,values,metric,model,run,day,folder,note,peaks=None):
         if metric=="gust" and peaks is not None:
             instant=peaks[j,i]
             if instant is not None: label+="\n"+instant
-        t=ax.text(x,y,label,fontsize=7.3 if metric=="gust" else 8.3,
+        used.append(px)
+        t=ax.text(x,y,label,fontsize=7.3 if metric=="gust" else 9,
             ha="center",va="center",weight="bold",color="#1D2431",
             transform=ccrs.PlateCarree(),zorder=8)
         t.set_path_effects([pe.Stroke(linewidth=2.5,foreground="white"),pe.Normal()])
@@ -92,14 +102,15 @@ def render_daily(lon,lat,values,metric,model,run,day,folder,note,peaks=None):
     ax.set_title("KFS MÉTÉO · FRANCE · "+model+
         " · RUN "+run.strftime("%HZ du %d/%m/%Y")+" (UTC)"+
         "\n"+LABELS[metric]+" · "+day.strftime("%A %d/%m/%Y").capitalize(),
-        fontsize=12,weight="bold",pad=11)
-    cb=fig.colorbar(shade,ax=ax,orientation="horizontal",shrink=.82,pad=.04)
-    cb.set_label(LABELS[metric],fontsize=9)
+        fontsize=12,weight="bold",pad=11,color="white")
+    cb=fig.colorbar(shade,cax=fig.add_axes([.17,.105,.66,.022]),orientation="horizontal")
+    cb.ax.tick_params(colors="white")
+    cb.set_label(LABELS[metric],fontsize=9,color="white")
     fig.text(.04,.025,"RUN "+run.strftime("%HZ du %d/%m/%Y")+
              " · cycle à "+run.astimezone(PARIS).strftime("%Hh%M")+" en France · "+
-             note,fontsize=7.1)
+             note,fontsize=7.1,color="white",wrap=True)
     path=Path(folder)/f"daily-{metric}-d{(day-run.astimezone(PARIS).date()).days}.png"
-    fig.savefig(path,dpi=115,bbox_inches="tight",facecolor="white")
+    fig.savefig(path,dpi=115,facecolor=fig.get_facecolor())
     plt.close(fig)
     return str(path)
 
