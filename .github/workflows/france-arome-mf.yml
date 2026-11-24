@@ -6,7 +6,7 @@ on:
       - scripts/generate_arome_mf_daily.py
       - .github/workflows/france-arome-mf.yml
   schedule:
-    - cron: '22,52 * * * *'
+    - cron: '7,22,37,52 * * * *'
 permissions:
   contents: write
 concurrency:
