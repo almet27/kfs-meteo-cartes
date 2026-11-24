@@ -20,6 +20,8 @@ on:
       - scripts/france_daily.py
       - scripts/package_france_release.py
       - scripts/kfs_premium_palettes.py
+      - scripts/kfs_surface_style.py
+      - scripts/kfs_weather_symbols.py
       - .github/workflows/france-h72.yml
 permissions:
   contents: read
