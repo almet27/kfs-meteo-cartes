@@ -157,11 +157,15 @@ def draw(cycle,date,day,metric,coords,values,codes,hours):
   fontsize=9,color="#c4dbeb")
  filename=f"ifs9-{metric}-j{day}.webp";dest=OUT/filename
  b=BytesIO()
+ detail=None
+ if metric in ("tmin","tmax"):
+  from kfs_zoom_detail import samples,geometry
+  detail=samples(coords,values,.76);detail["geometry"]=geometry(ax)
  fig.savefig(b,format="png",dpi=115,facecolor=fig.get_facecolor())
  plt.close(fig);b.seek(0)
  Image.open(b).convert("RGB").save(dest,"WEBP",quality=84,method=4)
  if dest.stat().st_size<12000:raise RuntimeError("WebP trop petit")
- return {"file":filename,"bytes":dest.stat().st_size,"coverage_hours":hours}
+ return {"file":filename,"bytes":dest.stat().st_size,"coverage_hours":hours,**({"detail":detail} if detail is not None else {})}
 
 def main():
  p=argparse.ArgumentParser()
