@@ -343,10 +343,10 @@ def short_plot_daily(model,metric,day,coords,values,coverage,start,end,run,weath
              color="#c9d8e6",fontsize=8)
     filename=f"daily-{model}-{metric}-d{day}.png"
     target=SHORT_OUT/filename
-    detail=None
+    from kfs_zoom_detail import samples,geometry,weather_samples
+    detail=samples(coords,values,.38,metric=metric);detail["geometry"]=geometry(ax)
     if metric in ("tmin","tmax"):
-        from kfs_zoom_detail import samples,geometry,weather_samples
-        detail=samples(coords,values,.38);detail["geometry"]=geometry(ax);detail["weather"]=weather_samples(coords,weather_codes,.38);detail["weather_schema"]=1
+        detail["weather"]=weather_samples(coords,weather_codes,.38);detail["weather_schema"]=1
     fig.savefig(target,dpi=115,facecolor=fig.get_facecolor())
     plt.close(fig)
     if target.stat().st_size<12000:
