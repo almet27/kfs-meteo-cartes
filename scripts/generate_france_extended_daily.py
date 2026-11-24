@@ -13,7 +13,7 @@ from urllib.parse import urlencode
 from urllib.request import Request,urlopen
 from urllib.error import HTTPError,URLError
 from zoneinfo import ZoneInfo
-import json,math,time,gzip,shutil
+import json,math,time,gzip,shutil,os
 from tempfile import TemporaryDirectory
 import numpy as np
 import matplotlib
@@ -158,6 +158,13 @@ def main():
         all_models={}
     completed=[]
     for model in SOURCE:
+        if os.getenv('KFS_DETAIL_BACKFILL_ONLY')=='1':
+            old=all_models.get(model,{})
+            days=old.get('days',{})
+            bydate={v.get('date'):v for v in days.values()}
+            if all(all(bydate.get((date+timedelta(days=n)).isoformat(),{}).get('maps',{}).get(k,{}).get('detail',{}).get('count',0)>0 for k in ('tmin','tmax','gust','precip')) for n in range(6)):
+                print('KFS_DETAIL_BACKFILL_ALREADY_PRESENT',model,flush=True)
+                continue
         try:
             try:
                 records=fetch_all(model,coords,window)
