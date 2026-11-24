@@ -135,7 +135,7 @@ let geo=prepared?.geo,data=prepared?.ensemble||{};
  }
  const features=geo.features.filter(f=>wanted.has(String(f.properties.code)));
  if(features.length!==wanted.size)throw Error('Contours départementaux incomplets');
- const models=KFS_PROBA_BLEND_MODELS.flatMap(([name,id])=>{const m=data.models?.[id],age=Date.now()-Date.parse(m?.generated_at_utc),p=m?.periods?.[String(day)];return Number.isFinite(age)&&age>=0&&age<=28*3600000&&p?.start_day===date&&p?.end_day===date?[{name,id,m,p}]:[];});
+ const models=KFS_PROBA_BLEND_MODELS.flatMap(([name,id])=>{const m=data.models?.[id],age=Date.now()-Date.parse(m?.generated_at_utc),p=Object.values(m?.periods||{}).find(period=>period?.start_day===date&&period?.end_day===date);return Number.isFinite(age)&&age>=0&&age<=28*3600000&&p?.start_day===date&&p?.end_day===date?[{name,id,m,p}]:[];});
  
  const rows=features.map(f=>({f,code:String(f.properties.code),name:f.properties.nom||f.properties.name||String(f.properties.code),values:{},best:null}));
  const used=new Set(),times=new Set();
