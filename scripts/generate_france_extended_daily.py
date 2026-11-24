@@ -23,7 +23,7 @@ import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 from PIL import Image
 from generate_france_shortterm_risks import points
-from kfs_weather_symbols import overlay as draw_wmo_icons
+from kfs_surface_style import france_axes, surface as draw_surface, labels, symbols, TEMP_CMAP, TEMP_MIN, TEMP_MAX
 from kfs_weather_cache import cached, validate_rows, record_quota, prune, utc_hour
 
 OUT=Path("forecast-maps/france/daily-extended")
@@ -85,29 +85,27 @@ def fetch_all(model,coords,window):
 def render(model,metric,offset,date,coords,vals,codes=None):
     variable,label,vmin,vmax,cmap=FIELDS[metric]
     fig=plt.figure(figsize=(11,10.2),dpi=120,facecolor="#082a4e")
-    ax=fig.add_axes([.06,.16,.87,.68],projection=ccrs.PlateCarree())
-    ax.set_extent([-5.8,9.8,41.2,51.8])
+    ax=france_axes(fig)
     ax.add_feature(cfeature.OCEAN,facecolor="#173e5d",zorder=0)
     ax.add_feature(cfeature.LAND,facecolor="#e8eadf",zorder=0)
     ax.coastlines("110m",linewidth=.72,color="#263b4b")
     ax.add_feature(cfeature.BORDERS,linewidth=.75,edgecolor="#263b4b")
     norm=Normalize(vmin=vmin,vmax=vmax)
+    if metric in ("tmin","tmax"):
+        cmap,norm=TEMP_CMAP,Normalize(TEMP_MIN,TEMP_MAX)
     numbers=[v if isinstance(v,(float,int)) and math.isfinite(v) else float("nan") for v in vals]
-    xs=[coords[i][1] for i,v in enumerate(numbers) if math.isfinite(v)]
-    ys=[coords[i][0] for i,v in enumerate(numbers) if math.isfinite(v)]
     zs=[v for v in numbers if math.isfinite(v)]
     if len(zs)<len(coords)*.92:
         raise RuntimeError("Pas assez de points complets "+model+" "+metric+" J+"+str(offset))
-    scatter=ax.scatter(xs,ys,c=zs,cmap=cmap,norm=norm,s=65,
-                       edgecolors="#1a3551",linewidths=.14,
-                       transform=ccrs.PlateCarree(),zorder=4)
-    if codes:
+    shade=draw_surface(ax,coords,numbers,metric,cmap,norm)
+    protected=labels(ax,coords,numbers,metric)
+    if codes and metric in ("tmin","tmax"):
         try:
-            icons=draw_wmo_icons(ax,coords,codes,max_icons=8)
+            icons=symbols(ax,coords,codes,protected)
             if icons:print("KFS_J5_WMO_ICONS",model,metric,offset,icons,flush=True)
         except Exception as exc:
             print("KFS_J5_WMO_ICON_SKIPPED",str(exc)[:130],flush=True)
-    cb=fig.colorbar(scatter,ax=ax,orientation="horizontal",shrink=.82,pad=.055)
+    cb=fig.colorbar(shade,cax=fig.add_axes([.17,.105,.66,.023]),orientation="horizontal")
     cb.ax.tick_params(colors="#eef5fc")
     cb.outline.set_edgecolor("#e8f2ff")
     fig.text(.045,.96,"KFS MÉTÉO | FRANCE • PRÉVISION JOURNALIÈRE",
@@ -116,7 +114,7 @@ def render(model,metric,offset,date,coords,vals,codes=None):
              color="#7ae1ff",fontsize=15,weight="bold")
     fig.text(.045,.878,model.upper()+" • "+str(len(zs))+
              " points de grille échantillonnés",color="#c9dded",fontsize=10)
-    fig.text(.06,.063,"Échantillonnage ~25–35 km • les événements locaux peuvent être manqués.",
+    fig.text(.06,.063,"Échantillonnage ~25–35 km • dégradé interpolé • valeurs issues du modèle.",
              color="#d4e3ed",fontsize=10)
     fig.text(.06,.034,"Données modèle via Open-Meteo ; heures exactes de rafales non indiquées. Non officiel.",
              color="#b5c6d9",fontsize=9)
