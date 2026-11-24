@@ -136,8 +136,11 @@ def decorate(im,ts):
                            radius=10,fill='#16324be8')
     draw.text((25,ROWS*SIZE-42),'RainViewer.com  |  France GeoJSON',font=small,fill='white')
 
-def obtain_tiles(host,path):
-    jobs=[(x,y) for y in range(Y0,Y0+ROWS) for x in range(X0,X0+COLS)]
+def obtain_tiles(host,path,extra=False):
+    # Les 7 tuiles périphériques couvrent le bord ouest et sud du SVG web.
+    jobs=([(x,y) for y in range(Y0,Y0+ROWS+1) for x in range(X0-1,X0+COLS)
+           if x<X0 or y>=Y0+ROWS] if extra else
+          [(x,y) for y in range(Y0,Y0+ROWS) for x in range(X0,X0+COLS)])
     def fetch_tile(pair):
         x,y=pair
         url=f'{host}{path}/{SIZE}/{ZOOM}/{x}/{y}/2/1_1.png'
@@ -158,13 +161,14 @@ def website_layer(tiles):
     Les tuiles manquantes et les pixels hors emprise sont grisés, jamais secs.
     """
     missing = (125, 145, 160, 110)
-    raw = Image.new('RGBA', (COLS*SIZE, ROWS*SIZE), missing)
+    raw = Image.new('RGBA', ((COLS+1)*SIZE, (ROWS+1)*SIZE), missing)
     for x, y, tile in tiles:
         if tile is not None:
-            raw.paste(tile, ((x-X0)*SIZE, (y-Y0)*SIZE))
+            raw.paste(tile, ((x-X0+1)*SIZE, (y-Y0)*SIZE))
     width, height = 730, 735
     def src(x, y):
-        return location_pixel(-5.8+x/46, 51.6-y/65)
+        sx, sy = location_pixel(-5.8+x/46, 51.6-y/65)
+        return sx+SIZE, sy
     mesh = []
     for top in range(0, height, 8):
         bottom = min(height, top+8)
@@ -186,7 +190,7 @@ def build_frames(host,entries,lines,web_layers=None):
         if valid<3:
             raise RuntimeError('Moins de 3 tuiles utilisables : radar non genere')
         if web_layers is not None:
-            web_layers.append(website_layer(tiles))
+            web_layers.append(website_layer(tiles + obtain_tiles(host,path,extra=True)))
         image=base.copy()
         for x,y,tile in tiles:
             if tile is not None:
@@ -234,7 +238,7 @@ def run(output,now=None):
         layer.save(output/filename,format='PNG',optimize=True)
         web_frames.append({'file':filename,'observation_utc':stamp(ts)})
     manifest={
-        'web_projection':'KFS-stations-730x735-v1','web_frames':web_frames,
+        'web_projection':'KFS-stations-730x735-v2','web_frames':web_frames,
         'schema':1,'provider':'RainViewer','source':'https://www.rainviewer.com/',
         'projection':'EPSG:3857','zoom':ZOOM,'tile_size':SIZE,
         'x0':X0,'y0':Y0,'width':COLS*SIZE,'height':ROWS*SIZE,
