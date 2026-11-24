@@ -9,6 +9,8 @@ on:
   push:
     paths:
       - 'scripts/ifs_early9km.py'
+      - 'scripts/kfs_surface_style.py'
+      - 'scripts/kfs_weather_cache.py'
       - '.github/workflows/france-ifs9-early.yml'
   schedule:
     - cron: '2,17,32,47 17-21 * * *'
@@ -34,7 +36,7 @@ jobs:
           RUN_INPUT: ${{ github.event.inputs.run_utc }}
         run: |
           python - <<'PY'
-          import json,os
+          import json,os,hashlib
           from datetime import datetime,timedelta,timezone
           from pathlib import Path
           now=datetime.now(timezone.utc)
@@ -45,14 +47,29 @@ jobs:
               cycle=now.replace(hour=12,minute=0,second=0,microsecond=0)
               if now.hour<16: cycle-=timedelta(days=1)
           p=Path('forecast-maps/france/ifs-early9km/latest.json')
+          h=hashlib.sha256()
+          for filename in ('scripts/ifs_early9km.py','scripts/kfs_surface_style.py'):
+              h.update(Path(filename).read_bytes())
+          revision=h.hexdigest()[:16]
           done=False
           if p.exists():
-              try:done=json.loads(p.read_text()).get('run_utc')==cycle.isoformat()
+              try:
+                  old=json.loads(p.read_text())
+                  done=old.get('run_utc')==cycle.isoformat() and old.get('render_revision')==revision
               except Exception:pass
           with open(os.environ['GITHUB_OUTPUT'],'a') as out:
               out.write('skip='+('true' if done else 'false')+'\n')
           print('Run visé:',cycle.isoformat(),'déjà publié:',done)
           PY
+      - name: Restaurer les données météo déjà téléchargées
+        if: steps.gate.outputs.skip != 'true'
+        id: weathercache
+        uses: actions/cache/restore@v4
+        with:
+          path: .kfs-weather-cache
+          key: kfs-weather-v1-ifs9-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            kfs-weather-v1-ifs9-
       - name: Installer bibliothèques cartographiques
         if: steps.gate.outputs.skip != 'true'
         run: |
@@ -94,3 +111,9 @@ jobs:
             sleep $((attempt*3))
           done
           exit 1
+      - name: Conserver les lots météo même après un échec
+        if: always() && steps.weathercache.outcome == 'success'
+        uses: actions/cache/save@v4
+        with:
+          path: .kfs-weather-cache
+          key: kfs-weather-v1-ifs9-${{ github.run_id }}-${{ github.run_attempt }}

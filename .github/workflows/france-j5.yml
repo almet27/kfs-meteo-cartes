@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - scripts/generate_france_extended_daily.py
+      - scripts/kfs_weather_cache.py
       - scripts/kfs_weather_symbols.py
       - .github/workflows/france-j5.yml
   schedule:
@@ -26,6 +27,14 @@ jobs:
         run: |
           git fetch origin main
           git checkout -B main origin/main
+      - name: Restaurer les données météo déjà téléchargées
+        id: weathercache
+        uses: actions/cache/restore@v4
+        with:
+          path: .kfs-weather-cache
+          key: kfs-weather-v1-extended-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            kfs-weather-v1-extended-
       - name: Installer les outils graphiques
         run: python -m pip install 'numpy>=1.26,<3' 'matplotlib>=3.8' 'cartopy>=0.23' 'Pillow>=10,<13'
       - name: Valider le code avant appel API
@@ -57,3 +66,9 @@ jobs:
             sleep 5
           done
           exit 1
+      - name: Conserver les lots météo même après un échec
+        if: always() && steps.weathercache.outcome == 'success'
+        uses: actions/cache/save@v4
+        with:
+          path: .kfs-weather-cache
+          key: kfs-weather-v1-extended-${{ github.run_id }}-${{ github.run_attempt }}

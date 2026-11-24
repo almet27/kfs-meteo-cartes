@@ -4,6 +4,8 @@ on:
   push:
     paths:
       - scripts/generate_france_shortterm_risks.py
+      - scripts/kfs_surface_style.py
+      - scripts/kfs_weather_cache.py
       - scripts/kfs_weather_symbols.py
       - scripts/check_france_risk_runs.py
       - .github/workflows/france-risques-court-terme.yml
@@ -31,6 +33,15 @@ jobs:
       - name: Détecter les nouveaux runs ARÔME et ICON disponibles
         id: poll
         run: python scripts/check_france_risk_runs.py
+      - name: Restaurer les données météo déjà téléchargées
+        if: github.event_name != 'schedule' || steps.poll.outputs.generate == 'true'
+        id: weathercache
+        uses: actions/cache/restore@v4
+        with:
+          path: .kfs-weather-cache
+          key: kfs-weather-v1-regional-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            kfs-weather-v1-regional-
       - name: Installer Cartopy et dépendances
         if: github.event_name != 'schedule' || steps.poll.outputs.generate == 'true'
         run: |
@@ -70,3 +81,9 @@ jobs:
             sleep 5
           done
           exit 1
+      - name: Conserver les lots météo même après un échec
+        if: always() && steps.weathercache.outcome == 'success'
+        uses: actions/cache/save@v4
+        with:
+          path: .kfs-weather-cache
+          key: kfs-weather-v1-regional-${{ github.run_id }}-${{ github.run_attempt }}

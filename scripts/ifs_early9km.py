@@ -16,6 +16,7 @@ from urllib.parse import urlencode
 from urllib.request import Request,urlopen
 from urllib.error import HTTPError,URLError
 from zoneinfo import ZoneInfo
+from kfs_weather_cache import cached, validate_rows, prune, render_revision
 
 OUT=Path("forecast-maps/france/ifs-early9km")
 OUT.mkdir(parents=True,exist_ok=True)
@@ -73,12 +74,14 @@ def get(cycle,locations):
  return payload
 
 def gather(cycle,points):
- chunks=[points[i:i+16] for i in range(0,len(points),16)]
- values=[None]*len(chunks)
- with ThreadPoolExecutor(max_workers=3) as pool:
-  futures={pool.submit(get,cycle,chunk):i for i,chunk in enumerate(chunks)}
-  for future in as_completed(futures):values[futures[future]]=future.result()
- return [row for chunk in values for row in chunk]
+ rows=[]
+ for i in range(0,len(points),16):
+  chunk=points[i:i+16]
+  ident={"cycle":cycle.isoformat(),"model":"ecmwf_ifs","coords":chunk,
+         "fields":VARS,"hours":72}
+  rows.extend(cached("ifs-exact-hourly-v1",ident,lambda:get(cycle,chunk),
+                     lambda r:validate_rows(r,len(chunk),"hourly")))
+ return rows
 
 def weather(codes,cloud_cover):
  from kfs_weather_symbols import kind
@@ -165,25 +168,29 @@ def main():
  p.add_argument("--run-utc",default="")
  p.add_argument("--probe-only",action="store_true")
  args=p.parse_args();cycle=cycle_value(args.run_utc)
+ prune()
+ revision=render_revision("scripts/ifs_early9km.py","scripts/kfs_surface_style.py")
  if cycle>datetime.now(timezone.utc)-timedelta(hours=3):
   print("KFS_IFS9_PENDING cycle trop récent");return 0
  latest=OUT/"latest.json"
  if latest.exists():
   try:
    old=json.loads(latest.read_text(encoding="utf-8"))
-   if old.get("run_utc")==cycle.isoformat():
+   if old.get("run_utc")==cycle.isoformat() and old.get("render_revision")==revision and not args.probe_only:
     print("KFS_IFS9_ALREADY_PUBLISHED",cycle.isoformat());return 0
   except (ValueError,OSError):pass
- try:get(cycle,[(49.03,1.15)])
- except (HTTPError,URLError,TimeoutError,ValueError,KeyError) as error:
-  print("KFS_IFS9_PENDING",cycle.isoformat(),str(error)[:180]);return 0
- print("KFS_IFS9_CYCLE_CONFIRMED",cycle.isoformat(),flush=True)
- if args.probe_only:return 0
+ if args.probe_only:
+  try:get(cycle,[(49.03,1.15)])
+  except (HTTPError,URLError,TimeoutError,ValueError,KeyError) as error:
+   print("KFS_IFS9_PENDING",cycle.isoformat(),str(error)[:180]);return 0
+  print("KFS_IFS9_CYCLE_CONFIRMED",cycle.isoformat(),flush=True)
+  return 0
  from generate_france_shortterm_risks import points
  coords=points()[::2]
  records=gather(cycle,coords)
  first=cycle.astimezone(PARIS).date()
  manifest={"schema":1,"model":"ecmwf_ifs","run_utc":cycle.isoformat(),
+   "render_revision":revision,
    "generated_utc":datetime.now(timezone.utc).isoformat(),
    "source":"Open-Meteo Single Runs API / ECMWF IFS HRES",
    "resolution_native_km":9,"sample_spacing":"~35-60 km",

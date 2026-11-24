@@ -24,6 +24,7 @@ import cartopy.feature as cfeature
 from PIL import Image
 from generate_france_shortterm_risks import points
 from kfs_weather_symbols import overlay as draw_wmo_icons
+from kfs_weather_cache import cached, validate_rows, record_quota, prune, utc_hour
 
 OUT=Path("forecast-maps/france/daily-extended")
 OUT.mkdir(parents=True,exist_ok=True)
@@ -58,6 +59,7 @@ def fetch_batch(model,points_):
             if len(value)!=len(points_):raise ValueError("Nombre de points inattendu")
             return value
         except (HTTPError,URLError,TimeoutError,ValueError) as exc:
+            record_quota(exc)
             error=exc
             if isinstance(exc,HTTPError) and exc.code==400 and code_available:
                 code_available=False
@@ -67,18 +69,18 @@ def fetch_batch(model,points_):
             if attempt<3:time.sleep(2+2*min(attempt,2))
     raise RuntimeError("API "+model+" indisponible : "+str(error)[:180])
 
-def fetch_all(model,coords):
-    span=18
-    chunks=[coords[i:i+span] for i in range(0,len(coords),span)]
-    values=[None]*len(coords)
-    with ThreadPoolExecutor(max_workers=3) as executor:
-        jobs={executor.submit(fetch_batch,model,chunk):i
-              for i,chunk in enumerate(chunks)}
-        for job in as_completed(jobs):
-            i=jobs[job];records=job.result()
-            values[i*span:i*span+len(records)]=records
-    if any(x is None for x in values):raise RuntimeError("Données incomplètes")
-    return values
+def fetch_all(model,coords,window):
+    rows=[]
+    for i in range(0,len(coords),18):
+        chunk=coords[i:i+18]
+        ident={"model":SOURCE[model],"window":window,"coords":chunk,
+               "fields":[x[0] for x in FIELDS.values()]+["weather_code"],"days":7}
+        rows.extend(cached("global-daily-v1",ident,lambda:fetch_batch(model,chunk),
+                           lambda r:validate_rows(r,len(chunk),"daily")))
+    times=rows[0]["daily"]["time"]
+    if any(r["daily"]["time"]!=times for r in rows):
+        raise RuntimeError("Fenêtres journalières différentes")
+    return rows
 
 def render(model,metric,offset,date,coords,vals,codes=None):
     variable,label,vmin,vmax,cmap=FIELDS[metric]
@@ -131,12 +133,16 @@ def render(model,metric,offset,date,coords,vals,codes=None):
             "date":date,"valid_points":len(zs)}
 
 def main():
+    prune()
     now=datetime.now(timezone.utc)
+    window=utc_hour()
     date=datetime.now(PARIS).date()
     coords=points()
     all_models={}
     for model in SOURCE:
-        records=fetch_all(model,coords)
+        records=fetch_all(model,coords,window)
+        if utc_hour()!=window:
+            raise RuntimeError("Fenêtre de collecte changée : aucune publication")
         maps={}
         for day in range(6):
             target=(date+timedelta(days=day)).isoformat()

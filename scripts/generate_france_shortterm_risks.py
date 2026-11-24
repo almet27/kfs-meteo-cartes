@@ -27,6 +27,7 @@ from cartopy.io import shapereader
 from shapely.geometry import Point
 from shapely.prepared import prep
 from check_france_risk_runs import run_info
+from kfs_weather_cache import cached, validate_rows, record_quota, prune, utc_hour
 from kfs_weather_symbols import overlay as draw_wmo_icons, representative as wmo_representative
 
 OUT=Path("forecast-maps/france/risques")
@@ -148,6 +149,7 @@ def get_batch(model,records,tries=3):
                         raise ValueError("Champ incomplet "+n+" "+model)
             return data
         except (HTTPError,URLError,TimeoutError,ValueError) as exc:
+            record_quota(exc)
             err=exc
             if isinstance(exc,HTTPError) and exc.code==400 and include_weather:
                 include_weather=False
@@ -158,19 +160,20 @@ def get_batch(model,records,tries=3):
             if attempt<tries:time.sleep(2+3*min(attempt,2))
     raise RuntimeError("Source "+model+" temporairement indisponible: "+str(err)[:120])
 
-def fetch_model(model,coords):
+def fetch_model(model,coords,source_run,window):
     chunk=18
-    batches=[coords[i:i+chunk] for i in range(0,len(coords),chunk)]
-    out=[None]*len(coords)
-    with ThreadPoolExecutor(max_workers=3) as pool:
-        tasks={pool.submit(get_batch,model,part):j for j,part in
-               enumerate(batches)}
-        for fut in as_completed(tasks):
-            j=tasks[fut]
-            rows=fut.result()
-            out[j*chunk:j*chunk+len(rows)]=rows
-    if any(v is None for v in out):
-        raise RuntimeError(model+" : données manquantes au maillage")
+    out=[]
+    for i in range(0,len(coords),chunk):
+        part=coords[i:i+chunk]
+        ident={"model":CODES[model],"source_run":source_run,
+               "window":window,"coords":part,"fields":COMMON+EXTRA[model]+("weather_code",),
+               "hours":48}
+        rows=cached("regional-hourly-v1",ident,lambda: get_batch(model,part),
+                    lambda r: validate_rows(r,len(part),"hourly"))
+        out.extend(rows)
+    times=out[0]["hourly"]["time"]
+    if any(r["hourly"]["time"]!=times for r in out):
+        raise RuntimeError("Fenêtres horaires différentes : aucune publication")
     return out
 
 def compute(model,data,period):
@@ -390,7 +393,9 @@ def generate_short_daily(model,data,coords,run,document):
 def main():
     timestamp=datetime.now(timezone.utc)
     # Source runs explicitly tagged; no invented run hours on the maps.
+    prune()
     source_runs=run_info()
+    window=utc_hour()
     coords=points()
     daily_document={"schema":1,"generated_utc":timestamp.isoformat(),
       "source":"Open-Meteo, modèles explicites ARÔME France et ICON EU",
@@ -402,7 +407,9 @@ def main():
       "not_official_warning":True,"not_thunderstorm_probability":True,
       "horizons":[6,12,24,36,48],"models":{}}
     for model in CODES:
-        data=fetch_model(model,coords)
+        data=fetch_model(model,coords,source_runs[model]["run_utc"],window)
+        if utc_hour()!=window:
+            raise RuntimeError("Fenêtre horaire changée : conserver les cartes précédentes")
         views={}
         for period in PERIODS:
             values=compute(model,data,period)
@@ -421,6 +428,8 @@ def main():
             # la publication des cartes de risques déjà en production.
             print("KFS_FRANCE_SHORT_DAILY_ERROR",model,str(exc)[:200],flush=True)
         print("KFS_FRANCE_RISK_MODEL_OK",model,len(coords),"points",flush=True)
+    if run_info()!=source_runs:
+        raise RuntimeError("Run source changé pendant le téléchargement : aucune publication")
     (OUT/"latest.json").write_text(
         json.dumps(document,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
     if any(model.get("days") for model in daily_document["models"].values()):
