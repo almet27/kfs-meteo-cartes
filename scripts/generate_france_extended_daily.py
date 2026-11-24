@@ -13,7 +13,8 @@ from urllib.parse import urlencode
 from urllib.request import Request,urlopen
 from urllib.error import HTTPError,URLError
 from zoneinfo import ZoneInfo
-import json,math,time
+import json,math,time,gzip,shutil
+from tempfile import TemporaryDirectory
 import numpy as np
 import matplotlib
 matplotlib.use("Agg")
@@ -24,7 +25,7 @@ import cartopy.feature as cfeature
 from PIL import Image
 from generate_france_shortterm_risks import points
 from kfs_surface_style import france_axes, surface as draw_surface, labels, symbols, TEMP_CMAP, TEMP_MIN, TEMP_MAX
-from kfs_weather_cache import cached, validate_rows, record_quota, prune, utc_hour
+from kfs_weather_cache import cached, validate_rows, record_quota, prune, utc_hour, cache_key
 
 OUT=Path("forecast-maps/france/daily-extended")
 OUT.mkdir(parents=True,exist_ok=True)
@@ -69,14 +70,20 @@ def fetch_batch(model,points_):
             if attempt<3:time.sleep(2+2*min(attempt,2))
     raise RuntimeError("API "+model+" indisponible : "+str(error)[:180])
 
-def fetch_all(model,coords,window):
+def fetch_all(model,coords,window,offline=False):
     rows=[]
     for i in range(0,len(coords),18):
         chunk=coords[i:i+18]
         ident={"model":SOURCE[model],"window":window,"coords":chunk,
                "fields":[x[0] for x in FIELDS.values()]+["weather_code"],"days":7}
-        rows.extend(cached("global-daily-v1",ident,lambda:fetch_batch(model,chunk),
-                           lambda r:validate_rows(r,len(chunk),"daily")))
+        if offline:
+            with gzip.open(cache_key("global-daily-v1",ident),"rt",encoding="utf-8") as fp:
+                result=json.load(fp)
+            validate_rows(result,len(chunk),"daily")
+            rows.extend(result)
+        else:
+            rows.extend(cached("global-daily-v1",ident,lambda:fetch_batch(model,chunk),
+                               lambda r:validate_rows(r,len(chunk),"daily")))
     times=rows[0]["daily"]["time"]
     if any(r["daily"]["time"]!=times for r in rows):
         raise RuntimeError("Fenêtres journalières différentes")
@@ -131,49 +138,85 @@ def render(model,metric,offset,date,coords,vals,codes=None):
             "date":date,"valid_points":len(zs)}
 
 def main():
+    global OUT
     prune()
     now=datetime.now(timezone.utc)
     window=utc_hour()
     date=datetime.now(PARIS).date()
     coords=points()
-    all_models={}
+    dest=OUT
+    try:
+        doc=json.loads((dest/"latest.json").read_text())
+        all_models=doc["models"]
+        for m in all_models.values():
+            m.setdefault("generated_utc",doc.get("generated_utc"))
+    except (OSError,ValueError,KeyError):
+        all_models={}
+    completed=[]
     for model in SOURCE:
-        records=fetch_all(model,coords,window)
-        if utc_hour()!=window:
-            raise RuntimeError("Fenêtre de collecte changée : aucune publication")
-        maps={}
-        for day in range(6):
-            target=(date+timedelta(days=day)).isoformat()
-            fields={}
-            day_codes=[]
-            for record in records:
-                daily=record.get("daily",{})
-                try:
-                    at_day=daily["time"].index(target)
-                    code=daily.get("weather_code",[])[at_day]
-                except (ValueError,IndexError,KeyError,TypeError):
-                    code=None
-                day_codes.append(code)
-            for metric,(name,_,_,_,_) in FIELDS.items():
-                values=[]
-                for record in records:
-                    daily=record.get("daily",{})
+        try:
+            try:
+                records=fetch_all(model,coords,window)
+                data_window=window
+                if utc_hour()!=window:raise RuntimeError("Fenêtre de collecte changée")
+            except Exception as exc:
+                print("KFS_J5_LIVE_DEFERRED",model,str(exc)[:200],flush=True)
+                records=None
+                # Reuse only a COMPLETE existing cache from the same day, without API calls.
+                for n in range(1,4):
+                    at=now-timedelta(hours=n)
+                    if at.astimezone(PARIS).date()!=date:break
+                    data_window=at.strftime("%Y-%m-%dT%H:00")
                     try:
-                        index=daily["time"].index(target)
-                        value=daily[name][index]
-                    except (ValueError,IndexError,KeyError,TypeError):
-                        value=None
-                    values.append(value)
-                fields[metric]=render(model,metric,day,target,coords,values,day_codes)
-            maps[str(day)]={"date":target,"maps":fields}
-        all_models[model]={"source":SOURCE[model],"days":maps}
-        print("KFS_FRANCE_J5_MODEL_OK",model,len(coords),flush=True)
-    doc={"schema":1,"generated_utc":now.isoformat(),
-         "source":"Modèles ECMWF IFS et NOAA GFS via Open-Meteo",
-         "sampling":"0.38° longitude, 0.32° latitude, points terrestres uniquement",
-         "not_native_grib":True,"models":all_models}
-    (OUT/"latest.json").write_text(json.dumps(doc,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
-    print("KFS_FRANCE_J5_READY",now.isoformat(),flush=True)
+                        records=fetch_all(model,coords,data_window,offline=True)
+                        break
+                    except (OSError,ValueError,RuntimeError):continue
+                if records is None:raise RuntimeError("No complete recent cached model")
+            with TemporaryDirectory() as tmp:
+                OUT=Path(tmp)
+                maps={}
+                for day in range(6):
+                    target=(date+timedelta(days=day)).isoformat()
+                    fields={}
+                    day_codes=[]
+                    for record in records:
+                        daily=record.get("daily",{})
+                        try:
+                            at_day=daily["time"].index(target)
+                            code=daily.get("weather_code",[])[at_day]
+                        except (ValueError,IndexError,KeyError,TypeError):
+                            code=None
+                        day_codes.append(code)
+                    for metric,(name,_,_,_,_) in FIELDS.items():
+                        values=[]
+                        for record in records:
+                            daily=record.get("daily",{})
+                            try:
+                                index=daily["time"].index(target)
+                                value=daily[name][index]
+                            except (ValueError,IndexError,KeyError,TypeError):
+                                value=None
+                            values.append(value)
+                        fields[metric]=render(model,metric,day,target,coords,values,day_codes)
+                    maps[str(day)]={"date":target,"maps":fields}
+
+                for p in OUT.glob("*.webp"):shutil.copy2(p,dest/p.name)
+            all_models[model]={"source":SOURCE[model],"days":maps,
+                "generated_utc":data_window+":00+00:00","rendered_utc":now.isoformat()}
+            completed.append(model)
+            print("KFS_FRANCE_J5_MODEL_OK",model,len(coords),flush=True)
+        except Exception as exc:
+            print("KFS_FRANCE_J5_MODEL_DEFERRED",model,str(exc)[:250],flush=True)
+        finally:
+            OUT=dest
+    if completed:
+        doc={"schema":1,"generated_utc":max(m.get("generated_utc") or "" for m in all_models.values()),
+            "rendered_utc":now.isoformat(),
+            "source":"Modèles ECMWF IFS et NOAA GFS via Open-Meteo",
+            "sampling":"0.38° longitude, 0.32° latitude, points terrestres uniquement",
+            "not_native_grib":True,"models":all_models}
+        (OUT/"latest.json").write_text(json.dumps(doc,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
+    print("KFS_FRANCE_J5_PUBLISHED",completed,flush=True)
 
 if __name__=="__main__":
     main()
