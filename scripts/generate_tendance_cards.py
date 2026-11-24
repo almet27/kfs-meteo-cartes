@@ -380,6 +380,10 @@ def write_premium_stage(stage, meta, data, now, risk_document, france=False):
     hazards=next((a for a in risk_document["france_stages" if france else "stages"] if a["id"]==stage["id"]),None)
     if not hazards or hazards["step_h"]!=int(step):
         raise RuntimeError("Données de risque manquantes "+stage["id"])
+    synoptic=hazards.get("synoptic_consensus") or {"method":"ifs_reference","models":["ifs"],"weights":{"ifs":1.0}}
+    map_names={"ifs":"IFS","aifs-single":"AIFS","gfs":"GFS","aigfs":"AIGFS"}
+    mode=synoptic.get("method","ifs_reference")
+    map_label=("KFS • synthèse pondérée" if mode=="weighted_blend" else "KFS • scénario "+map_names.get(synoptic.get("representative"),"") if mode=="weighted_representative" else "Carte IFS")
     if hazards.get("model")!="ifs":
         raise RuntimeError("Fond de risques non IFS "+stage["id"])
     if parsed(hazards["run_utc"])!=parsed(details["run_utc"]):
@@ -408,11 +412,10 @@ def write_premium_stage(stage, meta, data, now, risk_document, france=False):
     txt(d,(38,56),"KFS MÉTÉO  •  France métropolitaine" if france else "KFS MÉTÉO  •  Europe et masses d’air",17,muted)
     d.rounded_rectangle((904,12,1586,88),radius=15,fill="#F1F3F5",outline="#D2D7DC",width=1)
     txt(d,(923,20),"Échéance : "+stage["period"],24,ink,True)
-    txt(d,(924,53),date.strftime("%d/%m/%Y  %HZ")+"  •  Carte IFS",16,muted)
+    txt(d,(924,53),date.strftime("%d/%m/%Y  %HZ")+"  •  "+map_label,16,muted)
     d.line((1181,25,1181,75),fill="#CED4DB",width=2)
-    txt(d,(1195,20),"ECMWF IFS · "+parsed(details["run_utc"]).strftime("%HZ"),19,ink,True)
-    comparisons="AIFS "+parsed(other_run).strftime("%HZ")
-    if gfs_ready:comparisons+=" • GFS "+parsed(gfs_record["run_utc"]).strftime("%HZ")
+    txt(d,(1195,20),"KFS • "+str(len(synoptic.get("models",[])))+" modèle(s)",19,ink,True)
+    comparisons=" / ".join(map_names.get(k,k) for k in synoptic.get("models",["ifs"]))
     txt(d,(1195,54),comparisons,16,muted)
 
     # Footer: scale, four actual calculated hazard types, dynamic summary.
@@ -436,7 +439,7 @@ def write_premium_stage(stage, meta, data, now, risk_document, france=False):
         d.line((x,818,x,824),fill=muted,width=1)
         tw=d.textlength(label,font=font(13,True))
         txt(d,(max(12,min(385-tw,x-tw/2)),831),label,13,ink,True)
-    txt(d,(25,865),"T850 moy. France : %+.1f °C"%t850,16,ink,True)
+    txt(d,(25,865),"T850 IFS France : %+.1f °C"%t850,16,ink,True)
     txt(d,(25,887),"Isobares : 5 hPa  •  H / D",14,muted)
 
     def pill(x,y,label):
@@ -514,7 +517,7 @@ def write_premium_stage(stage, meta, data, now, risk_document, france=False):
     for i,line in enumerate(lines):
         txt(d,(1058,750+i*(sz+4)),line,sz,ink)
     d.line((22,911,1578,911),fill="#D5D9DF",width=1)
-    txt(d,(25,918),"Source : ECMWF Open Data • Comparaisons AIFS/GFS si disponibles • ! rouge = seuil KFS, pas une vigilance officielle.",12,muted)
+    txt(d,(25,918),"Sources : ECMWF / NOAA • Champ synoptique KFS selon disponibilité • Risques et seuils IFS, pas une vigilance officielle.",12,muted)
     txt(d,(1322,918),"Prévision ponctuelle à "+step+" h",12,muted)
     if france:
         full=Image.new("RGBA",(1600,1140),"#EEF0F2")
@@ -542,8 +545,9 @@ def write_premium_stage(stage, meta, data, now, risk_document, france=False):
        "gfs_available":gfs_ready,
        "risk_status":"altitude_filtered_georeferenced", "risks":hazards["risks"], "risk_markers":hazards["markers"],
        "t850_shading":hazards.get("t850_shading",{}),
-       "style":"kfs-editorial-lambert-consensus-v12","summary":consensus["summary"]+" "+sentence,"analysis":consensus,
-       "note":"Carte géoréférencée bord à bord 1600x700, bandeau neutre et synthèse issue des champs IFS ; ! rouge = seuil KFS non officiel."}
+       "style":"kfs-editorial-lambert-consensus-v13","summary":consensus["summary"]+" "+sentence,"analysis":consensus,
+       "synoptic_consensus":synoptic,
+       "note":"Projection Lambert ; champs synoptiques KFS selon grilles disponibles à validité identique. Risques et pictogrammes IFS ; ! rouge = seuil KFS non officiel."}
 
 def main():
     now=datetime.now(timezone.utc)
@@ -570,9 +574,9 @@ def main():
       "charts_generated_utc":meta["generated_utc"],
       "source":"ECMWF Open Data (CC BY 4.0), NOAA GFS si disponible",
       "not_weekly_anomalies":True,"period_maps":maps,"france_maps":france_maps,"public":True,
-      "graphic_style":"KFS PREMIUM Lambert — consensus régional pondéré, fond IFS",
+      "graphic_style":"KFS PREMIUM Lambert — consensus synoptique selon grilles disponibles ; risques IFS",
       "analysis_summary":" ".join(x["id"].upper()+" : "+x["analysis"]["summary"] for x in maps),
-      "note":"Cartes ECMWF IFS/AIFS et comparaison GFS si run NOAA vérifié ; ! rouge = signal modélisé marqué, pas de vigilance officielle. Aucun front inventé ni extrapolation à 4 semaines."}
+      "note":"Synthèse synoptique pondérée si grilles alignées disponibles ; scénario représentatif si divergence marquée, sinon repli IFS explicite. Risques IFS. Aucune probabilité calibrée."}
     (OUT/"tendance-cartes.json").write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
     print(json.dumps({"generated_utc":manifest["generated_utc"],
                       "cards":[{"id":x["id"],"size_bytes":x["size_bytes"],"title":x["title"]} for x in maps]},
