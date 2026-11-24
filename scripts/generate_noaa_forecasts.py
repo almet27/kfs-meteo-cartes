@@ -147,9 +147,10 @@ try:
 except (FileNotFoundError,ValueError):
     diagnostics={"schema_version":1,"models":{"gfs":{}},"errors":{}}
 diagnostics["generated_utc"]=metadata["generated_utc"]
-diagnostics["source"]="NOAA GFS / NCEP NOMADS"
+diagnostics["source"]="NOAA GFS / AIGFS / NCEP NOMADS"
 diagnostics["steps_h"]=sorted(DIAG_STEPS)
 diagnostics.setdefault("models",{}).setdefault("gfs",{})
+diagnostics["models"].setdefault("aigfs",{})
 diagnostics.setdefault("errors",{})
 
 def regional_means(lon,lat,data):
@@ -194,7 +195,7 @@ for model,title in [("gfs","GFS"),("aigfs","AIGFS")]:
             continue
         candidate=when(latest)
         prior=when(metadata["runs_utc"][model].get(str(step)))
-        if candidate<=prior:
+        if candidate<prior or (candidate==prior and (step not in DIAG_STEPS or diagnostics["models"].get(model,{}).get(str(step),{}).get("run_utc")==candidate.isoformat())):
             continue
         RUN=candidate
         NEW={}
@@ -206,7 +207,7 @@ for model,title in [("gfs","GFS"),("aigfs","AIGFS")]:
         try:
             lon,lat,t850,u=field(model,step,upper_product,":TMP:850 mb:")
             if not 150<np.nanmedian(t850)<330:raise ValueError("T850 values not Kelvin: "+u)
-            if model=="gfs" and step in DIAG_STEPS:
+            if step in DIAG_STEPS:
                 diag_fields["t850"]=regional_means(lon,lat,t850-273.15)
             fig,ax=canvas()
             shade=ax.contourf(lon,lat,t850-273.15,levels=KFS_T850_LEVELS,
@@ -251,7 +252,7 @@ for model,title in [("gfs","GFS"),("aigfs","AIGFS")]:
                 raise ValueError("Z500 and MSLP grids differ")
             if not 90000<np.nanmedian(msl)<110000: raise ValueError("MSLP invalid: "+u)
             if not 4000<np.nanmedian(z500)<6500: raise ValueError("Z500 invalid: "+zunits)
-            if model=="gfs" and step in DIAG_STEPS:
+            if step in DIAG_STEPS:
                 diag_fields["msl"]=regional_means(lon,lat,msl/100)
                 diag_fields["z500"]=regional_means(lon,lat,z500/10)
             fig,ax=canvas()
@@ -279,10 +280,10 @@ for model,title in [("gfs","GFS"),("aigfs","AIGFS")]:
             metadata["errors"][key+"-z500_msl"]=str(e)[:350]
 
         # Champs de vent GFS à 850 hPa. Erreur non bloquante pour les cartes existantes.
-        if model=="gfs" and step in DIAG_STEPS:
+        if step in DIAG_STEPS:
             try:
-                ux,uy,u850,u_unit=field("gfs",step,upper_product,":UGRD:850 mb:")
-                vx,vy,v850,v_unit=field("gfs",step,upper_product,":VGRD:850 mb:")
+                ux,uy,u850,u_unit=field(model,step,upper_product,":UGRD:850 mb:")
+                vx,vy,v850,v_unit=field(model,step,upper_product,":VGRD:850 mb:")
                 if not (np.array_equal(ux,vx) and np.array_equal(uy,vy)):
                     raise ValueError("Grilles GFS U850/V850 distinctes")
                 if not (np.isfinite(u850).all() and np.isfinite(v850).all()):
@@ -373,8 +374,8 @@ for model,title in [("gfs","GFS"),("aigfs","AIGFS")]:
             metadata["runs_utc"][model][str(step)]=RUN.isoformat()
             if RUN>when(metadata.get("run_utc")):
                 metadata["run_utc"]=RUN.isoformat()
-            if model=="gfs" and step in DIAG_STEPS and pending_diag.get("run_utc")==RUN.isoformat():
-                diagnostics["models"]["gfs"][str(step)]=pending_diag
+            if step in DIAG_STEPS and pending_diag.get("run_utc")==RUN.isoformat():
+                diagnostics["models"][model][str(step)]=pending_diag
             UPDATED+=1
             print("EUROPE NOAA PUBLISHED",model,step,RUN.isoformat(),flush=True)
         else:
