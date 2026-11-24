@@ -100,7 +100,7 @@ def main():
                     if im.width<300 or im.height<200:
                         raise ValueError("Daily map too small: "+str(origin))
                     im.convert("RGB").save(target,format="WEBP",quality=85,method=6)
-                output["maps"][metric]={"file":target.name,"note":data.get("note","")}
+                output["maps"][metric]={"file":target.name,"note":data.get("note",""),**({"detail":data["detail"]} if data.get("detail") else {})}
                 n+=1
             if output["maps"]:
                 manifest["daily"][day]=output
