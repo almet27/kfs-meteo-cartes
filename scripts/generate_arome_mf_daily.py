@@ -178,7 +178,7 @@ def main():
     run,files=get_catalog()
     horizon=max(b for a,b in files)
     old=doc.get("models",{}).get("arome",{})
-    if old.get("source")=="Météo-France Open Data" and old.get("run_utc")==run.isoformat() and old.get("horizon_hours",0)>=horizon and os.getenv("KFS_FORCE")!="1" and all((v.get("maps",{}).get("tmin",{}).get("detail",{}).get("weather") or {}).get("count",0)>0 for v in old.get("days",{}).values()):
+    if old.get("source")=="Météo-France Open Data" and old.get("run_utc")==run.isoformat() and old.get("horizon_hours",0)>=horizon and os.getenv("KFS_FORCE")!="1" and all((v.get("maps",{}).get("tmin",{}).get("detail",{}).get("weather") or {}).get("count",0)>0 for v in old.get("days",{}).values()) and all(v.get("maps",{}).get(k,{}).get("detail",{}).get("count",0)>0 for v in old.get("days",{}).values() for k in ("gust","precip")):
         print("KFS_AROME_NO_NEW_RUN",run.isoformat());return
     rows={};grid=None
     with TemporaryDirectory() as tmp:
@@ -226,8 +226,8 @@ def main():
                 weather=None
                 if wx is not None and metric in ("tmin","tmax"):
                     weather=np.full_like(wx,np.nan);weather[::5,::5]=wx[::5,::5]
-                detail=zoom_native(grid.lon,grid.lat,v) if metric in ("tmin","tmax") else None
-                if detail is not None:
+                detail=zoom_native(grid.lon,grid.lat,v,metric=metric)
+                if metric in ("tmin","tmax"):
                     detail["weather"]=native_weather(grid.lon,grid.lat,wx)
                     if wx is not None and not detail["weather"]:raise RuntimeError("Weather detail unexpectedly empty")
                 p=Path(render_daily(grid.lon,grid.lat,v,metric,"ARÔME 2,5 km",run,day,tmp,note,weather=weather,detail=detail))
