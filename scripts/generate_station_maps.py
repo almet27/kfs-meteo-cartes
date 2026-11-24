@@ -644,11 +644,30 @@ def main():
                 metric, zone, values[metric], rings,
                 observation_time.strftime("%Y-%m-%d %H:%M"),
                 len(hourly_samples))
+    # Mesures publiques pour le rendu web sur le même fond SVG que les METAR.
+    # Ne pas modifier les images Discord ni la logique de calcul des cumuls.
+    lookup = {(lon, lat): p for lon, lat, p in current.values()}
+    web_points = {}
+    for metric in ("temperature", "vent", "rafales", "pluie"):
+        points = []
+        for record in values[metric]:
+            lon, lat, val = record[:3]
+            if not (-5.8 <= lon <= 10.0 and 41.1 <= lat <= 51.6):
+                continue
+            props = lookup.get((lon, lat), {})
+            label = next((str(props[k]).strip()[:42] for k in
+                          ("geo_nom", "geo_nom_station", "nom_usuel", "nom_station")
+                          if isinstance(props.get(k), str) and props[k].strip()), "")
+            points.append([round(lon, 4), round(lat, 4), round(val, 1),
+                           record[3] if len(record) > 3 else None, label])
+        web_points[metric] = points
     metadata = {
         "generated_utc": now.isoformat().replace("+00:00","Z"),
         "observation_utc": observation_time.isoformat().replace("+00:00","Z"),
         "source": "Météo-France / API Package Observations",
         "hourly_snapshots": len(hourly_samples),
+        "web_points_schema": 1,
+        "web_points": web_points,
         "metric_details": {k: v[0] for k, v in METRICS.items()},
         "stations": stations_count,
         "zones": {k:v[0] for k,v in ZONES.items()},
