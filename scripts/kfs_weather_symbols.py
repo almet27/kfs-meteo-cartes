@@ -21,31 +21,36 @@ CITIES = (
     (1.10, 49.44), (4.84, 45.76), (5.37, 43.30),
     (7.75, 48.58), (7.26, 43.71),
 )
-PRIORITY = {"sun":0, "partly":1, "cloud":2, "fog":3,
-            "rain":4, "snow":5, "storm":6}
-
+PRIORITY = {"sun":0,"partly":1,"cloud":2,"fog":3,"rime_fog":4,
+            "drizzle":5,"rain":6,"heavy_rain":7,"showers":7,"snow":8,
+            "heavy_snow":9,"snow_grains":9,"mixed":9,"freezing":10,
+            "storm":11,"hail_storm":12}
 def kind(code):
-    if code is None or isinstance(code, bool):
-        return None
+    if code is None or isinstance(code,bool):return None
     try:
         c=int(code)
-        if float(code)!=c:
-            return None
-    except (TypeError,ValueError,OverflowError):
-        return None
+        if float(code)!=c:return None
+    except (TypeError,ValueError,OverflowError):return None
     if c==0:return "sun"
     if c in (1,2):return "partly"
     if c==3:return "cloud"
-    if c in (45,48):return "fog"
-    if c in (51,53,55,56,57,61,63,65,66,67,80,81,82):return "rain"
-    if c in (71,73,75,77,85,86):return "snow"
-    if c in (95,96,97,99):return "storm"
+    if c==45:return "fog"
+    if c==48:return "rime_fog"
+    if c in (51,53,55):return "drizzle"
+    if c in (56,57,66,67):return "freezing"
+    if c in (61,63):return "rain"
+    if c==65:return "heavy_rain"
+    if c in (80,81,82):return "showers"
+    if c in (71,73,85):return "snow"
+    if c in (75,86):return "heavy_snow"
+    if c==77:return "snow_grains"
+    if c==100:return "mixed"  # diagnostic interne : pluie et neige prévues pendant la période
+    if c in (95,97):return "storm"
+    if c in (96,99):return "hail_storm"
     return None
-
 def representative(codes):
-    """Le code le plus significatif de la période, seulement parmi les valides."""
     valid=[int(x) for x in codes if kind(x)]
-    return max(valid,key=lambda x:PRIORITY[kind(x)]) if valid else None
+    return max(valid,key=lambda x:(PRIORITY[kind(x)],x)) if valid else None
 
 def _weather_icon(code,size=32):
     mode=kind(code)
