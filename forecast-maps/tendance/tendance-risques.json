@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_utc": "2026-11-24T22:05:30.736791+00:00",
+  "generated_utc": "2026-11-24T22:08:52.285192+00:00",
   "atlas_generated_utc": "2026-11-24T19:38:19.485617+00:00",
   "reference": "ECMWF Open Data, Copernicus DEM GLO-90 via Open-Meteo — champs géoréférencés",
   "stages": [
@@ -116,6 +116,23 @@
           "kind": "gel"
         }
       ],
+      "synoptic_consensus": {
+        "method": "weighted_blend",
+        "models": [
+          "ifs",
+          "aifs-single"
+        ],
+        "weights": {
+          "ifs": 0.5067,
+          "aifs-single": 0.4933
+        },
+        "representative": null,
+        "normalized_spread": 0.15,
+        "excluded": {},
+        "valid_utc": "2026-11-27T12:00:00+00:00",
+        "risk_source": "ifs",
+        "weight_method": "Inverse MAE pression France, 3 derniers mois complets ; poids indicatifs"
+      },
       "t850_shading": {
         "enabled": true,
         "level_hpa": 850,
@@ -244,6 +261,25 @@
           "kind": "gel"
         }
       ],
+      "synoptic_consensus": {
+        "method": "weighted_representative",
+        "models": [
+          "ifs",
+          "aifs-single",
+          "gfs"
+        ],
+        "weights": {
+          "ifs": 0.3917391739173917,
+          "aifs-single": 0.27122712271227123,
+          "gfs": 0.33703370337033706
+        },
+        "representative": "ifs",
+        "normalized_spread": 0.666,
+        "excluded": {},
+        "valid_utc": "2026-12-01T12:00:00+00:00",
+        "risk_source": "ifs",
+        "weight_method": "Inverse MAE pression France, 3 derniers mois complets ; poids indicatifs"
+      },
       "t850_shading": {
         "enabled": true,
         "level_hpa": 850,
@@ -372,6 +408,25 @@
           "kind": "gel"
         }
       ],
+      "synoptic_consensus": {
+        "method": "weighted_representative",
+        "models": [
+          "ifs",
+          "aifs-single",
+          "gfs"
+        ],
+        "weights": {
+          "ifs": 0.3966,
+          "aifs-single": 0.2199,
+          "gfs": 0.3835
+        },
+        "representative": "ifs",
+        "normalized_spread": 0.983,
+        "excluded": {},
+        "valid_utc": "2026-12-04T12:00:00+00:00",
+        "risk_source": "ifs",
+        "weight_method": "Inverse MAE pression France, 3 derniers mois complets ; poids indicatifs"
+      },
       "t850_shading": {
         "enabled": true,
         "level_hpa": 850,
@@ -500,6 +555,25 @@
           "kind": "vent_fort"
         }
       ],
+      "synoptic_consensus": {
+        "method": "weighted_representative",
+        "models": [
+          "ifs",
+          "aifs-single",
+          "gfs"
+        ],
+        "weights": {
+          "ifs": 0.2547,
+          "aifs-single": 0.324,
+          "gfs": 0.4213
+        },
+        "representative": "gfs",
+        "normalized_spread": 1.279,
+        "excluded": {},
+        "valid_utc": "2026-12-09T12:00:00+00:00",
+        "risk_source": "ifs",
+        "weight_method": "Inverse MAE pression France, 3 derniers mois complets ; poids indicatifs"
+      },
       "t850_shading": {
         "enabled": true,
         "level_hpa": 850,
@@ -630,6 +704,23 @@
           "kind": "gel"
         }
       ],
+      "synoptic_consensus": {
+        "method": "weighted_blend",
+        "models": [
+          "ifs",
+          "aifs-single"
+        ],
+        "weights": {
+          "ifs": 0.5067,
+          "aifs-single": 0.4933
+        },
+        "representative": null,
+        "normalized_spread": 0.15,
+        "excluded": {},
+        "valid_utc": "2026-11-27T12:00:00+00:00",
+        "risk_source": "ifs",
+        "weight_method": "Inverse MAE pression France, 3 derniers mois complets ; poids indicatifs"
+      },
       "t850_shading": {
         "enabled": true,
         "level_hpa": 850,
@@ -746,6 +837,25 @@
           "kind": "gel"
         }
       ],
+      "synoptic_consensus": {
+        "method": "weighted_representative",
+        "models": [
+          "ifs",
+          "aifs-single",
+          "gfs"
+        ],
+        "weights": {
+          "ifs": 0.3917391739173917,
+          "aifs-single": 0.27122712271227123,
+          "gfs": 0.33703370337033706
+        },
+        "representative": "ifs",
+        "normalized_spread": 0.666,
+        "excluded": {},
+        "valid_utc": "2026-12-01T12:00:00+00:00",
+        "risk_source": "ifs",
+        "weight_method": "Inverse MAE pression France, 3 derniers mois complets ; poids indicatifs"
+      },
       "t850_shading": {
         "enabled": true,
         "level_hpa": 850,
@@ -856,6 +966,25 @@
           "kind": "gel"
         }
       ],
+      "synoptic_consensus": {
+        "method": "weighted_representative",
+        "models": [
+          "ifs",
+          "aifs-single",
+          "gfs"
+        ],
+        "weights": {
+          "ifs": 0.3966,
+          "aifs-single": 0.2199,
+          "gfs": 0.3835
+        },
+        "representative": "ifs",
+        "normalized_spread": 0.983,
+        "excluded": {},
+        "valid_utc": "2026-12-04T12:00:00+00:00",
+        "risk_source": "ifs",
+        "weight_method": "Inverse MAE pression France, 3 derniers mois complets ; poids indicatifs"
+      },
       "t850_shading": {
         "enabled": true,
         "level_hpa": 850,
@@ -990,6 +1119,25 @@
           "kind": "gel"
         }
       ],
+      "synoptic_consensus": {
+        "method": "weighted_representative",
+        "models": [
+          "ifs",
+          "aifs-single",
+          "gfs"
+        ],
+        "weights": {
+          "ifs": 0.2547,
+          "aifs-single": 0.324,
+          "gfs": 0.4213
+        },
+        "representative": "gfs",
+        "normalized_spread": 1.279,
+        "excluded": {},
+        "valid_utc": "2026-12-09T12:00:00+00:00",
+        "risk_source": "ifs",
+        "weight_method": "Inverse MAE pression France, 3 derniers mois complets ; poids indicatifs"
+      },
       "t850_shading": {
         "enabled": true,
         "level_hpa": 850,

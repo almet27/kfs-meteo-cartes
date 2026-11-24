@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "status": "illustrative_model_maps",
-  "generated_utc": "2026-11-24T22:07:02.168380+00:00",
-  "source_generated_utc": "2026-11-24T22:04:53.482394+00:00",
+  "generated_utc": "2026-11-24T22:10:47.511524+00:00",
+  "source_generated_utc": "2026-11-24T22:08:23.240505+00:00",
   "charts_generated_utc": "2026-11-24T19:38:19.485617+00:00",
   "source": "ECMWF Open Data (CC BY 4.0), NOAA GFS si disponible",
   "not_weekly_anomalies": true,
@@ -12,7 +12,7 @@
       "step_h": 72,
       "path": "forecast-maps/tendance/tendance-carte-j3.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j3.png",
-      "size_bytes": 606365,
+      "size_bytes": 568502,
       "run_utc": {
         "ifs": "2026-11-24T12:00Z",
         "aifs": "2026-11-24T12:00Z",
@@ -145,7 +145,7 @@
         "palette": "kfs-spectrum-v1",
         "description": "Température à 850 hPa modélisée, pas température au sol"
       },
-      "style": "kfs-editorial-lambert-consensus-v12",
+      "style": "kfs-editorial-lambert-consensus-v13",
       "summary": "IFS / AIFS : accord relatif. T850 France +1.9 °C, pression 1020 hPa (moyennes régionales pondérées). Écart T850 0.6 °C. Flux de nord-ouest sur la France, avec air plus frais en altitude. Signaux sur France et abords : rafales jusqu’à 76 km/h, gel jusqu’à -19 °C. Confiance modérée.",
       "analysis": {
         "summary": "IFS / AIFS : accord relatif. T850 France +1.9 °C, pression 1020 hPa (moyennes régionales pondérées). Écart T850 0.6 °C.",
@@ -194,14 +194,31 @@
         "agreement": "accord relatif",
         "note": "Consensus régional indicatif ; fond et risques IFS, sans moyenne de grilles ni probabilité calibrée."
       },
-      "note": "Carte géoréférencée bord à bord 1600x700, bandeau neutre et synthèse issue des champs IFS ; ! rouge = seuil KFS non officiel."
+      "synoptic_consensus": {
+        "method": "weighted_blend",
+        "models": [
+          "ifs",
+          "aifs-single"
+        ],
+        "weights": {
+          "ifs": 0.5067,
+          "aifs-single": 0.4933
+        },
+        "representative": null,
+        "normalized_spread": 0.15,
+        "excluded": {},
+        "valid_utc": "2026-11-27T12:00:00+00:00",
+        "risk_source": "ifs",
+        "weight_method": "Inverse MAE pression France, 3 derniers mois complets ; poids indicatifs"
+      },
+      "note": "Projection Lambert ; champs synoptiques KFS selon grilles disponibles à validité identique. Risques et pictogrammes IFS ; ! rouge = seuil KFS non officiel."
     },
     {
       "id": "j7",
       "step_h": 168,
       "path": "forecast-maps/tendance/tendance-carte-j7.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j7.png",
-      "size_bytes": 625088,
+      "size_bytes": 626305,
       "run_utc": {
         "ifs": "2026-11-24T12:00Z",
         "aifs": "2026-11-24T12:00Z",
@@ -334,7 +351,7 @@
         "palette": "kfs-spectrum-v1",
         "description": "Température à 850 hPa modélisée, pas température au sol"
       },
-      "style": "kfs-editorial-lambert-consensus-v12",
+      "style": "kfs-editorial-lambert-consensus-v13",
       "summary": "IFS / AIFS / GFS : forte divergence. T850 France +4.4 °C, pression 1026 hPa (moyennes régionales pondérées). Écart T850 5.3 °C. Flux de sud-ouest sur la France, avec air relativement doux. Signaux sur France et abords : pluie jusqu’à 18 mm/6 h, rafales jusqu’à 86 km/h, gel jusqu’à -17 °C. Confiance limitée.",
       "analysis": {
         "summary": "IFS / AIFS / GFS : forte divergence. T850 France +4.4 °C, pression 1026 hPa (moyennes régionales pondérées). Écart T850 5.3 °C.",
@@ -400,14 +417,33 @@
         "agreement": "forte divergence",
         "note": "Consensus régional indicatif ; fond et risques IFS, sans moyenne de grilles ni probabilité calibrée."
       },
-      "note": "Carte géoréférencée bord à bord 1600x700, bandeau neutre et synthèse issue des champs IFS ; ! rouge = seuil KFS non officiel."
+      "synoptic_consensus": {
+        "method": "weighted_representative",
+        "models": [
+          "ifs",
+          "aifs-single",
+          "gfs"
+        ],
+        "weights": {
+          "ifs": 0.3917391739173917,
+          "aifs-single": 0.27122712271227123,
+          "gfs": 0.33703370337033706
+        },
+        "representative": "ifs",
+        "normalized_spread": 0.666,
+        "excluded": {},
+        "valid_utc": "2026-12-01T12:00:00+00:00",
+        "risk_source": "ifs",
+        "weight_method": "Inverse MAE pression France, 3 derniers mois complets ; poids indicatifs"
+      },
+      "note": "Projection Lambert ; champs synoptiques KFS selon grilles disponibles à validité identique. Risques et pictogrammes IFS ; ! rouge = seuil KFS non officiel."
     },
     {
       "id": "j10",
       "step_h": 240,
       "path": "forecast-maps/tendance/tendance-carte-j10.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j10.png",
-      "size_bytes": 609658,
+      "size_bytes": 611238,
       "run_utc": {
         "ifs": "2026-11-24T12:00Z",
         "aifs": "2026-11-24T12:00Z",
@@ -540,7 +576,7 @@
         "palette": "kfs-spectrum-v1",
         "description": "Température à 850 hPa modélisée, pas température au sol"
       },
-      "style": "kfs-editorial-lambert-consensus-v12",
+      "style": "kfs-editorial-lambert-consensus-v13",
       "summary": "IFS / AIFS / GFS : forte divergence. T850 France +3.6 °C, pression 1027 hPa (moyennes régionales pondérées). Écart T850 2.2 °C. Flux de nord-nord-est sur la France, avec air plus frais en altitude. Signaux sur France et abords : rafales jusqu’à 58 km/h, gel jusqu’à -16 °C. Confiance faible.",
       "analysis": {
         "summary": "IFS / AIFS / GFS : forte divergence. T850 France +3.6 °C, pression 1027 hPa (moyennes régionales pondérées). Écart T850 2.2 °C.",
@@ -606,14 +642,33 @@
         "agreement": "forte divergence",
         "note": "Consensus régional indicatif ; fond et risques IFS, sans moyenne de grilles ni probabilité calibrée."
       },
-      "note": "Carte géoréférencée bord à bord 1600x700, bandeau neutre et synthèse issue des champs IFS ; ! rouge = seuil KFS non officiel."
+      "synoptic_consensus": {
+        "method": "weighted_representative",
+        "models": [
+          "ifs",
+          "aifs-single",
+          "gfs"
+        ],
+        "weights": {
+          "ifs": 0.3966,
+          "aifs-single": 0.2199,
+          "gfs": 0.3835
+        },
+        "representative": "ifs",
+        "normalized_spread": 0.983,
+        "excluded": {},
+        "valid_utc": "2026-12-04T12:00:00+00:00",
+        "risk_source": "ifs",
+        "weight_method": "Inverse MAE pression France, 3 derniers mois complets ; poids indicatifs"
+      },
+      "note": "Projection Lambert ; champs synoptiques KFS selon grilles disponibles à validité identique. Risques et pictogrammes IFS ; ! rouge = seuil KFS non officiel."
     },
     {
       "id": "j15",
       "step_h": 360,
       "path": "forecast-maps/tendance/tendance-carte-j15.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j15.png",
-      "size_bytes": 594441,
+      "size_bytes": 637019,
       "run_utc": {
         "ifs": "2026-11-24T12:00Z",
         "aifs": "2026-11-24T12:00Z",
@@ -746,7 +801,7 @@
         "palette": "kfs-spectrum-v1",
         "description": "Température à 850 hPa modélisée, pas température au sol"
       },
-      "style": "kfs-editorial-lambert-consensus-v12",
+      "style": "kfs-editorial-lambert-consensus-v13",
       "summary": "IFS / AIFS / GFS : forte divergence. T850 France +0.2 °C, pression 1025 hPa (moyennes régionales pondérées). Écart T850 10.1 °C. Flux d’ouest-nord-ouest sur la France, avec air plus frais en altitude. Signaux sur France et abords : rafales jusqu’à 71 km/h, gel jusqu’à -18 °C. Confiance très limitée.",
       "analysis": {
         "summary": "IFS / AIFS / GFS : forte divergence. T850 France +0.2 °C, pression 1025 hPa (moyennes régionales pondérées). Écart T850 10.1 °C.",
@@ -812,7 +867,26 @@
         "agreement": "forte divergence",
         "note": "Consensus régional indicatif ; fond et risques IFS, sans moyenne de grilles ni probabilité calibrée."
       },
-      "note": "Carte géoréférencée bord à bord 1600x700, bandeau neutre et synthèse issue des champs IFS ; ! rouge = seuil KFS non officiel."
+      "synoptic_consensus": {
+        "method": "weighted_representative",
+        "models": [
+          "ifs",
+          "aifs-single",
+          "gfs"
+        ],
+        "weights": {
+          "ifs": 0.2547,
+          "aifs-single": 0.324,
+          "gfs": 0.4213
+        },
+        "representative": "gfs",
+        "normalized_spread": 1.279,
+        "excluded": {},
+        "valid_utc": "2026-12-09T12:00:00+00:00",
+        "risk_source": "ifs",
+        "weight_method": "Inverse MAE pression France, 3 derniers mois complets ; poids indicatifs"
+      },
+      "note": "Projection Lambert ; champs synoptiques KFS selon grilles disponibles à validité identique. Risques et pictogrammes IFS ; ! rouge = seuil KFS non officiel."
     }
   ],
   "france_maps": [
@@ -821,7 +895,7 @@
       "step_h": 72,
       "path": "forecast-maps/tendance/tendance-carte-france-j3.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-france-j3.png",
-      "size_bytes": 459043,
+      "size_bytes": 427129,
       "run_utc": {
         "ifs": "2026-11-24T12:00Z",
         "aifs": "2026-11-24T12:00Z",
@@ -954,7 +1028,7 @@
         "palette": "kfs-spectrum-v1",
         "description": "Température à 850 hPa modélisée, pas température au sol"
       },
-      "style": "kfs-editorial-lambert-consensus-v12",
+      "style": "kfs-editorial-lambert-consensus-v13",
       "summary": "IFS / AIFS : accord relatif. T850 France +1.9 °C, pression 1020 hPa (moyennes régionales pondérées). Écart T850 0.6 °C. Flux de nord-ouest sur la France, avec air plus frais en altitude. Signaux en France : rafales jusqu’à 65 km/h, gel jusqu’à -15 °C. Confiance modérée.",
       "analysis": {
         "summary": "IFS / AIFS : accord relatif. T850 France +1.9 °C, pression 1020 hPa (moyennes régionales pondérées). Écart T850 0.6 °C.",
@@ -1003,14 +1077,31 @@
         "agreement": "accord relatif",
         "note": "Consensus régional indicatif ; fond et risques IFS, sans moyenne de grilles ni probabilité calibrée."
       },
-      "note": "Carte géoréférencée bord à bord 1600x700, bandeau neutre et synthèse issue des champs IFS ; ! rouge = seuil KFS non officiel."
+      "synoptic_consensus": {
+        "method": "weighted_blend",
+        "models": [
+          "ifs",
+          "aifs-single"
+        ],
+        "weights": {
+          "ifs": 0.5067,
+          "aifs-single": 0.4933
+        },
+        "representative": null,
+        "normalized_spread": 0.15,
+        "excluded": {},
+        "valid_utc": "2026-11-27T12:00:00+00:00",
+        "risk_source": "ifs",
+        "weight_method": "Inverse MAE pression France, 3 derniers mois complets ; poids indicatifs"
+      },
+      "note": "Projection Lambert ; champs synoptiques KFS selon grilles disponibles à validité identique. Risques et pictogrammes IFS ; ! rouge = seuil KFS non officiel."
     },
     {
       "id": "j7",
       "step_h": 168,
       "path": "forecast-maps/tendance/tendance-carte-france-j7.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-france-j7.png",
-      "size_bytes": 436893,
+      "size_bytes": 438503,
       "run_utc": {
         "ifs": "2026-11-24T12:00Z",
         "aifs": "2026-11-24T12:00Z",
@@ -1131,7 +1222,7 @@
         "palette": "kfs-spectrum-v1",
         "description": "Température à 850 hPa modélisée, pas température au sol"
       },
-      "style": "kfs-editorial-lambert-consensus-v12",
+      "style": "kfs-editorial-lambert-consensus-v13",
       "summary": "IFS / AIFS / GFS : forte divergence. T850 France +4.4 °C, pression 1026 hPa (moyennes régionales pondérées). Écart T850 5.3 °C. Flux de sud-ouest sur la France, avec air relativement doux. Signaux en France : gel jusqu’à -11 °C. Confiance limitée.",
       "analysis": {
         "summary": "IFS / AIFS / GFS : forte divergence. T850 France +4.4 °C, pression 1026 hPa (moyennes régionales pondérées). Écart T850 5.3 °C.",
@@ -1197,14 +1288,33 @@
         "agreement": "forte divergence",
         "note": "Consensus régional indicatif ; fond et risques IFS, sans moyenne de grilles ni probabilité calibrée."
       },
-      "note": "Carte géoréférencée bord à bord 1600x700, bandeau neutre et synthèse issue des champs IFS ; ! rouge = seuil KFS non officiel."
+      "synoptic_consensus": {
+        "method": "weighted_representative",
+        "models": [
+          "ifs",
+          "aifs-single",
+          "gfs"
+        ],
+        "weights": {
+          "ifs": 0.3917391739173917,
+          "aifs-single": 0.27122712271227123,
+          "gfs": 0.33703370337033706
+        },
+        "representative": "ifs",
+        "normalized_spread": 0.666,
+        "excluded": {},
+        "valid_utc": "2026-12-01T12:00:00+00:00",
+        "risk_source": "ifs",
+        "weight_method": "Inverse MAE pression France, 3 derniers mois complets ; poids indicatifs"
+      },
+      "note": "Projection Lambert ; champs synoptiques KFS selon grilles disponibles à validité identique. Risques et pictogrammes IFS ; ! rouge = seuil KFS non officiel."
     },
     {
       "id": "j10",
       "step_h": 240,
       "path": "forecast-maps/tendance/tendance-carte-france-j10.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-france-j10.png",
-      "size_bytes": 425279,
+      "size_bytes": 427004,
       "run_utc": {
         "ifs": "2026-11-24T12:00Z",
         "aifs": "2026-11-24T12:00Z",
@@ -1319,7 +1429,7 @@
         "palette": "kfs-spectrum-v1",
         "description": "Température à 850 hPa modélisée, pas température au sol"
       },
-      "style": "kfs-editorial-lambert-consensus-v12",
+      "style": "kfs-editorial-lambert-consensus-v13",
       "summary": "IFS / AIFS / GFS : forte divergence. T850 France +3.6 °C, pression 1027 hPa (moyennes régionales pondérées). Écart T850 2.2 °C. Flux de nord-nord-est sur la France, avec air plus frais en altitude. Signaux en France : rafales jusqu’à 56 km/h, gel jusqu’à -12 °C. Confiance faible.",
       "analysis": {
         "summary": "IFS / AIFS / GFS : forte divergence. T850 France +3.6 °C, pression 1027 hPa (moyennes régionales pondérées). Écart T850 2.2 °C.",
@@ -1385,14 +1495,33 @@
         "agreement": "forte divergence",
         "note": "Consensus régional indicatif ; fond et risques IFS, sans moyenne de grilles ni probabilité calibrée."
       },
-      "note": "Carte géoréférencée bord à bord 1600x700, bandeau neutre et synthèse issue des champs IFS ; ! rouge = seuil KFS non officiel."
+      "synoptic_consensus": {
+        "method": "weighted_representative",
+        "models": [
+          "ifs",
+          "aifs-single",
+          "gfs"
+        ],
+        "weights": {
+          "ifs": 0.3966,
+          "aifs-single": 0.2199,
+          "gfs": 0.3835
+        },
+        "representative": "ifs",
+        "normalized_spread": 0.983,
+        "excluded": {},
+        "valid_utc": "2026-12-04T12:00:00+00:00",
+        "risk_source": "ifs",
+        "weight_method": "Inverse MAE pression France, 3 derniers mois complets ; poids indicatifs"
+      },
+      "note": "Projection Lambert ; champs synoptiques KFS selon grilles disponibles à validité identique. Risques et pictogrammes IFS ; ! rouge = seuil KFS non officiel."
     },
     {
       "id": "j15",
       "step_h": 360,
       "path": "forecast-maps/tendance/tendance-carte-france-j15.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-france-j15.png",
-      "size_bytes": 421694,
+      "size_bytes": 452092,
       "run_utc": {
         "ifs": "2026-11-24T12:00Z",
         "aifs": "2026-11-24T12:00Z",
@@ -1531,7 +1660,7 @@
         "palette": "kfs-spectrum-v1",
         "description": "Température à 850 hPa modélisée, pas température au sol"
       },
-      "style": "kfs-editorial-lambert-consensus-v12",
+      "style": "kfs-editorial-lambert-consensus-v13",
       "summary": "IFS / AIFS / GFS : forte divergence. T850 France +0.2 °C, pression 1025 hPa (moyennes régionales pondérées). Écart T850 10.1 °C. Flux d’ouest-nord-ouest sur la France, avec air plus frais en altitude. Signaux en France : rafales jusqu’à 62 km/h, gel jusqu’à -12 °C. Confiance très limitée.",
       "analysis": {
         "summary": "IFS / AIFS / GFS : forte divergence. T850 France +0.2 °C, pression 1025 hPa (moyennes régionales pondérées). Écart T850 10.1 °C.",
@@ -1597,11 +1726,30 @@
         "agreement": "forte divergence",
         "note": "Consensus régional indicatif ; fond et risques IFS, sans moyenne de grilles ni probabilité calibrée."
       },
-      "note": "Carte géoréférencée bord à bord 1600x700, bandeau neutre et synthèse issue des champs IFS ; ! rouge = seuil KFS non officiel."
+      "synoptic_consensus": {
+        "method": "weighted_representative",
+        "models": [
+          "ifs",
+          "aifs-single",
+          "gfs"
+        ],
+        "weights": {
+          "ifs": 0.2547,
+          "aifs-single": 0.324,
+          "gfs": 0.4213
+        },
+        "representative": "gfs",
+        "normalized_spread": 1.279,
+        "excluded": {},
+        "valid_utc": "2026-12-09T12:00:00+00:00",
+        "risk_source": "ifs",
+        "weight_method": "Inverse MAE pression France, 3 derniers mois complets ; poids indicatifs"
+      },
+      "note": "Projection Lambert ; champs synoptiques KFS selon grilles disponibles à validité identique. Risques et pictogrammes IFS ; ! rouge = seuil KFS non officiel."
     }
   ],
   "public": true,
-  "graphic_style": "KFS PREMIUM Lambert — consensus régional pondéré, fond IFS",
+  "graphic_style": "KFS PREMIUM Lambert — consensus synoptique selon grilles disponibles ; risques IFS",
   "analysis_summary": "J3 : IFS / AIFS : accord relatif. T850 France +1.9 °C, pression 1020 hPa (moyennes régionales pondérées). Écart T850 0.6 °C. J7 : IFS / AIFS / GFS : forte divergence. T850 France +4.4 °C, pression 1026 hPa (moyennes régionales pondérées). Écart T850 5.3 °C. J10 : IFS / AIFS / GFS : forte divergence. T850 France +3.6 °C, pression 1027 hPa (moyennes régionales pondérées). Écart T850 2.2 °C. J15 : IFS / AIFS / GFS : forte divergence. T850 France +0.2 °C, pression 1025 hPa (moyennes régionales pondérées). Écart T850 10.1 °C.",
-  "note": "Cartes ECMWF IFS/AIFS et comparaison GFS si run NOAA vérifié ; ! rouge = signal modélisé marqué, pas de vigilance officielle. Aucun front inventé ni extrapolation à 4 semaines."
+  "note": "Synthèse synoptique pondérée si grilles alignées disponibles ; scénario représentatif si divergence marquée, sinon repli IFS explicite. Risques IFS. Aucune probabilité calibrée."
 }
