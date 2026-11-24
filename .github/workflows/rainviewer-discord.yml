@@ -62,7 +62,7 @@ jobs:
                       str(int(dt.datetime.now(dt.timezone.utc).timestamp())))
                   pub_stamp = dt.datetime.fromisoformat(
                       published["derniere_observation_utc"]).timestamp()
-                  build = latest_stamp > pub_stamp
+                  build = latest_stamp > pub_stamp or published.get("web_projection") != "KFS-stations-730x735-v2"
                   print("Dernier radar RainViewer :", latest_stamp)
                   print("Dernier radar déjà publié :", pub_stamp)
               except Exception as exc:
@@ -91,6 +91,11 @@ jobs:
           from PIL import Image
           root=Path('radar-public/rainviewer')
           m=json.loads((root/'radar-rainviewer.json').read_text())
+          assert m['web_projection'] == 'KFS-stations-730x735-v2'
+          assert len(m['web_frames']) == m['nombre_images']
+          for frame in m['web_frames']:
+              with Image.open(root/frame['file']) as layer:
+                  assert layer.size == (730,735) and layer.mode == 'RGBA'
           with Image.open(root/'radar-rainviewer.gif') as gif:
               assert gif.n_frames >= 2, 'Animation avec moins de 2 images'
               assert gif.size == (1536,1536), 'Emprise radar invalide'
@@ -119,14 +124,16 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           path: radar-public
+          name: github-pages-${{ github.run_id }}-${{ github.run_attempt }}
       # The artifact can be finalized in blob storage before Pages sees it through the API.
       - name: Attendre la disponibilité de l'artefact Pages
         if: steps.nouveaute.outputs.build == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
+          PAGES_ARTIFACT: github-pages-${{ github.run_id }}-${{ github.run_attempt }}
         run: |
           for attempt in $(seq 1 12); do
-            if gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/artifacts" --jq '.artifacts[] | select(.name == "github-pages" and .expired == false) | .id' | grep -q '[0-9]'; then
+            if gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/artifacts" --jq ".artifacts[] | select(.name == \"${PAGES_ARTIFACT}\" and .expired == false) | .id" | grep -q '[0-9]'; then
               sleep 5
               exit 0
             fi
@@ -138,6 +145,8 @@ jobs:
         if: steps.nouveaute.outputs.build == 'true'
         id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          artifact_name: github-pages-${{ github.run_id }}-${{ github.run_attempt }}
       - name: Resume
         if: steps.nouveaute.outputs.build == 'true'
         run: |
