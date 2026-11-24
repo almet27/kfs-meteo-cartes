@@ -50,7 +50,7 @@ GUST_COLORS=("#d9effb","#a4d6f3","#69bce3","#4c9ac9","#4eaf9e",
 def iso(dt):
     return dt.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
-def render_daily(lon,lat,values,metric,model,run,day,folder,note,peaks=None,weather=None):
+def render_daily(lon,lat,values,metric,model,run,day,folder,note,peaks=None,weather=None,detail=None):
     if metric in ("tmin","tmax"):
         levels=np.linspace(TEMP_MIN,TEMP_MAX,113); cmap=TEMP_CMAP; norm=None
     elif metric=="gust":
@@ -118,6 +118,9 @@ def render_daily(lon,lat,values,metric,model,run,day,folder,note,peaks=None,weat
              " · cycle à "+run.astimezone(PARIS).strftime("%Hh%M")+" en France · "+
              note,fontsize=7.1,color="white",wrap=True)
     path=Path(folder)/f"daily-{metric}-d{(day-run.astimezone(PARIS).date()).days}.png"
+    if detail is not None:
+        from kfs_zoom_detail import geometry
+        detail['geometry']=geometry(ax)
     fig.savefig(path,dpi=115,facecolor=fig.get_facecolor())
     plt.close(fig)
     return str(path)
