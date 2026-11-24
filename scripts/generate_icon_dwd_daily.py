@@ -12,6 +12,7 @@ import matplotlib
 matplotlib.use("Agg")
 from eccodes import codes_grib_new_from_file, codes_get, codes_get_array, codes_release
 from france_daily import render_daily, PARIS, iso
+from kfs_zoom_detail import native as zoom_native
 from probe_dwd_icon_eu import BASE
 OUT=Path("forecast-maps/france/shortterm-daily")
 FIELDS={"t_2m":"instant","vmax_10m":"max","tot_prec":"accum"}
@@ -111,7 +112,7 @@ def main():
     doc=json.loads(cat.read_text()) if cat.exists() else {"schema":1,"models":{}}
     run=cycle()
     old=doc.get("models",{}).get("icon_eu",{})
-    if old.get("source")=="DWD Open Data" and old.get("run_utc")==run.isoformat() and os.getenv("KFS_FORCE")!="1":
+    if old.get("source")=="DWD Open Data" and old.get("run_utc")==run.isoformat() and os.getenv("KFS_FORCE")!="1" and all(v.get("maps",{}).get("tmin",{}).get("detail") for v in old.get("days",{}).values()):
         print("KFS_DWD_DAILY_NO_NEW_RUN",run.isoformat());return
     jobs=[(f,h) for f in FIELDS for h in range(0 if f=="t_2m" else 1,HORIZON+1)]
     with ThreadPoolExecutor(max_workers=4) as pool:
@@ -159,13 +160,15 @@ def main():
                 if metric in ("tmin","tmax"):note+=" · extrema des températures horaires"
                 if metric in ("tmin","tmax"):
                     note+=" · pictos WW DWD (heures disponibles)" if wx is not None else " · temps sensible indisponible"
-                p=Path(render_daily(lon,lat,v,metric,"ICON-EU",run,day,tmp,note,weather=wx))
+                detail=zoom_native(lon,lat,v) if metric in ("tmin","tmax") else None
+                p=Path(render_daily(lon,lat,v,metric,"ICON-EU",run,day,tmp,note,weather=wx,detail=detail))
                 name=f"daily-icon_eu-{metric}-d{d}.png"
                 dest=Path(tmp)/name;p.rename(dest)
                 if dest.stat().st_size<12000:raise ValueError("Invalid render")
                 staged.append(dest)
                 maps[metric]={"filename":name,"size_bytes":dest.stat().st_size,"date":day.isoformat(),
                     "coverage":coverage,"weather_codes_available":bool(wx is not None) if metric in ("tmin","tmax") else False,"url":"https://almet27.github.io/kfs-meteo-cartes/forecast-maps/france/shortterm-daily/"+name}
+                if detail is not None:maps[metric]["detail"]=detail
             days[str(d)]={"date":day.isoformat(),"coverage":coverage,"start_utc":iso(begin),"end_utc":iso(finish),"hours":hours,"maps":maps}
         if not days:raise RuntimeError("No valid calendar days")
         for p in staged:shutil.copy2(p,OUT/p.name)
