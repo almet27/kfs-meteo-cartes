@@ -8,7 +8,7 @@ on:
       - scripts/kfs_weather_symbols.py
       - .github/workflows/france-j5.yml
   schedule:
-    - cron: '42 7,19 * * *'
+    - cron: '42 5,11,17,23 * * *'
     - cron: '14 * * * *'
 permissions:
   contents: write
