@@ -181,6 +181,39 @@ def hourly_gust(props):
     return None, None
 
 
+def station_names():
+    """Référentiel public officiel des stations, jointure sur identifiant à 8 chiffres."""
+    import csv
+    import io
+    import unicodedata
+    try:
+        catalog = http_json("https://www.data.gouv.fr/api/1/datasets/informations-sur-les-stations-metadonnees/", retries=1)
+        resource = next(r for r in catalog["resources"]
+                        if "liste_stations_obs" in (r.get("title") or "").lower()
+                        and (r.get("format") or "").lower() == "csv")
+        with urllib.request.urlopen(resource["url"], timeout=30) as response:
+            raw = response.read(8_000_000)
+        try:
+            content = raw.decode("utf-8-sig")
+        except UnicodeDecodeError:
+            content = raw.decode("latin-1")
+        dialect = csv.Sniffer().sniff(content[:4096], delimiters=";,\t")
+        def norm(s):
+            return "".join(c for c in unicodedata.normalize("NFKD", s.lower()) if c.isascii() and c.isalnum())
+        names = {}
+        for row in csv.DictReader(io.StringIO(content), dialect=dialect):
+            fields = {norm(k): (v or "").strip() for k, v in row.items() if k}
+            sid = next((fields[k] for k in ("idstation", "numposte", "id", "geoidinsee") if fields.get(k)), "")
+            name = next((fields[k] for k in ("nomusuel", "nomstation", "nom", "name", "libellestation", "nomcommune") if fields.get(k)), "")
+            if sid.isdigit() and 7 <= len(sid) <= 8 and name:
+                names[sid.zfill(8)] = name[:42]
+        print(f"INFO référentiel noms : {len(names)} stations")
+        return names
+    except Exception as exc:
+        print(f"INFO référentiel stations indisponible : {exc}", file=sys.stderr)
+        return {}
+
+
 def station_id(feature):
     p = feature["properties"]
     coords = feature["geometry"]["coordinates"]
@@ -647,6 +680,7 @@ def main():
     # Mesures publiques pour le rendu web sur le même fond SVG que les METAR.
     # Ne pas modifier les images Discord ni la logique de calcul des cumuls.
     lookup = {(lon, lat): p for lon, lat, p in current.values()}
+    official_names = station_names()
     web_points = {}
     for metric in ("temperature", "vent", "rafales", "pluie"):
         points = []
@@ -656,8 +690,11 @@ def main():
                 continue
             props = lookup.get((lon, lat), {})
             label = next((str(props[k]).strip()[:42] for k in
-                          ("geo_nom", "geo_nom_station", "nom_usuel", "nom_station")
+                          ("geo_nom", "geo_nom_station", "nom_usuel", "nom_station", "nom", "name")
                           if isinstance(props.get(k), str) and props[k].strip()), "")
+            sid = str(props.get("geo_id_insee") or "").strip()
+            if sid.isdigit() and len(sid) in (7, 8):
+                label = official_names.get(sid.zfill(8), label)
             points.append([round(lon, 4), round(lat, 4), round(val, 1),
                            record[3] if len(record) > 3 else None, label])
         web_points[metric] = points
