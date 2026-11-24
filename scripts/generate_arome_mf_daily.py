@@ -13,7 +13,7 @@ import matplotlib
 matplotlib.use("Agg")
 from eccodes import codes_grib_new_from_file, codes_get, codes_get_array, codes_release
 from france_daily import render_daily, PARIS, iso
-from kfs_zoom_detail import native as zoom_native
+from kfs_zoom_detail import native as zoom_native, native_weather
 
 CATALOG="https://www.data.gouv.fr/api/1/datasets/paquets-arome-resolution-0-025deg/"
 OUT=Path("forecast-maps/france/shortterm-daily")
@@ -170,7 +170,7 @@ def main():
     run,files=get_catalog()
     horizon=max(b for a,b in files)
     old=doc.get("models",{}).get("arome",{})
-    if old.get("source")=="Météo-France Open Data" and old.get("run_utc")==run.isoformat() and old.get("horizon_hours",0)>=horizon and os.getenv("KFS_FORCE")!="1" and all(v.get("maps",{}).get("tmin",{}).get("detail") for v in old.get("days",{}).values()):
+    if old.get("source")=="Météo-France Open Data" and old.get("run_utc")==run.isoformat() and old.get("horizon_hours",0)>=horizon and os.getenv("KFS_FORCE")!="1" and all(v.get("maps",{}).get("tmin",{}).get("detail",{}).get("weather_schema")==1 for v in old.get("days",{}).values()):
         print("KFS_AROME_NO_NEW_RUN",run.isoformat());return
     rows={};grid=None
     with TemporaryDirectory() as tmp:
@@ -206,6 +206,7 @@ def main():
                 wx=np.where(cloud<.25,0,np.where(cloud<.75,2,3)).astype(float)
                 wx=np.where(total>=.5,61,wx)
                 wx=np.where((solid>=.2)&(solid>=total*.5),71,wx)
+                wx=np.where((solid>=.2)&(total-solid>=.5)&(solid<total*.5),100,wx)
                 wx=np.where(np.isfinite(cloud)&np.isfinite(total)&np.isfinite(solid),wx,np.nan)
             maps={}
             for metric,v in metrics.items():
@@ -218,6 +219,7 @@ def main():
                 if wx is not None and metric in ("tmin","tmax"):
                     weather=np.full_like(wx,np.nan);weather[::5,::5]=wx[::5,::5]
                 detail=zoom_native(grid.lon,grid.lat,v) if metric in ("tmin","tmax") else None
+                if detail is not None:detail["weather"]=native_weather(grid.lon,grid.lat,wx)
                 p=Path(render_daily(grid.lon,grid.lat,v,metric,"ARÔME 2,5 km",run,day,tmp,note,weather=weather,detail=detail))
                 name=f"daily-arome-{metric}-d{d}.png"
                 dest=Path(tmp)/name;p.rename(dest)
