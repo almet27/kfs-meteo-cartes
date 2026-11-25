@@ -1,0 +1,47 @@
+name: ICON-D2 - Reflectivite simulee
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '45 */3 * * *'
+  push:
+    branches: [main]
+    paths: ['scripts/generate_icon_reflectivity.py', '.github/workflows/icon-reflectivity.yml']
+permissions:
+  contents: write
+concurrency:
+  group: icon-reflectivity
+  cancel-in-progress: false
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install numpy scipy pillow eccodes
+      - run: gh release download icon-reflectivity --pattern manifest.json --output previous-icon-reflectivity.json || true
+      - run: python scripts/generate_icon_reflectivity.py
+      - name: Publish coherent ICON-D2 cycle
+        run: |
+          if [ ! -s icon-reflectivity/manifest.json ]; then exit 0; fi
+          if ! gh release view icon-reflectivity >/dev/null 2>&1; then
+            gh release create icon-reflectivity --title "ICON-D2 - Reflectivite simulee" --notes "Source : DWD Open Data, ICON-D2 DBZ_CMAX. Grille de sortie 0,02 degre; domaine limite." --prerelease
+          fi
+          gh release upload icon-reflectivity icon-reflectivity/*.png --clobber
+          gh release upload icon-reflectivity icon-reflectivity/manifest.json --clobber
+          python - <<'PY'
+          import json, subprocess
+          from pathlib import Path
+          keep={p.name for p in Path("icon-reflectivity").glob("*.png")}
+          prev=Path("previous-icon-reflectivity.json")
+          if prev.exists():keep.update(f["file"] for f in json.loads(prev.read_text()).get("frames",[]))
+          assets=json.loads(subprocess.check_output(["gh","release","view","icon-reflectivity","--json","assets"]))["assets"]
+          for a in assets:
+              name=a["name"]
+              if name.startswith("reflect-") and name not in keep:
+                  subprocess.run(["gh","release","delete-asset","icon-reflectivity",name,"--yes"],check=False)
+          PY
