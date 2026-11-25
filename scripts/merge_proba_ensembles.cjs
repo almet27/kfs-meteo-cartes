@@ -53,12 +53,29 @@ function merge(shards){
  }
  return output;
 }
+function writePublicArchives(data){
+ const directory=path.join(root,'proba/public-ensembles');
+ fs.mkdirSync(directory,{recursive:true});
+ for(const key of Object.keys(Object.values(data.models)[0].periods)){
+  for(const [zone,points] of Object.entries(data.zone_points)){
+   const models=Object.fromEntries(Object.entries(data.models).map(([id,model])=>{
+    const p=model.periods[key];
+    const types=Object.fromEntries(Object.entries(p.zones[zone]).map(([type,thresholds])=>[type,Object.fromEntries(Object.entries(thresholds).map(([threshold,values])=>[threshold,values.map(v=>v?[v.pct,v.amount,v.members,v.wetPct??null,v.stormPct??null]:null)]))]));
+    return [id,{generated_at_utc:model.generated_at_utc,start_day:p.start_day,end_day:p.end_day,types}];
+   }));
+   const file=path.join(directory,key+'-'+zone+'.json');
+   fs.writeFileSync(file+'.tmp',JSON.stringify({schema:1,zone,points,models})+'\n');
+   fs.renameSync(file+'.tmp',file);
+  }
+ }
+}
 if(require.main===module){
  const directory=process.argv[2]||path.join(root,'ensemble-shards');
  const files=fs.readdirSync(directory,{recursive:true}).filter(f=>/^ensemble-shard.*\.json$/.test(path.basename(f)));
  const result=merge(files.map(f=>JSON.parse(fs.readFileSync(path.join(directory,f),'utf8'))));
  const filename=path.join(root,'proba/ensemble-probabilities.json');
  fs.writeFileSync(filename+'.tmp',JSON.stringify(result)+'\n');fs.renameSync(filename+'.tmp',filename);
+ writePublicArchives(result);
  console.log('Published validated ECMWF ENS + GEFS dataset:',fs.statSync(filename).size,'bytes');
 }
 module.exports={merge};
