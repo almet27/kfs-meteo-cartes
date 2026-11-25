@@ -17,6 +17,7 @@ on:
     # Génération principale à 08:45 heure de Paris (été comme hiver).
     # Secours à 09:15 puis 09:30 en cas d'échec ou de carte encore périmée.
     # GitHub cron est en UTC; le filtre ne retient que la saison courante.
+    - cron: '5,35 * * * *' # surveillance des nouveaux cycles, sans recalcul si synchronisé
     - cron: '45 6 * * *' # 08:45 CEST
     - cron: '45 7 * * *' # 08:45 CET
     - cron: '15 7 * * *' # 09:15 CEST
@@ -58,7 +59,7 @@ jobs:
           lancer=false
           if [[ "$KFS_EVENT" != "schedule" ]]; then
             lancer=true
-          elif [[ "$KFS_CRON" == "07 16 * * 0" ]]; then
+          elif [[ "$KFS_CRON" == "5,35 * * * *" || "$KFS_CRON" == "07 16 * * 0" ]]; then
             lancer=true
           else
             offset="$(TZ=Europe/Paris date +%z)"
@@ -75,6 +76,34 @@ jobs:
             if (( 10#$paris_hm >= 800 && 10#$paris_hm < 845 )); then
               lancer=false
               echo "Atlas reçu avant 08:45 : la génération attend le créneau du matin."
+            fi
+          fi
+          # Surveillance indépendante : recalcul seulement si le catalogue ECMWF a un cycle plus récent.
+          if [[ "$lancer" == true && "$KFS_CRON" == "5,35 * * * *" ]]; then
+            paris_hm="$(TZ=Europe/Paris date +%H%M)"
+            if (( 10#$paris_hm >= 800 && 10#$paris_hm < 845 )); then
+              lancer=false
+            fi
+            if [[ "$lancer" == true ]]; then
+              base="https://raw.githubusercontent.com/almet27/kfs-meteo-cartes/main/forecast-maps"
+              if curl -fsSL --max-time 15 "$base/tendance/tendance-cartes.json?check=$(date +%s)" -o /tmp/kfs-watch-trend.json && curl -fsSL --max-time 15 "$base/europe/metadata.json?check=$(date +%s)" -o /tmp/kfs-watch-atlas.json; then
+                if python - <<'PY'
+          import json,sys
+          from datetime import datetime,timezone,timedelta
+          t=json.load(open("/tmp/kfs-watch-trend.json")); a=json.load(open("/tmp/kfs-watch-atlas.json"))
+          dt=lambda s:datetime.fromisoformat(s.replace("Z","+00:00"))
+          try:
+              maps={x["id"]:x for x in t["period_maps"]}
+              same=all(dt(maps[j]["run_utc"][key])==dt(a["runs_utc"][model][h]) for j,h in (("j3","72"),("j7","168"),("j10","240"),("j15","360")) for key,model in (("ifs","ifs"),("aifs","aifs-single")))
+              fresh=datetime.now(timezone.utc)-dt(t["generated_utc"])<timedelta(hours=18)
+              sys.exit(0 if same and fresh else 1)
+          except (KeyError,ValueError,TypeError):
+              sys.exit(1)
+          PY
+                then lancer=false; echo "Surveillance : cycles déjà synchronisés."; fi
+              else
+                lancer=false; echo "Surveillance : catalogue inaccessible, prochain contrôle programmé."
+              fi
             fi
           fi
           # Les secours ne recalculent pas un manifeste synchronisé aux cycles
@@ -110,7 +139,7 @@ jobs:
                   and {x.get("id") for x in data["period_maps"]}=={"j3","j7","j10","j15"}
                   and created.date()==now.date() and created>=gate
                   and data.get("charts_generated_utc")==atlas.get("generated_utc")
-                  and all(data["period_maps"][i]["run_utc"]["ifs"]==atlas["runs_utc"]["ifs"][h]
+                  and all(datetime.fromisoformat(data["period_maps"][i]["run_utc"]["ifs"].replace("Z","+00:00"))==datetime.fromisoformat(atlas["runs_utc"]["ifs"][h].replace("Z","+00:00"))
                       for i,h in enumerate(("72","168","240","360")))):
                   print("Créneau /tendance déjà généré : "+created.isoformat())
                   sys.exit(0)
