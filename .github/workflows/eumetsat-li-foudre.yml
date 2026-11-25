@@ -3,7 +3,7 @@ name: EUMETSAT LI — carte des éclairs optiques KFS
 on:
   schedule:
     # Produits LFL agrégés par cycles d'environ 10 min.
-    - cron: '6,16,26,36,46,56 * * * *'
+    - cron: '1,6,11,16,21,26,31,36,41,46,51,56 * * * *'
   workflow_dispatch:
   push:
     paths:
