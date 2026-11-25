@@ -34,6 +34,7 @@ jobs:
         run: python -m py_compile scripts/generate_arome_mf_daily.py scripts/france_daily.py scripts/kfs_surface_style.py
       - name: Produire les quatre cartes quotidiennes du modèle ARÔME
         env:
+          GH_TOKEN: ${{ github.token }}
           KFS_FORCE: ${{ github.event_name != 'schedule' && '1' || '0' }}
         run: python scripts/generate_arome_mf_daily.py
       - name: Publier uniquement ARÔME et le catalogue préservé
