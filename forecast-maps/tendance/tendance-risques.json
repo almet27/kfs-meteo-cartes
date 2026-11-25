@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "generated_utc": "2026-11-25T16:10:06.103596+00:00",
-  "atlas_generated_utc": "2026-11-25T12:28:43.757016+00:00",
+  "generated_utc": "2026-11-25T18:18:19.899780+00:00",
+  "atlas_generated_utc": "2026-11-25T17:34:19.575847+00:00",
   "reference": "ECMWF Open Data, Copernicus DEM GLO-90 via Open-Meteo — champs géoréférencés",
   "stages": [
     {
@@ -122,25 +122,15 @@
         }
       ],
       "synoptic_consensus": {
-        "method": "weighted_blend",
+        "method": "ifs_reference",
         "models": [
-          "ifs",
-          "aifs-single",
-          "gfs",
-          "aigfs"
+          "ifs"
         ],
         "weights": {
-          "ifs": 0.2982,
-          "aifs-single": 0.2904,
-          "gfs": 0.2281,
-          "aigfs": 0.1833
+          "ifs": 1.0
         },
-        "representative": null,
-        "normalized_spread": 0.263,
         "excluded": {},
-        "valid_utc": "2026-11-28T06:00:00+00:00",
-        "risk_source": "ifs",
-        "weight_method": "Inverse MAE pression France, 3 derniers mois complets ; poids indicatifs"
+        "reason": "Moins de deux grilles complètes à validité identique"
       },
       "t850_shading": {
         "enabled": true,
@@ -709,25 +699,15 @@
         }
       ],
       "synoptic_consensus": {
-        "method": "weighted_blend",
+        "method": "ifs_reference",
         "models": [
-          "ifs",
-          "aifs-single",
-          "gfs",
-          "aigfs"
+          "ifs"
         ],
         "weights": {
-          "ifs": 0.2982,
-          "aifs-single": 0.2904,
-          "gfs": 0.2281,
-          "aigfs": 0.1833
+          "ifs": 1.0
         },
-        "representative": null,
-        "normalized_spread": 0.263,
         "excluded": {},
-        "valid_utc": "2026-11-28T06:00:00+00:00",
-        "risk_source": "ifs",
-        "weight_method": "Inverse MAE pression France, 3 derniers mois complets ; poids indicatifs"
+        "reason": "Moins de deux grilles complètes à validité identique"
       },
       "t850_shading": {
         "enabled": true,
