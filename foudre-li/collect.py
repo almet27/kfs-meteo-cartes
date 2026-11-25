@@ -20,6 +20,7 @@ import time
 import zipfile
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from parallax import Parallax, LUT, METHOD, apply as apply_parallax
 
 COLLECTION = "EO:EUM:DAT:0691"
 SOURCE = "https://api.eumetsat.int/data/browse/collections/EO%3AEUM%3ADAT%3A0691?format=html"
@@ -127,7 +128,7 @@ def combine(previous: dict, decoded: list[dict], names: list[str],
     by_id = {}
     for item in previous.get("flashes", []) + decoded:
         try:
-            lat, lon, ts = float(item["lat"]), float(item["lon"]), int(item["ts"])
+            lat, lon, ts = float(item.get("raw_lat",item["lat"])), float(item.get("raw_lon",item["lon"])), int(item["ts"])
             ident = str(item["id"])
             if (cutoff <= ts <= latest + 20 and inside_france_view(lon, lat)
                     and 0 < len(ident) < 120):
@@ -205,7 +206,14 @@ def run(output: Path, now: datetime | None = None, datastore=None) -> dict:
     if not products:
         raise RuntimeError("Aucun produit LFL renvoyé : ancien relevé conservé")
     newer = select_new(products, previous)
-    if not newer:
+    table = None
+    if LUT.is_file():
+        try:
+            table = Parallax(LUT)
+        except Exception as exc:
+            print("LUT parallaxe non valide : coordonnées brutes conservées", file=sys.stderr)
+    method = METHOD if table else "uncorrected"
+    if not newer and previous.get("parallax", "uncorrected") == method:
         print("Aucun nouveau produit satellitaire ; conserver la publication existante")
         return previous
     incoming = []
@@ -215,7 +223,8 @@ def run(output: Path, now: datetime | None = None, datastore=None) -> dict:
         incoming.extend(decode_product(download_one(product), name))
         names.append(name)
         print("Décodé :", name[:100], flush=True)
-    feed = combine(previous, incoming, names, now)
+    feed = apply_parallax(combine(previous, incoming, names, now), table)
+    print("Parallaxe :", feed["parallax"], flush=True)
     # Atomic write: never replace an existing valid feed with a half-file.
     output.parent.mkdir(parents=True, exist_ok=True)
     temporary = output.with_suffix(".tmp")
