@@ -45,6 +45,11 @@ def val(row, key):
         return v
     except (ValueError,TypeError,AttributeError): return None
 
+def gust_kmh(row):
+    v=val(row,"FXI")
+    if v is None: v=val(row,"FXI3S")
+    return v*3.6 if v is not None and 0<=v<=150 else None
+
 def read_dep(dep, typ, historic, ids):
     month=TODAY.month
     cache=CACHE/f"{dep}-{typ}-{month:02d}-v1.json"
@@ -75,7 +80,7 @@ def read_dep(dep, typ, historic, ids):
                             if tm is None: tm=val(row,"TNTXM")
                             tn=val(row,"TN")
                             tx=val(row,"TX")
-                            vals={"temp":tm,"temp_mid":None if tn is None or tx is None or tx<tn else (tn+tx)/2,"rain":val(row,"RR"),"frost":None if tn is None else int(tn<=0)}
+                            vals={"gust":gust_kmh(row) if not historic else None,"temp":tm,"temp_mid":None if tn is None or tx is None or tx<tn else (tn+tx)/2,"rain":val(row,"RR"),"frost":None if tn is None else int(tn<=0)}
                         else:
                             sun=val(row,"INST"); vals={"sun":None if sun is None else sun/60}
                         rows[sid][day]={k:v for k,v in vals.items() if v is not None}
@@ -97,6 +102,12 @@ def task(dep,catalog):
             entry=out.setdefault(sid,{"hist":{},"obs":{}})
             for name,data in [("hist",hist[sid]),("obs",obs[sid])]:
                 for day,values in data.items():entry[name].setdefault(day,{}).update(values)
+        if typ=="RR-T-Vent":
+            # Gust observations do not require an historical reference series.
+            for sid,days in obs.items():
+                for day,values in days.items():
+                    if "gust" in values:
+                        out.setdefault(sid,{"hist":{},"obs":{}})["obs"].setdefault(day,{})["gust"]=values["gust"]
     return dep,out
 
 def stat(entry,key,n):
@@ -301,6 +312,22 @@ def main():
         method+=" • données StatIC non certifiées" if ic else " • StatIC sans série complète"
         render(pts,boundaries,title,units,cmap,Normalize(vmin=lo,vmax=hi),key,cutoff,filename,source_label=source,method_label=method)
         manifest["maps"].append({"file":filename,"title":title,"end":cutoff.isoformat(),"stations":len(pts),"mf_stations":len(mf),"static_stations":len(ic),"kind":"observed_fusion","source":"Météo-France ; Infoclimat StatIC via chom.engineering (LO 2.0)"})
+    # Absolute maximum gust, never a sum or a monthly mean.
+    for n in range(END.day,0,-1):
+        gusts={}; coverage=set()
+        for dep,entries in results.items():
+            for sid,entry in entries.items():
+                seq=[entry["obs"].get(f"{TODAY.year}{TODAY.month:02d}{d:02d}",{}).get("gust") for d in range(1,n+1)]
+                if seq and all(v is not None for v in seq):
+                    gusts[sid]=(catalog[sid],max(seq));coverage.add(dep)
+        if len(coverage)>=15 and len(gusts)>=30:break
+    else:gusts={}
+    if gusts:
+        cutoff=TODAY.replace(day=n);pts=list(gusts.values());filename="rafales-max.png"
+        hi=max(120,math.ceil(max(v for _,v in pts)/20)*20)
+        title="Rafales maximales observées"
+        render(pts,boundaries,title,"Rafale maximale (km/h)","YlOrRd",Normalize(vmin=0,vmax=hi),"gust",cutoff,filename,method_label="Maximum des rafales quotidiennes FXI / FXI3S • jours complets • zonage IDW indicatif")
+        manifest["maps"].append({"file":filename,"title":title,"end":cutoff.isoformat(),"stations":len(pts),"kind":"gust_observed","source":"Météo-France"})
     for m in manifest["maps"]:m["zones"]=zone_files(OUT,m["file"])
     (OUT/"station-audit.json").write_text(json.dumps(audit,ensure_ascii=False,separators=(",",":")))
     (OUT/"latest.json").write_text(json.dumps(manifest,ensure_ascii=False,indent=2))
