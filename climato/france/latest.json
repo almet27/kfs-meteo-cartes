@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "month": "2026-11",
-  "generated_at": "2026-11-24T22:23:25.394625+01:00",
+  "generated_at": "2026-11-25T01:38:21.387145+01:00",
   "source": "Météo-France, observations quotidiennes",
   "method": "IDW, 150 km max nearest station, 2 stations within 200 km",
   "maps": [
@@ -120,6 +120,23 @@
         "alpes": "gel-observe-alpes.png",
         "pyrenees": "gel-observe-pyrenees.png",
         "massif_central": "gel-observe-massif_central.png"
+      }
+    },
+    {
+      "file": "rafales-max.png",
+      "title": "Rafales maximales observées",
+      "end": "2026-11-22",
+      "stations": 335,
+      "kind": "gust_observed",
+      "source": "Météo-France",
+      "zones": {
+        "nord_ouest": "rafales-max-nord_ouest.png",
+        "nord_est": "rafales-max-nord_est.png",
+        "sud_ouest": "rafales-max-sud_ouest.png",
+        "sud_est": "rafales-max-sud_est.png",
+        "alpes": "rafales-max-alpes.png",
+        "pyrenees": "rafales-max-pyrenees.png",
+        "massif_central": "rafales-max-massif_central.png"
       }
     },
     {
