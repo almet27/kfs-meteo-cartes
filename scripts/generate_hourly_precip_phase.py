@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Native hourly surface precipitation phase maps (mm liquid equivalent).
-AROME SP2 and DWD ICON-D2 regular grid. Publish only complete validated hours."""
+AROME SP2 and DWD ICON-D2 native triangular grid. Publish only complete validated hours."""
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from tempfile import TemporaryFile
 from urllib.request import Request, urlopen
+from urllib.parse import quote
 import bz2, json, re, sys
 import numpy as np
 from PIL import Image
@@ -13,15 +14,17 @@ from scipy.spatial import cKDTree
 from eccodes import codes_grib_new_from_file, codes_get, codes_get_array, codes_set, codes_release
 
 BOUNDS=(-6.,10.,41.,52.)
-LEVELS=[.1,.2,.5,1,2,4,8,15,25]
+LEVELS=[.05,.1,.2,.5,1,2,4,8,15,25]
 COLORS={
  "rain":["#245c88","#277bb5","#30a5d6","#36c4c9","#41c88a","#a4d83b","#f2df32","#ff9c30","#e94542"],
  "snow":["#625ca9","#7971c3","#9d89df","#b19ced","#c4b0fb","#ded1ff","#e9e5ff","#f6f2ff","#ffffff"],
  "graupel":["#83476d","#a94b87","#c54d9c","#df63b2","#ef80c2","#f4a0d4","#f9bce4","#ffd4eb","#ffe8f6"],
  "mixed":["#477c8e","#598eae","#699dc6","#82addc","#a3bce9","#c5c8f1","#e7c5e9","#ffc9df","#ffecf8"]}
-UA={"User-Agent":"KFS-Meteo-Phase/1.0"}
+for phase, first in zip(("rain","snow","graupel","mixed"),("#344a67","#4b4b85","#633956","#415a70")):
+    COLORS[phase].insert(0,first)
+UA={"User-Agent":"KFS-Meteo-Phase/2.0"}
 AROME_BASE="https://meteofrance-pnt.s3.rbx.io.cloud.ovh.net/pnt/"
-DWD_BASE="https://opendata.dwd.de/weather/nwp/icon-d2/grib/"
+DWD_BASE="https://opendata.dwd.de/weather/nwp/v1/m/icon-d2/p/"
 DWD_FIELDS=("RAIN_GSP","RAIN_CON","SNOW_GSP","SNOW_CON","GRAU_GSP")
 AROME_NAMES={"tirf":"rain","tsnowp":"snow","tgrp":"graupel"}
 
@@ -40,7 +43,8 @@ def arome_url(run,h):
     return f"{AROME_BASE}{t}/arome/001/SP2/arome__001__SP2__{h:02d}H__{t}.grib2"
 
 def icon_url(run,h,field):
-    return f"{DWD_BASE}{run:%H}/{field.lower()}/icon-d2_germany_regular-lat-lon_single-level_{run:%Y%m%d%H}_{h:03d}_{field}_2d.grib2.bz2"
+    cycle=quote(run.strftime("%Y-%m-%dT%H:00"),safe="")
+    return f"{DWD_BASE}{field}/r/{cycle}/s/PT{h:03d}H00M.grib2"
 
 def available(url):
     try:
@@ -52,7 +56,34 @@ def payload(url):
     if len(b)>100_000_000:raise ValueError("Oversized GRIB")
     return bz2.decompress(b) if b.startswith(b"BZh") else b
 
-def extract(url,run,h,model,field=None):
+def grid_identity(g):
+    return (key(g,"gridType"),key(g,"numberOfDataPoints"),key(g,"uuidOfHGrid"))
+
+def icon_coordinate(run,field):
+    with TemporaryFile() as f:
+        f.write(payload(icon_url(run,0,field)));f.seek(0)
+        g=codes_grib_new_from_file(f)
+        if g is None:raise ValueError("Missing "+field)
+        try:
+            codes_set(g,"missingValue",1e30)
+            v=np.asarray(codes_get_array(g,"values"))
+            units=str(key(g,"units","")).lower().strip()
+            if units in ("rad","radian","radians"):v=np.degrees(v)
+            elif not (units.startswith("degree") or units=="deg"):raise ValueError("Unexpected coordinate units "+units)
+            if not np.isfinite(v).all() or np.max(np.abs(v))>360:raise ValueError("Invalid coordinate grid")
+            if field=="CLAT" and not (35<np.min(v)<55 and 45<np.max(v)<65):raise ValueError("Unexpected ICON latitude range")
+            return v,grid_identity(g)
+        finally:codes_release(g)
+
+def icon_grid(run):
+    lat,lm=icon_coordinate(run,"CLAT");lon,om=icon_coordinate(run,"CLON")
+    if lm!=om or not lm[2] or len(lat)!=len(lon):raise ValueError("Coordinate grid mismatch")
+    lon=(lon+180)%360-180
+    w,e,s,n=BOUNDS
+    mask=(lon>=w-.08)&(lon<=e+.08)&(lat>=s-.08)&(lat<=n+.08)
+    return lon[mask],lat[mask],mask,lm
+
+def extract(url,run,h,model,field=None,grid=None):
     out={}
     with TemporaryFile() as f:
         f.write(payload(url));f.seek(0)
@@ -65,13 +96,18 @@ def extract(url,run,h,model,field=None):
                 if key(g,"validityDate")!=int(valid.strftime("%Y%m%d")) or key(g,"validityTime")!=valid.hour*100:continue
                 if key(g,"stepType")!="accum" or hours(key(g,"endStep"))!=h:continue
                 if str(key(g,"units","")).replace(" ","") not in ("kgm**-2","kgm-2","kg/m^2","kg/m2","mm"):raise ValueError("Unexpected unit")
-                if key(g,"gridType")!="regular_ll":raise ValueError("Unexpected source grid")
                 codes_set(g,"missingValue",1e30)
-                lat=np.asarray(codes_get_array(g,"latitudes"));lon=(np.asarray(codes_get_array(g,"longitudes"))+180)%360-180
                 v=np.asarray(codes_get_array(g,"values"))
-                w,e,s,n=BOUNDS
-                mask=(lon>=w-.08)&(lon<=e+.08)&(lat>=s-.08)&(lat<=n+.08)
-                lon,lat,v=lon[mask],lat[mask],v[mask]
+                if model=="icon":
+                    lon,lat,mask,meta=grid
+                    if grid_identity(g)!=meta or len(v)!=len(mask):raise ValueError("Native ICON grid mismatch")
+                    v=v[mask]
+                else:
+                    if key(g,"gridType")!="regular_ll":raise ValueError("Unexpected AROME grid")
+                    lat=np.asarray(codes_get_array(g,"latitudes"));lon=(np.asarray(codes_get_array(g,"longitudes"))+180)%360-180
+                    w,e,s,n=BOUNDS
+                    mask=(lon>=w-.08)&(lon<=e+.08)&(lat>=s-.08)&(lat<=n+.08)
+                    lon,lat,v=lon[mask],lat[mask],v[mask]
                 v=np.where(np.isfinite(v)&(v>=-.05)&(v<1e5),np.maximum(v,0),np.nan)
                 if len(v)<10000:raise ValueError("Insufficient coverage")
                 out[name]=(hours(key(g,"startStep")),lon,lat,v.astype(np.float32))
@@ -80,10 +116,11 @@ def extract(url,run,h,model,field=None):
     if set(out)!=expected:raise ValueError("Missing exact accumulation fields: "+str(expected-set(out)))
     return out
 
-def fetch(model,run,h):
+def fetch(model,run,h,grid=None):
     if model=="arome":return extract(arome_url(run,h),run,h,model)
     result={}
-    for field in DWD_FIELDS:result.update(extract(icon_url(run,h,field),run,h,model,field))
+    with ThreadPoolExecutor(max_workers=3) as pool:
+        for row in pool.map(lambda field:extract(icon_url(run,h,field),run,h,model,field,grid),DWD_FIELDS):result.update(row)
     return result
 
 def delta(a,b,h):
@@ -103,7 +140,7 @@ def raster_index(x,y,step):
     d,j=cKDTree(xy(x,y)).query(xy(xx.ravel(),yy.ravel()),workers=2)
     return W,H,j,d<=step*1.15
 
-def render(model,run,h,previous,current,out):
+def render(model,run,h,previous,current,out,mapping):
     step=.01 if model=="arome" else .02
     first=next(iter(current.values()))
     x,y=first[1:3]
@@ -113,7 +150,8 @@ def render(model,run,h,previous,current,out):
         values[k]=delta(previous.get(k),row,h)
     if model=="arome":rain,snow,graupel=(values[k] for k in ("rain","snow","graupel"))
     else:rain=values["RAIN_GSP"]+values["RAIN_CON"];snow=values["SNOW_GSP"]+values["SNOW_CON"];graupel=values["GRAU_GSP"]
-    W,H,j,covered=raster_index(x,y,step)
+    gx,gy,(W,H,j,covered)=mapping
+    if not np.array_equal(x,gx) or not np.array_equal(y,gy):raise ValueError("Source grid changed")
     p=np.stack([rain[j],snow[j],graupel[j]])
     good=covered&np.isfinite(p).all(axis=0)
     if good.sum()<10000:raise ValueError("Insufficient valid phase pixels")
@@ -129,7 +167,7 @@ def render(model,run,h,previous,current,out):
     im=Image.fromarray(idx.reshape(H,W),mode="P")
     palette=[0,0,0]+[int(c[i:i+2],16) for kind in ("rain","snow","graupel","mixed") for c in COLORS[kind] for i in (1,3,5)]+[107,112,120]
     im.putpalette(palette+[0]*(768-len(palette)))
-    name=f"phase-{run:%Y%m%d%H}-h{h:02d}.png"
+    name=f"phase-v2-{run:%Y%m%d%H}-h{h:02d}.png"
     im.save(out/name,transparency=0,optimize=True)
     return {"hour":h,"valid_utc":(run+timedelta(hours=h)).isoformat(),"file":name}
 
@@ -142,19 +180,26 @@ def main(model):
     for run in (anchor-timedelta(hours=3*i) for i in range(1,6)):
         start=max(1,int((base-run).total_seconds()/3600));end=start+24
         if end>48:continue
-        if previous.get("run_utc")==run.isoformat() and previous.get("frames") and max(datetime.fromisoformat(f["valid_utc"]) for f in previous["frames"])>=base+timedelta(hours=24):
+        if previous.get("render_version")==2 and previous.get("run_utc")==run.isoformat() and previous.get("frames") and max(datetime.fromisoformat(f["valid_utc"]) for f in previous["frames"])>=base+timedelta(hours=24):
             print("Already published");return
         if model=="arome":urls=[arome_url(run,h) for h in (start-1,end)]
-        else:urls=[icon_url(run,h,f) for h in (start-1,end) for f in DWD_FIELDS]
-        if all(available(u) for u in urls):break
+        else:urls=[icon_url(run,h,f) for h in (start-1,end) for f in DWD_FIELDS]+[icon_url(run,0,f) for f in ("CLAT","CLON")]
+        if all(available(u) for u in urls):
+            try:
+                grid=icon_grid(run) if model=="icon" else None
+                break
+            except Exception as exc:print("GRID",run,str(exc)[:180],flush=True)
+        else:print("Incomplete",model,run,start,end,flush=True)
     else:raise RuntimeError("No complete recent cycle")
     # One shared predecessor, no duplicate downloads, and bounded memory.
-    prev=fetch(model,run,start-1);frames=[]
+    prev=fetch(model,run,start-1,grid);frames=[]
+    x,y=next(iter(prev.values()))[1:3]
+    mapping=(x,y,raster_index(x,y,.01 if model=="arome" else .02))
     for h in range(start,end+1):
-        curr=fetch(model,run,h)
-        frames.append(render(model,run,h,prev,curr,out));prev=curr
+        curr=fetch(model,run,h,grid)
+        frames.append(render(model,run,h,prev,curr,out,mapping));prev=curr
         print(model,run,h,flush=True)
-    doc={"schema":1,"unit":"mm","interval_hours":1,"model":model,"source":"Météo-France ARÔME HD SP2" if model=="arome" else "DWD ICON-D2",
+    doc={"schema":1,"render_version":2,"unit":"mm","interval_hours":1,"model":model,"source":"Météo-France ARÔME HD SP2" if model=="arome" else "DWD ICON-D2",
          "run_utc":run.isoformat(),"generated_utc":now.isoformat(),"resolution_degrees":.01 if model=="arome" else .02,"bounds":BOUNDS,
          "levels":LEVELS,"colors":COLORS,"frames":frames}
     (out/"manifest.json").write_text(json.dumps(doc,indent=2))
