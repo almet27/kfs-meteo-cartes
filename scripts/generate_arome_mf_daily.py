@@ -172,6 +172,40 @@ def increments(rows,k,horizon):
         output[h]=np.maximum(v,0)
     return output
 
+def publish_hourly_sky(grid,rows,precip,snow,run,horizon):
+    # Reuse the native packet already decoded for daily maps, with no new model download.
+    from shapely import contains_xy
+    from kfs_surface_style import mainland
+    from datetime import timezone
+    ix=np.arange(0,len(grid.lon),8);iy=np.arange(0,len(grid.lat),8)
+    gx,gy=np.meshgrid(grid.lon[ix],grid.lat[iy])
+    mask=contains_xy(mainland(),gx,gy)
+    xx,yy=np.meshgrid(ix,iy)
+    x,y=xx[mask],yy[mask]
+    points=np.column_stack((gx[mask],gy[mask])).round(4).tolist()
+    times=[];data=[]
+    for h in range(1,horizon+1):
+        if ("cloud",h) not in rows:continue
+        t=rows["temp",h][0][y,x];c=rows["cloud",h][0][y,x]
+        p=precip[h][y,x]
+        solid=snow[h][y,x] if snow is not None else np.full_like(p,np.nan)
+        # Cloud cover, not the absence of precipitation, determines the sky.
+        code=np.where(c<.125,0,np.where(c<.375,1,np.where(c<.875,2,3))).astype(float)
+        code=np.where(p>=.2,np.nan,code)
+        if snow is not None:
+            code=np.where((p>=.2)&(solid<.1),61,code)
+            code=np.where((solid>=.1)&(solid>=.8*p),71,code)
+            code=np.where((solid>=.1)&(p-solid>=.1)&(solid<.8*p),100,code)
+        code=np.where(np.isfinite(t)&np.isfinite(c)&np.isfinite(p),code,np.nan)
+        def clean(a,digits):return [round(float(v),digits) if np.isfinite(v) else None for v in a]
+        data.append(list(zip(clean(t,1),clean(p,2),clean(code,0))))
+        times.append(iso(run+timedelta(hours=h)))
+    if len(times)<12 or len(points)<400:raise RuntimeError("Insufficient hourly native sky coverage")
+    doc={"schema":1,"provider":"Météo-France Open Data","model":"arome","run_utc":run.isoformat(),"fetched_utc":datetime.now(timezone.utc).isoformat(),"grid_degrees":.2,"points":points,"times":times,"rows":[list(r) for r in zip(*data)],"fields":["temperature_2m","precipitation","weather_code"]}
+    dest=OUT/"hourly-arome-sky.json"
+    tmp=dest.with_suffix(".tmp");tmp.write_text(json.dumps(doc,separators=(",",":"),allow_nan=False));tmp.replace(dest)
+    print("KFS_AROME_NATIVE_HOURLY_SKY",len(points),len(times),flush=True)
+
 def main():
     OUT.mkdir(parents=True,exist_ok=True)
     catalog=OUT/"latest.json"
@@ -179,7 +213,7 @@ def main():
     run,files=get_catalog()
     horizon=max(b for a,b in files)
     old=doc.get("models",{}).get("arome",{})
-    if old.get("source")=="Météo-France Open Data" and old.get("run_utc")==run.isoformat() and old.get("horizon_hours",0)>=horizon and os.getenv("KFS_FORCE")!="1" and all((v.get("maps",{}).get("tmin",{}).get("detail",{}).get("weather") or {}).get("count",0)>0 for v in old.get("days",{}).values()) and all(v.get("maps",{}).get(k,{}).get("detail",{}).get("count",0)>0 for v in old.get("days",{}).values() for k in ("gust","precip")):
+    if (OUT/"hourly-arome-sky.json").exists() and old.get("source")=="Météo-France Open Data" and old.get("run_utc")==run.isoformat() and old.get("horizon_hours",0)>=horizon and os.getenv("KFS_FORCE")!="1" and all((v.get("maps",{}).get("tmin",{}).get("detail",{}).get("weather") or {}).get("count",0)>0 for v in old.get("days",{}).values()) and all(v.get("maps",{}).get(k,{}).get("detail",{}).get("count",0)>0 for v in old.get("days",{}).values() for k in ("gust","precip")):
         print("KFS_AROME_NO_NEW_RUN",run.isoformat());return
     rows={};grid=None
     with TemporaryDirectory() as tmp:
@@ -194,6 +228,8 @@ def main():
         precip=increments(rows,"precip",horizon)
         try:snow=increments(rows,"snow",horizon)
         except (KeyError,ValueError):snow=None
+        try:publish_hourly_sky(grid,rows,precip,snow,run,horizon)
+        except Exception as exc:print("KFS_AROME_HOURLY_SKY_PENDING",str(exc)[:180],flush=True)
         today=datetime.now(PARIS).date();days={};staged=[]
         for d in range(3):
             day=today+timedelta(days=d);tomorrow=day+timedelta(days=1)
