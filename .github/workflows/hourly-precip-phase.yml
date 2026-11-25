@@ -1,0 +1,54 @@
+name: AROME ICON - Precipitations horaires par phase
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '38 */3 * * *'
+  push:
+    branches: [main]
+    paths: ['scripts/generate_hourly_precip_phase.py', '.github/workflows/hourly-precip-phase.yml']
+permissions:
+  contents: write
+concurrency:
+  group: hourly-precip-phase
+  cancel-in-progress: false
+jobs:
+  generate:
+    strategy:
+      fail-fast: false
+      matrix:
+        model: [arome, icon]
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      GH_TOKEN: ${{ github.token }}
+      MODEL: ${{ matrix.model }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install numpy scipy pillow eccodes
+      - run: gh release download "$MODEL-phase" --pattern manifest.json --output "previous-$MODEL-phase.json" || true
+      - run: python scripts/generate_hourly_precip_phase.py "$MODEL"
+      - name: Publish coherent phase maps
+        run: |
+          if [ ! -s "$MODEL-phase/manifest.json" ]; then exit 0; fi
+          if ! gh release view "$MODEL-phase" >/dev/null 2>&1; then
+            gh release create "$MODEL-phase" --title "$MODEL - Precipitations horaires" --notes "Source : Meteo-France AROME SP2 ou DWD ICON-D2. Phases dominantes, mm equivalent eau." --prerelease
+          fi
+          gh release upload "$MODEL-phase" "$MODEL-phase"/*.png --clobber
+          gh release upload "$MODEL-phase" "$MODEL-phase/manifest.json" --clobber
+          python - <<'PY'
+          import json, os, subprocess
+          from pathlib import Path
+          model=os.environ["MODEL"]
+          tag=model+"-phase"
+          keep={p.name for p in Path(tag).glob("*.png")}
+          prev=Path("previous-"+tag+".json")
+          if prev.exists():keep.update(f["file"] for f in json.loads(prev.read_text()).get("frames",[]))
+          assets=json.loads(subprocess.check_output(["gh","release","view",tag,"--json","assets"]))["assets"]
+          for a in assets:
+              name=a["name"]
+              if name.startswith("phase-") and name not in keep:
+                  subprocess.run(["gh","release","delete-asset",tag,name,"--yes"],check=False)
+          PY
