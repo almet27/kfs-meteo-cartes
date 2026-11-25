@@ -3,7 +3,7 @@
   "month": "2026-04",
   "period": "01/04/2026 – 30/04/2026",
   "start": "2026-04-01",
-  "generated_at": "2026-11-22T14:59:27.950244+01:00",
+  "generated_at": "2026-11-25T01:49:10.822174+01:00",
   "source": "Météo-France, archives quotidiennes",
   "maps": [
     {
@@ -64,6 +64,23 @@
         "alpes": "gel-anomalie-alpes.png",
         "pyrenees": "gel-anomalie-pyrenees.png",
         "massif_central": "gel-anomalie-massif_central.png"
+      }
+    },
+    {
+      "file": "rafales-max.png",
+      "title": "Rafales maximales observées",
+      "end": "2026-04-30",
+      "stations": 333,
+      "kind": "gust_observed",
+      "source": "Météo-France",
+      "zones": {
+        "nord_ouest": "rafales-max-nord_ouest.png",
+        "nord_est": "rafales-max-nord_est.png",
+        "sud_ouest": "rafales-max-sud_ouest.png",
+        "sud_est": "rafales-max-sud_est.png",
+        "alpes": "rafales-max-alpes.png",
+        "pyrenees": "rafales-max-pyrenees.png",
+        "massif_central": "rafales-max-massif_central.png"
       }
     },
     {
