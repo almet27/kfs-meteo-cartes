@@ -108,5 +108,29 @@ class CollectTests(unittest.TestCase):
         self.assertEqual([x["id"] for x in updated["flashes"]], ["same"])
 
 
+class ParallaxTests(unittest.TestCase):
+    def test_no_double_correction_and_new_year(self):
+        import numpy as np
+        from parallax import Parallax, METHOD, apply
+        with tempfile.TemporaryDirectory() as td:
+            p=Path(td)/"synthetic.npz"
+            lat=np.array([40.,53.]); lon=np.array([-8.,11.])
+            # Synthetic shifts ONLY for unit test.
+            dlat=np.zeros((12,2,2)); dlon=np.zeros_like(dlat)
+            dlat[11]=-.12; dlat[0]=-.06
+            np.savez(p,lat=lat,lon=lon,dlat=dlat,dlon=dlon,method=METHOD)
+            table=Parallax(p)
+            ts=int(datetime(2027,1,1,tzinfo=timezone.utc).timestamp())
+            data={"flashes":[{"id":"a","lat":49.2,"lon":.4,"ts":ts}]}
+            apply(data,table)
+            first=data["flashes"][0].copy()
+            self.assertTrue(49.08 < first["lat"] < 49.14)
+            self.assertEqual(first["raw_lat"],49.2)
+            apply(data,table)
+            self.assertEqual(data["flashes"][0],first)
+            apply(data)
+            self.assertEqual(data["flashes"][0]["lat"],49.2)
+            self.assertEqual(data["parallax"],"uncorrected")
+
 if __name__ == "__main__":
     unittest.main()
