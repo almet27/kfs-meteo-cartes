@@ -181,7 +181,7 @@ def hourly_gust(props):
     return None, None
 
 
-def station_names():
+def station_names(elevations=None):
     """Référentiel public officiel des stations, jointure sur identifiant à 8 chiffres."""
     import csv
     import io
@@ -207,6 +207,12 @@ def station_names():
             name = next((fields[k] for k in ("nomusuel", "nomstation", "nom", "name", "libellestation", "nomcommune") if fields.get(k)), "")
             if sid.isdigit() and 7 <= len(sid) <= 8 and name:
                 names[sid.zfill(8)] = name[:42]
+            if elevations is not None and sid.isdigit() and 7 <= len(sid) <= 8:
+                for k in ("altitude", "altitudem", "alt", "alti", "altitudestation"):
+                    v = as_number(fields.get(k, "").replace(",", "."))
+                    if v is not None and -100 <= v <= 5000:
+                        elevations[sid.zfill(8)] = v
+                        break
         print(f"INFO référentiel noms : {len(names)} stations")
         return names
     except Exception as exc:
@@ -626,7 +632,8 @@ def test():
     print("Self-test: mesures + directions vent/rafales + dégradés IDW OK")
 
 
-def daily_records(current, hourly_samples, names, now):
+def daily_records(current, hourly_samples, names, now, elevations=None):
+    elevations = elevations or {}
     from zoneinfo import ZoneInfo
 
     start = now.astimezone(ZoneInfo("Europe/Paris")).replace(
@@ -648,6 +655,15 @@ def daily_records(current, hourly_samples, names, now):
         name = names.get(sid.zfill(8)) or props.get("nom_usuel") or props.get("nom_station") or f"Station {sid}"
         record = {"value": value, "place": name, "time": at.isoformat(),
                   "lon": round(lon, 4), "lat": round(lat, 4), "id": sid}
+        altitude = elevations.get(sid.zfill(8))
+        if altitude is None:
+            for key in ("geo_altitude", "altitude", "alt"):
+                v = as_number(props.get(key))
+                if v is not None and -100 <= v <= 5000:
+                    altitude = v
+                    break
+        if altitude is not None:
+            record["elevation"] = altitude
         points[metric][sid] = record
         old = best.get(metric)
         if not old or (value < old["value"] if metric == "tmin" else value > old["value"]):
@@ -675,6 +691,13 @@ def daily_records(current, hourly_samples, names, now):
     for sid, by_hour in rain.items():
         if hours_due > 0 and len(by_hour) == hours_due:
             consider("rain", sum(by_hour.values()), sid, current.get(sid, (0, 0, {}))[2], last_hour)
+    for metric in ("tmin", "tmax"):
+        for suffix, mountain in (("plain", False), ("mountain", True)):
+            key = f"{metric}_{suffix}"
+            points[key] = {sid: p for sid, p in points[metric].items()
+                           if "elevation" in p and (p["elevation"] >= 500) == mountain}
+            if points[key]:
+                best[key] = (min if metric == "tmin" else max)(points[key].values(), key=lambda p: p["value"])
     return {"day": start.astimezone(ZoneInfo("Europe/Paris")).date().isoformat(), "values": best,
             "points": {k: list(v.values()) for k, v in points.items()}}
 
@@ -797,7 +820,8 @@ def main():
     # Mesures publiques pour le rendu web sur le même fond SVG que les METAR.
     # Ne pas modifier les images Discord ni la logique de calcul des cumuls.
     lookup = {(lon, lat): p for lon, lat, p in current.values()}
-    official_names = station_names()
+    station_elevations = {}
+    official_names = station_names(station_elevations)
     web_points = {}
     for metric in ("temperature", "vent", "rafales", "pluie"):
         points = []
@@ -844,7 +868,7 @@ def main():
             continue
         web_weather.append([round(lon, 5), round(lat, 5), stamp, rain, vis,
                             sun, clouds if cloud_stamp else None, cloud_stamp, sid])
-    records = daily_records(current, hourly_samples, official_names, now)
+    records = daily_records(current, hourly_samples, official_names, now, station_elevations)
     try:
         for metric, points in estimated_snow_records(now).items():
             records["points"][metric] = points
