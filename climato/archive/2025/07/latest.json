@@ -3,7 +3,7 @@
   "month": "2025-07",
   "period": "01/07/2025 – 31/07/2025",
   "start": "2025-07-01",
-  "generated_at": "2026-11-22T15:16:10.699960+01:00",
+  "generated_at": "2026-11-25T02:03:43.031706+01:00",
   "source": "Météo-France, archives quotidiennes",
   "maps": [
     {
@@ -64,6 +64,23 @@
         "alpes": "gel-anomalie-alpes.png",
         "pyrenees": "gel-anomalie-pyrenees.png",
         "massif_central": "gel-anomalie-massif_central.png"
+      }
+    },
+    {
+      "file": "rafales-max.png",
+      "title": "Rafales maximales observées",
+      "end": "2025-07-31",
+      "stations": 338,
+      "kind": "gust_observed",
+      "source": "Météo-France",
+      "zones": {
+        "nord_ouest": "rafales-max-nord_ouest.png",
+        "nord_est": "rafales-max-nord_est.png",
+        "sud_ouest": "rafales-max-sud_ouest.png",
+        "sud_est": "rafales-max-sud_est.png",
+        "alpes": "rafales-max-alpes.png",
+        "pyrenees": "rafales-max-pyrenees.png",
+        "massif_central": "rafales-max-massif_central.png"
       }
     },
     {
