@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
   "status": "illustrative_model_maps",
-  "generated_utc": "2026-11-25T09:45:00.142576+00:00",
-  "source_generated_utc": "2026-11-25T09:42:35.401580+00:00",
-  "charts_generated_utc": "2026-11-25T07:38:44.915918+00:00",
+  "generated_utc": "2026-11-25T16:11:38.277751+00:00",
+  "source_generated_utc": "2026-11-25T16:09:23.220036+00:00",
+  "charts_generated_utc": "2026-11-25T12:28:43.757016+00:00",
   "source": "ECMWF Open Data (CC BY 4.0), NOAA GFS si disponible",
   "not_weekly_anomalies": true,
   "period_maps": [
@@ -12,13 +12,13 @@
       "step_h": 72,
       "path": "forecast-maps/tendance/tendance-carte-j3.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j3.png",
-      "size_bytes": 564175,
+      "size_bytes": 578282,
       "run_utc": {
-        "ifs": "2026-11-25T00:00Z",
-        "aifs": "2026-11-25T00:00Z",
-        "gfs": "2026-11-25T00:00:00+00:00"
+        "ifs": "2026-11-25T06:00Z",
+        "aifs": "2026-11-25T06:00Z",
+        "gfs": "2026-11-25T06:00:00+00:00"
       },
-      "valid_utc": "2026-11-28T00:00:00+00:00",
+      "valid_utc": "2026-11-28T06:00:00+00:00",
       "title": "J+3 — synthèse synoptique IFS / AIFS / GFS",
       "zone": "europe",
       "confidence_label": "Modérée (indicative)",
@@ -33,11 +33,11 @@
           "status": "relief_uniquement",
           "max": 0,
           "unit": "mm équiv. eau/6h",
-          "reason": "Neige hors relief ≤ 500 m, hors vallée de montagne (Copernicus GLO-90) ; relief : 3 zones échantillonnées",
+          "reason": "Neige hors relief ≤ 500 m, hors vallée de montagne (Copernicus GLO-90) ; relief : 7 zones échantillonnées",
           "mountain_signal": true,
-          "mountain_max": 2.1,
+          "mountain_max": 3.7,
           "lowland_sample_count": 0,
-          "highland_sample_count": 3,
+          "highland_sample_count": 7,
           "terrain_source": "Copernicus DEM GLO-90 via Open-Meteo"
         },
         "verglas": {
@@ -50,14 +50,14 @@
         },
         "tempete": {
           "status": "possible",
-          "max": 66.6,
+          "max": 68.9,
           "unit": "km/h (rafales max 10 m/6 h)",
           "reason": "Rafales maximales ECMWF IFS des 6 h précédentes, pas une vigilance officielle"
         },
         "gel": {
           "status": "marque",
           "severity": "severe",
-          "min": -20.82,
+          "min": -24.93,
           "unit": "°C (Tmin 2 m/6 h)",
           "reason": "Minimum sur les 6 h précédentes, points terrestres"
         },
@@ -70,71 +70,71 @@
           "reason": "Crue non déductible d'un seul cumul de pluie de 6 h"
         },
         "pluie_forte": {
-          "status": "absent",
-          "max": 9.3,
+          "status": "possible",
+          "max": 17.6,
           "unit": "mm/6h",
           "reason": "Cumul des 6 heures précédant l'échéance"
         }
       },
       "risk_markers": [
         {
-          "lon": 10.25,
+          "lon": 8.75,
           "lat": 46.75,
-          "value": -20.817419433593727,
+          "value": -24.92803039550779,
           "kind": "gel"
         },
         {
-          "lon": -2.75,
+          "lon": 6.25,
+          "lat": 45.0,
+          "value": -17.67803039550779,
+          "kind": "gel"
+        },
+        {
+          "lon": -3.25,
           "lat": 50.5,
-          "value": 66.6,
+          "value": 68.9,
           "kind": "vent_fort"
-        },
-        {
-          "lon": 0.0,
-          "lat": 42.75,
-          "value": -6.484472656249977,
-          "kind": "gel"
         },
         {
           "lon": 5.0,
           "lat": 42.75,
-          "value": 64.2,
+          "value": 62.8,
           "kind": "vent_fort"
         },
         {
-          "lon": 8.5,
-          "lat": 44.0,
-          "value": 63.5,
-          "kind": "vent_fort"
-        },
-        {
-          "lon": 10.5,
+          "lon": 10.75,
           "lat": 51.75,
-          "value": -6.234472656249977,
+          "value": -6.244543457031227,
           "kind": "gel"
         },
         {
-          "lon": 7.0,
-          "lat": 48.0,
-          "value": -6.234472656249977,
+          "lon": 1.0,
+          "lat": 42.75,
+          "value": -6.244543457031227,
           "kind": "gel"
         },
         {
-          "lon": 1.75,
-          "lat": 53.0,
-          "value": 56.5,
+          "lon": 7.25,
+          "lat": 49.75,
+          "value": -6.178015136718727,
+          "kind": "gel"
+        },
+        {
+          "lon": 2.0,
+          "lat": 52.5,
+          "value": 59.1,
           "kind": "vent_fort"
         },
         {
           "lon": -10.0,
-          "lat": 45.75,
-          "value": 53.8,
+          "lat": 53.0,
+          "value": 58.7,
           "kind": "vent_fort"
         },
         {
-          "lon": 1.25,
-          "lat": 50.75,
-          "value": 51.8,
+          "lon": -10.0,
+          "lat": 50.5,
+          "value": 56.0,
           "kind": "vent_fort"
         }
       ],
@@ -151,23 +151,23 @@
         "description": "Température à 850 hPa modélisée, pas température au sol"
       },
       "style": "kfs-editorial-lambert-consensus-v13",
-      "summary": "IFS / AIFS / GFS / AIGFS : accord relatif. T850 France +2.8 °C, pression 1022 hPa (moyennes régionales pondérées). Écart T850 0.6 °C. Flux de indéterminé sur la France, avec air plus frais en altitude. Signaux sur France et abords : rafales jusqu’à 67 km/h, gel jusqu’à -21 °C. Confiance modérée.",
+      "summary": "IFS / AIFS / GFS / AIGFS : accord relatif. T850 France +3.5 °C, pression 1023 hPa (moyennes régionales pondérées). Écart T850 1.3 °C. Flux de sud sur la France, avec air plus frais en altitude. Signaux sur France et abords : pluie jusqu’à 18 mm/6 h, rafales jusqu’à 69 km/h, gel jusqu’à -25 °C. Confiance modérée.",
       "analysis": {
-        "summary": "IFS / AIFS / GFS / AIGFS : accord relatif. T850 France +2.8 °C, pression 1022 hPa (moyennes régionales pondérées). Écart T850 0.6 °C.",
+        "summary": "IFS / AIFS / GFS / AIGFS : accord relatif. T850 France +3.5 °C, pression 1023 hPa (moyennes régionales pondérées). Écart T850 1.3 °C.",
         "method": "Inverse MAE pression France, 3 derniers mois complets ; poids indicatifs",
         "models": {
           "ifs": {
             "name": "IFS",
-            "run_utc": "2026-11-25T00:00Z",
+            "run_utc": "2026-11-25T06:00Z",
             "lead": 3.0,
-            "t850": 2.7,
-            "msl": 1022.75,
-            "z500": 566.67,
+            "t850": 3.52,
+            "msl": 1023.21,
+            "z500": 567.61,
             "flow": {
-              "u_mean_ms": 0.1,
-              "v_mean_ms": 0.11,
-              "vector_speed_ms": 0.1,
-              "from_deg": null,
+              "u_mean_ms": 0.26,
+              "v_mean_ms": 1.45,
+              "vector_speed_ms": 1.5,
+              "from_deg": 190,
               "note": "Vent vectoriel moyen à 850 hPa sur un domaine. Pas un vent de surface, ni une mesure directe d’advection."
             },
             "weight": 0.2982,
@@ -175,16 +175,16 @@
           },
           "aifs-single": {
             "name": "AIFS",
-            "run_utc": "2026-11-25T00:00Z",
+            "run_utc": "2026-11-25T06:00Z",
             "lead": 3.0,
-            "t850": 3.04,
-            "msl": 1021.9,
-            "z500": 565.84,
+            "t850": 3.92,
+            "msl": 1022.35,
+            "z500": 567.03,
             "flow": {
-              "u_mean_ms": -0.28,
-              "v_mean_ms": 0.7,
-              "vector_speed_ms": 0.8,
-              "from_deg": 158,
+              "u_mean_ms": 0.61,
+              "v_mean_ms": 2.01,
+              "vector_speed_ms": 2.1,
+              "from_deg": 197,
               "note": "Vent vectoriel moyen à 850 hPa sur un domaine. Pas un vent de surface, ni une mesure directe d’advection."
             },
             "weight": 0.2904,
@@ -192,16 +192,16 @@
           },
           "gfs": {
             "name": "GFS",
-            "run_utc": "2026-11-25T00:00:00+00:00",
+            "run_utc": "2026-11-25T06:00:00+00:00",
             "lead": 3.0,
-            "t850": 2.42,
-            "msl": 1022.1,
-            "z500": 564.99,
+            "t850": 2.66,
+            "msl": 1022.99,
+            "z500": 566.39,
             "flow": {
-              "u_mean_ms": 0.74,
-              "v_mean_ms": -0.85,
-              "vector_speed_ms": 1.1,
-              "from_deg": 319,
+              "u_mean_ms": 0.3,
+              "v_mean_ms": 0.53,
+              "vector_speed_ms": 0.6,
+              "from_deg": 210,
               "note": "Vecteur moyen vent 850 hPa, pas un vent au sol ni une trajectoire réelle d'advection."
             },
             "weight": 0.2281,
@@ -209,27 +209,27 @@
           },
           "aigfs": {
             "name": "AIGFS",
-            "run_utc": "2026-11-25T00:00:00+00:00",
+            "run_utc": "2026-11-25T06:00:00+00:00",
             "lead": 3.0,
-            "t850": 3.06,
-            "msl": 1021.61,
-            "z500": 564.93,
+            "t850": 3.61,
+            "msl": 1022.41,
+            "z500": 566.48,
             "flow": {
-              "u_mean_ms": 0.51,
-              "v_mean_ms": 0.48,
-              "vector_speed_ms": 0.7,
-              "from_deg": 227,
+              "u_mean_ms": 0.29,
+              "v_mean_ms": 1.6,
+              "vector_speed_ms": 1.6,
+              "from_deg": 190,
               "note": "Vecteur moyen vent 850 hPa, pas un vent au sol ni une trajectoire réelle d'advection."
             },
             "weight": 0.1833,
             "mae_msl_hpa": 1.144
           }
         },
-        "valid_utc": "2026-11-28T00:00:00+00:00",
-        "t850_france": 2.8,
-        "msl_france": 1022.15,
-        "t850_spread": 0.64,
-        "msl_spread": 1.14,
+        "valid_utc": "2026-11-28T06:00:00+00:00",
+        "t850_france": 3.46,
+        "msl_france": 1022.76,
+        "t850_spread": 1.26,
+        "msl_spread": 0.86,
         "agreement": "accord relatif",
         "note": "Consensus régional indicatif ; fond et risques IFS, sans moyenne de grilles ni probabilité calibrée."
       },
@@ -248,9 +248,9 @@
           "aigfs": 0.1833
         },
         "representative": null,
-        "normalized_spread": 0.301,
+        "normalized_spread": 0.263,
         "excluded": {},
-        "valid_utc": "2026-11-28T00:00:00+00:00",
+        "valid_utc": "2026-11-28T06:00:00+00:00",
         "risk_source": "ifs",
         "weight_method": "Inverse MAE pression France, 3 derniers mois complets ; poids indicatifs"
       },
@@ -261,11 +261,11 @@
       "step_h": 168,
       "path": "forecast-maps/tendance/tendance-carte-j7.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j7.png",
-      "size_bytes": 607579,
+      "size_bytes": 605549,
       "run_utc": {
         "ifs": "2026-11-25T00:00Z",
-        "aifs": "2026-11-25T00:00Z",
-        "gfs": "2026-11-25T00:00:00+00:00"
+        "aifs": "2026-11-25T06:00Z",
+        "gfs": "2026-11-25T06:00:00+00:00"
       },
       "valid_utc": "2026-12-02T00:00:00+00:00",
       "title": "J+7 — synthèse synoptique IFS / AIFS / GFS",
@@ -395,10 +395,10 @@
         "description": "Température à 850 hPa modélisée, pas température au sol"
       },
       "style": "kfs-editorial-lambert-consensus-v13",
-      "summary": "IFS / AIFS / GFS / AIGFS : forte divergence. T850 France +5.2 °C, pression 1023 hPa (moyennes régionales pondérées). Écart T850 3.1 °C. Flux de sud-ouest sur la France, avec air relativement doux. Signaux sur France et abords : pluie jusqu’à 15 mm/6 h, rafales jusqu’à 71 km/h, gel jusqu’à -11 °C. Confiance limitée.",
+      "summary": "IFS : comparaison impossible (un seul modèle). T850 France +6.0 °C, pression 1026 hPa (moyennes régionales pondérées). Écart T850 0.0 °C. Flux de sud-ouest sur la France, avec air relativement doux. Signaux sur France et abords : pluie jusqu’à 15 mm/6 h, rafales jusqu’à 71 km/h, gel jusqu’à -11 °C. Confiance limitée.",
       "analysis": {
-        "summary": "IFS / AIFS / GFS / AIGFS : forte divergence. T850 France +5.2 °C, pression 1023 hPa (moyennes régionales pondérées). Écart T850 3.1 °C.",
-        "method": "Inverse MAE pression France, 3 derniers mois complets ; poids indicatifs",
+        "summary": "IFS : comparaison impossible (un seul modèle). T850 France +6.0 °C, pression 1026 hPa (moyennes régionales pondérées). Écart T850 0.0 °C.",
+        "method": "Poids égaux : scores comparables insuffisants",
         "models": {
           "ifs": {
             "name": "IFS",
@@ -414,89 +414,28 @@
               "from_deg": 217,
               "note": "Vent vectoriel moyen à 850 hPa sur un domaine. Pas un vent de surface, ni une mesure directe d’advection."
             },
-            "weight": 0.3133,
+            "weight": 1.0,
             "mae_msl_hpa": 3.007
-          },
-          "aifs-single": {
-            "name": "AIFS",
-            "run_utc": "2026-11-25T00:00Z",
-            "lead": 7.0,
-            "t850": 5.89,
-            "msl": 1025.77,
-            "z500": 572.82,
-            "flow": {
-              "u_mean_ms": 4.08,
-              "v_mean_ms": 4.94,
-              "vector_speed_ms": 6.4,
-              "from_deg": 220,
-              "note": "Vent vectoriel moyen à 850 hPa sur un domaine. Pas un vent de surface, ni une mesure directe d’advection."
-            },
-            "weight": 0.2169,
-            "mae_msl_hpa": 4.343
-          },
-          "gfs": {
-            "name": "GFS",
-            "run_utc": "2026-11-25T00:00:00+00:00",
-            "lead": 7.0,
-            "t850": 2.93,
-            "msl": 1014.74,
-            "z500": 560.25,
-            "flow": {
-              "u_mean_ms": 6.41,
-              "v_mean_ms": 4.59,
-              "vector_speed_ms": 7.9,
-              "from_deg": 234,
-              "note": "Vecteur moyen vent 850 hPa, pas un vent au sol ni une trajectoire réelle d'advection."
-            },
-            "weight": 0.2696,
-            "mae_msl_hpa": 3.4949999999999997
-          },
-          "aigfs": {
-            "name": "AIGFS",
-            "run_utc": "2026-11-25T00:00:00+00:00",
-            "lead": 7.0,
-            "t850": 5.98,
-            "msl": 1027.93,
-            "z500": 575.16,
-            "flow": {
-              "u_mean_ms": 3.1,
-              "v_mean_ms": 0.82,
-              "vector_speed_ms": 3.2,
-              "from_deg": 255,
-              "note": "Vecteur moyen vent 850 hPa, pas un vent au sol ni une trajectoire réelle d'advection."
-            },
-            "weight": 0.2002,
-            "mae_msl_hpa": 4.705
           }
         },
         "valid_utc": "2026-12-02T00:00:00+00:00",
-        "t850_france": 5.16,
-        "msl_france": 1023.24,
-        "t850_spread": 3.11,
-        "msl_spread": 13.19,
-        "agreement": "forte divergence",
+        "t850_france": 6.04,
+        "msl_france": 1025.8,
+        "t850_spread": 0.0,
+        "msl_spread": 0.0,
+        "agreement": "comparaison impossible (un seul modèle)",
         "note": "Consensus régional indicatif ; fond et risques IFS, sans moyenne de grilles ni probabilité calibrée."
       },
       "synoptic_consensus": {
-        "method": "weighted_representative",
+        "method": "ifs_reference",
         "models": [
-          "ifs",
-          "aifs-single",
-          "gfs",
-          "aigfs"
+          "ifs"
         ],
         "weights": {
-          "ifs": 0.3133,
-          "aifs-single": 0.2169,
-          "gfs": 0.2696,
-          "aigfs": 0.2002
+          "ifs": 1.0
         },
-        "representative": "ifs",
-        "normalized_spread": 0.679,
         "excluded": {},
-        "valid_utc": "2026-12-02T00:00:00+00:00",
-        "risk_source": "ifs",
-        "weight_method": "Inverse MAE pression France, 3 derniers mois complets ; poids indicatifs"
+        "reason": "Moins de deux grilles complètes à validité identique"
       },
       "note": "Projection Lambert ; champs synoptiques KFS selon grilles disponibles à validité identique. Risques et pictogrammes IFS ; ! rouge = seuil KFS non officiel."
     },
@@ -505,11 +444,11 @@
       "step_h": 240,
       "path": "forecast-maps/tendance/tendance-carte-j10.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j10.png",
-      "size_bytes": 601124,
+      "size_bytes": 597376,
       "run_utc": {
         "ifs": "2026-11-25T00:00Z",
-        "aifs": "2026-11-25T00:00Z",
-        "gfs": "2026-11-25T00:00:00+00:00"
+        "aifs": "2026-11-25T06:00Z",
+        "gfs": "2026-11-25T06:00:00+00:00"
       },
       "valid_utc": "2026-12-05T00:00:00+00:00",
       "title": "J+10 — synthèse synoptique IFS / AIFS / GFS",
@@ -633,10 +572,10 @@
         "description": "Température à 850 hPa modélisée, pas température au sol"
       },
       "style": "kfs-editorial-lambert-consensus-v13",
-      "summary": "IFS / AIFS / GFS / AIGFS : forte divergence. T850 France +2.2 °C, pression 1025 hPa (moyennes régionales pondérées). Écart T850 9.2 °C. Flux d’ouest-sud-ouest sur la France, avec air plus frais en altitude. Signaux sur France et abords : rafales jusqu’à 56 km/h, gel jusqu’à -15 °C. Confiance faible.",
+      "summary": "IFS : comparaison impossible (un seul modèle). T850 France +3.8 °C, pression 1030 hPa (moyennes régionales pondérées). Écart T850 0.0 °C. Flux d’ouest-sud-ouest sur la France, avec air plus frais en altitude. Signaux sur France et abords : rafales jusqu’à 56 km/h, gel jusqu’à -15 °C. Confiance faible.",
       "analysis": {
-        "summary": "IFS / AIFS / GFS / AIGFS : forte divergence. T850 France +2.2 °C, pression 1025 hPa (moyennes régionales pondérées). Écart T850 9.2 °C.",
-        "method": "Inverse MAE pression France, 3 derniers mois complets ; poids indicatifs",
+        "summary": "IFS : comparaison impossible (un seul modèle). T850 France +3.8 °C, pression 1030 hPa (moyennes régionales pondérées). Écart T850 0.0 °C.",
+        "method": "Poids égaux : scores comparables insuffisants",
         "models": {
           "ifs": {
             "name": "IFS",
@@ -652,89 +591,28 @@
               "from_deg": 251,
               "note": "Vent vectoriel moyen à 850 hPa sur un domaine. Pas un vent de surface, ni une mesure directe d’advection."
             },
-            "weight": 0.32,
+            "weight": 1.0,
             "mae_msl_hpa": 3.8800000000000003
-          },
-          "aifs-single": {
-            "name": "AIFS",
-            "run_utc": "2026-11-25T00:00Z",
-            "lead": 10.0,
-            "t850": 6.37,
-            "msl": 1033.54,
-            "z500": 577.38,
-            "flow": {
-              "u_mean_ms": 3.04,
-              "v_mean_ms": -1.11,
-              "vector_speed_ms": 3.2,
-              "from_deg": 290,
-              "note": "Vent vectoriel moyen à 850 hPa sur un domaine. Pas un vent de surface, ni une mesure directe d’advection."
-            },
-            "weight": 0.1774,
-            "mae_msl_hpa": 6.999
-          },
-          "gfs": {
-            "name": "GFS",
-            "run_utc": "2026-11-25T00:00:00+00:00",
-            "lead": 10.0,
-            "t850": -2.85,
-            "msl": 1014.75,
-            "z500": 547.16,
-            "flow": {
-              "u_mean_ms": -4.7,
-              "v_mean_ms": -2.82,
-              "vector_speed_ms": 5.5,
-              "from_deg": 59,
-              "note": "Vecteur moyen vent 850 hPa, pas un vent au sol ni une trajectoire réelle d'advection."
-            },
-            "weight": 0.3094,
-            "mae_msl_hpa": 4.013
-          },
-          "aigfs": {
-            "name": "AIGFS",
-            "run_utc": "2026-11-25T00:00:00+00:00",
-            "lead": 10.0,
-            "t850": 3.91,
-            "msl": 1022.9,
-            "z500": 566.3,
-            "flow": {
-              "u_mean_ms": 4.66,
-              "v_mean_ms": -0.46,
-              "vector_speed_ms": 4.7,
-              "from_deg": 276,
-              "note": "Vecteur moyen vent 850 hPa, pas un vent au sol ni une trajectoire réelle d'advection."
-            },
-            "weight": 0.1931,
-            "mae_msl_hpa": 6.428999999999999
           }
         },
         "valid_utc": "2026-12-05T00:00:00+00:00",
-        "t850_france": 2.21,
-        "msl_france": 1024.59,
-        "t850_spread": 9.22,
-        "msl_spread": 18.79,
-        "agreement": "forte divergence",
+        "t850_france": 3.77,
+        "msl_france": 1030.16,
+        "t850_spread": 0.0,
+        "msl_spread": 0.0,
+        "agreement": "comparaison impossible (un seul modèle)",
         "note": "Consensus régional indicatif ; fond et risques IFS, sans moyenne de grilles ni probabilité calibrée."
       },
       "synoptic_consensus": {
-        "method": "weighted_representative",
+        "method": "ifs_reference",
         "models": [
-          "ifs",
-          "aifs-single",
-          "gfs",
-          "aigfs"
+          "ifs"
         ],
         "weights": {
-          "ifs": 0.32003200320032005,
-          "aifs-single": 0.1774177417741774,
-          "gfs": 0.30943094309430946,
-          "aigfs": 0.1931193119311931
+          "ifs": 1.0
         },
-        "representative": "ifs",
-        "normalized_spread": 1.187,
         "excluded": {},
-        "valid_utc": "2026-12-05T00:00:00+00:00",
-        "risk_source": "ifs",
-        "weight_method": "Inverse MAE pression France, 3 derniers mois complets ; poids indicatifs"
+        "reason": "Moins de deux grilles complètes à validité identique"
       },
       "note": "Projection Lambert ; champs synoptiques KFS selon grilles disponibles à validité identique. Risques et pictogrammes IFS ; ! rouge = seuil KFS non officiel."
     },
@@ -743,11 +621,11 @@
       "step_h": 360,
       "path": "forecast-maps/tendance/tendance-carte-j15.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j15.png",
-      "size_bytes": 699319,
+      "size_bytes": 670604,
       "run_utc": {
         "ifs": "2026-11-25T00:00Z",
-        "aifs": "2026-11-25T00:00Z",
-        "gfs": "2026-11-25T00:00:00+00:00"
+        "aifs": "2026-11-25T06:00Z",
+        "gfs": "2026-11-25T06:00:00+00:00"
       },
       "valid_utc": "2026-12-10T00:00:00+00:00",
       "title": "J+15 — synthèse synoptique IFS / AIFS / GFS",
@@ -885,10 +763,10 @@
         "description": "Température à 850 hPa modélisée, pas température au sol"
       },
       "style": "kfs-editorial-lambert-consensus-v13",
-      "summary": "IFS / AIFS / GFS / AIGFS : forte divergence. T850 France -2.2 °C, pression 1016 hPa (moyennes régionales pondérées). Écart T850 4.6 °C. Flux de nord-nord-ouest sur la France, avec air froid à 850 hpa. Signaux sur France et abords : pluie jusqu’à 12 mm/6 h, rafales jusqu’à 88 km/h, neige hors relief, gel jusqu’à -12 °C. Confiance très limitée.",
+      "summary": "IFS : comparaison impossible (un seul modèle). T850 France -1.6 °C, pression 1034 hPa (moyennes régionales pondérées). Écart T850 0.0 °C. Flux de nord-nord-ouest sur la France, avec air froid à 850 hpa. Signaux sur France et abords : pluie jusqu’à 12 mm/6 h, rafales jusqu’à 88 km/h, neige hors relief, gel jusqu’à -12 °C. Confiance très limitée.",
       "analysis": {
-        "summary": "IFS / AIFS / GFS / AIGFS : forte divergence. T850 France -2.2 °C, pression 1016 hPa (moyennes régionales pondérées). Écart T850 4.6 °C.",
-        "method": "Inverse MAE pression France, 3 derniers mois complets ; poids indicatifs",
+        "summary": "IFS : comparaison impossible (un seul modèle). T850 France -1.6 °C, pression 1034 hPa (moyennes régionales pondérées). Écart T850 0.0 °C.",
+        "method": "Poids égaux : scores comparables insuffisants",
         "models": {
           "ifs": {
             "name": "IFS",
@@ -904,89 +782,28 @@
               "from_deg": 329,
               "note": "Vent vectoriel moyen à 850 hPa sur un domaine. Pas un vent de surface, ni une mesure directe d’advection."
             },
-            "weight": 0.1894,
+            "weight": 1.0,
             "mae_msl_hpa": 10.209
-          },
-          "aifs-single": {
-            "name": "AIFS",
-            "run_utc": "2026-11-25T00:00Z",
-            "lead": 15.0,
-            "t850": -0.23,
-            "msl": 1014.07,
-            "z500": 548.45,
-            "flow": {
-              "u_mean_ms": 8.55,
-              "v_mean_ms": -2.38,
-              "vector_speed_ms": 8.9,
-              "from_deg": 286,
-              "note": "Vent vectoriel moyen à 850 hPa sur un domaine. Pas un vent de surface, ni une mesure directe d’advection."
-            },
-            "weight": 0.241,
-            "mae_msl_hpa": 8.024
-          },
-          "gfs": {
-            "name": "GFS",
-            "run_utc": "2026-11-25T00:00:00+00:00",
-            "lead": 15.0,
-            "t850": -4.81,
-            "msl": 1017.5,
-            "z500": 546.23,
-            "flow": {
-              "u_mean_ms": 4.08,
-              "v_mean_ms": -7.74,
-              "vector_speed_ms": 8.7,
-              "from_deg": 332,
-              "note": "Vecteur moyen vent 850 hPa, pas un vent au sol ni une trajectoire réelle d'advection."
-            },
-            "weight": 0.3133,
-            "mae_msl_hpa": 6.171
-          },
-          "aigfs": {
-            "name": "AIGFS",
-            "run_utc": "2026-11-25T00:00:00+00:00",
-            "lead": 15.0,
-            "t850": -1.3,
-            "msl": 1003.05,
-            "z500": 537.42,
-            "flow": {
-              "u_mean_ms": 7.26,
-              "v_mean_ms": -3.37,
-              "vector_speed_ms": 8.0,
-              "from_deg": 295,
-              "note": "Vecteur moyen vent 850 hPa, pas un vent au sol ni une trajectoire réelle d'advection."
-            },
-            "weight": 0.2564,
-            "mae_msl_hpa": 7.541999999999999
           }
         },
         "valid_utc": "2026-12-10T00:00:00+00:00",
-        "t850_france": -2.19,
-        "msl_france": 1016.1,
-        "t850_spread": 4.58,
-        "msl_spread": 30.99,
-        "agreement": "forte divergence",
+        "t850_france": -1.57,
+        "msl_france": 1034.04,
+        "t850_spread": 0.0,
+        "msl_spread": 0.0,
+        "agreement": "comparaison impossible (un seul modèle)",
         "note": "Consensus régional indicatif ; fond et risques IFS, sans moyenne de grilles ni probabilité calibrée."
       },
       "synoptic_consensus": {
-        "method": "weighted_representative",
+        "method": "ifs_reference",
         "models": [
-          "ifs",
-          "aifs-single",
-          "gfs",
-          "aigfs"
+          "ifs"
         ],
         "weights": {
-          "ifs": 0.18938106189381063,
-          "aifs-single": 0.24097590240975902,
-          "gfs": 0.31326867313268675,
-          "aigfs": 0.25637436256374363
+          "ifs": 1.0
         },
-        "representative": "aigfs",
-        "normalized_spread": 1.29,
         "excluded": {},
-        "valid_utc": "2026-12-10T00:00:00+00:00",
-        "risk_source": "ifs",
-        "weight_method": "Inverse MAE pression France, 3 derniers mois complets ; poids indicatifs"
+        "reason": "Moins de deux grilles complètes à validité identique"
       },
       "note": "Projection Lambert ; champs synoptiques KFS selon grilles disponibles à validité identique. Risques et pictogrammes IFS ; ! rouge = seuil KFS non officiel."
     }
@@ -997,13 +814,13 @@
       "step_h": 72,
       "path": "forecast-maps/tendance/tendance-carte-france-j3.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-france-j3.png",
-      "size_bytes": 429819,
+      "size_bytes": 455246,
       "run_utc": {
-        "ifs": "2026-11-25T00:00Z",
-        "aifs": "2026-11-25T00:00Z",
-        "gfs": "2026-11-25T00:00:00+00:00"
+        "ifs": "2026-11-25T06:00Z",
+        "aifs": "2026-11-25T06:00Z",
+        "gfs": "2026-11-25T06:00:00+00:00"
       },
-      "valid_utc": "2026-11-28T00:00:00+00:00",
+      "valid_utc": "2026-11-28T06:00:00+00:00",
       "title": "J+3 — France • synthèse synoptique IFS / AIFS / GFS",
       "zone": "france",
       "confidence_label": "Modérée (indicative)",
@@ -1030,14 +847,14 @@
         },
         "tempete": {
           "status": "possible",
-          "max": 59.0,
+          "max": 56.3,
           "unit": "km/h (rafales max 10 m/6 h)",
           "reason": "Rafales maximales ECMWF IFS des 6 h précédentes, pas une vigilance officielle"
         },
         "gel": {
           "status": "marque",
           "severity": "severe",
-          "min": -16.57,
+          "min": -17.68,
           "unit": "°C (Tmin 2 m/6 h)",
           "reason": "Minimum sur les 6 h précédentes, points terrestres"
         },
@@ -1051,70 +868,88 @@
         },
         "pluie_forte": {
           "status": "absent",
-          "max": 7.6,
+          "max": 8.3,
           "unit": "mm/6h",
           "reason": "Cumul des 6 heures précédant l'échéance"
         }
       },
       "risk_markers": [
         {
-          "lon": 6.75,
-          "lat": 44.25,
-          "value": -16.567419433593727,
+          "lon": 6.25,
+          "lat": 45.0,
+          "value": -17.67803039550779,
           "kind": "gel"
         },
         {
-          "lon": 6.75,
-          "lat": 46.25,
-          "value": -9.734472656249977,
-          "kind": "gel"
-        },
-        {
-          "lon": 0.0,
-          "lat": 42.75,
-          "value": -6.484472656249977,
-          "kind": "gel"
-        },
-        {
-          "lon": 5.0,
-          "lat": 44.5,
-          "value": 59.0,
-          "kind": "vent_fort"
-        },
-        {
-          "lon": 7.25,
-          "lat": 48.5,
-          "value": -5.317419433593727,
-          "kind": "gel"
-        },
-        {
-          "lon": 4.5,
+          "lon": 7.0,
           "lat": 48.0,
-          "value": -3.5674194335937273,
+          "value": -6.428015136718727,
           "kind": "gel"
         },
         {
           "lon": 4.75,
-          "lat": 50.0,
-          "value": -3.3174194335937273,
+          "lat": 44.0,
+          "value": 56.3,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": 0.25,
+          "lat": 42.75,
+          "value": -5.494543457031227,
           "kind": "gel"
         },
         {
-          "lon": 2.0,
-          "lat": 49.25,
-          "value": -2.0674194335937273,
+          "lon": -4.5,
+          "lat": 48.25,
+          "value": 52.1,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": 0.5,
+          "lat": 49.75,
+          "value": 51.9,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": 4.5,
+          "lat": 47.0,
+          "value": -4.428015136718727,
           "kind": "gel"
         },
         {
-          "lon": 2.75,
-          "lat": 46.5,
-          "value": -1.8174194335937273,
+          "lon": 3.5,
+          "lat": 44.75,
+          "value": -4.244543457031227,
+          "kind": "gel"
+        },
+        {
+          "lon": 5.25,
+          "lat": 49.5,
+          "value": -3.7445434570312273,
+          "kind": "gel"
+        },
+        {
+          "lon": 2.25,
+          "lat": 48.5,
+          "value": -3.4280151367187273,
+          "kind": "gel"
+        },
+        {
+          "lon": 3.0,
+          "lat": 50.75,
+          "value": -2.6780151367187273,
+          "kind": "gel"
+        },
+        {
+          "lon": 1.75,
+          "lat": 46.25,
+          "value": -1.6780151367187273,
           "kind": "gel"
         },
         {
           "lon": 9.0,
           "lat": 42.25,
-          "value": -0.31741943359372726,
+          "value": -0.7445434570312273,
           "kind": "gel"
         }
       ],
@@ -1131,23 +966,23 @@
         "description": "Température à 850 hPa modélisée, pas température au sol"
       },
       "style": "kfs-editorial-lambert-consensus-v13",
-      "summary": "IFS / AIFS / GFS / AIGFS : accord relatif. T850 France +2.8 °C, pression 1022 hPa (moyennes régionales pondérées). Écart T850 0.6 °C. Flux de indéterminé sur la France, avec air plus frais en altitude. Signaux en France : rafales jusqu’à 59 km/h, gel jusqu’à -17 °C. Confiance modérée.",
+      "summary": "IFS / AIFS / GFS / AIGFS : accord relatif. T850 France +3.5 °C, pression 1023 hPa (moyennes régionales pondérées). Écart T850 1.3 °C. Flux de sud sur la France, avec air plus frais en altitude. Signaux en France : rafales jusqu’à 56 km/h, gel jusqu’à -18 °C. Confiance modérée.",
       "analysis": {
-        "summary": "IFS / AIFS / GFS / AIGFS : accord relatif. T850 France +2.8 °C, pression 1022 hPa (moyennes régionales pondérées). Écart T850 0.6 °C.",
+        "summary": "IFS / AIFS / GFS / AIGFS : accord relatif. T850 France +3.5 °C, pression 1023 hPa (moyennes régionales pondérées). Écart T850 1.3 °C.",
         "method": "Inverse MAE pression France, 3 derniers mois complets ; poids indicatifs",
         "models": {
           "ifs": {
             "name": "IFS",
-            "run_utc": "2026-11-25T00:00Z",
+            "run_utc": "2026-11-25T06:00Z",
             "lead": 3.0,
-            "t850": 2.7,
-            "msl": 1022.75,
-            "z500": 566.67,
+            "t850": 3.52,
+            "msl": 1023.21,
+            "z500": 567.61,
             "flow": {
-              "u_mean_ms": 0.1,
-              "v_mean_ms": 0.11,
-              "vector_speed_ms": 0.1,
-              "from_deg": null,
+              "u_mean_ms": 0.26,
+              "v_mean_ms": 1.45,
+              "vector_speed_ms": 1.5,
+              "from_deg": 190,
               "note": "Vent vectoriel moyen à 850 hPa sur un domaine. Pas un vent de surface, ni une mesure directe d’advection."
             },
             "weight": 0.2982,
@@ -1155,16 +990,16 @@
           },
           "aifs-single": {
             "name": "AIFS",
-            "run_utc": "2026-11-25T00:00Z",
+            "run_utc": "2026-11-25T06:00Z",
             "lead": 3.0,
-            "t850": 3.04,
-            "msl": 1021.9,
-            "z500": 565.84,
+            "t850": 3.92,
+            "msl": 1022.35,
+            "z500": 567.03,
             "flow": {
-              "u_mean_ms": -0.28,
-              "v_mean_ms": 0.7,
-              "vector_speed_ms": 0.8,
-              "from_deg": 158,
+              "u_mean_ms": 0.61,
+              "v_mean_ms": 2.01,
+              "vector_speed_ms": 2.1,
+              "from_deg": 197,
               "note": "Vent vectoriel moyen à 850 hPa sur un domaine. Pas un vent de surface, ni une mesure directe d’advection."
             },
             "weight": 0.2904,
@@ -1172,16 +1007,16 @@
           },
           "gfs": {
             "name": "GFS",
-            "run_utc": "2026-11-25T00:00:00+00:00",
+            "run_utc": "2026-11-25T06:00:00+00:00",
             "lead": 3.0,
-            "t850": 2.42,
-            "msl": 1022.1,
-            "z500": 564.99,
+            "t850": 2.66,
+            "msl": 1022.99,
+            "z500": 566.39,
             "flow": {
-              "u_mean_ms": 0.74,
-              "v_mean_ms": -0.85,
-              "vector_speed_ms": 1.1,
-              "from_deg": 319,
+              "u_mean_ms": 0.3,
+              "v_mean_ms": 0.53,
+              "vector_speed_ms": 0.6,
+              "from_deg": 210,
               "note": "Vecteur moyen vent 850 hPa, pas un vent au sol ni une trajectoire réelle d'advection."
             },
             "weight": 0.2281,
@@ -1189,27 +1024,27 @@
           },
           "aigfs": {
             "name": "AIGFS",
-            "run_utc": "2026-11-25T00:00:00+00:00",
+            "run_utc": "2026-11-25T06:00:00+00:00",
             "lead": 3.0,
-            "t850": 3.06,
-            "msl": 1021.61,
-            "z500": 564.93,
+            "t850": 3.61,
+            "msl": 1022.41,
+            "z500": 566.48,
             "flow": {
-              "u_mean_ms": 0.51,
-              "v_mean_ms": 0.48,
-              "vector_speed_ms": 0.7,
-              "from_deg": 227,
+              "u_mean_ms": 0.29,
+              "v_mean_ms": 1.6,
+              "vector_speed_ms": 1.6,
+              "from_deg": 190,
               "note": "Vecteur moyen vent 850 hPa, pas un vent au sol ni une trajectoire réelle d'advection."
             },
             "weight": 0.1833,
             "mae_msl_hpa": 1.144
           }
         },
-        "valid_utc": "2026-11-28T00:00:00+00:00",
-        "t850_france": 2.8,
-        "msl_france": 1022.15,
-        "t850_spread": 0.64,
-        "msl_spread": 1.14,
+        "valid_utc": "2026-11-28T06:00:00+00:00",
+        "t850_france": 3.46,
+        "msl_france": 1022.76,
+        "t850_spread": 1.26,
+        "msl_spread": 0.86,
         "agreement": "accord relatif",
         "note": "Consensus régional indicatif ; fond et risques IFS, sans moyenne de grilles ni probabilité calibrée."
       },
@@ -1228,9 +1063,9 @@
           "aigfs": 0.1833
         },
         "representative": null,
-        "normalized_spread": 0.301,
+        "normalized_spread": 0.263,
         "excluded": {},
-        "valid_utc": "2026-11-28T00:00:00+00:00",
+        "valid_utc": "2026-11-28T06:00:00+00:00",
         "risk_source": "ifs",
         "weight_method": "Inverse MAE pression France, 3 derniers mois complets ; poids indicatifs"
       },
@@ -1241,11 +1076,11 @@
       "step_h": 168,
       "path": "forecast-maps/tendance/tendance-carte-france-j7.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-france-j7.png",
-      "size_bytes": 423654,
+      "size_bytes": 416018,
       "run_utc": {
         "ifs": "2026-11-25T00:00Z",
-        "aifs": "2026-11-25T00:00Z",
-        "gfs": "2026-11-25T00:00:00+00:00"
+        "aifs": "2026-11-25T06:00Z",
+        "gfs": "2026-11-25T06:00:00+00:00"
       },
       "valid_utc": "2026-12-02T00:00:00+00:00",
       "title": "J+7 — France • synthèse synoptique IFS / AIFS / GFS",
@@ -1351,10 +1186,10 @@
         "description": "Température à 850 hPa modélisée, pas température au sol"
       },
       "style": "kfs-editorial-lambert-consensus-v13",
-      "summary": "IFS / AIFS / GFS / AIGFS : forte divergence. T850 France +5.2 °C, pression 1023 hPa (moyennes régionales pondérées). Écart T850 3.1 °C. Flux de sud-ouest sur la France, avec air relativement doux. Signaux en France : gel jusqu’à -9 °C. Confiance limitée.",
+      "summary": "IFS : comparaison impossible (un seul modèle). T850 France +6.0 °C, pression 1026 hPa (moyennes régionales pondérées). Écart T850 0.0 °C. Flux de sud-ouest sur la France, avec air relativement doux. Signaux en France : gel jusqu’à -9 °C. Confiance limitée.",
       "analysis": {
-        "summary": "IFS / AIFS / GFS / AIGFS : forte divergence. T850 France +5.2 °C, pression 1023 hPa (moyennes régionales pondérées). Écart T850 3.1 °C.",
-        "method": "Inverse MAE pression France, 3 derniers mois complets ; poids indicatifs",
+        "summary": "IFS : comparaison impossible (un seul modèle). T850 France +6.0 °C, pression 1026 hPa (moyennes régionales pondérées). Écart T850 0.0 °C.",
+        "method": "Poids égaux : scores comparables insuffisants",
         "models": {
           "ifs": {
             "name": "IFS",
@@ -1370,89 +1205,28 @@
               "from_deg": 217,
               "note": "Vent vectoriel moyen à 850 hPa sur un domaine. Pas un vent de surface, ni une mesure directe d’advection."
             },
-            "weight": 0.3133,
+            "weight": 1.0,
             "mae_msl_hpa": 3.007
-          },
-          "aifs-single": {
-            "name": "AIFS",
-            "run_utc": "2026-11-25T00:00Z",
-            "lead": 7.0,
-            "t850": 5.89,
-            "msl": 1025.77,
-            "z500": 572.82,
-            "flow": {
-              "u_mean_ms": 4.08,
-              "v_mean_ms": 4.94,
-              "vector_speed_ms": 6.4,
-              "from_deg": 220,
-              "note": "Vent vectoriel moyen à 850 hPa sur un domaine. Pas un vent de surface, ni une mesure directe d’advection."
-            },
-            "weight": 0.2169,
-            "mae_msl_hpa": 4.343
-          },
-          "gfs": {
-            "name": "GFS",
-            "run_utc": "2026-11-25T00:00:00+00:00",
-            "lead": 7.0,
-            "t850": 2.93,
-            "msl": 1014.74,
-            "z500": 560.25,
-            "flow": {
-              "u_mean_ms": 6.41,
-              "v_mean_ms": 4.59,
-              "vector_speed_ms": 7.9,
-              "from_deg": 234,
-              "note": "Vecteur moyen vent 850 hPa, pas un vent au sol ni une trajectoire réelle d'advection."
-            },
-            "weight": 0.2696,
-            "mae_msl_hpa": 3.4949999999999997
-          },
-          "aigfs": {
-            "name": "AIGFS",
-            "run_utc": "2026-11-25T00:00:00+00:00",
-            "lead": 7.0,
-            "t850": 5.98,
-            "msl": 1027.93,
-            "z500": 575.16,
-            "flow": {
-              "u_mean_ms": 3.1,
-              "v_mean_ms": 0.82,
-              "vector_speed_ms": 3.2,
-              "from_deg": 255,
-              "note": "Vecteur moyen vent 850 hPa, pas un vent au sol ni une trajectoire réelle d'advection."
-            },
-            "weight": 0.2002,
-            "mae_msl_hpa": 4.705
           }
         },
         "valid_utc": "2026-12-02T00:00:00+00:00",
-        "t850_france": 5.16,
-        "msl_france": 1023.24,
-        "t850_spread": 3.11,
-        "msl_spread": 13.19,
-        "agreement": "forte divergence",
+        "t850_france": 6.04,
+        "msl_france": 1025.8,
+        "t850_spread": 0.0,
+        "msl_spread": 0.0,
+        "agreement": "comparaison impossible (un seul modèle)",
         "note": "Consensus régional indicatif ; fond et risques IFS, sans moyenne de grilles ni probabilité calibrée."
       },
       "synoptic_consensus": {
-        "method": "weighted_representative",
+        "method": "ifs_reference",
         "models": [
-          "ifs",
-          "aifs-single",
-          "gfs",
-          "aigfs"
+          "ifs"
         ],
         "weights": {
-          "ifs": 0.3133,
-          "aifs-single": 0.2169,
-          "gfs": 0.2696,
-          "aigfs": 0.2002
+          "ifs": 1.0
         },
-        "representative": "ifs",
-        "normalized_spread": 0.679,
         "excluded": {},
-        "valid_utc": "2026-12-02T00:00:00+00:00",
-        "risk_source": "ifs",
-        "weight_method": "Inverse MAE pression France, 3 derniers mois complets ; poids indicatifs"
+        "reason": "Moins de deux grilles complètes à validité identique"
       },
       "note": "Projection Lambert ; champs synoptiques KFS selon grilles disponibles à validité identique. Risques et pictogrammes IFS ; ! rouge = seuil KFS non officiel."
     },
@@ -1461,11 +1235,11 @@
       "step_h": 240,
       "path": "forecast-maps/tendance/tendance-carte-france-j10.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-france-j10.png",
-      "size_bytes": 412535,
+      "size_bytes": 404543,
       "run_utc": {
         "ifs": "2026-11-25T00:00Z",
-        "aifs": "2026-11-25T00:00Z",
-        "gfs": "2026-11-25T00:00:00+00:00"
+        "aifs": "2026-11-25T06:00Z",
+        "gfs": "2026-11-25T06:00:00+00:00"
       },
       "valid_utc": "2026-12-05T00:00:00+00:00",
       "title": "J+10 — France • synthèse synoptique IFS / AIFS / GFS",
@@ -1559,10 +1333,10 @@
         "description": "Température à 850 hPa modélisée, pas température au sol"
       },
       "style": "kfs-editorial-lambert-consensus-v13",
-      "summary": "IFS / AIFS / GFS / AIGFS : forte divergence. T850 France +2.2 °C, pression 1025 hPa (moyennes régionales pondérées). Écart T850 9.2 °C. Flux d’ouest-sud-ouest sur la France, avec air plus frais en altitude. Signaux en France : gel jusqu’à -11 °C. Confiance faible.",
+      "summary": "IFS : comparaison impossible (un seul modèle). T850 France +3.8 °C, pression 1030 hPa (moyennes régionales pondérées). Écart T850 0.0 °C. Flux d’ouest-sud-ouest sur la France, avec air plus frais en altitude. Signaux en France : gel jusqu’à -11 °C. Confiance faible.",
       "analysis": {
-        "summary": "IFS / AIFS / GFS / AIGFS : forte divergence. T850 France +2.2 °C, pression 1025 hPa (moyennes régionales pondérées). Écart T850 9.2 °C.",
-        "method": "Inverse MAE pression France, 3 derniers mois complets ; poids indicatifs",
+        "summary": "IFS : comparaison impossible (un seul modèle). T850 France +3.8 °C, pression 1030 hPa (moyennes régionales pondérées). Écart T850 0.0 °C.",
+        "method": "Poids égaux : scores comparables insuffisants",
         "models": {
           "ifs": {
             "name": "IFS",
@@ -1578,89 +1352,28 @@
               "from_deg": 251,
               "note": "Vent vectoriel moyen à 850 hPa sur un domaine. Pas un vent de surface, ni une mesure directe d’advection."
             },
-            "weight": 0.32,
+            "weight": 1.0,
             "mae_msl_hpa": 3.8800000000000003
-          },
-          "aifs-single": {
-            "name": "AIFS",
-            "run_utc": "2026-11-25T00:00Z",
-            "lead": 10.0,
-            "t850": 6.37,
-            "msl": 1033.54,
-            "z500": 577.38,
-            "flow": {
-              "u_mean_ms": 3.04,
-              "v_mean_ms": -1.11,
-              "vector_speed_ms": 3.2,
-              "from_deg": 290,
-              "note": "Vent vectoriel moyen à 850 hPa sur un domaine. Pas un vent de surface, ni une mesure directe d’advection."
-            },
-            "weight": 0.1774,
-            "mae_msl_hpa": 6.999
-          },
-          "gfs": {
-            "name": "GFS",
-            "run_utc": "2026-11-25T00:00:00+00:00",
-            "lead": 10.0,
-            "t850": -2.85,
-            "msl": 1014.75,
-            "z500": 547.16,
-            "flow": {
-              "u_mean_ms": -4.7,
-              "v_mean_ms": -2.82,
-              "vector_speed_ms": 5.5,
-              "from_deg": 59,
-              "note": "Vecteur moyen vent 850 hPa, pas un vent au sol ni une trajectoire réelle d'advection."
-            },
-            "weight": 0.3094,
-            "mae_msl_hpa": 4.013
-          },
-          "aigfs": {
-            "name": "AIGFS",
-            "run_utc": "2026-11-25T00:00:00+00:00",
-            "lead": 10.0,
-            "t850": 3.91,
-            "msl": 1022.9,
-            "z500": 566.3,
-            "flow": {
-              "u_mean_ms": 4.66,
-              "v_mean_ms": -0.46,
-              "vector_speed_ms": 4.7,
-              "from_deg": 276,
-              "note": "Vecteur moyen vent 850 hPa, pas un vent au sol ni une trajectoire réelle d'advection."
-            },
-            "weight": 0.1931,
-            "mae_msl_hpa": 6.428999999999999
           }
         },
         "valid_utc": "2026-12-05T00:00:00+00:00",
-        "t850_france": 2.21,
-        "msl_france": 1024.59,
-        "t850_spread": 9.22,
-        "msl_spread": 18.79,
-        "agreement": "forte divergence",
+        "t850_france": 3.77,
+        "msl_france": 1030.16,
+        "t850_spread": 0.0,
+        "msl_spread": 0.0,
+        "agreement": "comparaison impossible (un seul modèle)",
         "note": "Consensus régional indicatif ; fond et risques IFS, sans moyenne de grilles ni probabilité calibrée."
       },
       "synoptic_consensus": {
-        "method": "weighted_representative",
+        "method": "ifs_reference",
         "models": [
-          "ifs",
-          "aifs-single",
-          "gfs",
-          "aigfs"
+          "ifs"
         ],
         "weights": {
-          "ifs": 0.32003200320032005,
-          "aifs-single": 0.1774177417741774,
-          "gfs": 0.30943094309430946,
-          "aigfs": 0.1931193119311931
+          "ifs": 1.0
         },
-        "representative": "ifs",
-        "normalized_spread": 1.187,
         "excluded": {},
-        "valid_utc": "2026-12-05T00:00:00+00:00",
-        "risk_source": "ifs",
-        "weight_method": "Inverse MAE pression France, 3 derniers mois complets ; poids indicatifs"
+        "reason": "Moins de deux grilles complètes à validité identique"
       },
       "note": "Projection Lambert ; champs synoptiques KFS selon grilles disponibles à validité identique. Risques et pictogrammes IFS ; ! rouge = seuil KFS non officiel."
     },
@@ -1669,11 +1382,11 @@
       "step_h": 360,
       "path": "forecast-maps/tendance/tendance-carte-france-j15.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-france-j15.png",
-      "size_bytes": 515357,
+      "size_bytes": 471088,
       "run_utc": {
         "ifs": "2026-11-25T00:00Z",
-        "aifs": "2026-11-25T00:00Z",
-        "gfs": "2026-11-25T00:00:00+00:00"
+        "aifs": "2026-11-25T06:00Z",
+        "gfs": "2026-11-25T06:00:00+00:00"
       },
       "valid_utc": "2026-12-10T00:00:00+00:00",
       "title": "J+15 — France • synthèse synoptique IFS / AIFS / GFS",
@@ -1802,10 +1515,10 @@
         "description": "Température à 850 hPa modélisée, pas température au sol"
       },
       "style": "kfs-editorial-lambert-consensus-v13",
-      "summary": "IFS / AIFS / GFS / AIGFS : forte divergence. T850 France -2.2 °C, pression 1016 hPa (moyennes régionales pondérées). Écart T850 4.6 °C. Flux de nord-nord-ouest sur la France, avec air froid à 850 hpa. Signaux en France : pluie jusqu’à 12 mm/6 h, rafales jusqu’à 85 km/h, gel jusqu’à -12 °C. Confiance très limitée.",
+      "summary": "IFS : comparaison impossible (un seul modèle). T850 France -1.6 °C, pression 1034 hPa (moyennes régionales pondérées). Écart T850 0.0 °C. Flux de nord-nord-ouest sur la France, avec air froid à 850 hpa. Signaux en France : pluie jusqu’à 12 mm/6 h, rafales jusqu’à 85 km/h, gel jusqu’à -12 °C. Confiance très limitée.",
       "analysis": {
-        "summary": "IFS / AIFS / GFS / AIGFS : forte divergence. T850 France -2.2 °C, pression 1016 hPa (moyennes régionales pondérées). Écart T850 4.6 °C.",
-        "method": "Inverse MAE pression France, 3 derniers mois complets ; poids indicatifs",
+        "summary": "IFS : comparaison impossible (un seul modèle). T850 France -1.6 °C, pression 1034 hPa (moyennes régionales pondérées). Écart T850 0.0 °C.",
+        "method": "Poids égaux : scores comparables insuffisants",
         "models": {
           "ifs": {
             "name": "IFS",
@@ -1821,95 +1534,34 @@
               "from_deg": 329,
               "note": "Vent vectoriel moyen à 850 hPa sur un domaine. Pas un vent de surface, ni une mesure directe d’advection."
             },
-            "weight": 0.1894,
+            "weight": 1.0,
             "mae_msl_hpa": 10.209
-          },
-          "aifs-single": {
-            "name": "AIFS",
-            "run_utc": "2026-11-25T00:00Z",
-            "lead": 15.0,
-            "t850": -0.23,
-            "msl": 1014.07,
-            "z500": 548.45,
-            "flow": {
-              "u_mean_ms": 8.55,
-              "v_mean_ms": -2.38,
-              "vector_speed_ms": 8.9,
-              "from_deg": 286,
-              "note": "Vent vectoriel moyen à 850 hPa sur un domaine. Pas un vent de surface, ni une mesure directe d’advection."
-            },
-            "weight": 0.241,
-            "mae_msl_hpa": 8.024
-          },
-          "gfs": {
-            "name": "GFS",
-            "run_utc": "2026-11-25T00:00:00+00:00",
-            "lead": 15.0,
-            "t850": -4.81,
-            "msl": 1017.5,
-            "z500": 546.23,
-            "flow": {
-              "u_mean_ms": 4.08,
-              "v_mean_ms": -7.74,
-              "vector_speed_ms": 8.7,
-              "from_deg": 332,
-              "note": "Vecteur moyen vent 850 hPa, pas un vent au sol ni une trajectoire réelle d'advection."
-            },
-            "weight": 0.3133,
-            "mae_msl_hpa": 6.171
-          },
-          "aigfs": {
-            "name": "AIGFS",
-            "run_utc": "2026-11-25T00:00:00+00:00",
-            "lead": 15.0,
-            "t850": -1.3,
-            "msl": 1003.05,
-            "z500": 537.42,
-            "flow": {
-              "u_mean_ms": 7.26,
-              "v_mean_ms": -3.37,
-              "vector_speed_ms": 8.0,
-              "from_deg": 295,
-              "note": "Vecteur moyen vent 850 hPa, pas un vent au sol ni une trajectoire réelle d'advection."
-            },
-            "weight": 0.2564,
-            "mae_msl_hpa": 7.541999999999999
           }
         },
         "valid_utc": "2026-12-10T00:00:00+00:00",
-        "t850_france": -2.19,
-        "msl_france": 1016.1,
-        "t850_spread": 4.58,
-        "msl_spread": 30.99,
-        "agreement": "forte divergence",
+        "t850_france": -1.57,
+        "msl_france": 1034.04,
+        "t850_spread": 0.0,
+        "msl_spread": 0.0,
+        "agreement": "comparaison impossible (un seul modèle)",
         "note": "Consensus régional indicatif ; fond et risques IFS, sans moyenne de grilles ni probabilité calibrée."
       },
       "synoptic_consensus": {
-        "method": "weighted_representative",
+        "method": "ifs_reference",
         "models": [
-          "ifs",
-          "aifs-single",
-          "gfs",
-          "aigfs"
+          "ifs"
         ],
         "weights": {
-          "ifs": 0.18938106189381063,
-          "aifs-single": 0.24097590240975902,
-          "gfs": 0.31326867313268675,
-          "aigfs": 0.25637436256374363
+          "ifs": 1.0
         },
-        "representative": "aigfs",
-        "normalized_spread": 1.29,
         "excluded": {},
-        "valid_utc": "2026-12-10T00:00:00+00:00",
-        "risk_source": "ifs",
-        "weight_method": "Inverse MAE pression France, 3 derniers mois complets ; poids indicatifs"
+        "reason": "Moins de deux grilles complètes à validité identique"
       },
       "note": "Projection Lambert ; champs synoptiques KFS selon grilles disponibles à validité identique. Risques et pictogrammes IFS ; ! rouge = seuil KFS non officiel."
     }
   ],
   "public": true,
   "graphic_style": "KFS PREMIUM Lambert — consensus synoptique selon grilles disponibles ; risques IFS",
-  "analysis_summary": "J3 : IFS / AIFS / GFS / AIGFS : accord relatif. T850 France +2.8 °C, pression 1022 hPa (moyennes régionales pondérées). Écart T850 0.6 °C. J7 : IFS / AIFS / GFS / AIGFS : forte divergence. T850 France +5.2 °C, pression 1023 hPa (moyennes régionales pondérées). Écart T850 3.1 °C. J10 : IFS / AIFS / GFS / AIGFS : forte divergence. T850 France +2.2 °C, pression 1025 hPa (moyennes régionales pondérées). Écart T850 9.2 °C. J15 : IFS / AIFS / GFS / AIGFS : forte divergence. T850 France -2.2 °C, pression 1016 hPa (moyennes régionales pondérées). Écart T850 4.6 °C.",
+  "analysis_summary": "J3 : IFS / AIFS / GFS / AIGFS : accord relatif. T850 France +3.5 °C, pression 1023 hPa (moyennes régionales pondérées). Écart T850 1.3 °C. J7 : IFS : comparaison impossible (un seul modèle). T850 France +6.0 °C, pression 1026 hPa (moyennes régionales pondérées). Écart T850 0.0 °C. J10 : IFS : comparaison impossible (un seul modèle). T850 France +3.8 °C, pression 1030 hPa (moyennes régionales pondérées). Écart T850 0.0 °C. J15 : IFS : comparaison impossible (un seul modèle). T850 France -1.6 °C, pression 1034 hPa (moyennes régionales pondérées). Écart T850 0.0 °C.",
   "note": "Synthèse synoptique pondérée si grilles alignées disponibles ; scénario représentatif si divergence marquée, sinon repli IFS explicite. Risques IFS. Aucune probabilité calibrée."
 }
