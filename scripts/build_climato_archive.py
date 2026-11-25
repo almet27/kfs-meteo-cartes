@@ -7,6 +7,7 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 import requests
 from matplotlib.colors import TwoSlopeNorm
+from matplotlib.colors import Normalize
 import build_climato_france as core
 from climato_zones import zone_files
 
@@ -43,7 +44,7 @@ def download(dep,typ,period,ids,years):
                             t=v(row,"TM")
                             if t is None:t=v(row,"TNTXM")
                             tn=v(row,"TN")
-                            data={"temp":t,"rain":v(row,"RR"),"frost":None if tn is None else int(tn<=0)}
+                            data={"temp":t,"rain":v(row,"RR"),"frost":None if tn is None else int(tn<=0),"gust":core.gust_kmh(row) if y==YEAR else None}
                         else:
                             sun=v(row,"INST");data={"sun":None if sun is None else sun/60,"snow":v(row,"NEIGETOTX")}
                         for k,value in data.items():
@@ -52,7 +53,7 @@ def download(dep,typ,period,ids,years):
                             key=(sid,y,m,k); bit=1<<(day-1)
                             total,mask=result.get(key,(0,0))
                             if mask&bit:continue
-                            result[key]=(max(total,value) if k=="snow" else total+value,mask|bit)
+                            result[key]=(max(total,value) if k in ("snow","gust") else total+value,mask|bit)
             aggregates={}
             for key,(total,mask) in result.items():
                 sid,y,m,k=key
@@ -73,7 +74,7 @@ def dept(dep,catalog):
 def metric(ag,sid,y,months,key):
     seq=[ag.get((sid,y,m,key)) for m in months]
     if any(v is None for v in seq):return None
-    if key=="snow":return max(seq)
+    if key in ("snow","gust"):return max(seq)
     total=sum(seq)
     return total/sum(calendar.monthrange(y,m)[1] for m in months) if key=="temp" else total
 
@@ -139,6 +140,12 @@ def main():
             if len(pts)<(15 if key=="sun" else 30) or len({(round(p[0][0]),round(p[0][1])) for p in pts})<8:continue
             core.render(pts,bounds,title,units,cmap,TwoSlopeNorm(vmin=-span,vcenter=0,vmax=span),key,end,filename,period_label=period)
             manifest["maps"].append({"file":filename,"title":title,"end":end.isoformat(),"stations":len(pts)})
+        gusts=[(catalog[sid],v) for sid in valid_sids if (v:=metric(ag,sid,YEAR,months,"gust")) is not None]
+        if len(gusts)>=30 and len({(round(p[0][0]),round(p[0][1])) for p in gusts})>=8:
+            filename="rafales-max.png";title="Rafales maximales observées"
+            hi=max(120,math.ceil(max(v for _,v in gusts)/20)*20)
+            core.render(gusts,bounds,title,"Rafale maximale (km/h)","YlOrRd",Normalize(vmin=0,vmax=hi),"gust",end,filename,period_label=period,method_label="Maximum des rafales quotidiennes FXI / FXI3S • période complète • zonage IDW indicatif")
+            manifest["maps"].append({"file":filename,"title":title,"end":end.isoformat(),"stations":len(gusts),"kind":"gust_observed","source":"Météo-France"})
         snow=[]
         for sid in valid_sids:
             v=metric(ag,sid,YEAR,months,"snow")
