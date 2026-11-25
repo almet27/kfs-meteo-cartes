@@ -9,7 +9,7 @@ from urllib.error import HTTPError
 from kfs_weather_cache import check_quota, record_quota
 OUT=Path("forecast-maps/france/hourly-web")
 MODELS={"arome":"meteofrance_arome_france","gfs":"gfs_global","ifs":"ecmwf_ifs025"}
-FIELDS=["temperature_2m","wind_speed_10m","wind_gusts_10m","precipitation","wind_direction_10m"]
+FIELDS=["temperature_2m","wind_speed_10m","wind_gusts_10m","precipitation","wind_direction_10m","weather_code"]
 def get(url):
     with urlopen(Request(url,headers={"User-Agent":"KFS-Meteo-Hourly/1.0"}),timeout=40) as r:return json.load(r)
 def inside(x,y,ring):
