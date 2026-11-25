@@ -201,10 +201,21 @@ def publish_hourly_sky(grid,rows,precip,snow,run,horizon):
         data.append(list(zip(clean(t,1),clean(p,2),clean(code,0))))
         times.append(iso(run+timedelta(hours=h)))
     if len(times)<12 or len(points)<400:raise RuntimeError("Insufficient hourly native sky coverage")
+    now=datetime.now(timezone.utc).replace(minute=0,second=0,microsecond=0)
+    future=[i for i,t in enumerate(times) if now<datetime.fromisoformat(t.replace("Z","+00:00"))<=now+timedelta(hours=24)]
+    if len(future)<6 or not any(sum(v[2] is not None for v in data[i])>=len(points)*.5 for i in future):raise RuntimeError("Insufficient future weather codes")
     doc={"schema":1,"provider":"Météo-France Open Data","model":"arome","run_utc":run.isoformat(),"fetched_utc":datetime.now(timezone.utc).isoformat(),"grid_degrees":.2,"points":points,"times":times,"rows":[list(r) for r in zip(*data)],"fields":["temperature_2m","precipitation","weather_code"]}
     dest=OUT/"hourly-arome-sky.json"
     tmp=dest.with_suffix(".tmp");tmp.write_text(json.dumps(doc,separators=(",",":"),allow_nan=False));tmp.replace(dest)
     print("KFS_AROME_NATIVE_HOURLY_SKY",len(points),len(times),flush=True)
+    if os.getenv("GH_TOKEN"):
+        import subprocess
+        tag="arome-hourly-sky"
+        repo="almet27/kfs-meteo-cartes"
+        if subprocess.run(["gh","release","view",tag,"--repo",repo],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode:
+            subprocess.run(["gh","release","create",tag,"--repo",repo,"--title","AROME - Nébulosité horaire","--notes","Donnees horaires diagnostiques ARÔME, Météo-France Open Data.","--prerelease"],check=True)
+        subprocess.run(["gh","release","upload",tag,str(dest),"--repo",repo,"--clobber"],check=True)
+        print("KFS_AROME_HOURLY_SKY_RELEASE_OK",run.isoformat(),flush=True)
 
 def main():
     OUT.mkdir(parents=True,exist_ok=True)
