@@ -679,7 +679,7 @@ def daily_records(current, hourly_samples, names, now):
             "points": {k: list(v.values()) for k, v in points.items()}}
 
 
-def estimated_snow_record(now, points=None):
+def estimated_snow_records(now):
     from zoneinfo import ZoneInfo
 
     sites = [("Chamonix", 45.92, 6.87), ("Aiguille du Midi", 45.88, 6.89),
@@ -689,6 +689,32 @@ def estimated_snow_record(now, points=None):
              ("Font-Romeu", 42.50, 2.04), ("Les Rousses", 46.48, 6.06), ("Le Grand-Bornand", 45.94, 6.43),
              ("Le Lioran", 45.08, 2.75), ("Le Mont-Dore", 45.57, 2.81), ("Le Markstein", 47.92, 7.03),
              ("Ballon d’Alsace", 47.82, 6.85), ("Haut-Asco", 42.40, 8.92)]
+    # Representative lowland sites, spread over mainland France; actual
+    # classification uses the elevation returned by Open-Meteo, not the name.
+    sites += [("Brest", 48.39, -4.49), ("Quimper", 47.996, -4.10),
+              ("Saint-Brieuc", 48.51, -2.76), ("Rennes", 48.11, -1.68),
+              ("Nantes", 47.22, -1.55), ("La Roche-sur-Yon", 46.67, -1.43),
+              ("Caen", 49.18, -0.37), ("Rouen", 49.44, 1.10),
+              ("Cherbourg", 49.64, -1.62), ("Évreux", 49.02, 1.15),
+              ("Alençon", 48.43, 0.09), ("Lille", 50.63, 3.06),
+              ("Dunkerque", 51.03, 2.38), ("Amiens", 49.89, 2.30),
+              ("Saint-Quentin", 49.85, 3.29), ("Paris", 48.86, 2.35),
+              ("Chartres", 48.45, 1.49), ("Orléans", 47.90, 1.91),
+              ("Tours", 47.39, 0.69), ("Le Mans", 48.01, 0.20),
+              ("Châteauroux", 46.81, 1.69), ("Poitiers", 46.58, 0.34),
+              ("La Rochelle", 46.16, -1.15), ("Bordeaux", 44.84, -0.58),
+              ("Mont-de-Marsan", 43.89, -0.50), ("Pau", 43.30, -0.37),
+              ("Toulouse", 43.60, 1.44), ("Montauban", 44.02, 1.35),
+              ("Carcassonne", 43.21, 2.35), ("Perpignan", 42.70, 2.90),
+              ("Montpellier", 43.61, 3.88), ("Nîmes", 43.84, 4.36),
+              ("Marseille", 43.30, 5.37), ("Nice", 43.70, 7.27),
+              ("Ajaccio", 41.92, 8.74), ("Lyon", 45.76, 4.84),
+              ("Mâcon", 46.31, 4.83), ("Dijon", 47.32, 5.04),
+              ("Besançon", 47.24, 6.02), ("Strasbourg", 48.57, 7.75),
+              ("Colmar", 48.08, 7.36), ("Nancy", 48.69, 6.18),
+              ("Metz", 49.12, 6.18), ("Reims", 49.26, 4.03),
+              ("Troyes", 48.30, 4.08), ("Auxerre", 47.80, 3.57),
+              ("Limoges", 45.83, 1.26), ("Clermont-Ferrand", 45.78, 3.08)]
     start = now.astimezone(ZoneInfo("Europe/Paris")).replace(hour=0, minute=0, second=0, microsecond=0)
     query = urllib.parse.urlencode({"latitude": ",".join(str(p[1]) for p in sites),
                                    "longitude": ",".join(str(p[2]) for p in sites),
@@ -696,27 +722,25 @@ def estimated_snow_record(now, points=None):
                                    "timeformat": "unixtime", "timezone": "GMT"})
     data = http_json("https://api.open-meteo.com/v1/forecast?" + query, retries=1)
     if not isinstance(data, list) or len(data) != len(sites):
-        return None
-    best = None
-    count = 0
+        return {"snow": [], "snow_plain": []}
+    points = {"snow": [], "snow_plain": []}
     for (place, lat, lon), row in zip(sites, data):
+        elevation = row.get("elevation")
+        if not isinstance(elevation, (int, float)) or not math.isfinite(elevation):
+            continue
+        metric = "snow_plain" if elevation < 500 else "snow"
         hourly = row.get("hourly", {})
         if row.get("hourly_units", {}).get("snow_depth") != "m":
             continue
         values = [(v, t) for v, t in zip(hourly.get("snow_depth", []), hourly.get("time", []))
-                  if isinstance(v, (int, float)) and v >= 0 and start.timestamp() <= t <= now.timestamp()]
+                  if isinstance(v, (int, float)) and math.isfinite(v) and v >= 0 and start.timestamp() <= t <= now.timestamp()]
         if values:
-            count += 1
             depth, stamp = max(values)
             record = {"place": place, "value": depth * 100, "lat": lat, "lon": lon,
-                      "id": place, "time": datetime.fromtimestamp(stamp, timezone.utc).isoformat()}
-            if points is not None:
-                points.append(record)
-            if best is None or record["value"] > best["value"]:
-                best = dict(record)
-    if best:
-        best["sites"] = count
-    return best
+                      "id": place, "elevation": elevation,
+                      "time": datetime.fromtimestamp(stamp, timezone.utc).isoformat()}
+            points[metric].append(record)
+    return points
 
 
 def main():
@@ -822,8 +846,10 @@ def main():
                             sun, clouds if cloud_stamp else None, cloud_stamp, sid])
     records = daily_records(current, hourly_samples, official_names, now)
     try:
-        records["points"]["snow"] = []
-        records["values"]["snow"] = estimated_snow_record(now, records["points"]["snow"])
+        for metric, points in estimated_snow_records(now).items():
+            records["points"][metric] = points
+            if points:
+                records["values"][metric] = dict(max(points, key=lambda p: p["value"]), sites=len(points))
     except (RuntimeError, TypeError, ValueError, KeyError) as exc:
         print(f"INFO neige du jour indisponible : {exc}", file=sys.stderr)
     metadata = {
