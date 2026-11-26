@@ -741,12 +741,14 @@ def estimated_snow_records(now):
     start = now.astimezone(ZoneInfo("Europe/Paris")).replace(hour=0, minute=0, second=0, microsecond=0)
     query = urllib.parse.urlencode({"latitude": ",".join(str(p[1]) for p in sites),
                                    "longitude": ",".join(str(p[2]) for p in sites),
-                                   "hourly": "snow_depth", "past_days": 1, "forecast_days": 1,
+                                   "hourly": "snow_depth,snowfall", "past_days": 1, "forecast_days": 1,
                                    "timeformat": "unixtime", "timezone": "GMT"})
     data = http_json("https://api.open-meteo.com/v1/forecast?" + query, retries=1)
     if not isinstance(data, list) or len(data) != len(sites):
         return {"snow": [], "snow_plain": []}
     points = {"snow": [], "snow_plain": []}
+    end_hour = int(now.timestamp()) // 3600 * 3600
+    expected_hours = set(range(end_hour - 23 * 3600, end_hour + 1, 3600))
     for (place, lat, lon), row in zip(sites, data):
         elevation = row.get("elevation")
         if not isinstance(elevation, (int, float)) or not math.isfinite(elevation):
@@ -762,6 +764,18 @@ def estimated_snow_records(now):
             record = {"place": place, "value": depth * 100, "lat": lat, "lon": lon,
                       "id": place, "elevation": elevation,
                       "time": datetime.fromtimestamp(stamp, timezone.utc).isoformat()}
+            # Snowfall is the preceding-hour accumulation in cm, not a difference in snow depth.
+            # Require all 24 hourly values; a missing value must never be interpreted as zero.
+            if row.get("hourly_units", {}).get("snowfall") == "cm":
+                snow_hours = {t: v for t, v in zip(hourly.get("time", []), hourly.get("snowfall", []))
+                              if t in expected_hours and isinstance(v, (int, float)) and math.isfinite(v) and v >= 0}
+                if set(snow_hours) == expected_hours:
+                    record["snowfall_24h_cm"] = round(sum(snow_hours.values()), 2)
+                    record["snowfall_24h_end"] = datetime.fromtimestamp(end_hour, timezone.utc).isoformat()
+            # Latest available depth, separately from the daily maximum used by the map.
+            latest_depth, latest_stamp = max(values, key=lambda pair: pair[1])
+            record["snow_depth_current_cm"] = round(latest_depth * 100, 2)
+            record["snow_depth_current_time"] = datetime.fromtimestamp(latest_stamp, timezone.utc).isoformat()
             points[metric].append(record)
     return points
 
