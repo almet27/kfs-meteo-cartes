@@ -18,6 +18,8 @@ FIRST = dt.date(2020, 1, 1)
 BATCH = 20
 REQUEST_LIMIT = 12
 PAUSE = 3
+PRIORITY = "STATIC0064"
+RECENT_FIRST = dt.date(2026, 8, 1)
 DB = BASE / "climatologie_journaliere.sqlite"
 REPORT = BASE / "climatologie_journaliere_status.json"
 CAT = "https://www.infoclimat.fr/opendata/stations_xhr.php?format=geojson"
@@ -86,6 +88,25 @@ def report(db,requests,eligible,note):
          "last_day":db.execute("SELECT MAX(day) FROM daily").fetchone()[0],
          "collected_windows":db.execute("SELECT COUNT(*) FROM batches").fetchone()[0],
          "db_bytes":DB.stat().st_size,"note":note}
+    # Compact public-data export for the priority station; separate from raw observations.
+    # Do not publish automatically: CC BY-NC and source provenance must accompany the values.
+    st=db.execute("SELECT id,lat,lon,license FROM stations WHERE id=?",(PRIORITY,)).fetchone()
+    if st:
+        months=[]
+        for month in range(8,13):
+            begin=dt.date(2026,month,1)
+            end=min(dt.date(2027,1,1) if month==12 else dt.date(2026,month+1,1),dt.datetime.now(dt.timezone.utc).date())
+            if end<=begin:continue
+            rows=db.execute("SELECT day,tn,tx,rain,wind,wind_hours,gust,gust_utc,gust_hours FROM daily WHERE station=? AND day>=? AND day<? ORDER BY day",(PRIORITY,str(begin),str(end))).fetchall()
+            t=[(r[1],r[2]) for r in rows if r[1] is not None and r[2] is not None]
+            rain=[r[3] for r in rows if r[3] is not None]
+            winds=[(r[4],r[5]) for r in rows if r[4] is not None and r[5]>0]
+            gusts=[(r[6],r[7]) for r in rows if r[6] is not None]
+            g=max(gusts,key=lambda x:x[0]) if gusts else (None,None)
+            months.append({"month":begin.strftime("%Y-%m"),"expected_days":(end-begin).days,"observed_days":len(rows),"temperature_days":len(t),"rain_days":len(rain),"temperature_mean":round(sum((a+b)/2 for a,b in t)/len(t),2) if t else None,"tn_mean":round(sum(a for a,b in t)/len(t),2) if t else None,"tx_mean":round(sum(b for a,b in t)/len(t),2) if t else None,"tn_min":min(a for a,b in t) if t else None,"tx_max":max(b for a,b in t) if t else None,"rain_mm":round(sum(rain),2) if rain else None,"wind_hours":sum(n for v,n in winds),"wind_mean_kmh":round(sum(v*n for v,n in winds)/sum(n for v,n in winds),2) if winds else None,"gust_max_kmh":g[0],"gust_utc":g[1],"gust_hours":sum(r[8] for r in rows)})
+        export={"schema":1,"station":{"id":st[0],"name":"Puzeaux","lat":st[1],"lon":st[2],"license":st[3]},"source":"Infoclimat / StatIC","source_url":"https://www.infoclimat.fr/stations/metadonnees.php?id=STATIC0064","usage":"non-commercial" if st[3]=="2" else "open","method":"UTC days; monthly means of daily sampled extrema; rain sums only validated days; incomplete coverage remains explicit","months":months}
+        dest=BASE/"climatologie_puzeaux_export.json";tmp=dest.with_suffix(".tmp");tmp.write_text(json.dumps(export,allow_nan=False));tmp.replace(dest)
+        out["priority_station"]={"id":PRIORITY,"months":months}
     tmp=REPORT.with_suffix(".tmp");tmp.write_text(json.dumps(out));tmp.replace(REPORT)
     print(json.dumps(out),flush=True)
 
@@ -103,12 +124,14 @@ def main():
         stations={}
         for f in cat["features"]:
             p=f.get("properties",{});lic=p.get("license") or {}
-            if p.get("country")!="FR" or lic.get("source")!="infoclimat.fr" or str(lic.get("code")) not in ("0","1") or not p.get("id"):continue
+            if p.get("country")!="FR" or lic.get("source")!="infoclimat.fr" or not p.get("id"):continue
+            if str(lic.get("code")) not in ("0","1") and not (str(p["id"])==PRIORITY and str(lic.get("code"))=="2"):continue
             try:lon,lat=map(float,f["geometry"]["coordinates"][:2])
             except (KeyError,ValueError,TypeError):continue
             if -5.8<=lon<=10.1 and 41<=lat<=51.6:stations[str(p["id"])]=(lat,lon,str(lic["code"]))
         live=json.loads((BASE/"latest.json").read_text())
         ids=sorted(set(stations).intersection(live))
+        if PRIORITY in stations and PRIORITY not in ids:ids.insert(0,PRIORITY)
         if not ids:raise SystemExit("Aucune station eligible")
         with sqlite3.connect(DB,timeout=30) as db:
             db.execute("CREATE TABLE IF NOT EXISTS stations(id TEXT PRIMARY KEY,lat REAL,lon REAL,license TEXT)")
@@ -129,10 +152,20 @@ def main():
                 stop=min(cursor+dt.timedelta(days=5),today)
                 if stop>cursor and (cursor,stop) not in blocks:blocks.append((cursor,stop))
                 cursor-=dt.timedelta(days=5)
+            # First repair recent months of Puzeaux, even if excluded from live feed.
+            # Fixed blocks prevent duplicate requests; preserve the general backfill.
+            priority_blocks=[]
+            if PRIORITY in ids:
+                cursor=RECENT_FIRST
+                while cursor<today:
+                    stop=min(cursor+dt.timedelta(days=5),today)
+                    priority_blocks.append((cursor,stop,[PRIORITY]))
+                    cursor=stop
             requests=0
-            for begin,end in blocks:
+            work=priority_blocks+[(begin,end,ids) for begin,end in blocks]
+            for begin,end,candidates in work:
                 done={r[0] for r in db.execute("SELECT station FROM batches WHERE begin=? AND end=?",(str(begin),str(end)))}
-                pending=[s for s in ids if s not in done]
+                pending=[s for s in candidates if s not in done]
                 for pos in range(0,len(pending),BATCH):
                     if requests>=REQUEST_LIMIT:
                         report(db,requests,len(ids),"Bounded pilot; resume on next execution")
