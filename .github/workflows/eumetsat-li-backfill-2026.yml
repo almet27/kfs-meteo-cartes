@@ -74,9 +74,21 @@ jobs:
               except Exception: return False
           missing=[end-timedelta(days=i) for i in range((end-start).days+1) if not complete(end-timedelta(days=i))]
           older=[d for d in missing if d!=end]
-          # Faire progresser le rattrapage même si une journée ancienne est lacunaire.
-          offset=(datetime.now(ZoneInfo('Europe/Paris')).hour//12)%max(1,len(older))
-          targets=([end] if end in missing else [])+(older[offset:offset+n] if older else [])
+          # Priorité juin, puis saison orageuse, puis reste de l'année.
+          # Rotation par créneau absolu : une date défaillante ne bloque pas les autres.
+          june=sorted(d for d in older if d.month==6)
+          season=sorted(d for d in older if 4<=d.month<=9 and d.month!=6)
+          rest=sorted(d for d in older if d not in june and d not in season)
+          slot=int(datetime.now(ZoneInfo('Europe/Paris')).timestamp()//43200)
+          pool=june or season or rest
+          if pool:
+              # Alterner régulièrement vers les autres périodes même si juin reste incomplet.
+              if slot%4==0 and (season or rest): pool=season or rest
+              elif slot%8==1 and rest: pool=rest
+              offset=(slot*max(1,n))%len(pool)
+              chosen=(pool[offset:]+pool[:offset])[:n]
+          else: chosen=[]
+          targets=([end] if end in missing else [])+chosen
           for day in targets:
               p=base/(day.isoformat()+'.json')
               print('COLLECTE',day,flush=True)
