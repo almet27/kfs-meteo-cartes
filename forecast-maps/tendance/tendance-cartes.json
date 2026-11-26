@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "status": "illustrative_model_maps",
-  "generated_utc": "2026-11-26T17:56:43.754223+00:00",
-  "source_generated_utc": "2026-11-26T17:54:26.947842+00:00",
+  "generated_utc": "2026-11-26T18:12:40.671954+00:00",
+  "source_generated_utc": "2026-11-26T18:08:53.055146+00:00",
   "charts_generated_utc": "2026-11-26T17:44:33.427260+00:00",
   "source": "ECMWF Open Data (CC BY 4.0), NOAA GFS si disponible",
   "not_weekly_anomalies": true,
@@ -12,14 +12,14 @@
       "step_h": 72,
       "path": "forecast-maps/tendance/tendance-carte-j3.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j3.png",
-      "size_bytes": 811072,
+      "size_bytes": 810359,
       "run_utc": {
         "ifs": "2026-11-26T06:00:00+00:00",
         "aifs": "2026-11-26T12:00:00+00:00",
         "gfs": "2026-11-26T12:00:00+00:00"
       },
       "valid_utc": "2026-11-29T06:00:00+00:00",
-      "title": "J+3 — synthèse synoptique IFS / AIFS / GFS",
+      "title": "J+3 — synthèse KFS",
       "zone": "europe",
       "confidence_label": "Modérée (indicative)",
       "marked_phenomena": [
@@ -152,10 +152,10 @@
         "palette": "kfs-spectrum-v1",
         "description": "Température à 850 hPa modélisée, pas température au sol"
       },
-      "style": "kfs-editorial-lambert-consensus-v13",
-      "summary": "KFS : IFS 50% / AIFS 30% / GFS 20%. T850 France +4.5 °C, pression 1023 hPa. Divergence normalisée 0.23. Risques : IFS. Flux d’ouest-sud-ouest sur la France, avec air plus frais en altitude. Signaux sur France et abords : pluie jusqu’à 14 mm/6 h, rafales jusqu’à 70 km/h, neige hors relief, gel jusqu’à -18 °C. Non calculé : Orage possible. Confiance modérée.",
+      "style": "kfs-editorial-lambert-consensus-v14",
+      "summary": "Une dominante anticyclonique se dessine sur la France, avec air plus frais en altitude (+4.5 °C). Signaux possibles : pluie jusqu’à 14 mm/6 h, rafales jusqu’à 70 km/h.",
       "analysis": {
-        "summary": "KFS : IFS 50% / AIFS 30% / GFS 20%. T850 France +4.5 °C, pression 1023 hPa. Divergence normalisée 0.23. Risques : IFS.",
+        "summary": "Une dominante anticyclonique se dessine sur la France, avec air plus frais en altitude (+4.5 °C). Signaux possibles : pluie jusqu’à 14 mm/6 h, rafales jusqu’à 70 km/h.",
         "method": "Poids KFS configurés ; bonus de 10 points selon accord synoptique actuel",
         "models": {
           "ifs": {
@@ -222,14 +222,14 @@
       "step_h": 168,
       "path": "forecast-maps/tendance/tendance-carte-j7.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j7.png",
-      "size_bytes": 769910,
+      "size_bytes": 768916,
       "run_utc": {
         "ifs": "2026-11-26T00:00:00+00:00",
         "aifs": "2026-11-26T12:00:00+00:00",
         "gfs": "2026-11-26T12:00:00+00:00"
       },
       "valid_utc": "2026-12-03T00:00:00+00:00",
-      "title": "J+7 — synthèse synoptique IFS / AIFS / GFS",
+      "title": "J+7 — synthèse KFS",
       "zone": "europe",
       "confidence_label": "Limitée (indicative)",
       "marked_phenomena": [
@@ -355,10 +355,10 @@
         "palette": "kfs-spectrum-v1",
         "description": "Température à 850 hPa modélisée, pas température au sol"
       },
-      "style": "kfs-editorial-lambert-consensus-v13",
-      "summary": "KFS : IFS 40% / AIFS 40% / GFS 20%. T850 France +4.8 °C, pression 1030 hPa. Divergence normalisée 0.51. Risques : IFS. Flux de nord sur la France, avec air plus frais en altitude. Signaux sur France et abords : rafales jusqu’à 53 km/h, gel jusqu’à -17 °C. Non calculé : Orage possible. Confiance limitée.",
+      "style": "kfs-editorial-lambert-consensus-v14",
+      "summary": "Une dominante anticyclonique se dessine sur la France, avec air plus frais en altitude (+4.8 °C). Signaux possibles : rafales jusqu’à 53 km/h, gel jusqu’à -17 °C.",
       "analysis": {
-        "summary": "KFS : IFS 40% / AIFS 40% / GFS 20%. T850 France +4.8 °C, pression 1030 hPa. Divergence normalisée 0.51. Risques : IFS.",
+        "summary": "Une dominante anticyclonique se dessine sur la France, avec air plus frais en altitude (+4.8 °C). Signaux possibles : rafales jusqu’à 53 km/h, gel jusqu’à -17 °C.",
         "method": "Poids KFS configurés ; bonus de 10 points selon accord synoptique actuel",
         "models": {
           "ifs": {
@@ -425,14 +425,14 @@
       "step_h": 240,
       "path": "forecast-maps/tendance/tendance-carte-j10.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j10.png",
-      "size_bytes": 733564,
+      "size_bytes": 732424,
       "run_utc": {
         "ifs": "2026-11-26T00:00:00+00:00",
         "aifs": "2026-11-26T12:00:00+00:00",
         "gfs": "2026-11-26T12:00:00+00:00"
       },
       "valid_utc": "2026-12-06T00:00:00+00:00",
-      "title": "J+10 — synthèse synoptique IFS / AIFS / GFS",
+      "title": "J+10 — synthèse KFS",
       "zone": "europe",
       "confidence_label": "Faible (indicative)",
       "marked_phenomena": [
@@ -558,10 +558,10 @@
         "palette": "kfs-spectrum-v1",
         "description": "Température à 850 hPa modélisée, pas température au sol"
       },
-      "style": "kfs-editorial-lambert-consensus-v13",
-      "summary": "KFS : IFS 50% / AIFS 20% / GFS 30%. T850 France +1.0 °C, pression 1034 hPa. Divergence normalisée 0.78. Risques : IFS. Flux de nord sur la France, avec air plus frais en altitude. Signaux sur France et abords : rafales jusqu’à 64 km/h, gel jusqu’à -15 °C. Non calculé : Orage possible. Confiance faible.",
+      "style": "kfs-editorial-lambert-consensus-v14",
+      "summary": "Une dominante anticyclonique se dessine sur la France, avec air plus frais en altitude (+1.0 °C). Signaux possibles : rafales jusqu’à 64 km/h, gel jusqu’à -15 °C.",
       "analysis": {
-        "summary": "KFS : IFS 50% / AIFS 20% / GFS 30%. T850 France +1.0 °C, pression 1034 hPa. Divergence normalisée 0.78. Risques : IFS.",
+        "summary": "Une dominante anticyclonique se dessine sur la France, avec air plus frais en altitude (+1.0 °C). Signaux possibles : rafales jusqu’à 64 km/h, gel jusqu’à -15 °C.",
         "method": "Poids KFS configurés ; bonus de 10 points selon accord synoptique actuel",
         "models": {
           "ifs": {
@@ -628,14 +628,14 @@
       "step_h": 360,
       "path": "forecast-maps/tendance/tendance-carte-j15.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j15.png",
-      "size_bytes": 732883,
+      "size_bytes": 732828,
       "run_utc": {
         "ifs": "2026-11-26T00:00:00+00:00",
         "aifs": "2026-11-26T12:00:00+00:00",
         "gfs": "2026-11-26T12:00:00+00:00"
       },
       "valid_utc": "2026-12-11T00:00:00+00:00",
-      "title": "J+15 — synthèse synoptique IFS / AIFS / GFS",
+      "title": "J+15 — synthèse KFS",
       "zone": "europe",
       "confidence_label": "Très limitée (indicative)",
       "marked_phenomena": [
@@ -761,10 +761,10 @@
         "palette": "kfs-spectrum-v1",
         "description": "Température à 850 hPa modélisée, pas température au sol"
       },
-      "style": "kfs-editorial-lambert-consensus-v13",
-      "summary": "KFS : IFS 20% / AIFS 30% / GFS 50%. T850 France -1.2 °C, pression 1029 hPa. Divergence normalisée 1.13. Risques : IFS. Flux d’ouest-sud-ouest sur la France, avec air plus frais en altitude. Signaux sur France et abords : rafales jusqu’à 50 km/h, gel jusqu’à -19 °C. Non calculé : Orage possible. Confiance très limitée.",
+      "style": "kfs-editorial-lambert-consensus-v14",
+      "summary": "Une dominante anticyclonique se dessine sur la France, avec air froid à 850 hpa (-1.2 °C). Signaux possibles : rafales jusqu’à 50 km/h, gel jusqu’à -19 °C.",
       "analysis": {
-        "summary": "KFS : IFS 20% / AIFS 30% / GFS 50%. T850 France -1.2 °C, pression 1029 hPa. Divergence normalisée 1.13. Risques : IFS.",
+        "summary": "Une dominante anticyclonique se dessine sur la France, avec air froid à 850 hpa (-1.2 °C). Signaux possibles : rafales jusqu’à 50 km/h, gel jusqu’à -19 °C.",
         "method": "Poids KFS configurés ; bonus de 10 points selon accord synoptique actuel",
         "models": {
           "ifs": {
@@ -833,14 +833,14 @@
       "step_h": 72,
       "path": "forecast-maps/tendance/tendance-carte-france-j3.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-france-j3.png",
-      "size_bytes": 470955,
+      "size_bytes": 469258,
       "run_utc": {
         "ifs": "2026-11-26T06:00:00+00:00",
         "aifs": "2026-11-26T12:00:00+00:00",
         "gfs": "2026-11-26T12:00:00+00:00"
       },
       "valid_utc": "2026-11-29T06:00:00+00:00",
-      "title": "J+3 — France • synthèse synoptique IFS / AIFS / GFS",
+      "title": "J+3 — France • synthèse KFS",
       "zone": "france",
       "confidence_label": "Modérée (indicative)",
       "marked_phenomena": [
@@ -960,10 +960,10 @@
         "palette": "kfs-spectrum-v1",
         "description": "Température à 850 hPa modélisée, pas température au sol"
       },
-      "style": "kfs-editorial-lambert-consensus-v13",
-      "summary": "KFS : IFS 50% / AIFS 30% / GFS 20%. T850 France +4.5 °C, pression 1023 hPa. Divergence normalisée 0.23. Risques : IFS. Flux d’ouest-sud-ouest sur la France, avec air plus frais en altitude. Signaux en France : pluie jusqu’à 14 mm/6 h, gel jusqu’à -10 °C. Non calculé : Orage possible. Confiance modérée.",
+      "style": "kfs-editorial-lambert-consensus-v14",
+      "summary": "Une dominante anticyclonique se dessine sur la France, avec air plus frais en altitude (+4.5 °C). Signaux possibles : pluie jusqu’à 14 mm/6 h, gel jusqu’à -10 °C.",
       "analysis": {
-        "summary": "KFS : IFS 50% / AIFS 30% / GFS 20%. T850 France +4.5 °C, pression 1023 hPa. Divergence normalisée 0.23. Risques : IFS.",
+        "summary": "Une dominante anticyclonique se dessine sur la France, avec air plus frais en altitude (+4.5 °C). Signaux possibles : pluie jusqu’à 14 mm/6 h, gel jusqu’à -10 °C.",
         "method": "Poids KFS configurés ; bonus de 10 points selon accord synoptique actuel",
         "models": {
           "ifs": {
@@ -1030,14 +1030,14 @@
       "step_h": 168,
       "path": "forecast-maps/tendance/tendance-carte-france-j7.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-france-j7.png",
-      "size_bytes": 420977,
+      "size_bytes": 417371,
       "run_utc": {
         "ifs": "2026-11-26T00:00:00+00:00",
         "aifs": "2026-11-26T12:00:00+00:00",
         "gfs": "2026-11-26T12:00:00+00:00"
       },
       "valid_utc": "2026-12-03T00:00:00+00:00",
-      "title": "J+7 — France • synthèse synoptique IFS / AIFS / GFS",
+      "title": "J+7 — France • synthèse KFS",
       "zone": "france",
       "confidence_label": "Limitée (indicative)",
       "marked_phenomena": [
@@ -1139,10 +1139,10 @@
         "palette": "kfs-spectrum-v1",
         "description": "Température à 850 hPa modélisée, pas température au sol"
       },
-      "style": "kfs-editorial-lambert-consensus-v13",
-      "summary": "KFS : IFS 40% / AIFS 40% / GFS 20%. T850 France +4.8 °C, pression 1030 hPa. Divergence normalisée 0.51. Risques : IFS. Flux de nord sur la France, avec air plus frais en altitude. Signaux en France : gel jusqu’à -10 °C. Non calculé : Orage possible. Confiance limitée.",
+      "style": "kfs-editorial-lambert-consensus-v14",
+      "summary": "Une dominante anticyclonique se dessine sur la France, avec air plus frais en altitude (+4.8 °C). Signaux possibles : gel jusqu’à -10 °C.",
       "analysis": {
-        "summary": "KFS : IFS 40% / AIFS 40% / GFS 20%. T850 France +4.8 °C, pression 1030 hPa. Divergence normalisée 0.51. Risques : IFS.",
+        "summary": "Une dominante anticyclonique se dessine sur la France, avec air plus frais en altitude (+4.8 °C). Signaux possibles : gel jusqu’à -10 °C.",
         "method": "Poids KFS configurés ; bonus de 10 points selon accord synoptique actuel",
         "models": {
           "ifs": {
@@ -1209,14 +1209,14 @@
       "step_h": 240,
       "path": "forecast-maps/tendance/tendance-carte-france-j10.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-france-j10.png",
-      "size_bytes": 401171,
+      "size_bytes": 397077,
       "run_utc": {
         "ifs": "2026-11-26T00:00:00+00:00",
         "aifs": "2026-11-26T12:00:00+00:00",
         "gfs": "2026-11-26T12:00:00+00:00"
       },
       "valid_utc": "2026-12-06T00:00:00+00:00",
-      "title": "J+10 — France • synthèse synoptique IFS / AIFS / GFS",
+      "title": "J+10 — France • synthèse KFS",
       "zone": "france",
       "confidence_label": "Faible (indicative)",
       "marked_phenomena": [
@@ -1336,10 +1336,10 @@
         "palette": "kfs-spectrum-v1",
         "description": "Température à 850 hPa modélisée, pas température au sol"
       },
-      "style": "kfs-editorial-lambert-consensus-v13",
-      "summary": "KFS : IFS 50% / AIFS 20% / GFS 30%. T850 France +1.0 °C, pression 1034 hPa. Divergence normalisée 0.78. Risques : IFS. Flux de nord sur la France, avec air plus frais en altitude. Signaux en France : gel jusqu’à -11 °C. Non calculé : Orage possible. Confiance faible.",
+      "style": "kfs-editorial-lambert-consensus-v14",
+      "summary": "Une dominante anticyclonique se dessine sur la France, avec air plus frais en altitude (+1.0 °C). Signaux possibles : gel jusqu’à -11 °C.",
       "analysis": {
-        "summary": "KFS : IFS 50% / AIFS 20% / GFS 30%. T850 France +1.0 °C, pression 1034 hPa. Divergence normalisée 0.78. Risques : IFS.",
+        "summary": "Une dominante anticyclonique se dessine sur la France, avec air plus frais en altitude (+1.0 °C). Signaux possibles : gel jusqu’à -11 °C.",
         "method": "Poids KFS configurés ; bonus de 10 points selon accord synoptique actuel",
         "models": {
           "ifs": {
@@ -1406,14 +1406,14 @@
       "step_h": 360,
       "path": "forecast-maps/tendance/tendance-carte-france-j15.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-france-j15.png",
-      "size_bytes": 436506,
+      "size_bytes": 434695,
       "run_utc": {
         "ifs": "2026-11-26T00:00:00+00:00",
         "aifs": "2026-11-26T12:00:00+00:00",
         "gfs": "2026-11-26T12:00:00+00:00"
       },
       "valid_utc": "2026-12-11T00:00:00+00:00",
-      "title": "J+15 — France • synthèse synoptique IFS / AIFS / GFS",
+      "title": "J+15 — France • synthèse KFS",
       "zone": "france",
       "confidence_label": "Très limitée (indicative)",
       "marked_phenomena": [
@@ -1545,10 +1545,10 @@
         "palette": "kfs-spectrum-v1",
         "description": "Température à 850 hPa modélisée, pas température au sol"
       },
-      "style": "kfs-editorial-lambert-consensus-v13",
-      "summary": "KFS : IFS 20% / AIFS 30% / GFS 50%. T850 France -1.2 °C, pression 1029 hPa. Divergence normalisée 1.13. Risques : IFS. Flux d’ouest-sud-ouest sur la France, avec air plus frais en altitude. Signaux en France : gel jusqu’à -13 °C. Non calculé : Orage possible. Confiance très limitée.",
+      "style": "kfs-editorial-lambert-consensus-v14",
+      "summary": "Une dominante anticyclonique se dessine sur la France, avec air froid à 850 hpa (-1.2 °C). Signaux possibles : gel jusqu’à -13 °C.",
       "analysis": {
-        "summary": "KFS : IFS 20% / AIFS 30% / GFS 50%. T850 France -1.2 °C, pression 1029 hPa. Divergence normalisée 1.13. Risques : IFS.",
+        "summary": "Une dominante anticyclonique se dessine sur la France, avec air froid à 850 hpa (-1.2 °C). Signaux possibles : gel jusqu’à -13 °C.",
         "method": "Poids KFS configurés ; bonus de 10 points selon accord synoptique actuel",
         "models": {
           "ifs": {
@@ -1613,6 +1613,6 @@
   ],
   "public": true,
   "graphic_style": "KFS PREMIUM Lambert — consensus synoptique selon grilles disponibles ; risques IFS",
-  "analysis_summary": "J3 : KFS : IFS 50% / AIFS 30% / GFS 20%. T850 France +4.5 °C, pression 1023 hPa. Divergence normalisée 0.23. Risques : IFS. J7 : KFS : IFS 40% / AIFS 40% / GFS 20%. T850 France +4.8 °C, pression 1030 hPa. Divergence normalisée 0.51. Risques : IFS. J10 : KFS : IFS 50% / AIFS 20% / GFS 30%. T850 France +1.0 °C, pression 1034 hPa. Divergence normalisée 0.78. Risques : IFS. J15 : KFS : IFS 20% / AIFS 30% / GFS 50%. T850 France -1.2 °C, pression 1029 hPa. Divergence normalisée 1.13. Risques : IFS.",
+  "analysis_summary": "J3 : Une dominante anticyclonique se dessine sur la France, avec air plus frais en altitude (+4.5 °C). Signaux possibles : pluie jusqu’à 14 mm/6 h, rafales jusqu’à 70 km/h. J7 : Une dominante anticyclonique se dessine sur la France, avec air plus frais en altitude (+4.8 °C). Signaux possibles : rafales jusqu’à 53 km/h, gel jusqu’à -17 °C. J10 : Une dominante anticyclonique se dessine sur la France, avec air plus frais en altitude (+1.0 °C). Signaux possibles : rafales jusqu’à 64 km/h, gel jusqu’à -15 °C. J15 : Une dominante anticyclonique se dessine sur la France, avec air froid à 850 hpa (-1.2 °C). Signaux possibles : rafales jusqu’à 50 km/h, gel jusqu’à -19 °C.",
   "note": "Synthèse KFS pondérée de grilles alignées à validité identique ; bonus adaptatif de 10 points à J+10/J+15 selon accord des champs ; repli IFS explicite si grilles incomplètes. Risques IFS. Aucune probabilité calibrée."
 }
