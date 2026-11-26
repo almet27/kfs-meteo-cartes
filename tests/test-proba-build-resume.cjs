@@ -6,7 +6,7 @@ const today=new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Paris'}).format(ne
 const first=Date.parse(today+'T00:00:00Z')-3600000;
 const time=Array.from({length:168},(_,i)=>(first+i*3600000)/1000);
 const hourly={time};
-for(const [variable,value] of Object.entries({rain:1,snow_depth:.01,snowfall:0,temperature_2m:1,wind_gusts_10m:60,cape:500,precipitation:1,dew_point_2m:10}))
+for(const [variable,value] of Object.entries({rain:1,snow_depth:.01,snowfall:0,temperature_2m:1,wind_gusts_10m:60,cape:500,precipitation:1,dew_point_2m:10,weather_code:66}))
  for(let n=1;n<=6;n++)hourly[variable+'_member0'+n]=time.map(()=>value);
 const disk=new Map();let calls=0,waits=0;
 const mockFs={
@@ -28,5 +28,7 @@ require('node:test').test('generation retries connection failures and resumes co
  await run();assert.equal(calls,2,'Resume must not download already completed points');
  const output=[...disk.entries()].find(([file])=>file.endsWith('five-day-probabilities.json'));
  assert.equal(JSON.parse(output[1]).zones.FR.pluie['20'][0].members,6);
+ assert.equal(JSON.parse(output[1]).zones.FR.verglas['1'][0].pct,100);
+ assert.equal(JSON.parse(output[1]).zones.FR.verglas['1'][0].amount,120);
  console.log('Verified: transient retry, checkpoint save, full resume, and publication without repeated downloads.');
 });
