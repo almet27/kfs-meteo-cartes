@@ -18,6 +18,7 @@ for path in sorted((root/"daily").glob("????-??-??.json")):
     if len(ids)!=len(set(ids)) or not set(hits)<=set(ids) or len(ids)!=d["station_count"]:
         raise ValueError(f"Invalid stations {path}")
     months[path.stem[:7]][path.stem]=(ids,hits)
+yearly=defaultdict(dict)
 for month,days in months.items():
     stations=defaultdict(lambda: {"valid":[],"active":[]})
     for day,(ids,hits) in days.items():
@@ -25,6 +26,13 @@ for month,days in months.items():
             stations[sid]["valid"].append(int(day[-2:]))
             if hits.get(sid,0)>0: stations[sid]["active"].append(int(day[-2:]))
     payload={"schema":1,"month":month,"source":"EUMETSAT MTG LI LFL","radius_km":15,"parallax":METHOD,"timezone":"Europe/Paris","stations":stations}
+    yearly[month[:4]][month]=stations
     out=root/"monthly"/(month+".json")
+    out.parent.mkdir(parents=True,exist_ok=True)
+    out.write_text(json.dumps(payload,separators=(",",":"))+"\n")
+
+for year, data in yearly.items():
+    payload={"schema":1,"year":int(year),"source":"EUMETSAT MTG LI LFL","radius_km":15,"parallax":METHOD,"timezone":"Europe/Paris","months":data}
+    out=root/"yearly"/(year+".json")
     out.parent.mkdir(parents=True,exist_ok=True)
     out.write_text(json.dumps(payload,separators=(",",":"))+"\n")
