@@ -51,6 +51,7 @@ jobs:
           EUMETSAT_CONSUMER_KEY: ${{ secrets.EUMETSAT_CONSUMER_KEY }}
           EUMETSAT_CONSUMER_SECRET: ${{ secrets.EUMETSAT_CONSUMER_SECRET }}
           BACKLOG: ${{ inputs.backlog_days || '2' }}
+          EVENT: ${{ github.event_name }}
         run: |
           python - <<'PY'
           import os, subprocess, sys, json
@@ -73,7 +74,14 @@ jobs:
                   return d.get('complete') is True and d.get('pilot') is False and d.get('parallax')==METHOD and d.get('date')==day.isoformat()
               except Exception: return False
           missing=[end-timedelta(days=i) for i in range((end-start).days+1) if not complete(end-timedelta(days=i))]
-          older=[d for d in missing if d!=end]
+          partial=Path('data/eumetsat-li/partial')
+          partial.mkdir(parents=True,exist_ok=True)
+          def usable(day):
+              try:
+                  d=json.loads((partial/(day.isoformat()+'.json')).read_text())
+                  return d.get('complete') is False and d.get('pilot') is False and d.get('parallax')==METHOD and d.get('date')==day.isoformat() and .99<=d.get('coverage_fraction',0)<=1 and 0<=d.get('max_gap_seconds',9999)<=900
+              except Exception: return False
+          older=[d for d in missing if d!=end and not usable(d)]
           # Priorité juin, puis saison orageuse, puis reste de l'année.
           # Rotation par créneau absolu : une date défaillante ne bloque pas les autres.
           june=sorted(d for d in older if d.month==6)
@@ -88,19 +96,30 @@ jobs:
               offset=(slot*max(1,n))%len(pool)
               chosen=(pool[offset:]+pool[:offset])[:n]
           else: chosen=[]
-          targets=([end] if end in missing else [])+chosen
+          if os.environ['EVENT']=='push':
+              retry=[date(2026,6,5),date(2026,6,6)]
+              retry=[d for d in retry if not complete(d) and not usable(d)]
+              chosen=(retry+[d for d in chosen if d not in retry])[:n]
+          targets=([end] if end in missing and not usable(end) else [])+chosen
           for day in targets:
               p=base/(day.isoformat()+'.json')
               print('COLLECTE',day,flush=True)
               try:
                   subprocess.run([sys.executable,'foudre-li/archive_station.py','--date',day.isoformat()],check=True,timeout=720)
               except (subprocess.CalledProcessError,subprocess.TimeoutExpired):
-                  if p.exists() and not complete(day): p.unlink()
-                  print('JOUR NON VALIDE',day,flush=True)
-              if not complete(day): print('COUVERTURE INSUFFISANTE',day,flush=True)
+                  if p.exists() and not complete(day):
+                      try:
+                          d=json.loads(p.read_text())
+                          if d.get('complete') is False and d.get('pilot') is False and d.get('date')==day.isoformat() and d.get('parallax')==METHOD and d.get('radius_km')==15 and .99<=d.get('coverage_fraction',0)<=1 and 0<=d.get('max_gap_seconds',9999)<=900:
+                              p.replace(partial/p.name)
+                              print('JOUR PARTIEL CONSERVE POUR CARTES',day,flush=True)
+                      finally:
+                          if p.exists(): p.unlink()
+                  print('JOUR NON COMPLET',day,flush=True)
+              if not complete(day) and not usable(day): print('COUVERTURE INSUFFISANTE',day,flush=True)
           print('Jours manquants restants',sum(not complete(d) for d in missing),flush=True)
           PY
-      - name: Publier seulement les journées validées
+      - name: Publier les journées complètes et cartes partielles documentées
         if: steps.lut.outputs.ready == 'true'
         run: |
           python foudre-li/aggregate_station_days.py
@@ -108,6 +127,7 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add data/eumetsat-li/daily data/eumetsat-li/monthly data/eumetsat-li/yearly
+          if test -d data/eumetsat-li/partial; then git add data/eumetsat-li/partial; fi
           git diff --cached --quiet && exit 0
           git commit -m 'Update validated EUMETSAT station lightning archives'
           for attempt in 1 2 3; do
