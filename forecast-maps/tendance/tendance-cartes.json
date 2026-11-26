@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "status": "illustrative_model_maps",
-  "generated_utc": "2026-11-26T02:31:27.172065+00:00",
-  "source_generated_utc": "2026-11-26T02:29:06.413325+00:00",
+  "generated_utc": "2026-11-26T02:49:28.742448+00:00",
+  "source_generated_utc": "2026-11-26T02:44:24.049927+00:00",
   "charts_generated_utc": "2026-11-26T00:29:09.851431+00:00",
   "source": "ECMWF Open Data (CC BY 4.0), NOAA GFS si disponible",
   "not_weekly_anomalies": true,
@@ -440,7 +440,7 @@
       "step_h": 240,
       "path": "forecast-maps/tendance/tendance-carte-j10.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j10.png",
-      "size_bytes": 619640,
+      "size_bytes": 619256,
       "run_utc": {
         "ifs": "2026-11-25T12:00Z",
         "aifs": "2026-11-25T18:00Z",
@@ -624,7 +624,7 @@
       "step_h": 360,
       "path": "forecast-maps/tendance/tendance-carte-j15.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j15.png",
-      "size_bytes": 669598,
+      "size_bytes": 670568,
       "run_utc": {
         "ifs": "2026-11-25T12:00Z",
         "aifs": "2026-11-25T18:00Z",
@@ -642,15 +642,8 @@
       "risk_status": "altitude_filtered_georeferenced",
       "risks": {
         "neige": {
-          "status": "possible",
-          "max": 0.7,
-          "unit": "mm équiv. eau/6h",
-          "reason": "Neige hors relief ≤ 500 m, hors vallée de montagne (Copernicus GLO-90) ; relief : 26 zones échantillonnées",
-          "mountain_signal": true,
-          "mountain_max": 4.6,
-          "lowland_sample_count": 5,
-          "highland_sample_count": 26,
-          "terrain_source": "Copernicus DEM GLO-90 via Open-Meteo"
+          "status": "indisponible",
+          "reason": "Filtre altitude indisponible : Altitude Copernicus non accessible : <urlopen error _ssl.c:1001: The handshake operation timed out>"
         },
         "verglas": {
           "status": "indisponible",
@@ -763,7 +756,7 @@
         "description": "Température à 850 hPa modélisée, pas température au sol"
       },
       "style": "kfs-editorial-lambert-consensus-v13",
-      "summary": "IFS : comparaison impossible (un seul modèle). T850 France -1.4 °C, pression 1017 hPa (moyennes régionales pondérées). Écart T850 0.0 °C. Flux de nord sur la France, avec air froid à 850 hpa. Signaux sur France et abords : pluie jusqu’à 15 mm/6 h, rafales jusqu’à 75 km/h, neige hors relief, gel jusqu’à -23 °C. Confiance très limitée.",
+      "summary": "IFS : comparaison impossible (un seul modèle). T850 France -1.4 °C, pression 1017 hPa (moyennes régionales pondérées). Écart T850 0.0 °C. Flux de nord sur la France, avec air froid à 850 hpa. Signaux sur France et abords : pluie jusqu’à 15 mm/6 h, rafales jusqu’à 75 km/h, gel jusqu’à -23 °C. Non calculé : Neige hors relief. Confiance très limitée.",
       "analysis": {
         "summary": "IFS : comparaison impossible (un seul modèle). T850 France -1.4 °C, pression 1017 hPa (moyennes régionales pondérées). Écart T850 0.0 °C.",
         "method": "Poids égaux : scores comparables insuffisants",
@@ -1407,7 +1400,7 @@
       "step_h": 360,
       "path": "forecast-maps/tendance/tendance-carte-france-j15.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-france-j15.png",
-      "size_bytes": 475188,
+      "size_bytes": 478144,
       "run_utc": {
         "ifs": "2026-11-25T12:00Z",
         "aifs": "2026-11-25T18:00Z",
@@ -1425,15 +1418,8 @@
       "risk_status": "altitude_filtered_georeferenced",
       "risks": {
         "neige": {
-          "status": "relief_uniquement",
-          "max": 0,
-          "unit": "mm équiv. eau/6h",
-          "reason": "Neige hors relief ≤ 500 m, hors vallée de montagne (Copernicus GLO-90) ; relief : 1 zones échantillonnées",
-          "mountain_signal": true,
-          "mountain_max": 1.2,
-          "lowland_sample_count": 0,
-          "highland_sample_count": 1,
-          "terrain_source": "Copernicus DEM GLO-90 via Open-Meteo"
+          "status": "indisponible",
+          "reason": "Filtre altitude indisponible : Altitude Copernicus non accessible : <urlopen error _ssl.c:1001: The handshake operation timed out>"
         },
         "verglas": {
           "status": "indisponible",
@@ -1552,7 +1538,7 @@
         "description": "Température à 850 hPa modélisée, pas température au sol"
       },
       "style": "kfs-editorial-lambert-consensus-v13",
-      "summary": "IFS : comparaison impossible (un seul modèle). T850 France -1.4 °C, pression 1017 hPa (moyennes régionales pondérées). Écart T850 0.0 °C. Flux de nord sur la France, avec air froid à 850 hpa. Signaux en France : rafales jusqu’à 68 km/h, gel jusqu’à -17 °C. Confiance très limitée.",
+      "summary": "IFS : comparaison impossible (un seul modèle). T850 France -1.4 °C, pression 1017 hPa (moyennes régionales pondérées). Écart T850 0.0 °C. Flux de nord sur la France, avec air froid à 850 hpa. Signaux en France : rafales jusqu’à 68 km/h, gel jusqu’à -17 °C. Non calculé : Neige hors relief. Confiance très limitée.",
       "analysis": {
         "summary": "IFS : comparaison impossible (un seul modèle). T850 France -1.4 °C, pression 1017 hPa (moyennes régionales pondérées). Écart T850 0.0 °C.",
         "method": "Poids égaux : scores comparables insuffisants",
