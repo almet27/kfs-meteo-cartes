@@ -1,0 +1,40 @@
+name: KFS - normales climatologiques MF
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '45 3 1 * *'
+  push:
+    paths:
+      - scripts/build_mf_climate_reference.py
+      - .github/workflows/mf-climate-reference.yml
+permissions:
+  contents: write
+concurrency:
+  group: mf-climate-reference
+  cancel-in-progress: false
+jobs:
+  references:
+    runs-on: ubuntu-latest
+    timeout-minutes: 110
+    steps:
+      - uses: actions/checkout@v4
+      - name: Precompute validated references
+        run: python scripts/build_mf_climate_reference.py
+      - name: Publish
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          backup="$(mktemp -d)"
+          cp -a climato/mf-reference "$backup/mf-reference"
+          for i in 1 2 3 4 5 6; do
+            git fetch origin main
+            git reset --hard origin/main
+            mkdir -p climato/mf-reference
+            cp -a "$backup/mf-reference/." climato/mf-reference/
+            git add climato/mf-reference
+            if git diff --cached --quiet; then exit 0; fi
+            git commit -m "Publier les références climatologiques Météo-France"
+            if git push origin HEAD:main; then exit 0; fi
+            sleep 5
+          done
+          exit 1
