@@ -36,3 +36,44 @@ for year, data in yearly.items():
     out=root/"yearly"/(year+".json")
     out.parent.mkdir(parents=True,exist_ok=True)
     out.write_text(json.dumps(payload,separators=(",",":"))+"\n")
+
+# National map: use only validated daily archives above. Coordinates from the
+# latest Météo-France catalogue, with the KFS web station catalogue as fallback.
+# Counts are per 15 km disk, not unique national flash totals.
+for year in sorted(yearly):
+    if year != "2026":
+        continue
+    coords={}
+    try:
+        import requests
+        r=requests.get("https://meteofrance.s3.sbg.io.cloud.ovh.net/data/synchro_ftp/REF_STATION/liste_fiches_clim.geojson",timeout=45)
+        r.raise_for_status()
+        for f in r.json()["features"]:
+            p=f["properties"]; sid=str(p.get("num",""))
+            lon,lat=map(float,f["geometry"]["coordinates"][:2])
+            if len(sid)==8 and sid.isdigit() and -7.5<=lon<=10 and 40.5<=lat<=52:
+                coords[sid]=[str(p.get("nom") or p.get("name") or sid),lon,lat]
+    except Exception as e:
+        print("Station catalogue unavailable:",type(e).__name__,flush=True)
+    for f in sorted(Path("climato/mf-web").glob("????-??.json")):
+        try:
+            for s in json.loads(f.read_text()).get("stations",[]):
+                if len(s)>=4: coords.setdefault(s[0],[s[1],s[2],s[3]])
+        except (ValueError,OSError): pass
+    selected={m[5:]:sorted(days.items()) for m,days in months.items() if m[:4]==year}
+    selected["annee"]=sorted((day,value) for m,days in months.items() if m[:4]==year for day,value in days.items())
+    periods={}
+    for tag,entries in selected.items():
+        agg=defaultdict(lambda:[0,0,0])
+        for day,(ids,hits) in entries:
+            for sid in ids:
+                a=agg[sid]; h=hits.get(sid,0)
+                a[0]+=1; a[1]+=int(h>0); a[2]+=h
+        rows=[[sid,*coords[sid],*v] for sid,v in sorted(agg.items()) if sid in coords]
+        if not rows: continue
+        periods[tag]={"dates":[day for day,_ in entries],"rows":rows}
+    if periods:
+        payload={"schema":1,"year":int(year),"source":"EUMETSAT MTG LI LFL","radius_km":15,"timezone":"Europe/Paris","coordinate_source":"Météo-France","periods":periods}
+        out=root/"yearly"/(year+"-map.json")
+        out.write_text(json.dumps(payload,separators=(",",":"),ensure_ascii=False)+"\n")
+        print("Map periods",list(periods),flush=True)
