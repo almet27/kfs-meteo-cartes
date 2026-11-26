@@ -61,7 +61,21 @@ jobs:
               except (KeyError,ValueError,TypeError):continue
               if sid not in stations or first<stations[sid][0]:stations[sid]=(first,row)
           if not stations:raise ValueError("No licensed historical stations matched")
-          candidates=sorted(stations,key=lambda sid:(stations[sid][0],sid))
+          # Prioritize Bourth (27580) and surrounding stations, then resume national backfill.
+          try:
+              communes=get("https://geo.api.gouv.fr/communes",{"nom":"Bourth","codePostal":"27580","fields":"nom,centre","format":"json","geometry":"centre"})
+              centre=next(c["centre"]["coordinates"] for c in communes if c["nom"]=="Bourth")
+              x0,y0=centre
+          except Exception:
+              x0,y0=0.81,48.77
+          def distance(sid):
+              p=allowed[sid]
+              return math.hypot((p["lon"]-x0)*111.2*math.cos(math.radians(y0)),(p["lat"]-y0)*111.2)
+          local=sorted((sid for sid in stations if distance(sid)<=50),key=lambda sid:(distance(sid),sid))
+          print("Bourth: stations candidates within 50 km",len(local),flush=True)
+          for sid in local:
+              print("Bourth candidate",sid,stations[sid][1].get("libelle"),round(distance(sid),1),"km",stations[sid][0],flush=True)
+          candidates=sorted(stations,key=lambda sid:(0 if sid in local else 1,distance(sid) if sid in local else 0,stations[sid][0],sid))
           end=dt.date.today().replace(day=1)
           pending=[s for s in candidates if not (out/(s+".json")).exists() and s not in state["empty"]]
           state["eligible"]=len(candidates)
@@ -102,6 +116,17 @@ jobs:
           state["updated_utc"]=dt.datetime.now(dt.timezone.utc).isoformat()
           statepath.write_text(json.dumps(state,ensure_ascii=False,indent=2)+"\n")
           print("Progress",state,flush=True)
+          # Lightweight index for city lookup: never fetch all historical files in the Worker.
+          index=[]
+          for file in sorted(out.glob("*.json")):
+              if file.name.startswith("_"):continue
+              item=json.loads(file.read_text())
+              st=item["station"]
+              if not item.get("months"):continue
+              months=sorted(r["mois"] for r in item["months"])
+              index.append({**st,"first":months[0],"last":months[-1],"months":months})
+          (out/"_index.json").write_text(json.dumps({"schema":1,"stations":index},ensure_ascii=False,separators=(",",":"))+"\n")
+          print("Bourth archived",sum((out/(sid+".json")).exists() for sid in local),"of",len(local),flush=True)
           PY
       - name: Publish historical files only
         run: |
