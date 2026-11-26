@@ -205,7 +205,7 @@ function renderRisk(d,day,date){
    const color=v.type==="gel"?"#49baff":"#ff4b47";
    icon='<path d="M-3 -4V-9a3 3 0 0 1 6 0v5a6 6 0 1 1 -6 0Z" fill="#f3f8ff" stroke="#102030" stroke-width="1.4"/><path d="M0 -8V2" stroke="'+color+'" stroke-width="3.5" stroke-linecap="round"/><circle cx="0" cy="3" r="4" fill="'+color+'"/><path d="M4 -7h2M4 -3h2" stroke="#102030" stroke-width="1" stroke-linecap="round"/>';
   }else if(v.type==="pluie"){
-   icon='<path d="M-8 5C-15 5-15-4-8-5C-8-12 4-14 8-6C15-7 17 4 10 5Z" transform="translate(0 -4) scale(1)" fill="#d1e0ed" stroke="#223849" stroke-width="1.25" stroke-linejoin="round"/><path d="M-5.5 4l-2.4 4.5" stroke="#69d5ff" stroke-width="1.9" stroke-linecap="round"/><path d="M0 4l-2.4 4.5" stroke="#69d5ff" stroke-width="1.9" stroke-linecap="round"/><path d="M5.5 4l-2.4 4.5" stroke="#69d5ff" stroke-width="1.9" stroke-linecap="round"/>';
+   icon='<path d="M0 -11C-2.5 -7 -7 -2 -7 3A7 7 0 0 0 7 3C7 -2 2.5 -7 0 -11Z" fill="#39b9f5" stroke="#154c78" stroke-width="1.3"/><path d="M-3.8 1.5Q-5 5 -1.5 7" fill="none" stroke="#b9efff" stroke-width="1.5" stroke-linecap="round"/>';
   }else if(v.type==="verglas"){
    icon='<path d="M0 -12.5L12 9.5Q12.5 11 10.8 11H-10.8Q-12.5 11 -12 9.5Z" fill="#fff" stroke="#d52b2b" stroke-width="2.5" stroke-linejoin="round"/><g fill="#17212a" transform="rotate(-12 0 0)"><path d="M-4.5 -1L-3 -4.1H2.5L4.4 -1L5.1 .2V3.3H-5.1V.2Z"/><path d="M-2.5 -3.2H1.9L3 -.7H-3.5Z" fill="#fff"/><rect x="-4.6" y="2.5" width="2" height="1.8" rx=".4"/><rect x="2.6" y="2.5" width="2" height="1.8" rx=".4"/></g><path d="M-5 5C-2.5 3.5 -3.5 7.7 -6 8.1M2 5C4.8 3.5 4.1 7.7 1.5 8.2" fill="none" stroke="#17212a" stroke-width="1.15" stroke-linecap="round"/>';
   }else if(v.type==="vent"){
@@ -231,7 +231,7 @@ return svg;
  if(ensemble.schema!==2||ensemble.provider!=='Open-Meteo ECMWF ENS + GEFS members'||ensemble.timezone!=='Europe/Paris')throw Error('Ensemble incompatible');
  const today=kfsProbaDay(0),out='proba/public-risks';
  await fs.mkdir(out,{recursive:true});
- const manifest={schema:1,risk_schema:4,today,generated_utc:new Date().toISOString(),days:{}};
+ const manifest={schema:1,risk_schema:5,today,generated_utc:new Date().toISOString(),days:{}};
  for(let day=0;day<=5;day++){
   const date=kfsProbaDay(day);
   const d=await kfsAlertData(day,'FR',[...Object.keys(KFS_ALERT_RULES),'chaleur','verglas'],{geo,ensemble,publicOnly:true});
