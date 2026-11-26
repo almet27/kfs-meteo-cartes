@@ -1,15 +1,15 @@
 {
   "schema_version": 1,
-  "generated_utc": "2026-11-26T07:24:23.521211+00:00",
-  "atlas_generated_utc": "2026-11-26T05:33:46.809279+00:00",
+  "generated_utc": "2026-11-26T11:18:16.296008+00:00",
+  "atlas_generated_utc": "2026-11-26T07:38:49.456917+00:00",
   "reference": "ECMWF Open Data, Copernicus DEM GLO-90 via Open-Meteo — champs géoréférencés",
   "stages": [
     {
       "id": "j3",
       "step_h": 72,
       "model": "ifs",
-      "run_utc": "2026-11-25T18:00:00+00:00",
-      "valid_utc": "2026-11-28T18:00:00+00:00",
+      "run_utc": "2026-11-26T00:00:00+00:00",
+      "valid_utc": "2026-11-29T00:00:00+00:00",
       "background_path": "forecast-maps/tendance/tendance-risques-fond-j3.png",
       "risks": {
         "neige": {
@@ -28,14 +28,14 @@
         },
         "tempete": {
           "status": "possible",
-          "max": 73.3,
+          "max": 72.4,
           "unit": "km/h (rafales max 10 m/6 h)",
           "reason": "Rafales maximales ECMWF IFS des 6 h précédentes, pas une vigilance officielle"
         },
         "gel": {
           "status": "marque",
           "severity": "severe",
-          "min": -13.66,
+          "min": -17.48,
           "unit": "°C (Tmin 2 m/6 h)",
           "reason": "Minimum sur les 6 h précédentes, points terrestres"
         },
@@ -49,83 +49,89 @@
         },
         "pluie_forte": {
           "status": "possible",
-          "max": 17.6,
+          "max": 13.2,
           "unit": "mm/6h",
           "reason": "Cumul des 6 heures précédant l'échéance"
         }
       },
       "markers": [
         {
-          "lon": 7.75,
-          "lat": 46.0,
-          "value": -13.656927490234352,
+          "lon": 10.5,
+          "lat": 46.75,
+          "value": -17.476446533203102,
           "kind": "gel"
         },
         {
-          "lon": 11.0,
-          "lat": 47.0,
-          "value": -12.656927490234352,
+          "lon": 6.5,
+          "lat": 44.25,
+          "value": -7.616430664062477,
           "kind": "gel"
-        },
-        {
-          "lon": 2.5,
-          "lat": 53.0,
-          "value": 73.3,
-          "kind": "vent_fort"
-        },
-        {
-          "lon": -2.25,
-          "lat": 50.5,
-          "value": 67.1,
-          "kind": "vent_fort"
         },
         {
           "lon": 11.75,
           "lat": 42.5,
-          "value": 66.8,
+          "value": 72.4,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": 2.25,
+          "lat": 53.0,
+          "value": 70.4,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": 0.25,
+          "lat": 42.75,
+          "value": -6.226446533203102,
+          "kind": "gel"
+        },
+        {
+          "lon": -1.0,
+          "lat": 49.75,
+          "value": 58.1,
           "kind": "vent_fort"
         },
         {
           "lon": -10.0,
-          "lat": 53.0,
-          "value": 55.3,
+          "lat": 52.75,
+          "value": 57.8,
           "kind": "vent_fort"
         },
         {
-          "lon": -3.5,
-          "lat": 47.75,
-          "value": 52.9,
-          "kind": "vent_fort"
-        },
-        {
-          "lon": -5.0,
-          "lat": 53.0,
-          "value": 51.1,
-          "kind": "vent_fort"
-        },
-        {
-          "lon": 10.75,
-          "lat": 51.75,
-          "value": -4.156927490234352,
+          "lon": 10.5,
+          "lat": 51.0,
+          "value": -4.476446533203102,
           "kind": "gel"
         },
         {
-          "lon": -8.75,
-          "lat": 42.25,
-          "value": 17.6,
-          "kind": "pluie_forte"
+          "lon": 6.25,
+          "lat": 50.0,
+          "value": -3.4764465332031023,
+          "kind": "gel"
+        },
+        {
+          "lon": 5.5,
+          "lat": 47.25,
+          "value": -2.7264465332031023,
+          "kind": "gel"
         }
       ],
       "synoptic_consensus": {
-        "method": "ifs_reference",
+        "method": "weighted_blend",
         "models": [
-          "ifs"
+          "ifs",
+          "aifs-single"
         ],
         "weights": {
-          "ifs": 1.0
+          "ifs": 0.5067,
+          "aifs-single": 0.4933
         },
+        "representative": null,
+        "normalized_spread": 0.154,
         "excluded": {},
-        "reason": "Moins de deux grilles complètes à validité identique"
+        "valid_utc": "2026-11-29T00:00:00+00:00",
+        "risk_source": "ifs",
+        "weight_method": "Inverse MAE pression France, 3 derniers mois complets ; poids indicatifs"
       },
       "t850_shading": {
         "enabled": true,
@@ -147,8 +153,8 @@
       "id": "j7",
       "step_h": 168,
       "model": "ifs",
-      "run_utc": "2026-11-25T12:00:00+00:00",
-      "valid_utc": "2026-12-02T12:00:00+00:00",
+      "run_utc": "2026-11-26T00:00:00+00:00",
+      "valid_utc": "2026-12-03T00:00:00+00:00",
       "background_path": "forecast-maps/tendance/tendance-risques-fond-j7.png",
       "risks": {
         "neige": {
@@ -167,14 +173,14 @@
         },
         "tempete": {
           "status": "possible",
-          "max": 74.5,
+          "max": 52.7,
           "unit": "km/h (rafales max 10 m/6 h)",
           "reason": "Rafales maximales ECMWF IFS des 6 h précédentes, pas une vigilance officielle"
         },
         "gel": {
           "status": "marque",
           "severity": "severe",
-          "min": -15.49,
+          "min": -17.09,
           "unit": "°C (Tmin 2 m/6 h)",
           "reason": "Minimum sur les 6 h précédentes, points terrestres"
         },
@@ -187,84 +193,90 @@
           "reason": "Crue non déductible d'un seul cumul de pluie de 6 h"
         },
         "pluie_forte": {
-          "status": "marque",
-          "max": 21.7,
+          "status": "absent",
+          "max": 7.8,
           "unit": "mm/6h",
           "reason": "Cumul des 6 heures précédant l'échéance"
         }
       },
       "markers": [
         {
-          "lon": 7.75,
-          "lat": 46.0,
-          "value": -15.492437744140602,
-          "kind": "gel"
-        },
-        {
-          "lon": 11.5,
+          "lon": 10.25,
           "lat": 46.75,
-          "value": -12.742437744140602,
+          "value": -17.088293457031227,
           "kind": "gel"
         },
         {
           "lon": 12.0,
           "lat": 49.5,
-          "value": -8.992437744140602,
+          "value": -8.338293457031227,
           "kind": "gel"
         },
         {
-          "lon": 0.25,
+          "lon": -6.5,
+          "lat": 48.25,
+          "value": 52.7,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": 1.25,
+          "lat": 50.5,
+          "value": 50.7,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": 10.25,
+          "lat": 44.25,
+          "value": -4.088293457031227,
+          "kind": "gel"
+        },
+        {
+          "lon": 0.0,
           "lat": 42.75,
-          "value": -8.242437744140602,
+          "value": -3.5882934570312273,
           "kind": "gel"
         },
         {
-          "lon": -6.75,
-          "lat": 45.75,
-          "value": 74.5,
-          "kind": "vent_fort"
+          "lon": 6.5,
+          "lat": 43.75,
+          "value": -2.5882934570312273,
+          "kind": "gel"
         },
         {
-          "lon": -4.75,
-          "lat": 47.75,
-          "value": 72.7,
-          "kind": "vent_fort"
+          "lon": 11.5,
+          "lat": 52.5,
+          "value": -1.0882934570312273,
+          "kind": "gel"
         },
         {
-          "lon": -9.25,
-          "lat": 42.25,
-          "value": 71.1,
-          "kind": "vent_fort"
+          "lon": -4.0,
+          "lat": 52.0,
+          "value": -0.33829345703122726,
+          "kind": "gel"
         },
         {
-          "lon": -10.0,
-          "lat": 46.0,
-          "value": 63.4,
-          "kind": "vent_fort"
-        },
-        {
-          "lon": 4.0,
-          "lat": 53.0,
-          "value": 58.7,
-          "kind": "vent_fort"
-        },
-        {
-          "lon": -3.5,
-          "lat": 42.5,
-          "value": 51.7,
-          "kind": "vent_fort"
+          "lon": 3.5,
+          "lat": 44.75,
+          "value": -0.08829345703122726,
+          "kind": "gel"
         }
       ],
       "synoptic_consensus": {
-        "method": "ifs_reference",
+        "method": "weighted_blend",
         "models": [
-          "ifs"
+          "ifs",
+          "aifs-single"
         ],
         "weights": {
-          "ifs": 1.0
+          "ifs": 0.5909,
+          "aifs-single": 0.4091
         },
+        "representative": null,
+        "normalized_spread": 0.412,
         "excluded": {},
-        "reason": "Moins de deux grilles complètes à validité identique"
+        "valid_utc": "2026-12-03T00:00:00+00:00",
+        "risk_source": "ifs",
+        "weight_method": "Inverse MAE pression France, 3 derniers mois complets ; poids indicatifs"
       },
       "t850_shading": {
         "enabled": true,
@@ -286,8 +298,8 @@
       "id": "j10",
       "step_h": 240,
       "model": "ifs",
-      "run_utc": "2026-11-25T12:00:00+00:00",
-      "valid_utc": "2026-12-05T12:00:00+00:00",
+      "run_utc": "2026-11-26T00:00:00+00:00",
+      "valid_utc": "2026-12-06T00:00:00+00:00",
       "background_path": "forecast-maps/tendance/tendance-risques-fond-j10.png",
       "risks": {
         "neige": {
@@ -305,15 +317,15 @@
           "reason": "Champs spécifiques non disponibles"
         },
         "tempete": {
-          "status": "marque",
-          "max": 100.1,
+          "status": "possible",
+          "max": 64.2,
           "unit": "km/h (rafales max 10 m/6 h)",
           "reason": "Rafales maximales ECMWF IFS des 6 h précédentes, pas une vigilance officielle"
         },
         "gel": {
           "status": "marque",
           "severity": "severe",
-          "min": -17.65,
+          "min": -14.97,
           "unit": "°C (Tmin 2 m/6 h)",
           "reason": "Minimum sur les 6 h précédentes, points terrestres"
         },
@@ -326,84 +338,90 @@
           "reason": "Crue non déductible d'un seul cumul de pluie de 6 h"
         },
         "pluie_forte": {
-          "status": "possible",
-          "max": 19.5,
+          "status": "absent",
+          "max": 2.0,
           "unit": "mm/6h",
           "reason": "Cumul des 6 heures précédant l'échéance"
         }
       },
       "markers": [
         {
-          "lon": 10.5,
+          "lon": 10.25,
           "lat": 46.75,
-          "value": -17.64726867675779,
+          "value": -14.965704345703102,
+          "kind": "gel"
+        },
+        {
+          "lon": 7.0,
+          "lat": 44.25,
+          "value": -10.965704345703102,
           "kind": "gel"
         },
         {
           "lon": 0.25,
           "lat": 42.75,
-          "value": -11.397253417968727,
+          "value": -9.215704345703102,
           "kind": "gel"
         },
         {
-          "lon": -7.0,
-          "lat": 47.5,
-          "value": 100.1,
+          "lon": -8.5,
+          "lat": 43.75,
+          "value": 64.2,
           "kind": "vent_fort"
         },
         {
           "lon": 12.0,
           "lat": 49.5,
-          "value": -9.647253417968727,
+          "value": -6.215704345703102,
           "kind": "gel"
         },
         {
-          "lon": 6.5,
-          "lat": 44.25,
-          "value": -8.647253417968727,
-          "kind": "gel"
-        },
-        {
-          "lon": -8.5,
-          "lat": 44.25,
-          "value": 74.4,
-          "kind": "vent_fort"
-        },
-        {
-          "lon": -5.25,
+          "lon": 2.25,
           "lat": 53.0,
-          "value": 72.6,
+          "value": 54.0,
           "kind": "vent_fort"
         },
         {
-          "lon": -6.25,
-          "lat": 50.75,
-          "value": 68.8,
+          "lon": 11.75,
+          "lat": 42.5,
+          "value": 53.4,
           "kind": "vent_fort"
         },
         {
-          "lon": -10.0,
-          "lat": 41.5,
-          "value": 67.0,
-          "kind": "vent_fort"
+          "lon": 3.75,
+          "lat": 45.5,
+          "value": -4.215704345703102,
+          "kind": "gel"
         },
         {
-          "lon": -3.0,
-          "lat": 46.75,
-          "value": 50.8,
-          "kind": "vent_fort"
+          "lon": 8.75,
+          "lat": 50.5,
+          "value": -3.9657043457031023,
+          "kind": "gel"
+        },
+        {
+          "lon": -5.5,
+          "lat": 43.0,
+          "value": -3.7157043457031023,
+          "kind": "gel"
         }
       ],
       "synoptic_consensus": {
-        "method": "ifs_reference",
+        "method": "weighted_blend",
         "models": [
-          "ifs"
+          "ifs",
+          "aifs-single"
         ],
         "weights": {
-          "ifs": 1.0
+          "ifs": 0.6433,
+          "aifs-single": 0.3567
         },
+        "representative": null,
+        "normalized_spread": 0.711,
         "excluded": {},
-        "reason": "Moins de deux grilles complètes à validité identique"
+        "valid_utc": "2026-12-06T00:00:00+00:00",
+        "risk_source": "ifs",
+        "weight_method": "Inverse MAE pression France, 3 derniers mois complets ; poids indicatifs"
       },
       "t850_shading": {
         "enabled": true,
@@ -425,20 +443,15 @@
       "id": "j15",
       "step_h": 360,
       "model": "ifs",
-      "run_utc": "2026-11-25T12:00:00+00:00",
-      "valid_utc": "2026-12-10T12:00:00+00:00",
+      "run_utc": "2026-11-26T00:00:00+00:00",
+      "valid_utc": "2026-12-11T00:00:00+00:00",
       "background_path": "forecast-maps/tendance/tendance-risques-fond-j15.png",
       "risks": {
         "neige": {
-          "status": "possible",
-          "max": 0.7,
+          "status": "absent",
+          "max": 0.0,
           "unit": "mm équiv. eau/6h",
-          "reason": "Neige hors relief ≤ 500 m, hors vallée de montagne (Copernicus GLO-90) ; relief : 26 zones échantillonnées",
-          "mountain_signal": true,
-          "mountain_max": 4.6,
-          "lowland_sample_count": 5,
-          "highland_sample_count": 26,
-          "terrain_source": "Copernicus DEM GLO-90 via Open-Meteo"
+          "reason": "Pas de neige ≥ 0,5 mm/6h sur le domaine terrestre"
         },
         "verglas": {
           "status": "indisponible",
@@ -450,14 +463,14 @@
         },
         "tempete": {
           "status": "possible",
-          "max": 74.9,
+          "max": 50.1,
           "unit": "km/h (rafales max 10 m/6 h)",
           "reason": "Rafales maximales ECMWF IFS des 6 h précédentes, pas une vigilance officielle"
         },
         "gel": {
           "status": "marque",
           "severity": "severe",
-          "min": -22.53,
+          "min": -18.91,
           "unit": "°C (Tmin 2 m/6 h)",
           "reason": "Minimum sur les 6 h précédentes, points terrestres"
         },
@@ -470,8 +483,8 @@
           "reason": "Crue non déductible d'un seul cumul de pluie de 6 h"
         },
         "pluie_forte": {
-          "status": "possible",
-          "max": 15.1,
+          "status": "absent",
+          "max": 4.2,
           "unit": "mm/6h",
           "reason": "Cumul des 6 heures précédant l'échéance"
         }
@@ -479,75 +492,81 @@
       "markers": [
         {
           "lon": 10.25,
-          "lat": 46.5,
-          "value": -22.534399414062477,
+          "lat": 46.75,
+          "value": -18.912985229492165,
           "kind": "gel"
         },
         {
-          "lon": 10.25,
-          "lat": 52.75,
-          "value": -7.534399414062477,
+          "lon": 6.75,
+          "lat": 44.25,
+          "value": -12.913000488281227,
           "kind": "gel"
         },
         {
-          "lon": 9.5,
-          "lat": 41.25,
-          "value": 74.9,
-          "kind": "vent_fort"
-        },
-        {
-          "lon": -10.0,
-          "lat": 48.5,
-          "value": 73.3,
-          "kind": "vent_fort"
-        },
-        {
-          "lon": -10.0,
-          "lat": 46.25,
-          "value": 71.1,
-          "kind": "vent_fort"
-        },
-        {
-          "lon": 8.25,
-          "lat": 48.5,
-          "value": -6.784399414062477,
-          "kind": "gel"
-        },
-        {
-          "lon": -9.0,
-          "lat": 42.25,
-          "value": 63.9,
-          "kind": "vent_fort"
-        },
-        {
-          "lon": 1.0,
-          "lat": 41.25,
-          "value": 63.2,
-          "kind": "vent_fort"
-        },
-        {
-          "lon": -4.5,
-          "lat": 50.0,
-          "value": 62.3,
-          "kind": "vent_fort"
-        },
-        {
-          "lon": 6.5,
+          "lon": 0.25,
           "lat": 42.75,
-          "value": 61.8,
+          "value": -7.663000488281227,
+          "kind": "gel"
+        },
+        {
+          "lon": -9.75,
+          "lat": 53.0,
+          "value": 50.1,
           "kind": "vent_fort"
+        },
+        {
+          "lon": 12.0,
+          "lat": 44.0,
+          "value": -4.163000488281227,
+          "kind": "gel"
+        },
+        {
+          "lon": 4.25,
+          "lat": 47.0,
+          "value": -3.6630004882812273,
+          "kind": "gel"
+        },
+        {
+          "lon": 10.5,
+          "lat": 50.75,
+          "value": -3.4130004882812273,
+          "kind": "gel"
+        },
+        {
+          "lon": -6.0,
+          "lat": 43.0,
+          "value": -2.4130004882812273,
+          "kind": "gel"
+        },
+        {
+          "lon": 9.0,
+          "lat": 42.25,
+          "value": -1.9130004882812273,
+          "kind": "gel"
+        },
+        {
+          "lon": -1.0,
+          "lat": 45.25,
+          "value": -1.9130004882812273,
+          "kind": "gel"
         }
       ],
       "synoptic_consensus": {
-        "method": "ifs_reference",
+        "method": "weighted_representative",
         "models": [
-          "ifs"
+          "ifs",
+          "aifs-single"
         ],
         "weights": {
-          "ifs": 1.0
+          "ifs": 0.4401,
+          "aifs-single": 0.5599
         },
+        "representative": "aifs-single",
+        "normalized_spread": 1.101,
         "excluded": {},
-        "reason": "Moins de deux grilles complètes à validité identique"
+        "valid_utc": "2026-12-11T00:00:00+00:00",
+        "risk_source": "ifs",
+        "weight_method": "Inverse MAE pression France, 3 derniers mois complets ; poids indicatifs"
       },
       "t850_shading": {
         "enabled": true,
@@ -571,8 +590,8 @@
       "id": "j3",
       "step_h": 72,
       "model": "ifs",
-      "run_utc": "2026-11-25T18:00:00+00:00",
-      "valid_utc": "2026-11-28T18:00:00+00:00",
+      "run_utc": "2026-11-26T00:00:00+00:00",
+      "valid_utc": "2026-11-29T00:00:00+00:00",
       "background_path": "forecast-maps/tendance/tendance-risques-fond-france-j3.png",
       "risks": {
         "neige": {
@@ -590,15 +609,15 @@
           "reason": "Champs spécifiques non disponibles"
         },
         "tempete": {
-          "status": "possible",
-          "max": 56.0,
+          "status": "absent",
+          "max": 49.3,
           "unit": "km/h (rafales max 10 m/6 h)",
           "reason": "Rafales maximales ECMWF IFS des 6 h précédentes, pas une vigilance officielle"
         },
         "gel": {
           "status": "marque",
           "severity": "severe",
-          "min": -10.16,
+          "min": -10.12,
           "unit": "°C (Tmin 2 m/6 h)",
           "reason": "Minimum sur les 6 h précédentes, points terrestres"
         },
@@ -611,8 +630,8 @@
           "reason": "Crue non déductible d'un seul cumul de pluie de 6 h"
         },
         "pluie_forte": {
-          "status": "absent",
-          "max": 5.7,
+          "status": "possible",
+          "max": 13.2,
           "unit": "mm/6h",
           "reason": "Cumul des 6 heures précédant l'échéance"
         }
@@ -620,69 +639,75 @@
       "markers": [
         {
           "lon": 7.0,
-          "lat": 45.5,
-          "value": -10.156927490234352,
-          "kind": "gel"
-        },
-        {
-          "lon": -1.75,
-          "lat": 49.5,
-          "value": 56.0,
-          "kind": "vent_fort"
-        },
-        {
-          "lon": -3.5,
-          "lat": 47.75,
-          "value": 52.9,
-          "kind": "vent_fort"
-        },
-        {
-          "lon": 7.0,
-          "lat": 48.0,
-          "value": -4.156927490234352,
-          "kind": "gel"
-        },
-        {
-          "lon": 4.25,
-          "lat": 47.0,
-          "value": -2.1569274902343523,
-          "kind": "gel"
-        },
-        {
-          "lon": 9.0,
-          "lat": 42.25,
-          "value": -1.1569274902343523,
-          "kind": "gel"
-        },
-        {
-          "lon": 5.25,
-          "lat": 49.5,
-          "value": -0.9069274902343523,
-          "kind": "gel"
-        },
-        {
-          "lon": 4.0,
-          "lat": 44.75,
-          "value": -0.9069274902343523,
+          "lat": 44.25,
+          "value": -10.116430664062477,
           "kind": "gel"
         },
         {
           "lon": 0.25,
           "lat": 42.75,
-          "value": -0.40692749023435226,
+          "value": -6.226446533203102,
+          "kind": "gel"
+        },
+        {
+          "lon": 6.0,
+          "lat": 46.5,
+          "value": -4.866430664062477,
+          "kind": "gel"
+        },
+        {
+          "lon": 7.75,
+          "lat": 49.0,
+          "value": -4.226446533203102,
+          "kind": "gel"
+        },
+        {
+          "lon": -0.5,
+          "lat": 49.25,
+          "value": 13.2,
+          "kind": "pluie_forte"
+        },
+        {
+          "lon": 5.0,
+          "lat": 49.75,
+          "value": -1.7264465332031023,
+          "kind": "gel"
+        },
+        {
+          "lon": 3.75,
+          "lat": 48.0,
+          "value": -1.2264465332031023,
+          "kind": "gel"
+        },
+        {
+          "lon": 3.75,
+          "lat": 45.0,
+          "value": -0.9764465332031023,
+          "kind": "gel"
+        },
+        {
+          "lon": 9.0,
+          "lat": 42.25,
+          "value": -0.6164306640624773,
           "kind": "gel"
         }
       ],
       "synoptic_consensus": {
-        "method": "ifs_reference",
+        "method": "weighted_blend",
         "models": [
-          "ifs"
+          "ifs",
+          "aifs-single"
         ],
         "weights": {
-          "ifs": 1.0
+          "ifs": 0.5067,
+          "aifs-single": 0.4933
         },
+        "representative": null,
+        "normalized_spread": 0.154,
         "excluded": {},
-        "reason": "Moins de deux grilles complètes à validité identique"
+        "valid_utc": "2026-11-29T00:00:00+00:00",
+        "risk_source": "ifs",
+        "weight_method": "Inverse MAE pression France, 3 derniers mois complets ; poids indicatifs"
       },
       "t850_shading": {
         "enabled": true,
@@ -704,8 +729,8 @@
       "id": "j7",
       "step_h": 168,
       "model": "ifs",
-      "run_utc": "2026-11-25T12:00:00+00:00",
-      "valid_utc": "2026-12-02T12:00:00+00:00",
+      "run_utc": "2026-11-26T00:00:00+00:00",
+      "valid_utc": "2026-12-03T00:00:00+00:00",
       "background_path": "forecast-maps/tendance/tendance-risques-fond-france-j7.png",
       "risks": {
         "neige": {
@@ -723,15 +748,15 @@
           "reason": "Champs spécifiques non disponibles"
         },
         "tempete": {
-          "status": "possible",
-          "max": 56.0,
+          "status": "absent",
+          "max": 40.3,
           "unit": "km/h (rafales max 10 m/6 h)",
           "reason": "Rafales maximales ECMWF IFS des 6 h précédentes, pas une vigilance officielle"
         },
         "gel": {
           "status": "marque",
-          "severity": "severe",
-          "min": -12.24,
+          "severity": "marque",
+          "min": -9.59,
           "unit": "°C (Tmin 2 m/6 h)",
           "reason": "Minimum sur les 6 h précédentes, points terrestres"
         },
@@ -744,8 +769,8 @@
           "reason": "Crue non déductible d'un seul cumul de pluie de 6 h"
         },
         "pluie_forte": {
-          "status": "marque",
-          "max": 20.5,
+          "status": "absent",
+          "max": 6.1,
           "unit": "mm/6h",
           "reason": "Cumul des 6 heures précédant l'échéance"
         }
@@ -754,56 +779,56 @@
         {
           "lon": 7.0,
           "lat": 44.25,
-          "value": -12.242437744140602,
+          "value": -9.588293457031227,
           "kind": "gel"
         },
         {
-          "lon": 0.25,
+          "lon": 0.0,
           "lat": 42.75,
-          "value": -8.242437744140602,
-          "kind": "gel"
-        },
-        {
-          "lon": -4.5,
-          "lat": 48.0,
-          "value": 56.0,
-          "kind": "vent_fort"
-        },
-        {
-          "lon": 3.75,
-          "lat": 45.0,
-          "value": -4.242437744140602,
+          "value": -3.5882934570312273,
           "kind": "gel"
         },
         {
           "lon": 6.75,
           "lat": 46.25,
-          "value": -3.4924377441406023,
+          "value": -3.0882934570312273,
           "kind": "gel"
         },
         {
-          "lon": 6.5,
-          "lat": 48.25,
-          "value": -1.9924377441406023,
-          "kind": "gel"
-        },
-        {
-          "lon": 9.25,
+          "lon": 9.0,
           "lat": 42.25,
-          "value": -0.49243774414060226,
+          "value": -0.08829345703122726,
+          "kind": "gel"
+        },
+        {
+          "lon": 7.25,
+          "lat": 48.5,
+          "value": -0.08829345703122726,
+          "kind": "gel"
+        },
+        {
+          "lon": 3.5,
+          "lat": 44.75,
+          "value": -0.08829345703122726,
           "kind": "gel"
         }
       ],
       "synoptic_consensus": {
-        "method": "ifs_reference",
+        "method": "weighted_blend",
         "models": [
-          "ifs"
+          "ifs",
+          "aifs-single"
         ],
         "weights": {
-          "ifs": 1.0
+          "ifs": 0.5909,
+          "aifs-single": 0.4091
         },
+        "representative": null,
+        "normalized_spread": 0.412,
         "excluded": {},
-        "reason": "Moins de deux grilles complètes à validité identique"
+        "valid_utc": "2026-12-03T00:00:00+00:00",
+        "risk_source": "ifs",
+        "weight_method": "Inverse MAE pression France, 3 derniers mois complets ; poids indicatifs"
       },
       "t850_shading": {
         "enabled": true,
@@ -825,8 +850,8 @@
       "id": "j10",
       "step_h": 240,
       "model": "ifs",
-      "run_utc": "2026-11-25T12:00:00+00:00",
-      "valid_utc": "2026-12-05T12:00:00+00:00",
+      "run_utc": "2026-11-26T00:00:00+00:00",
+      "valid_utc": "2026-12-06T00:00:00+00:00",
       "background_path": "forecast-maps/tendance/tendance-risques-fond-france-j10.png",
       "risks": {
         "neige": {
@@ -845,14 +870,14 @@
         },
         "tempete": {
           "status": "absent",
-          "max": 48.3,
+          "max": 41.4,
           "unit": "km/h (rafales max 10 m/6 h)",
           "reason": "Rafales maximales ECMWF IFS des 6 h précédentes, pas une vigilance officielle"
         },
         "gel": {
           "status": "marque",
           "severity": "severe",
-          "min": -12.4,
+          "min": -10.97,
           "unit": "°C (Tmin 2 m/6 h)",
           "reason": "Minimum sur les 6 h précédentes, points terrestres"
         },
@@ -866,89 +891,83 @@
         },
         "pluie_forte": {
           "status": "absent",
-          "max": 4.2,
+          "max": 0.5,
           "unit": "mm/6h",
           "reason": "Cumul des 6 heures précédant l'échéance"
         }
       },
       "markers": [
         {
-          "lon": 6.75,
+          "lon": 7.0,
           "lat": 44.25,
-          "value": -12.397253417968727,
+          "value": -10.965704345703102,
           "kind": "gel"
         },
         {
           "lon": 0.25,
           "lat": 42.75,
-          "value": -11.397253417968727,
+          "value": -9.215704345703102,
           "kind": "gel"
         },
         {
-          "lon": 6.0,
-          "lat": 46.5,
-          "value": -6.147253417968727,
+          "lon": 6.75,
+          "lat": 47.25,
+          "value": -4.965704345703102,
+          "kind": "gel"
+        },
+        {
+          "lon": 3.75,
+          "lat": 45.5,
+          "value": -4.215704345703102,
           "kind": "gel"
         },
         {
           "lon": 6.5,
-          "lat": 48.75,
-          "value": -4.897253417968727,
+          "lat": 49.25,
+          "value": -3.2157043457031023,
           "kind": "gel"
         },
         {
           "lon": 3.75,
-          "lat": 45.0,
-          "value": -4.397253417968727,
+          "lat": 50.0,
+          "value": -3.2157043457031023,
           "kind": "gel"
         },
         {
           "lon": 3.75,
-          "lat": 49.5,
-          "value": -4.147253417968727,
-          "kind": "gel"
-        },
-        {
-          "lon": 2.0,
-          "lat": 47.75,
-          "value": -3.6472534179687273,
-          "kind": "gel"
-        },
-        {
-          "lon": 0.75,
-          "lat": 49.75,
-          "value": -2.6472534179687273,
+          "lat": 47.5,
+          "value": -2.7157043457031023,
           "kind": "gel"
         },
         {
           "lon": 1.25,
-          "lat": 45.75,
-          "value": -1.1472534179687273,
+          "lat": 46.5,
+          "value": -1.4657043457031023,
           "kind": "gel"
         },
         {
           "lon": 9.25,
-          "lat": 42.5,
-          "value": -0.8972534179687273,
-          "kind": "gel"
-        },
-        {
-          "lon": -1.0,
-          "lat": 48.0,
-          "value": -0.39725341796872726,
+          "lat": 42.25,
+          "value": -0.46570434570310226,
           "kind": "gel"
         }
       ],
       "synoptic_consensus": {
-        "method": "ifs_reference",
+        "method": "weighted_blend",
         "models": [
-          "ifs"
+          "ifs",
+          "aifs-single"
         ],
         "weights": {
-          "ifs": 1.0
+          "ifs": 0.6433,
+          "aifs-single": 0.3567
         },
+        "representative": null,
+        "normalized_spread": 0.711,
         "excluded": {},
-        "reason": "Moins de deux grilles complètes à validité identique"
+        "valid_utc": "2026-12-06T00:00:00+00:00",
+        "risk_source": "ifs",
+        "weight_method": "Inverse MAE pression France, 3 derniers mois complets ; poids indicatifs"
       },
       "t850_shading": {
         "enabled": true,
@@ -970,20 +989,15 @@
       "id": "j15",
       "step_h": 360,
       "model": "ifs",
-      "run_utc": "2026-11-25T12:00:00+00:00",
-      "valid_utc": "2026-12-10T12:00:00+00:00",
+      "run_utc": "2026-11-26T00:00:00+00:00",
+      "valid_utc": "2026-12-11T00:00:00+00:00",
       "background_path": "forecast-maps/tendance/tendance-risques-fond-france-j15.png",
       "risks": {
         "neige": {
-          "status": "relief_uniquement",
-          "max": 0,
+          "status": "absent",
+          "max": 0.0,
           "unit": "mm équiv. eau/6h",
-          "reason": "Neige hors relief ≤ 500 m, hors vallée de montagne (Copernicus GLO-90) ; relief : 1 zones échantillonnées",
-          "mountain_signal": true,
-          "mountain_max": 1.2,
-          "lowland_sample_count": 0,
-          "highland_sample_count": 1,
-          "terrain_source": "Copernicus DEM GLO-90 via Open-Meteo"
+          "reason": "Pas de neige ≥ 0,5 mm/6h sur le domaine terrestre"
         },
         "verglas": {
           "status": "indisponible",
@@ -994,15 +1008,15 @@
           "reason": "Champs spécifiques non disponibles"
         },
         "tempete": {
-          "status": "possible",
-          "max": 68.4,
+          "status": "absent",
+          "max": 34.4,
           "unit": "km/h (rafales max 10 m/6 h)",
           "reason": "Rafales maximales ECMWF IFS des 6 h précédentes, pas une vigilance officielle"
         },
         "gel": {
           "status": "marque",
           "severity": "severe",
-          "min": -17.28,
+          "min": -12.91,
           "unit": "°C (Tmin 2 m/6 h)",
           "reason": "Minimum sur les 6 h précédentes, points terrestres"
         },
@@ -1016,7 +1030,7 @@
         },
         "pluie_forte": {
           "status": "absent",
-          "max": 2.0,
+          "max": 0.2,
           "unit": "mm/6h",
           "reason": "Cumul des 6 heures précédant l'échéance"
         }
@@ -1024,81 +1038,87 @@
       "markers": [
         {
           "lon": 6.75,
-          "lat": 45.25,
-          "value": -17.284399414062477,
+          "lat": 44.25,
+          "value": -12.913000488281227,
           "kind": "gel"
         },
         {
-          "lon": 9.0,
-          "lat": 41.5,
-          "value": 68.4,
-          "kind": "vent_fort"
+          "lon": 6.75,
+          "lat": 47.25,
+          "value": -8.663000488281227,
+          "kind": "gel"
         },
         {
-          "lon": 0.0,
+          "lon": 0.25,
           "lat": 42.75,
-          "value": 57.1,
-          "kind": "vent_fort"
-        },
-        {
-          "lon": 5.0,
-          "lat": 44.5,
-          "value": 50.6,
-          "kind": "vent_fort"
-        },
-        {
-          "lon": 2.5,
-          "lat": 43.5,
-          "value": 50.4,
-          "kind": "vent_fort"
-        },
-        {
-          "lon": 7.0,
-          "lat": 48.0,
-          "value": -4.784399414062477,
+          "value": -7.663000488281227,
           "kind": "gel"
         },
         {
           "lon": 4.0,
-          "lat": 49.25,
-          "value": -3.0343994140624773,
+          "lat": 44.75,
+          "value": -3.6630004882812273,
           "kind": "gel"
         },
         {
-          "lon": -2.0,
-          "lat": 48.5,
-          "value": -2.5343994140624773,
-          "kind": "gel"
-        },
-        {
-          "lon": 4.5,
+          "lon": 3.75,
           "lat": 47.0,
-          "value": -2.2843994140624773,
+          "value": -3.6630004882812273,
           "kind": "gel"
         },
         {
           "lon": 1.0,
-          "lat": 49.75,
-          "value": -2.0343994140624773,
+          "lat": 46.25,
+          "value": -2.9130004882812273,
           "kind": "gel"
         },
         {
-          "lon": 1.75,
-          "lat": 47.5,
-          "value": -1.2843994140624773,
+          "lon": 9.0,
+          "lat": 42.25,
+          "value": -1.9130004882812273,
+          "kind": "gel"
+        },
+        {
+          "lon": 8.0,
+          "lat": 49.0,
+          "value": -1.9130004882812273,
+          "kind": "gel"
+        },
+        {
+          "lon": 1.5,
+          "lat": 48.25,
+          "value": -0.9130004882812273,
+          "kind": "gel"
+        },
+        {
+          "lon": -0.75,
+          "lat": 44.75,
+          "value": -0.9130004882812273,
+          "kind": "gel"
+        },
+        {
+          "lon": 5.0,
+          "lat": 48.75,
+          "value": -0.41300048828122726,
           "kind": "gel"
         }
       ],
       "synoptic_consensus": {
-        "method": "ifs_reference",
+        "method": "weighted_representative",
         "models": [
-          "ifs"
+          "ifs",
+          "aifs-single"
         ],
         "weights": {
-          "ifs": 1.0
+          "ifs": 0.4401,
+          "aifs-single": 0.5599
         },
+        "representative": "aifs-single",
+        "normalized_spread": 1.101,
         "excluded": {},
-        "reason": "Moins de deux grilles complètes à validité identique"
+        "valid_utc": "2026-12-11T00:00:00+00:00",
+        "risk_source": "ifs",
+        "weight_method": "Inverse MAE pression France, 3 derniers mois complets ; poids indicatifs"
       },
       "t850_shading": {
         "enabled": true,
