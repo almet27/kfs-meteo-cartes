@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_utc": "2026-11-26T11:18:16.296008+00:00",
+  "generated_utc": "2026-11-26T11:21:47.734343+00:00",
   "atlas_generated_utc": "2026-11-26T07:38:49.456917+00:00",
   "reference": "ECMWF Open Data, Copernicus DEM GLO-90 via Open-Meteo — champs géoréférencés",
   "stages": [
@@ -120,18 +120,27 @@
         "method": "weighted_blend",
         "models": [
           "ifs",
-          "aifs-single"
+          "aifs-single",
+          "gfs"
         ],
         "weights": {
-          "ifs": 0.5067,
-          "aifs-single": 0.4933
+          "ifs": 0.5,
+          "aifs-single": 0.3,
+          "gfs": 0.2
         },
-        "representative": null,
-        "normalized_spread": 0.154,
+        "bonus_model": null,
+        "normalized_spread": 0.246,
         "excluded": {},
         "valid_utc": "2026-11-29T00:00:00+00:00",
+        "runs_utc": {
+          "ifs": "2026-11-26T00:00:00+00:00",
+          "aifs": "2026-11-26T00:00:00+00:00",
+          "gfs": "2026-11-26T06:00:00+00:00"
+        },
+        "t850_france": 5.61,
+        "msl_france": 1023.06,
         "risk_source": "ifs",
-        "weight_method": "Inverse MAE pression France, 3 derniers mois complets ; poids indicatifs"
+        "weight_method": "Poids KFS configurés ; bonus de 10 points selon accord synoptique actuel"
       },
       "t850_shading": {
         "enabled": true,
@@ -265,18 +274,27 @@
         "method": "weighted_blend",
         "models": [
           "ifs",
-          "aifs-single"
+          "aifs-single",
+          "gfs"
         ],
         "weights": {
-          "ifs": 0.5909,
-          "aifs-single": 0.4091
+          "ifs": 0.4,
+          "aifs-single": 0.4,
+          "gfs": 0.2
         },
-        "representative": null,
-        "normalized_spread": 0.412,
+        "bonus_model": null,
+        "normalized_spread": 0.582,
         "excluded": {},
         "valid_utc": "2026-12-03T00:00:00+00:00",
+        "runs_utc": {
+          "ifs": "2026-11-26T00:00:00+00:00",
+          "aifs": "2026-11-26T00:00:00+00:00",
+          "gfs": "2026-11-26T06:00:00+00:00"
+        },
+        "t850_france": 5.32,
+        "msl_france": 1029.78,
         "risk_source": "ifs",
-        "weight_method": "Inverse MAE pression France, 3 derniers mois complets ; poids indicatifs"
+        "weight_method": "Poids KFS configurés ; bonus de 10 points selon accord synoptique actuel"
       },
       "t850_shading": {
         "enabled": true,
@@ -410,18 +428,27 @@
         "method": "weighted_blend",
         "models": [
           "ifs",
-          "aifs-single"
+          "aifs-single",
+          "gfs"
         ],
         "weights": {
-          "ifs": 0.6433,
-          "aifs-single": 0.3567
+          "ifs": 0.5,
+          "aifs-single": 0.2,
+          "gfs": 0.3
         },
-        "representative": null,
-        "normalized_spread": 0.711,
+        "bonus_model": "ifs",
+        "normalized_spread": 0.773,
         "excluded": {},
         "valid_utc": "2026-12-06T00:00:00+00:00",
+        "runs_utc": {
+          "ifs": "2026-11-26T00:00:00+00:00",
+          "aifs": "2026-11-26T00:00:00+00:00",
+          "gfs": "2026-11-26T06:00:00+00:00"
+        },
+        "t850_france": 3.67,
+        "msl_france": 1032.64,
         "risk_source": "ifs",
-        "weight_method": "Inverse MAE pression France, 3 derniers mois complets ; poids indicatifs"
+        "weight_method": "Poids KFS configurés ; bonus de 10 points selon accord synoptique actuel"
       },
       "t850_shading": {
         "enabled": true,
@@ -552,21 +579,30 @@
         }
       ],
       "synoptic_consensus": {
-        "method": "weighted_representative",
+        "method": "weighted_blend",
         "models": [
           "ifs",
-          "aifs-single"
+          "aifs-single",
+          "gfs"
         ],
         "weights": {
-          "ifs": 0.4401,
-          "aifs-single": 0.5599
+          "ifs": 0.2,
+          "aifs-single": 0.3,
+          "gfs": 0.5
         },
-        "representative": "aifs-single",
-        "normalized_spread": 1.101,
+        "bonus_model": "gfs",
+        "normalized_spread": 1.121,
         "excluded": {},
         "valid_utc": "2026-12-11T00:00:00+00:00",
+        "runs_utc": {
+          "ifs": "2026-11-26T00:00:00+00:00",
+          "aifs": "2026-11-26T00:00:00+00:00",
+          "gfs": "2026-11-26T06:00:00+00:00"
+        },
+        "t850_france": -0.05,
+        "msl_france": 1028.41,
         "risk_source": "ifs",
-        "weight_method": "Inverse MAE pression France, 3 derniers mois complets ; poids indicatifs"
+        "weight_method": "Poids KFS configurés ; bonus de 10 points selon accord synoptique actuel"
       },
       "t850_shading": {
         "enabled": true,
@@ -696,18 +732,27 @@
         "method": "weighted_blend",
         "models": [
           "ifs",
-          "aifs-single"
+          "aifs-single",
+          "gfs"
         ],
         "weights": {
-          "ifs": 0.5067,
-          "aifs-single": 0.4933
+          "ifs": 0.5,
+          "aifs-single": 0.3,
+          "gfs": 0.2
         },
-        "representative": null,
-        "normalized_spread": 0.154,
+        "bonus_model": null,
+        "normalized_spread": 0.246,
         "excluded": {},
         "valid_utc": "2026-11-29T00:00:00+00:00",
+        "runs_utc": {
+          "ifs": "2026-11-26T00:00:00+00:00",
+          "aifs": "2026-11-26T00:00:00+00:00",
+          "gfs": "2026-11-26T06:00:00+00:00"
+        },
+        "t850_france": 5.61,
+        "msl_france": 1023.06,
         "risk_source": "ifs",
-        "weight_method": "Inverse MAE pression France, 3 derniers mois complets ; poids indicatifs"
+        "weight_method": "Poids KFS configurés ; bonus de 10 points selon accord synoptique actuel"
       },
       "t850_shading": {
         "enabled": true,
@@ -817,18 +862,27 @@
         "method": "weighted_blend",
         "models": [
           "ifs",
-          "aifs-single"
+          "aifs-single",
+          "gfs"
         ],
         "weights": {
-          "ifs": 0.5909,
-          "aifs-single": 0.4091
+          "ifs": 0.4,
+          "aifs-single": 0.4,
+          "gfs": 0.2
         },
-        "representative": null,
-        "normalized_spread": 0.412,
+        "bonus_model": null,
+        "normalized_spread": 0.582,
         "excluded": {},
         "valid_utc": "2026-12-03T00:00:00+00:00",
+        "runs_utc": {
+          "ifs": "2026-11-26T00:00:00+00:00",
+          "aifs": "2026-11-26T00:00:00+00:00",
+          "gfs": "2026-11-26T06:00:00+00:00"
+        },
+        "t850_france": 5.32,
+        "msl_france": 1029.78,
         "risk_source": "ifs",
-        "weight_method": "Inverse MAE pression France, 3 derniers mois complets ; poids indicatifs"
+        "weight_method": "Poids KFS configurés ; bonus de 10 points selon accord synoptique actuel"
       },
       "t850_shading": {
         "enabled": true,
@@ -956,18 +1010,27 @@
         "method": "weighted_blend",
         "models": [
           "ifs",
-          "aifs-single"
+          "aifs-single",
+          "gfs"
         ],
         "weights": {
-          "ifs": 0.6433,
-          "aifs-single": 0.3567
+          "ifs": 0.5,
+          "aifs-single": 0.2,
+          "gfs": 0.3
         },
-        "representative": null,
-        "normalized_spread": 0.711,
+        "bonus_model": "ifs",
+        "normalized_spread": 0.773,
         "excluded": {},
         "valid_utc": "2026-12-06T00:00:00+00:00",
+        "runs_utc": {
+          "ifs": "2026-11-26T00:00:00+00:00",
+          "aifs": "2026-11-26T00:00:00+00:00",
+          "gfs": "2026-11-26T06:00:00+00:00"
+        },
+        "t850_france": 3.67,
+        "msl_france": 1032.64,
         "risk_source": "ifs",
-        "weight_method": "Inverse MAE pression France, 3 derniers mois complets ; poids indicatifs"
+        "weight_method": "Poids KFS configurés ; bonus de 10 points selon accord synoptique actuel"
       },
       "t850_shading": {
         "enabled": true,
@@ -1104,21 +1167,30 @@
         }
       ],
       "synoptic_consensus": {
-        "method": "weighted_representative",
+        "method": "weighted_blend",
         "models": [
           "ifs",
-          "aifs-single"
+          "aifs-single",
+          "gfs"
         ],
         "weights": {
-          "ifs": 0.4401,
-          "aifs-single": 0.5599
+          "ifs": 0.2,
+          "aifs-single": 0.3,
+          "gfs": 0.5
         },
-        "representative": "aifs-single",
-        "normalized_spread": 1.101,
+        "bonus_model": "gfs",
+        "normalized_spread": 1.121,
         "excluded": {},
         "valid_utc": "2026-12-11T00:00:00+00:00",
+        "runs_utc": {
+          "ifs": "2026-11-26T00:00:00+00:00",
+          "aifs": "2026-11-26T00:00:00+00:00",
+          "gfs": "2026-11-26T06:00:00+00:00"
+        },
+        "t850_france": -0.05,
+        "msl_france": 1028.41,
         "risk_source": "ifs",
-        "weight_method": "Inverse MAE pression France, 3 derniers mois complets ; poids indicatifs"
+        "weight_method": "Poids KFS configurés ; bonus de 10 points selon accord synoptique actuel"
       },
       "t850_shading": {
         "enabled": true,
