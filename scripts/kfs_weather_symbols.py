@@ -48,11 +48,11 @@ def detailed_kind(code):
     if c in (95,97):return "storm"
     if c in (96,99):return "hail_storm"
     return None
-PRIORITY = {"sun":0,"partly":1,"cloud":2,"fog":3,"rain":4,"snow":5,"storm":6}
+PRIORITY = {"sun":0,"partly":1,"cloud":2,"fog":3,"rain":4,"snow":5,"freezing":6,"storm":7}
 def kind(code):
     k=detailed_kind(code)
     return {"rime_fog":"fog","drizzle":"rain","heavy_rain":"rain","showers":"rain",
-            "freezing":"rain","heavy_snow":"snow","snow_grains":"snow","mixed":"snow","hail_storm":"storm"}.get(k,k)
+            "heavy_snow":"snow","snow_grains":"snow","mixed":"snow","hail_storm":"storm"}.get(k,k)
 def representative(codes):
     valid=[int(x) for x in codes if detailed_kind(x)]
     return max(valid,key=lambda x:(DETAIL_PRIORITY[detailed_kind(x)],x)) if valid else None
@@ -92,6 +92,10 @@ def _weather_icon(code,size=32):
             for i in range(3):stroke(((5,11-i*4),(27-(i%2)*5,11-i*4)),white,1.6)
         elif mode=="rain":
             for x in (10,17,24):stroke(((x,10),(x-3,3)),rain,2)
+        elif mode=="freezing":
+            for x in (10,17,24):stroke(((x,10),(x-2,5)),rain,1.8)
+            stroke(((5,2),(27,2)),white,2.5)
+            area.add_artist(Polygon(((16,1),(20,5),(16,9),(12,5)),closed=True,facecolor="#9ce7ff",edgecolor=ink,linewidth=.9))
         elif mode=="snow":
             for x in (10,17,24):
                 for pts in [((x-3,5),(x+3,5)),((x,2),(x,8)),((x-2.2,3),(x+2.2,7))]:
