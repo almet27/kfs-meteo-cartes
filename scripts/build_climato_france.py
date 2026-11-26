@@ -224,11 +224,23 @@ def render(points,boundaries,title,units,cmap,norm,metric,cutoff,filename,period
         source=source_label
         foot.set_text(f"{period_label or cutoff.strftime('Du 1er au %d/%m/%Y')}  •  {local} stations dans la zone  •  {source}")
         map_file=filename if zone=="france" else zone_filename(filename,zone)
-        fig.savefig(OUT/map_file,dpi=150,bbox_inches="tight",pad_inches=.2)
-        # Station coordinates are published alongside each map, never inferred from PNG pixels.
+        # Fixed explicit crop shared by the PNG and its clickable coordinates.
+        fig.canvas.draw()
+        renderer=fig.canvas.get_renderer()
+        crop=fig.get_tightbbox(renderer).padded(.2)
+        fig.savefig(OUT/map_file,dpi=150,bbox_inches=crop)
         lookup=globals().get("_KFS_STATION_IDS",{})
-        station_rows=[{"id":lookup[tuple(loc)],"name":loc[2],"lon":float(loc[0]),"lat":float(loc[1]),"value":float(v)} for loc,v in points if tuple(loc) in lookup and west<=loc[0]<=east and south<=loc[1]<=north and math.isfinite(v)]
-        (OUT/(map_file.removesuffix(".png")+"-stations.json")).write_text(json.dumps({"schema":1,"file":map_file,"end":cutoff.isoformat(),"extent":list(extent),"stations":station_rows},ensure_ascii=False,separators=(",",":")))
+        station_rows=[]
+        # Only labels actually plotted get a hit target; no hidden or overlapping labels.
+        for i in order:
+            loc,v=points[i]
+            if tuple(loc) not in lookup or (xs[i],ys[i]) not in plotted:continue
+            px,py=ax.transData.transform((float(loc[0]),float(loc[1])))/fig.dpi
+            u=(px-crop.x0)/crop.width
+            vv=1-(py-crop.y0)/crop.height
+            if 0<=u<=1 and 0<=vv<=1:
+                station_rows.append({"id":lookup[tuple(loc)],"name":loc[2],"lon":float(loc[0]),"lat":float(loc[1]),"value":float(v),"x":round(float(u),7),"y":round(float(vv),7)})
+        (OUT/(map_file.removesuffix(".png")+"-stations.json")).write_text(json.dumps({"schema":2,"file":map_file,"end":cutoff.isoformat(),"extent":list(extent),"stations":station_rows},ensure_ascii=False,separators=(",",":")))
         for artist in artists:artist.remove()
     plt.close(fig)
 
