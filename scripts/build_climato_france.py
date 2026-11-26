@@ -6,7 +6,7 @@ from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 from pathlib import Path
 import requests
-from climato_static_fusion import fetch_static, complete_static
+from climato_static_fusion import fetch_static, complete_static, km, number
 from climato_zones import ZONES, zone_filename, zone_files
 import matplotlib
 matplotlib.use("Agg")
@@ -220,11 +220,58 @@ def render(points,boundaries,title,units,cmap,norm,metric,cutoff,filename,period
             label=(f"{v:+.1f}" if metric in ("temp","frost") else f"{v:+.0f}%") if "anomalie" in filename else (f"{v:.1f}" if metric=="temp" else f"{v:.0f}")
             artists.append(ax.text(x,y,label,ha="center",va="center",fontsize=8.2,fontweight="bold",color=fg,zorder=4,
                     path_effects=[patheffects.withStroke(linewidth=1.7,foreground=bg)],clip_on=True))
-        source=source_label if zone=="france" or source_label=="Météo-France" else "Réseaux : Météo-France / StatIC (selon disponibilité)"
+        source=source_label
         foot.set_text(f"{period_label or cutoff.strftime('Du 1er au %d/%m/%Y')}  •  {local} stations dans la zone  •  {source}")
         fig.savefig(OUT/(filename if zone=="france" else zone_filename(filename,zone)),dpi=150,bbox_inches="tight",pad_inches=.2)
         for artist in artists:artist.remove()
     plt.close(fig)
+
+def load_infoclimat(start):
+    """Load only published, licensed, bounded station aggregates. No API requests."""
+    exports={}
+    for suffix,keys in [("",("temp","frost")),("-rain-wind",("rain","gust"))]:
+        path=Path("climato/infoclimat")/(start.strftime("%Y-%m")+suffix+".json")
+        try:
+            data=json.loads(path.read_text())
+            end=date.fromisoformat(data["end"])
+            if (data.get("schema")!=1 or data.get("source")!="Infoclimat — stations ouvertes"
+                    or data.get("start")!=start.isoformat() or not start<=end<=END
+                    or end.month!=start.month or not isinstance(data["stations"],list)):
+                continue
+            days=(end-start).days+1
+            if suffix and (data.get("expected_days")!=days or data.get("expected_hours")!=24*days):
+                continue
+            points={key:{} for key in keys}
+            for row in data["stations"]:
+                if not isinstance(row,dict):continue
+                sid=str(row.get("id") or "")
+                x,y=row.get("lon"),row.get("lat")
+                if (not sid or str(row.get("license")) not in ("0","1")
+                        or not number(x,-6,10) or not number(y,41,52)):continue
+                loc=(x,y,"Infoclimat "+sid)
+                for key in keys:
+                    v=None
+                    if key=="temp" and number(row.get("temp"),-45,55):v=row["temp"]
+                    if key=="frost" and number(row.get("frost"),0,days) and row["frost"]==int(row["frost"]):v=row["frost"]
+                    if (key=="rain" and row.get("rain_days")==days
+                            and row.get("rain_disagreement_days")==0 and number(row.get("rain_mm"),0,500*days)):
+                        v=row["rain_mm"]
+                    if key=="gust" and row.get("gust_hours")==24*days and number(row.get("gust_max_kmh"),0,350):
+                        v=row["gust_max_kmh"]
+                    if v is not None:points[key][sid]=(loc,v)
+            for key in keys:exports[key]=(end,list(points[key].values()))
+        except (OSError,ValueError,KeyError,TypeError) as exc:
+            logging.info("Infoclimat %s unavailable: %s",path.name,exc)
+    return exports
+
+def distinct_points(candidates,existing):
+    """Prefer existing network points; avoid geographically coincident stations."""
+    occupied=[loc for loc,_ in existing]
+    out=[]
+    for loc,value in candidates:
+        if any(km(loc,other)<1 for other in occupied):continue
+        out.append((loc,value));occupied.append(loc)
+    return out
 
 def main():
     if END.month!=TODAY.month:raise SystemExit("Pas encore de journée complète du mois.")
@@ -268,6 +315,7 @@ def main():
         raise SystemExit("Couverture température/pluie insuffisante : ne pas publier de cartes incomplètes.")
     # Observed maps are additional, never a replacement for the anomaly maps.
     start=TODAY.replace(day=1)
+    direct=load_infoclimat(start)
     try:
         static=fetch_static(start,END,catalog)
     except Exception as exc:
@@ -301,17 +349,28 @@ def main():
                     if len(candidate)>=30:
                         cutoff=older;mf=candidate;ic=trial;break
         if len(mf)<15:continue
-        pts=mf+ic
+        # A precomputed aggregate must match the exact plotted period.
+        # At most two days of freshness tradeoff for a substantially denser network.
+        direct_end,direct_points=direct.get(key,(None,[]))
+        extra=[]
+        if direct_end is not None and 0<=(cutoff-direct_end).days<=2:
+            candidate=mf_points(direct_end)
+            added=distinct_points(direct_points,candidate)
+            if len(candidate)>=30 and len(added)>=3:
+                cutoff=direct_end;mf=candidate;extra=added
+                ic=complete_static(static,key,start,cutoff)
+        ic=distinct_points(ic,mf+extra)
+        pts=mf+extra+ic
         v=[p[1] for p in pts]
         lo=math.floor(min(v)) if key=="temp" else 0
         hi=max(lo+1,math.ceil(max(v)))
         if key=="temp":
             lo=math.floor(lo/2)*2;hi=math.ceil(hi/2)*2
-        source=f"MF : {len(mf)}  •  StatIC : {len(ic)}"
-        method="IDW • jours complets • "+("moyenne (Tn+Tx)/2" if key=="temp" else "cumul ; fenêtres journalières différentes selon réseau" if key=="rain" else "Tn ≤ 0 °C") 
-        method+=" • données StatIC non certifiées" if ic else " • StatIC sans série complète"
+        source="Météo-France"+(" / Infoclimat" if extra else "")+(" / StatIC" if ic else "")
+        method="IDW • jours complets • "+("moyenne (Tn+Tx)/2" if key=="temp" else "cumul" if key=="rain" else "Tn ≤ 0 °C")
+        if extra or ic:method+=" • réseaux : fenêtres différentes ; mesures non certifiées"
         render(pts,boundaries,title,units,cmap,Normalize(vmin=lo,vmax=hi),key,cutoff,filename,source_label=source,method_label=method)
-        manifest["maps"].append({"file":filename,"title":title,"end":cutoff.isoformat(),"stations":len(pts),"mf_stations":len(mf),"static_stations":len(ic),"kind":"observed_fusion","source":"Météo-France ; Infoclimat StatIC via chom.engineering (LO 2.0)"})
+        manifest["maps"].append({"file":filename,"title":title,"end":cutoff.isoformat(),"stations":len(pts),"mf_stations":len(mf),"static_stations":len(ic),"infoclimat_stations":len(extra),"kind":"observed_fusion","source":source+(" (Infoclimat, stations ouvertes)" if extra else "")+(" ; StatIC via chom.engineering (LO 2.0)" if ic else "")})
     # Absolute maximum gust, never a sum or a monthly mean.
     for n in range(END.day,0,-1):
         gusts={}; coverage=set()
@@ -323,11 +382,27 @@ def main():
         if len(coverage)>=15 and len(gusts)>=30:break
     else:gusts={}
     if gusts:
-        cutoff=TODAY.replace(day=n);pts=list(gusts.values());filename="rafales-max.png"
+        cutoff=TODAY.replace(day=n);mf=list(gusts.values());filename="rafales-max.png"
+        direct_end,direct_points=direct.get("gust",(None,[]))
+        extra=[]
+        if direct_end is not None and 0<=(cutoff-direct_end).days<=2:
+            candidate={};deps=set()
+            for dep,entries in results.items():
+                for sid,entry in entries.items():
+                    seq=[entry["obs"].get(f"{TODAY.year}{TODAY.month:02d}{d:02d}",{}).get("gust") for d in range(1,direct_end.day+1)]
+                    if seq and all(v is not None for v in seq):
+                        candidate[sid]=(catalog[sid],max(seq));deps.add(dep)
+            added=distinct_points(direct_points,list(candidate.values()))
+            if added and len(candidate)>=30 and len(deps)>=15:
+                cutoff=direct_end;mf=list(candidate.values());extra=added
+        pts=mf+extra
         hi=max(120,math.ceil(max(v for _,v in pts)/20)*20)
         title="Rafales maximales observées"
-        render(pts,boundaries,title,"Rafale maximale (km/h)","YlOrRd",Normalize(vmin=0,vmax=hi),"gust",cutoff,filename,method_label="Maximum des rafales quotidiennes FXI / FXI3S • jours complets • zonage IDW indicatif")
-        manifest["maps"].append({"file":filename,"title":title,"end":cutoff.isoformat(),"stations":len(pts),"kind":"gust_observed","source":"Météo-France"})
+        source="Météo-France"+(" / Infoclimat" if extra else "")
+        method="Rafales maximales • jours complets • IDW indicatif"
+        if extra:method+=" • Infoclimat : maximum échantillonné, non certifié"
+        render(pts,boundaries,title,"Rafale maximale (km/h)","YlOrRd",Normalize(vmin=0,vmax=hi),"gust",cutoff,filename,source_label=source,method_label=method)
+        manifest["maps"].append({"file":filename,"title":title,"end":cutoff.isoformat(),"stations":len(pts),"mf_stations":len(mf),"infoclimat_stations":len(extra),"kind":"gust_observed","source":source})
     for m in manifest["maps"]:m["zones"]=zone_files(OUT,m["file"])
     (OUT/"station-audit.json").write_text(json.dumps(audit,ensure_ascii=False,separators=(",",":")))
     (OUT/"latest.json").write_text(json.dumps(manifest,ensure_ascii=False,indent=2))
