@@ -10,6 +10,8 @@ from kfs_weather_cache import check_quota, record_quota
 OUT=Path("forecast-maps/france/hourly-web")
 MODELS={"arome":"meteofrance_arome_france","gfs":"gfs_global","ifs":"ecmwf_ifs025"}
 FIELDS=["temperature_2m","wind_speed_10m","wind_gusts_10m","precipitation","wind_direction_10m","weather_code"]
+EXTRA_FIELDS=["rain","showers","snowfall","cape","visibility","snow_depth"]
+FIELDS=FIELDS+EXTRA_FIELDS
 def get(url):
     with urlopen(Request(url,headers={"User-Agent":"KFS-Meteo-Hourly/1.0"}),timeout=40) as r:return json.load(r)
 def inside(x,y,ring):
@@ -49,7 +51,14 @@ def build(name,code,pts):
         part=pts[k:k+25]
         q=urlencode({"latitude":",".join(str(p[1]) for p in part),"longitude":",".join(str(p[0]) for p in part),"models":code,"hourly":",".join(FIELDS),"forecast_hours":hours,"timezone":"GMT","wind_speed_unit":"kmh","precipitation_unit":"mm","cell_selection":"land"})
         try:d=get("https://api.open-meteo.com/v1/forecast?"+q)
-        except HTTPError as e:record_quota(e);raise
+        except HTTPError as e:
+            # A provider/model may reject an optional variable. Retain the original
+            # six fields rather than losing the complete timeline.
+            if e.code==400:
+                fallback=urlencode({"latitude":",".join(str(p[1]) for p in part),"longitude":",".join(str(p[0]) for p in part),"models":code,"hourly":",".join(FIELDS[:6]),"forecast_hours":hours,"timezone":"GMT","wind_speed_unit":"kmh","precipitation_unit":"mm","cell_selection":"land"})
+                try:d=get("https://api.open-meteo.com/v1/forecast?"+fallback)
+                except HTTPError as err:record_quota(err);raise
+            else:record_quota(e);raise
         if isinstance(d,dict):d=[d]
         if len(d)!=len(part):raise ValueError("Unexpected location count")
         for p,r in zip(part,d):
@@ -61,7 +70,9 @@ def build(name,code,pts):
                 for field in FIELDS:
                     a=h.get(field,[])
                     v=a[idx] if idx is not None and idx<len(a) else None
-                    vals.append(round(v,1) if numeric(v) else None)
+                    unit=r.get("hourly_units",{}).get(field)
+                    expected={"rain":"mm","showers":"mm","snowfall":"cm","cape":"J/kg","visibility":"m","snow_depth":"m"}.get(field)
+                    vals.append(round(v,3 if field=="snow_depth" else 1) if numeric(v) and (expected is None or unit==expected) else None)
                 values.append(vals)
             rows.append(values)
         time.sleep(.3)
