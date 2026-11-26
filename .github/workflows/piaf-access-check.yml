@@ -1,0 +1,16 @@
+name: PIAF access check
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/piaf-access-check.yml'
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Check KFS PIAF status
+        run: |
+          curl --fail-with-body --max-time 30 --retry 1 -sS https://kfs-meteo.fr/api/piaf/status | python -m json.tool
