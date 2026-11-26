@@ -138,7 +138,7 @@ async function kfsAlertFreezingHourly(rows,date,day,used){
  const bounds=rows.map(row=>({row,b:kfsProbaBBox([row.f])}));
  for(const result of settled){if(result.status!=='fulfilled'||!result.value)continue;const {d,ids,ci,name}=result.value;
   for(let j=0;j<d.points.length;j++){const p=d.points[j],r=d.rows[j];if(!Array.isArray(p)||p.length!==2||!p.every(Number.isFinite)||!Array.isArray(r))continue;
-   const hits=ids.filter(i=>[56,57,66,67].includes(r[i]?.[ci]));if(!hits.length)continue;
+   const hits=ids.filter(i=>[48,56,57,66,67].includes(r[i]?.[ci]));if(!hits.length)continue;
    const [lon,lat]=p,target=bounds.find(({row,b})=>lon>=b[0]&&lon<=b[2]&&lat>=b[1]&&lat<=b[3]&&kfsProbaInFeature(lon,lat,row.f));if(!target)continue;
    const row=target.row,old=row.values.verglas;
    if(!old||old.level<1||(old.deterministic&&hits.length>old.amount)){row.values.verglas={type:'verglas',level:1,amount:hits.length,models:[name],lat,lon,deterministic:true,partial:ids.length<24};used.add(name);}
@@ -167,7 +167,7 @@ let geo=prepared?.geo,data=prepared?.ensemble||{};
  for(let i=0;i<pts.length;i++){const pt=pts[i];if(!Array.isArray(pt)||pt.length!==2||!pt.every(Number.isFinite))continue;
  const [lat,lon]=pt,row=local.find(x=>kfsProbaInFeature(lon,lat,x.f));if(!row)continue;
  if(types.includes('verglas')){
- const values=models.flatMap(m=>{const a=m.p.zones?.[z]?.verglas?.['1'],v=a?.[i];return Array.isArray(a)&&a.length===pts.length&&kfsProbaValidMemberResult(v)&&v.members>=5?[{m,v}]:[]});
+ const values=models.flatMap(m=>{const a=m.p.zones?.[z]?.verglas?.['1'],v=a?.[i];return Array.isArray(a)&&a.length===pts.length&&kfsProbaValidMemberResult(v)&&v.includes_rime===true&&v.members>=5?[{m,v}]:[]});
  if(values.length){const probability=values.reduce((a,x)=>a+x.v.pct,0)/values.length,amount=values.reduce((a,x)=>a+x.v.amount,0)/values.length,level=probability<10?0:probability<30?1:probability<50?2:probability<75?3:4,old=row.values.verglas;
  if(!old||probability>old.probability)row.values.verglas={type:'verglas',level,amount,probability,models:values.map(x=>x.m.name),lat,lon};
  for(const x of values){used.add(x.m.name);times.add(x.m.m.generated_at_utc);}
@@ -234,7 +234,7 @@ return svg;
  if(ensemble.schema!==2||ensemble.provider!=='Open-Meteo ECMWF ENS + GEFS members'||ensemble.timezone!=='Europe/Paris')throw Error('Ensemble incompatible');
  const today=kfsProbaDay(0),out='proba/public-risks';
  await fs.mkdir(out,{recursive:true});
- const manifest={schema:1,risk_schema:8,today,generated_utc:new Date().toISOString(),days:{}};
+ const manifest={schema:1,risk_schema:9,today,generated_utc:new Date().toISOString(),days:{}};
  for(let day=0;day<=5;day++){
   const date=kfsProbaDay(day);
   const d=await kfsAlertData(day,'FR',[...Object.keys(KFS_ALERT_RULES),'chaleur','verglas'],{geo,ensemble,publicOnly:true});
