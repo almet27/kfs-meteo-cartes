@@ -6,6 +6,7 @@ on:
   push:
     paths:
       - scripts/build_mf_daily_archive.py
+      - scripts/mf_sqlite_snapshot.py
       - .github/workflows/mf-daily-archive.yml
 permissions:
   contents: write
@@ -20,6 +21,10 @@ jobs:
       - uses: actions/checkout@v4
       - name: Collect official daily station data
         run: python scripts/build_mf_daily_archive.py
+      - name: Validate and package SQLite import snapshot
+        run: |
+          python scripts/mf_sqlite_snapshot.py bundle
+          HOME="$(mktemp -d)" python scripts/mf_sqlite_snapshot.py import --local
       - name: Publish archive
         run: |
           git config user.name "github-actions[bot]"
