@@ -1,0 +1,43 @@
+name: KFS - cartes climatologiques interactives
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - scripts/build_mf_web_climato.py
+      - .github/workflows/mf-web-climato.yml
+  workflow_run:
+    workflows: ["KFS - archives quotidiennes MF", "KFS - normales climatologiques MF"]
+    types: [completed]
+permissions:
+  contents: write
+concurrency:
+  group: mf-web-climato
+  cancel-in-progress: false
+jobs:
+  build:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - run: python scripts/build_mf_web_climato.py
+      - name: Publish station map files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          backup="$(mktemp -d)"
+          cp -a climato/mf-web "$backup/"
+          for i in 1 2 3 4 5 6; do
+            git fetch origin main
+            git reset --hard origin/main
+            mkdir -p climato/mf-web
+            cp -a "$backup/mf-web/." climato/mf-web/
+            git add climato/mf-web
+            if git diff --cached --quiet; then exit 0; fi
+            git commit -m "Publier les points climatologiques interactifs"
+            if git push origin HEAD:main; then exit 0; fi
+            sleep 4
+          done
+          exit 1
