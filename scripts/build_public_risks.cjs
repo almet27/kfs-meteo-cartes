@@ -201,7 +201,9 @@ function renderRisk(d,day,date){
   const v=row.best;if(!v||v.level<1||!Number.isFinite(v.lat)||!Number.isFinite(v.lon))continue;
   const x=X(v.lon).toFixed(1),y=Y(v.lat).toFixed(1);
   let icon="";
-  if(v.type==="gel"||v.type==="chaleur"){
+  if(v.type==="gel"){
+   icon='<g transform="rotate(32 0 0)"><path d="M-3.4 2V-10a3.4 3.4 0 0 1 6.8 0V2a5.7 5.7 0 1 1 -6.8 0Z" fill="#f4f8ff" stroke="#34516c" stroke-width="1.4"/><path d="M0 -4V6" stroke="#2499ed" stroke-width="3.3" stroke-linecap="round"/><circle cx="0" cy="6.5" r="3.9" fill="#2499ed"/><path d="M1.4 -8H3M1.4 -4H3M1.4 0H3" stroke="#55728b" stroke-width=".9" stroke-linecap="round"/><path d="M-1.7 -9V-5" stroke="#fff" stroke-width="1" stroke-linecap="round"/></g>';
+  }else if(v.type==="chaleur"){
    const color=v.type==="gel"?"#49baff":"#ff4b47";
    icon='<path d="M-3 -4V-9a3 3 0 0 1 6 0v5a6 6 0 1 1 -6 0Z" fill="#f3f8ff" stroke="#102030" stroke-width="1.4"/><path d="M0 -8V2" stroke="'+color+'" stroke-width="3.5" stroke-linecap="round"/><circle cx="0" cy="3" r="4" fill="'+color+'"/><path d="M4 -7h2M4 -3h2" stroke="#102030" stroke-width="1" stroke-linecap="round"/>';
   }else if(v.type==="pluie"){
@@ -231,7 +233,7 @@ return svg;
  if(ensemble.schema!==2||ensemble.provider!=='Open-Meteo ECMWF ENS + GEFS members'||ensemble.timezone!=='Europe/Paris')throw Error('Ensemble incompatible');
  const today=kfsProbaDay(0),out='proba/public-risks';
  await fs.mkdir(out,{recursive:true});
- const manifest={schema:1,risk_schema:5,today,generated_utc:new Date().toISOString(),days:{}};
+ const manifest={schema:1,risk_schema:6,today,generated_utc:new Date().toISOString(),days:{}};
  for(let day=0;day<=5;day++){
   const date=kfsProbaDay(day);
   const d=await kfsAlertData(day,'FR',[...Object.keys(KFS_ALERT_RULES),'chaleur','verglas'],{geo,ensemble,publicOnly:true});
