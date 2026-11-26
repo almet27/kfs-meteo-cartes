@@ -1,0 +1,40 @@
+name: KFS - archives quotidiennes MF
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '15 10 * * *'
+  push:
+    paths:
+      - scripts/build_mf_daily_archive.py
+      - .github/workflows/mf-daily-archive.yml
+permissions:
+  contents: write
+concurrency:
+  group: mf-daily-archive
+  cancel-in-progress: false
+jobs:
+  archive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Collect official daily station data
+        run: python scripts/build_mf_daily_archive.py
+      - name: Publish archive
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          backup="$(mktemp -d)"
+          cp -a climato/mf-daily "$backup/mf-daily"
+          for i in 1 2 3 4 5 6; do
+            git fetch origin main
+            git reset --hard origin/main
+            mkdir -p climato/mf-daily
+            cp -a "$backup/mf-daily/." climato/mf-daily/
+            git add climato/mf-daily
+            if git diff --cached --quiet; then exit 0; fi
+            git commit -m "Actualiser archives quotidiennes Météo-France"
+            if git push origin HEAD:main; then exit 0; fi
+            sleep 5
+          done
+          exit 1
