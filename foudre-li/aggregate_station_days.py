@@ -40,7 +40,24 @@ for year, data in yearly.items():
 # National map: use only validated daily archives above. Coordinates from the
 # latest Météo-France catalogue, with the KFS web station catalogue as fallback.
 # Counts are per 15 km disk, not unique national flash totals.
-for year in sorted(yearly):
+# Map-only high-coverage partial days: keep strict station climatology untouched.
+# Partial day counts are lower bounds, never imputed or scaled.
+map_months=defaultdict(dict,{m:dict(v) for m,v in months.items()})
+partial_meta={}
+for path in sorted((root/"partial").glob("2026-??-??.json")):
+    d=json.loads(path.read_text())
+    day=date.fromisoformat(path.stem)
+    if path.stem in map_months[path.stem[:7]]: continue
+    if (d.get("schema")!=1 or d.get("date")!=path.stem or d.get("pilot") is not False
+        or d.get("complete") is not False or d.get("parallax")!=METHOD or d.get("radius_km")!=15
+        or not .99<=d.get("coverage_fraction",0)<=1 or not 0<=d.get("max_gap_seconds",9999)<=900):
+        raise ValueError(f"Invalid partial source {path}")
+    ids=d["station_ids"]; hits=d["stations_with_flashes"]
+    if len(ids)!=len(set(ids)) or not set(hits)<=set(ids) or len(ids)!=d["station_count"] or any(type(v) is not int or v<=0 for v in hits.values()):
+        raise ValueError(f"Invalid partial station counts {path}")
+    map_months[path.stem[:7]][path.stem]=(ids,hits)
+    partial_meta[path.stem]={"coverage_fraction":d["coverage_fraction"],"max_gap_seconds":d["max_gap_seconds"]}
+for year in sorted({m[:4] for m in map_months}):
     if year != "2026":
         continue
     coords={}
@@ -60,8 +77,8 @@ for year in sorted(yearly):
             for s in json.loads(f.read_text()).get("stations",[]):
                 if len(s)>=4: coords.setdefault(s[0],[s[1],s[2],s[3]])
         except (ValueError,OSError): pass
-    selected={m[5:]:sorted(days.items()) for m,days in months.items() if m[:4]==year}
-    selected["annee"]=sorted((day,value) for m,days in months.items() if m[:4]==year for day,value in days.items())
+    selected={m[5:]:sorted(days.items()) for m,days in map_months.items() if m[:4]==year}
+    selected["annee"]=sorted((day,value) for m,days in map_months.items() if m[:4]==year for day,value in days.items())
     periods={}
     for tag,entries in selected.items():
         agg=defaultdict(lambda:[0,0,0])
@@ -71,7 +88,7 @@ for year in sorted(yearly):
                 a[0]+=1; a[1]+=int(h>0); a[2]+=h
         rows=[[sid,*coords[sid],*v] for sid,v in sorted(agg.items()) if sid in coords]
         if not rows: continue
-        periods[tag]={"dates":[day for day,_ in entries],"rows":rows}
+        periods[tag]={"dates":[day for day,_ in entries],"partial_dates":{day:partial_meta[day] for day,_ in entries if day in partial_meta},"rows":rows}
     if periods:
         payload={"schema":1,"year":int(year),"source":"EUMETSAT MTG LI LFL","radius_km":15,"timezone":"Europe/Paris","coordinate_source":"Météo-France","periods":periods}
         out=root/"yearly"/(year+"-map.json")
