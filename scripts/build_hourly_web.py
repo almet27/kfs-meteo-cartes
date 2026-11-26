@@ -40,11 +40,14 @@ def build(name,code,pts):
     check_quota()
     now=datetime.now(timezone.utc)
     start=now.replace(minute=0,second=0,microsecond=0)
-    times=[(start+timedelta(hours=i)).strftime("%Y-%m-%dT%H:%M") for i in range(34)]
+    # Global models need a buffer for the three-hour publication cadence.
+    # ARÔME has a finite native run horizon; unavailable trailing hours stay null.
+    hours=52 if name!="arome" else 48
+    times=[(start+timedelta(hours=i)).strftime("%Y-%m-%dT%H:%M") for i in range(hours)]
     rows=[]
     for k in range(0,len(pts),25):
         part=pts[k:k+25]
-        q=urlencode({"latitude":",".join(str(p[1]) for p in part),"longitude":",".join(str(p[0]) for p in part),"models":code,"hourly":",".join(FIELDS),"forecast_hours":34,"timezone":"GMT","wind_speed_unit":"kmh","precipitation_unit":"mm","cell_selection":"land"})
+        q=urlencode({"latitude":",".join(str(p[1]) for p in part),"longitude":",".join(str(p[0]) for p in part),"models":code,"hourly":",".join(FIELDS),"forecast_hours":hours,"timezone":"GMT","wind_speed_unit":"kmh","precipitation_unit":"mm","cell_selection":"land"})
         try:d=get("https://api.open-meteo.com/v1/forecast?"+q)
         except HTTPError as e:record_quota(e);raise
         if isinstance(d,dict):d=[d]
