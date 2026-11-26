@@ -1,12 +1,12 @@
 {
-  "generated_utc": "2026-11-26T03:54:41.605272+00:00",
+  "generated_utc": "2026-11-26T04:11:38.636496+00:00",
   "run_utc": "2026-11-26T00:00:00+00:00",
   "runs_utc": {
     "gfs": {
       "24": "2026-11-26T00:00:00+00:00",
       "48": "2026-11-26T00:00:00+00:00",
       "72": "2026-11-26T00:00:00+00:00",
-      "120": "2026-11-25T18:00:00+00:00",
+      "120": "2026-11-26T00:00:00+00:00",
       "168": "2026-11-25T18:00:00+00:00",
       "240": "2026-11-25T18:00:00+00:00",
       "360": "2026-11-25T18:00:00+00:00"
@@ -16,8 +16,8 @@
       "48": "2026-11-26T00:00:00+00:00",
       "72": "2026-11-26T00:00:00+00:00",
       "120": "2026-11-26T00:00:00+00:00",
-      "168": "2026-11-25T18:00:00+00:00",
-      "240": "2026-11-25T18:00:00+00:00",
+      "168": "2026-11-26T00:00:00+00:00",
+      "240": "2026-11-26T00:00:00+00:00",
       "360": "2026-11-25T18:00:00+00:00"
     }
   },
@@ -153,8 +153,8 @@
         "rain6h": "APCP_6h*(1-CPOFP_at_valid_time/100)",
         "snow6h": "APCP_6h*CPOFP_at_valid_time/100",
         "warning": "ESTIMATION. CPOFP est instantané en fin d'intervalle. Le champ snow6h contient les précipitations gelées (dont neige, potentiellement grésil), et non un cumul neige natif.",
-        "wet_cells_with_valid_phase": 11139,
-        "wet_cells_total": 42628
+        "wet_cells_with_valid_phase": 11558,
+        "wet_cells_total": 46104
       },
       "168": {
         "rain6h": "APCP_6h*(1-CPOFP_at_valid_time/100)",
@@ -179,9 +179,5 @@
       }
     }
   },
-  "errors": {
-    "aigfs-h168-z500_msl": "[Errno 2] No such file or directory: '/home/runner/data/aigfs/20261126/subset_66fe0967__aigfs.t00z.sfc.f168.grib2'",
-    "aigfs-h168-wind10m": "[Errno 2] No such file or directory: '/home/runner/data/aigfs/20261126/subset_66fe795e__aigfs.t00z.sfc.f168.grib2'",
-    "aigfs-h168-precip6h": "[Errno 2] No such file or directory: '/home/runner/data/aigfs/20261126/subset_66fe88ed__aigfs.t00z.sfc.f168.grib2'"
-  }
+  "errors": {}
 }
