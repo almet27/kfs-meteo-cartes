@@ -96,7 +96,8 @@ jobs:
               maps={x["id"]:x for x in t["period_maps"]}
               same=all(dt(maps[j]["run_utc"][key])==dt(a["runs_utc"][model][h]) for j,h in (("j3","72"),("j7","168"),("j10","240"),("j15","360")) for key,model in (("ifs","ifs"),("aifs","aifs-single")))
               fresh=datetime.now(timezone.utc)-dt(t["generated_utc"])<timedelta(hours=18)
-              sys.exit(0 if same and fresh else 1)
+              ready=all(maps[j].get("synoptic_consensus",{}).get("method")=="weighted_blend" and set(maps[j]["synoptic_consensus"].get("models",[]))=={"ifs","aifs-single","gfs"} for j in ("j3","j7","j10","j15"))
+              sys.exit(0 if same and fresh and ready else 1)
           except (KeyError,ValueError,TypeError):
               sys.exit(1)
           PY
@@ -137,6 +138,7 @@ jobs:
               if (data.get("schema_version")==1 and data.get("status")=="illustrative_model_maps"
                   and len(data.get("period_maps",[]))==4
                   and {x.get("id") for x in data["period_maps"]}=={"j3","j7","j10","j15"}
+                  and all(x.get("synoptic_consensus",{}).get("method")=="weighted_blend" for x in data["period_maps"])
                   and created.date()==now.date() and created>=gate
                   and data.get("charts_generated_utc")==atlas.get("generated_utc")
                   and all(datetime.fromisoformat(data["period_maps"][i]["run_utc"]["ifs"].replace("Z","+00:00"))==datetime.fromisoformat(atlas["runs_utc"]["ifs"][h].replace("Z","+00:00"))
