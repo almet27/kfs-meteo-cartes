@@ -1,0 +1,97 @@
+name: Archives StatIC - lot contrôlé
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/infoclimat-historical-batch.yml
+permissions:
+  contents: write
+concurrency:
+  group: infoclimat-historical-batch
+  cancel-in-progress: false
+jobs:
+  archive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Import mensuel borné des stations ouvertes
+        run: |
+          python - <<'PY'
+          import datetime as dt, json, math, pathlib, re, time, urllib.parse, urllib.request
+          base="https://climato.chom.engineering"
+          out=pathlib.Path("climato/infoclimat/history")
+          out.mkdir(parents=True,exist_ok=True)
+          def get(url, params=None):
+              if params: url+="?"+urllib.parse.urlencode(params)
+              req=urllib.request.Request(url,headers={"Accept":"application/json","User-Agent":"KFS-METEO-historical-batch/1.0"})
+              with urllib.request.urlopen(req,timeout=15) as r:
+                  body=r.read(15_000_001)
+              if len(body)>15_000_000: raise ValueError("Response exceeds safe size")
+              return json.loads(body)
+          def rows(obj):
+              if isinstance(obj,list): return obj
+              for k in ("mesures","stations","data"):
+                  if isinstance(obj.get(k),list): return obj[k]
+              raise ValueError("Unexpected catalogue")
+          # Individual licence takes precedence over the dataset-wide licence.
+          cat=get("https://www.infoclimat.fr/opendata/stations_xhr.php",{"format":"geojson"})
+          allowed={}
+          for f in cat["features"]:
+              p=f.get("properties",{});lic=p.get("license") or {}
+              sid=str(p.get("id") or "")
+              if p.get("country")!="FR" or lic.get("source")!="infoclimat.fr" or str(lic.get("code")) not in ("0","1") or not re.fullmatch(r"[A-Za-z0-9_-]{1,40}",sid):continue
+              x,y=f["geometry"]["coordinates"][:2]
+              if not (-6<=x<=10 and 41<=y<=52):continue
+              allowed[sid]={"id":sid,"lon":x,"lat":y,"license":str(lic["code"])}
+          time.sleep(2)
+          stations={}
+          for row in rows(get(base+"/statIC/stations")):
+              sid=str(row.get("ic_id") or "")
+              if sid not in allowed or row.get("pays")!="FR":continue
+              if row.get("parametre") not in ("air_temperature","precipitation_amount_24h","precipitation_amount_1h","precipitation_amount_3h"):continue
+              try: first=dt.date.fromisoformat(str(row["premiere_obs"])[:10])
+              except (KeyError,ValueError,TypeError):continue
+              if sid not in stations or first<stations[sid][0]:stations[sid]=(first,row)
+          if not stations:raise ValueError("No licensed historical stations matched")
+          candidates=sorted(stations,key=lambda sid:(stations[sid][0],sid))
+          end=dt.date.today().replace(day=1)
+          pending=[s for s in candidates if not (out/(s+".json")).exists()]
+          print("Eligible",len(candidates),"pending",len(pending),"earliest catalogue",stations[candidates[0]][0],flush=True)
+          completed=0
+          for sid in pending[:12]:
+              first,row=stations[sid]
+              start=first.replace(day=1)
+              if start>=end:continue
+              try:
+                  time.sleep(2)
+                  obj=get(base+"/statIC/mensuelle",{"station":sid,"from":str(start),"to":str(end)})
+                  if obj.get("tronque") or obj.get("suite") or "Etalab" not in str(obj.get("licence")):raise ValueError("Truncated or unexpected licence")
+                  data=obj.get("mesures")
+                  if not isinstance(data,list) or any(str(r.get("ic_id"))!=sid for r in data):raise ValueError("Invalid station series")
+                  if not data:continue
+                  keys=set()
+                  for r in data:
+                      month=dt.date.fromisoformat(str(r["mois"])[:7]+"-01")
+                      if not start<=month<end or month in keys:raise ValueError("Invalid/duplicate month")
+                      keys.add(month)
+                  item={"schema":1,"source":"Infoclimat / StatIC, via climato.chom.engineering","dataset_licence":obj.get("licence"),"attribution":obj.get("attribution"),"station":{**allowed[sid],"name":row.get("libelle") or sid},"requested_start":str(start),"requested_end_exclusive":str(end),"note":"Non-certified monthly aggregates; gaps and quality fields preserved. Not proof of complete daily coverage.","months":data}
+                  target=out/(sid+".json")
+                  target.write_text(json.dumps(item,ensure_ascii=False,separators=(",",":"))+"\n")
+                  completed+=1
+                  print(sid,"months",len(data),"first",min(keys),"last",max(keys),flush=True)
+              except Exception as exc:
+                  print("Stopping batch safely:",type(exc).__name__,flush=True)
+                  break
+          print("Completed this run",completed,flush=True)
+          if not completed and pending:raise SystemExit("No archive added; diagnose source before retry")
+          PY
+      - name: Publish historical files only
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add climato/infoclimat/history
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Archiver un lot de bilans mensuels StatIC sous licences ouvertes"
+          git pull --rebase origin main
+          git push origin HEAD:main
