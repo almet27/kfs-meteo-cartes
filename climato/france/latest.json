@@ -1,14 +1,14 @@
 {
   "schema": 1,
   "month": "2026-11",
-  "generated_at": "2026-11-26T01:38:16.285881+01:00",
+  "generated_at": "2026-11-26T16:20:30.962887+01:00",
   "source": "Météo-France, observations quotidiennes",
   "method": "IDW, 150 km max nearest station, 2 stations within 200 km",
   "maps": [
     {
       "file": "temperature-anomalie.png",
       "title": "Anomalie de température moyenne",
-      "end": "2026-11-23",
+      "end": "2026-11-24",
       "stations": 388,
       "zones": {
         "nord_ouest": "temperature-anomalie-nord_ouest.png",
@@ -23,7 +23,7 @@
     {
       "file": "pluie-anomalie.png",
       "title": "Anomalie de précipitations",
-      "end": "2026-11-23",
+      "end": "2026-11-24",
       "stations": 411,
       "zones": {
         "nord_ouest": "pluie-anomalie-nord_ouest.png",
@@ -38,7 +38,7 @@
     {
       "file": "soleil-anomalie.png",
       "title": "Anomalie d’ensoleillement",
-      "end": "2026-11-23",
+      "end": "2026-11-24",
       "stations": 47,
       "zones": {
         "nord_ouest": "soleil-anomalie-nord_ouest.png",
@@ -53,7 +53,7 @@
     {
       "file": "gel-anomalie.png",
       "title": "Anomalie du nombre de jours de gel",
-      "end": "2026-11-23",
+      "end": "2026-11-24",
       "stations": 388,
       "zones": {
         "nord_ouest": "gel-anomalie-nord_ouest.png",
@@ -147,10 +147,10 @@
     {
       "file": "neige-sol-max.png",
       "title": "Hauteur maximale de neige au sol estimée",
-      "end": "2026-11-24",
+      "end": "2026-11-25",
       "stations": 96,
       "grid_cells": 9892,
-      "ims_days": 24,
+      "ims_days": 25,
       "ims_dates": [
         "2026-11-01",
         "2026-11-02",
@@ -175,7 +175,8 @@
         "2026-11-21",
         "2026-11-22",
         "2026-11-23",
-        "2026-11-24"
+        "2026-11-24",
+        "2026-11-25"
       ],
       "kind": "snow_depth",
       "zones": {
