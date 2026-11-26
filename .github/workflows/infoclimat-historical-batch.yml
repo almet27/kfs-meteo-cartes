@@ -47,10 +47,12 @@ jobs:
           for f in cat["features"]:
               p=f.get("properties",{});lic=p.get("license") or {}
               sid=str(p.get("id") or "")
-              if p.get("country")!="FR" or lic.get("source")!="infoclimat.fr" or str(lic.get("code")) not in ("0","1") or not re.fullmatch(r"[A-Za-z0-9_-]{1,40}",sid):continue
+              if p.get("country")!="FR" or lic.get("source")!="infoclimat.fr" or (str(lic.get("code")) not in ("0","1") and not (sid=="STATIC0064" and str(lic.get("code"))=="2")) or not re.fullmatch(r"[A-Za-z0-9_-]{1,40}",sid):continue
               x,y=f["geometry"]["coordinates"][:2]
               if not (-6<=x<=10 and 41<=y<=52):continue
               allowed[sid]={"id":sid,"lon":x,"lat":y,"license":str(lic["code"])}
+              if str(lic["code"])=="2":
+                  allowed[sid].update({"usage":"non-commercial","license_label":"CC BY-NC","attribution":"Infoclimat / StatIC — Puzeaux (juju80960)","source_url":"https://www.infoclimat.fr/stations/metadonnees.php?id=STATIC0064"})
           time.sleep(2)
           stations={}
           for row in rows(get(base+"/statIC/stations")):
@@ -75,7 +77,8 @@ jobs:
           print("Bourth: stations candidates within 50 km",len(local),flush=True)
           for sid in local:
               print("Bourth candidate",sid,stations[sid][1].get("libelle"),round(distance(sid),1),"km",stations[sid][0],flush=True)
-          candidates=sorted(stations,key=lambda sid:(0 if sid in local else 1,distance(sid) if sid in local else 0,stations[sid][0],sid))
+          candidates=sorted(stations,key=lambda sid:(-1 if sid=="STATIC0064" else 0 if sid in local else 1,distance(sid) if sid in local else 0,stations[sid][0],sid))
+          print("Puzeaux authorised catalogue:", "STATIC0064" in allowed, "monthly catalogue:", "STATIC0064" in stations,flush=True)
           end=dt.date.today().replace(day=1)
           pending=[s for s in candidates if not (out/(s+".json")).exists() and s not in state["empty"]]
           state["eligible"]=len(candidates)
@@ -99,7 +102,7 @@ jobs:
                       month=dt.date.fromisoformat(str(r["mois"])[:7]+"-01")
                       if not start<=month<end or month in keys:raise ValueError("Invalid/duplicate month")
                       keys.add(month)
-                  item={"schema":1,"source":"Infoclimat / StatIC, via climato.chom.engineering","dataset_licence":obj.get("licence"),"attribution":obj.get("attribution"),"station":{**allowed[sid],"name":row.get("libelle") or sid},"requested_start":str(start),"requested_end_exclusive":str(end),"note":"Non-certified monthly aggregates; gaps and quality fields preserved. Not proof of complete daily coverage.","months":data}
+                  item={"schema":1,"source":"Infoclimat / StatIC, via climato.chom.engineering","dataset_licence":("CC BY-NC (restriction individuelle prioritaire)" if allowed[sid]["license"]=="2" else obj.get("licence")),"attribution":obj.get("attribution"),"station":{**allowed[sid],"name":row.get("libelle") or sid},"requested_start":str(start),"requested_end_exclusive":str(end),"note":"Non-certified monthly aggregates; gaps and quality fields preserved. Not proof of complete daily coverage.","months":data}
                   target=out/(sid+".json")
                   target.write_text(json.dumps(item,ensure_ascii=False,separators=(",",":"))+"\n")
                   completed+=1
@@ -135,5 +138,9 @@ jobs:
           git add climato/infoclimat/history
           if git diff --cached --quiet; then exit 0; fi
           git commit -m "Archiver un lot de bilans mensuels StatIC sous licences ouvertes"
-          git pull --rebase origin main
-          git push origin HEAD:main
+          for attempt in $(seq 1 10); do
+            git pull --rebase origin main || exit 1
+            git push origin HEAD:main && exit 0
+            sleep $((2 + attempt))
+          done
+          exit 1
