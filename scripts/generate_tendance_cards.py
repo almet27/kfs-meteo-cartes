@@ -383,7 +383,7 @@ def write_premium_stage(stage, meta, data, now, risk_document, france=False):
     synoptic=hazards.get("synoptic_consensus") or {"method":"ifs_reference","models":["ifs"],"weights":{"ifs":1.0}}
     map_names={"ifs":"IFS","aifs-single":"AIFS","gfs":"GFS","aigfs":"AIGFS"}
     mode=synoptic.get("method","ifs_reference")
-    map_label=("KFS • synthèse pondérée" if mode=="weighted_blend" else "KFS • scénario "+map_names.get(synoptic.get("representative"),"") if mode=="weighted_representative" else "Carte IFS")
+    map_label="Synthèse KFS"
     if hazards.get("model")!="ifs":
         raise RuntimeError("Fond de risques non IFS "+stage["id"])
     if parsed(hazards["run_utc"])!=parsed(details["run_utc"]):
@@ -414,11 +414,10 @@ def write_premium_stage(stage, meta, data, now, risk_document, france=False):
     txt(d,(923,20),"Échéance : "+stage["period"],24,ink,True)
     txt(d,(924,53),date.strftime("%d/%m/%Y  %HZ")+"  •  "+map_label,16,muted)
     d.line((1181,25,1181,75),fill="#CED4DB",width=2)
-    txt(d,(1195,20),"KFS • "+str(len(synoptic.get("models",[])))+" modèle(s)",19,ink,True)
-    comparisons=" / ".join(map_names.get(k,k) for k in synoptic.get("models",["ifs"]))
+    reference_run=parsed(details["run_utc"])
+    txt(d,(1195,20),f"Run {reference_run.hour}Z KFS",22,ink,True)
+    txt(d,(1195,54),reference_run.strftime("%d/%m/%Y")+" • cycle de référence",15,muted)
     weights=synoptic.get("weights",{})
-    comparisons=" / ".join(f"{map_names.get(k,k)} {v*100:.0f}%" for k,v in weights.items())
-    txt(d,(1195,54),comparisons,15,muted)
 
     # Footer: scale, four actual calculated hazard types, dynamic summary.
     d.rounded_rectangle((0,700,1600,940),radius=16,fill="#F3F4F6",outline="#D4D9DF",width=1)
@@ -500,12 +499,20 @@ def write_premium_stage(stage, meta, data, now, risk_document, france=False):
     if missing:sentence+=" Non calculé : "+", ".join(missing)+"."
     consensus=weighted_analysis(data,step,details["valid_utc"])
     # Keep the on-map summary compact; full IFS hazard text remains in JSON.
-    if mode=="weighted_blend":
-        map_sentence=("KFS : "+comparisons+". T850 France %+.1f °C, pression %.0f hPa. " %
-                      (synoptic.get("t850_france",t850),synoptic.get("msl_france",pressure))+
-                      "Divergence normalisée %.2f. Risques : IFS."%synoptic.get("normalized_spread",0))
+    avg_t=synoptic.get("t850_france",t850)
+    avg_p=synoptic.get("msl_france",pressure)
+    circulation=("Une dominante anticyclonique se dessine" if avg_p>=1020 else
+                 "Une tendance dépressionnaire se dessine" if avg_p<=1005 else
+                 "La circulation reste intermédiaire")
+    map_sentence=f"{circulation} sur la France, avec {temp_desc(avg_t).lower()} ({avg_t:+.1f} °C)."
+    if signals:
+        map_sentence+=" Signaux possibles : "+", ".join(signals[:2])+"."
+    elif all(risks[k].get("status")!="indisponible" for k, *_ in entries):
+        map_sentence+=" Aucun signal notable parmi les risques calculés."
     else:
-        map_sentence="Repli IFS (grilles KFS incomplètes). "+sentence
+        map_sentence+=" Aucun signal notable parmi les données disponibles."
+    if mode=="ifs_reference":
+        map_sentence+=" Synthèse partielle."
     consensus["summary"]=map_sentence
     consensus["method"]=synoptic.get("weight_method",mode)
     consensus["effective_weights"]=weights
@@ -529,7 +536,7 @@ def write_premium_stage(stage, meta, data, now, risk_document, france=False):
     for i,line in enumerate(lines):
         txt(d,(1058,750+i*(sz+4)),line,sz,ink)
     d.line((22,911,1578,911),fill="#D5D9DF",width=1)
-    txt(d,(25,918),"Sources : ECMWF / NOAA • Champ synoptique KFS selon disponibilité • Risques et seuils IFS, pas une vigilance officielle.",12,muted)
+    txt(d,(25,918),"Sources : ECMWF / NOAA • Cycles éventuellement différents • Risques modélisés, pas une vigilance officielle.",12,muted)
     txt(d,(1322,918),"Prévision ponctuelle à "+step+" h",12,muted)
     if france:
         full=Image.new("RGBA",(1600,1140),"#EEF0F2")
@@ -551,14 +558,14 @@ def write_premium_stage(stage, meta, data, now, risk_document, france=False):
     return {"id":stage["id"],"step_h":int(step),"path":str(out),
        "image_url":"https://almet27.github.io/kfs-meteo-cartes/"+str(out),
        "size_bytes":out.stat().st_size, "run_utc":runs,
-       "valid_utc":details["valid_utc"], "title":stage["period"]+" — "+("France • " if france else "")+"synthèse synoptique "+display_models,
+       "valid_utc":details["valid_utc"], "title":stage["period"]+" — "+("France • " if france else "")+"synthèse KFS",
        "zone":"france" if france else "europe",
        "confidence_label":stage["confidence"]+" (indicative)",
        "marked_phenomena":marked_categories, "not_official_warning":True,
        "gfs_available":"gfs" in synoptic.get("models",[]),
        "risk_status":"altitude_filtered_georeferenced", "risks":hazards["risks"], "risk_markers":hazards["markers"],
        "t850_shading":hazards.get("t850_shading",{}),
-       "style":"kfs-editorial-lambert-consensus-v13","summary":consensus["summary"]+" "+sentence,"analysis":consensus,
+       "style":"kfs-editorial-lambert-consensus-v14","summary":consensus["summary"],"analysis":consensus,
        "synoptic_consensus":synoptic,
        "note":"Projection Lambert ; champs synoptiques KFS selon grilles disponibles à validité identique. Risques et pictogrammes IFS ; ! rouge = seuil KFS non officiel."}
 
