@@ -24,7 +24,7 @@ const KFS_PROBA_RULES = {
  neige:{unit:"cm",defaults:1,allowed:[1,3,5,10],variable:"snow_depth",title:"Neige présente au sol"},
  neige_chutes:{unit:"mm équiv.-eau",defaults:0.1,allowed:[0.1,1,3,5],variable:"snowfall",title:"Précipitations sous forme de neige"},
  pluie:{unit:"mm / 24 h",defaults:1,allowed:[0.1,1,5,10,20,40],variable:"rain",title:"Cumul de pluie"},
- verglas:{unit:"h",defaults:1,allowed:[1],variable:"weather_code",title:"Risque de précipitations verglaçantes"},
+ verglas:{unit:"h",defaults:1,allowed:[1],variable:"weather_code",title:"Risque de verglas (précipitations verglaçantes ou brouillard givrant)"},
  gel:{unit:"°C",defaults:0,allowed:[0,-2,-5,-10],variable:"temperature_2m",title:"Température minimale à 2 m"},
  vent:{unit:"km/h",defaults:90,allowed:[54,60,80,90,100,120],variable:"wind_gusts_10m",title:"Rafales maximales"},
  orage:{unit:"niveau",defaults:2,allowed:[1,2,3,4,5],variable:"cape",title:"Potentiel orageux"}
@@ -36,7 +36,7 @@ async function kfsProbaRegister(env){
   {name:"phenomene",type:3,description:"Pluie, neige, gelées, rafales et orages",required:true,
    choices:[{name:"🌨️ Neige au sol",value:"neige"},
     {name:"❄️ Précipitations neigeuses (même sans tenue)",value:"neige_chutes"},
-    {name:"🌧️ Pluie",value:"pluie"},{name:"🧊 Verglas (précipitations verglaçantes)",value:"verglas"},{name:"🥶 Gelées (Tmin 2 m)",value:"gel"},{name:"💨 Rafales",value:"vent"},{name:"🌩️ Orages",value:"orage"}]},
+    {name:"🌧️ Pluie",value:"pluie"},{name:"🧊 Verglas (précipitations verglaçantes ou brouillard givrant)",value:"verglas"},{name:"🥶 Gelées (Tmin 2 m)",value:"gel"},{name:"💨 Rafales",value:"vent"},{name:"🌩️ Orages",value:"orage"}]},
   {name:"zone",type:3,description:"France entière ou région",required:false,
    choices:[{name:"France métropolitaine",value:"FR"},...KFS_PROBA_REGIONS.map(([code,name])=>({name,value:code}))]},
   {name:"jour",type:4,description:"Une journée ou cinq jours cumulés (J+1 à J+5)",required:false,
@@ -176,7 +176,7 @@ function kfsProbaMemberProbability(hourly,day,type,threshold,endDay=day){
   const nums=ids.map(i=>arr[i]).filter(v=>typeof v==="number"&&Number.isFinite(v));
   if(nums.length<ids.length)continue;
   if(type==="verglas"&&!nums.every(v=>[0,1,2,3,45,48,51,53,55,56,57,61,63,65,66,67,71,73,75,77,80,81,82,85,86,95,96,99].includes(v)))continue;
-  const amount=type==="verglas"?nums.filter(v=>[56,57,66,67].includes(v)).length:type==="pluie"?Math.max(0,nums.reduce((a,b)=>a+b,0)):
+  const amount=type==="verglas"?nums.filter(v=>[48,56,57,66,67].includes(v)).length:type==="pluie"?Math.max(0,nums.reduce((a,b)=>a+b,0)):
    // Open-Meteo 'snowfall' est un cumul horaire de neige fraiche en cm.
    // 7 cm = 10 mm eau selon sa documentation ; ne pas confondre avec neige au sol.
    type==="neige_chutes"?Math.max(0,nums.reduce((a,b)=>a+b,0))*10/7:
@@ -187,7 +187,7 @@ function kfsProbaMemberProbability(hourly,day,type,threshold,endDay=day){
   if(type==="pluie"&&amount>=0.1)anyRain++;
  }
  return valid>=2?{pct:100*pass/valid,amount:amountSum/valid,members:valid,
-  wetPct:type==="pluie"?100*anyRain/valid:null}:null;
+  wetPct:type==="pluie"?100*anyRain/valid:null,...(type==="verglas"?{includes_rime:true}:{})}:null;
 }
 
 // KFS /proba /orage : seuils *heuristiques*, NON calibrés en risque d'orages violents.
@@ -1169,7 +1169,7 @@ async function kfsProbaPreparedEnsembles(type,threshold,zone,jour,start,end,poin
    const values=period?.zones?.[zone]?.[type]?.[String(threshold)];
    if(!Number.isFinite(age)||age<0||age>28*3600000||period?.start_day!==start||period.end_day!==end||
     !Array.isArray(values)||values.length!==points.length||!values.some(kfsProbaValidMemberResult))continue;
-   results.push({id,name,values:values.map(v=>kfsProbaValidMemberResult(v)?v:null),consulted:model.generated_at_utc});
+   results.push({id,name,values:values.map(v=>kfsProbaValidMemberResult(v)&&(type!=="verglas"||v.includes_rime===true)?v:null),consulted:model.generated_at_utc});
   }
   return results;
  }catch(e){console.error("KFS_PROBA_PREPARED_ENSEMBLES",String(e));return [];}
@@ -1222,7 +1222,7 @@ async function kfsProbaPeakDays(type,threshold,zone,points){
   const locations=points.map((_,i)=>{
    // A point needs all 5 days from the same source(s). Do not substitute 0
    // for missing data or change the source between two daily comparisons.
-   const models=modelRows.filter(m=>m.rows.every(day=>kfsProbaValidMemberResult(day[i])));
+   const models=modelRows.filter(m=>m.rows.every(day=>kfsProbaValidMemberResult(day[i])&&(type!=="verglas"||day[i].includes_rime===true)));
    if(!models.length)return null;
    const daily=Array.from({length:5},(_,k)=>
     models.reduce((sum,m)=>sum+m.rows[k][i].pct,0)/models.length);
@@ -1264,12 +1264,12 @@ async function kfsProbaMultiComplete(interaction,type,zone,jour,threshold){
  });
  const label=type==="pluie"?"cumul de pluie ≥ "+threshold+" mm":
   type==="neige_chutes"?"cumul de neige fraîche ≥ "+threshold+" mm équiv.-eau":
-  type==="verglas"?"précipitations verglaçantes pendant au moins une heure":
+  type==="verglas"?"précipitations verglaçantes ou brouillard givrant pendant au moins une heure":
   type==="gel"?"température minimale à 2 m ≤ "+threshold+" °C":
   type==="neige"?"neige présente au sol ≥ "+threshold+" cm":
   type==="vent"?"rafale maximale ≥ "+threshold+" km/h":
   "potentiel orageux au moins "+KFS_STORM_NAMES[threshold].toLowerCase();
- const quantity=type==="verglas"?"nombre d’heures de précipitations verglaçantes":type==="pluie"||type==="neige_chutes"?"cumul":type==="gel"?"minimum":
+ const quantity=type==="verglas"?"nombre d’heures de précipitations verglaçantes ou brouillard givrant":type==="pluie"||type==="neige_chutes"?"cumul":type==="gel"?"minimum":
   type==="neige"?"épaisseur maximale":type==="vent"?"rafale maximale":"niveau maximal";
  const name=zone==="FR"?"France métropolitaine":KFS_PROBA_REGIONS.find(r=>r[0]===zone)?.[1]||zone;
  const consulted=resolved.results.map(r=>r.name+" : "+r.consulted).join(" ; ");
@@ -1290,7 +1290,7 @@ async function kfsProbaMultiComplete(interaction,type,zone,jour,threshold){
   (type==="orage"?"⚠️ Potentiel convectif expérimental fondé sur CAPE, pluie, rafales et humidité ; seuils communs aux deux ensembles, sans équivalence avec une vigilance.\n":"")+
   (type==="neige_chutes"?"❄️ Équivalent-eau approximatif converti depuis les cm Open-Meteo (7 cm ≈ 10 mm d'eau), sans exigence de tenue au sol.\n":"")+
   (type==="neige"?"❄️ Épaisseur maximale présente au sol ; les épaisseurs quotidiennes ne sont pas additionnées.\n":"")+
-  (type==="verglas"?"🧊 Codes WMO 56/57/66/67 : risque de précipitations verglaçantes, pas une prévision de l’état des routes.\n":"")+
+  (type==="verglas"?"🧊 Codes WMO 48/56/57/66/67 : brouillard givrant ou précipitations verglaçantes, pas une prévision de l’état des routes.\n":"")+
   (type==="gel"?"❄️ Gel à 2 m, sans diagnostic de verglas ni des microclimats.\n":"")+
   "**Données récupérées :** "+consulted+". Ces horaires ne sont pas les heures des runs.\n"+
   "_Source : Open-Meteo, ECMWF / NOAA. Proportions non calibrées, à la maille des modèles ; ne remplacent pas une vigilance officielle._";
