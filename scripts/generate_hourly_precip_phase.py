@@ -177,20 +177,26 @@ def main(model):
     anchor=base.replace(hour=base.hour//3*3)
     old=Path("previous-"+model+"-phase.json")
     previous=json.loads(old.read_text()) if old.exists() else {}
+    candidates=[]
     for run in (anchor-timedelta(hours=3*i) for i in range(1,6)):
-        start=max(1,int((base-run).total_seconds()/3600));end=start+24
-        if end>48:continue
-        if previous.get("render_version")==2 and previous.get("run_utc")==run.isoformat() and previous.get("frames") and max(datetime.fromisoformat(f["valid_utc"]) for f in previous["frames"])>=base+timedelta(hours=24):
-            print("Already published");return
-        if model=="arome":urls=[arome_url(run,h) for h in (start-1,end)]
-        else:urls=[icon_url(run,h,f) for h in (start-1,end) for f in DWD_FIELDS]+[icon_url(run,0,f) for f in ("CLAT","CLON")]
-        if all(available(u) for u in urls):
-            try:
-                grid=icon_grid(run) if model=="icon" else None
+        start=max(1,int((base-run).total_seconds()/3600))
+        ends=sorted({h for h in (48,42,36,start+24) if start+24<=h<=48},reverse=True) if model=="arome" else [start+24]
+        for end in ends:
+            if end>48:continue
+            if model=="arome":urls=[arome_url(run,h) for h in (start-1,end)]
+            else:urls=[icon_url(run,h,f) for h in (start-1,end) for f in DWD_FIELDS]+[icon_url(run,0,f) for f in ("CLAT","CLON")]
+            if all(available(u) for u in urls):
+                candidates.append((run,start,end))
                 break
-            except Exception as exc:print("GRID",run,str(exc)[:180],flush=True)
-        else:print("Incomplete",model,run,start,end,flush=True)
-    else:raise RuntimeError("No complete recent cycle")
+            print("Incomplete",model,run,start,end,flush=True)
+        if candidates and model=="icon":break
+        if candidates and candidates[-1][2]==48:break
+    if not candidates:raise RuntimeError("No complete recent cycle")
+    # Prefer the latest full-range cycle; do not extend a run beyond its real lead time.
+    run,start,end=max(candidates,key=lambda c:(c[0]+timedelta(hours=c[2]),c[0]))
+    if previous.get("render_version")==2 and previous.get("run_utc")==run.isoformat() and previous.get("frames") and max(datetime.fromisoformat(f["valid_utc"]) for f in previous["frames"])>=run+timedelta(hours=end):
+        print("Already published");return
+    grid=icon_grid(run) if model=="icon" else None
     # One shared predecessor, no duplicate downloads, and bounded memory.
     prev=fetch(model,run,start-1,grid);frames=[]
     x,y=next(iter(prev.values()))[1:3]
