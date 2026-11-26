@@ -195,7 +195,7 @@ function renderRisk(d,day,date){
   const v=row.best,title=row.name+" · "+(v?KFS_ALERT_LEVEL_NAMES[v.level]+" · "+v.type:"Données indisponibles");
   svg+='<path d="'+path+'" fill="rgb('+kfsAlertColor(v?.level).join(",") +')"><title>'+esc(title)+'</title></path>';
  }
- svg+='</g><g data-kfs-layer="risk-icons" pointer-events="none" text-anchor="middle" dominant-baseline="middle" font-family="system-ui,sans-serif" font-size="18">';
+ svg+='</g><g data-kfs-layer="risk-icons" pointer-events="none" text-anchor="middle" dominant-baseline="middle" font-family="system-ui,sans-serif" font-size="28">';
  const secondary=[];
  for(const row of d.rows){
   const v=row.best;if(!v||v.level<2||!Number.isFinite(v.lat)||!Number.isFinite(v.lon))continue;
@@ -215,8 +215,9 @@ function renderRisk(d,day,date){
   }else{
    icon='<text fill="#fff" stroke="#091426" stroke-width="2" paint-order="stroke">'+esc(symbols[v.type]||"!")+'</text>';
   }
-  svg+='<g transform="translate('+x+' '+y+')"><title>'+esc(row.name+" · "+v.type)+'</title>'+icon+'</g>';
-  const ice=row.values.verglas;if(v.type!=='verglas'&&ice?.level>=2)secondary.push('<g transform="translate('+(Number(x)+12)+' '+(Number(y)+10)+') scale(.62)"><title>'+esc(row.name+' · verglas')+'</title><path d="M0 -12.5L12 9.5Q12.5 11 10.8 11H-10.8Q-12.5 11 -12 9.5Z" fill="#fff" stroke="#d52b2b" stroke-width="2.5" stroke-linejoin="round"/><g fill="#17212a" transform="rotate(-12 0 0)"><path d="M-4.5 -1L-3 -4.1H2.5L4.4 -1L5.1 .2V3.3H-5.1V.2Z"/><path d="M-2.5 -3.2H1.9L3 -.7H-3.5Z" fill="#fff"/><rect x="-4.6" y="2.5" width="2" height="1.8" rx=".4"/><rect x="2.6" y="2.5" width="2" height="1.8" rx=".4"/></g><path d="M-5 5C-2.5 3.5 -3.5 7.7 -6 8.1M2 5C4.8 3.5 4.1 7.7 1.5 8.2" fill="none" stroke="#17212a" stroke-width="1.15" stroke-linecap="round"/></g>');
+  const iconScale=({gel:1.13,chaleur:1.25,pluie:1.40,verglas:1.12,vent:1.25})[v.type]||1;
+  svg+='<g transform="translate('+x+' '+y+') scale('+iconScale+')"><title>'+esc(row.name+" · "+v.type)+'</title>'+icon+'</g>';
+  const ice=row.values.verglas;if(v.type!=='verglas'&&ice?.level>=2)secondary.push('<g transform="translate('+(Number(x)+29)+' '+(Number(y)+5)+') scale(1.12)"><title>'+esc(row.name+' · verglas')+'</title><path d="M0 -12.5L12 9.5Q12.5 11 10.8 11H-10.8Q-12.5 11 -12 9.5Z" fill="#fff" stroke="#d52b2b" stroke-width="2.5" stroke-linejoin="round"/><g fill="#17212a" transform="rotate(-12 0 0)"><path d="M-4.5 -1L-3 -4.1H2.5L4.4 -1L5.1 .2V3.3H-5.1V.2Z"/><path d="M-2.5 -3.2H1.9L3 -.7H-3.5Z" fill="#fff"/><rect x="-4.6" y="2.5" width="2" height="1.8" rx=".4"/><rect x="2.6" y="2.5" width="2" height="1.8" rx=".4"/></g><path d="M-5 5C-2.5 3.5 -3.5 7.7 -6 8.1M2 5C4.8 3.5 4.1 7.7 1.5 8.2" fill="none" stroke="#17212a" stroke-width="1.15" stroke-linecap="round"/></g>');
  }
  svg+=secondary.join('');
  svg+='</g><text x="450" y="22" fill="#fff" font-size="18" font-weight="bold" text-anchor="middle" font-family="system-ui,sans-serif">KFS MÉTÉO · RISQUES J+'+day+' · '+esc(date)+'</text>';
@@ -233,7 +234,7 @@ return svg;
  if(ensemble.schema!==2||ensemble.provider!=='Open-Meteo ECMWF ENS + GEFS members'||ensemble.timezone!=='Europe/Paris')throw Error('Ensemble incompatible');
  const today=kfsProbaDay(0),out='proba/public-risks';
  await fs.mkdir(out,{recursive:true});
- const manifest={schema:1,risk_schema:7,today,generated_utc:new Date().toISOString(),days:{}};
+ const manifest={schema:1,risk_schema:8,today,generated_utc:new Date().toISOString(),days:{}};
  for(let day=0;day<=5;day++){
   const date=kfsProbaDay(day);
   const d=await kfsAlertData(day,'FR',[...Object.keys(KFS_ALERT_RULES),'chaleur','verglas'],{geo,ensemble,publicOnly:true});
