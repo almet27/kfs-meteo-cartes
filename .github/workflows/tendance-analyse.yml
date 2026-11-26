@@ -201,6 +201,19 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          # Never replace the public KFS atlas with a single-model fallback.
+          python - <<'PY'
+          import json, math
+          d=json.load(open("forecast-maps/tendance/tendance-cartes.json"))
+          for zone in ("period_maps","france_maps"):
+              cards=d[zone]
+              assert {c["id"] for c in cards}=={"j3","j7","j10","j15"}
+              for c in cards:
+                  blend=c.get("synoptic_consensus",{})
+                  w=blend.get("weights",{})
+                  if blend.get("method")!="weighted_blend" or set(w)!={"ifs","aifs-single","gfs"} or not all(math.isfinite(v) and v>0 for v in w.values()) or abs(sum(w.values())-1)>1e-6:
+                      raise SystemExit("KFS : grilles insuffisantes "+zone+" "+c["id"]+" "+str(blend.get("excluded",{})))
+          PY
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
 
