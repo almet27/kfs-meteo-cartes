@@ -790,6 +790,21 @@ def main():
     auth = token()
     current_features = obs(auth)
     current = stations(current_features)
+    # Diagnostic ciblé Rouvroy-en-Santerre, sans données privées ni jetons.
+    target_id = "80682001"
+    def is_target(lon, lat, sid):
+        return str(sid).strip() == target_id or (abs(float(lon)-2.698333)<0.001 and abs(float(lat)-49.765167)<0.001)
+    raw_target = []
+    for feature in current_features:
+        try:
+            lon, lat = feature["geometry"]["coordinates"][:2]
+            if is_target(lon, lat, station_id(feature)):
+                p = feature["properties"]
+                raw_target.append({k: p.get(k) for k in ("geo_id_insee", "validity_time", "t", "ff", "fxi10", "rr_per")})
+        except (KeyError, TypeError, ValueError, IndexError):
+            continue
+    print("DIAG Rouvroy 6m:", json.dumps(raw_target), flush=True)
+    print("DIAG Rouvroy après stations():", [sid for sid,(lon,lat,p) in current.items() if is_target(lon,lat,sid)], flush=True)
     if len(current) < 100:
         raise RuntimeError(f"Trop peu de stations : {len(current)}. Aucune publication.")
     validities = [p.get("validity_time") for _, _, p in current.values()
@@ -815,6 +830,8 @@ def main():
     aggregated = aggregate_hourly(hourly_samples)
     last_hourly = stations(hourly_samples[0]) if hourly_samples else {}
     values = map_values(current, aggregated, last_hourly)
+    print("DIAG Rouvroy horaire:", sum(any(is_target(lon,lat,sid) for sid,(lon,lat,p) in stations(s).items()) for s in hourly_samples), "échéances", flush=True)
+    print("DIAG Rouvroy cartes:", {metric: [p[:3] for p in rows if is_target(p[0],p[1],"")] for metric,rows in values.items()}, flush=True)
     if not values["temperature"]:
         raise RuntimeError("Aucune température valide : ne pas publier.")
     if not values["rafales"]:
