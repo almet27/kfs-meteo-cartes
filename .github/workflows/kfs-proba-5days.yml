@@ -3,6 +3,7 @@ on:
   workflow_dispatch:
   push:
     paths:
+      - proba/points-ecmwf.json
       - scripts/build_proba_ensembles.cjs
       - scripts/merge_proba_ensembles.cjs
       - cloudflare/kfs-proba-module.js
@@ -81,7 +82,10 @@ jobs:
               console.log(id, 'available cycle:',cycle?.run||'unverified','published acquisition:',model?.generated_at_utc||'none','rebuild:',needed);
               return needed;
             });
-            const rebuild=process.env.EVENT_NAME!=='schedule'||decisions.some(Boolean);
+            const expected=JSON.parse(fs.readFileSync('proba/points-ecmwf.json','utf8')).zones;
+            const gridChanged=JSON.stringify(data.zone_points)!==JSON.stringify(expected);
+            console.log('Ensemble grid changed:',gridChanged);
+            const rebuild=process.env.EVENT_NAME!=='schedule'||gridChanged||decisions.some(Boolean);
             fs.appendFileSync(process.env.GITHUB_OUTPUT,'rebuild='+rebuild+'\n');
           })().catch(e=>{console.error(e);process.exitCode=1;});
           NODE
