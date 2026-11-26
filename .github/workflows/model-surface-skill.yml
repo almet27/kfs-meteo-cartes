@@ -25,19 +25,44 @@ jobs:
       - name: Calculer et publier les scores vérifiés
         env:
           MONTH: ${{ inputs.month }}
+          EVENT_NAME: ${{ github.event_name }}
         run: |
           set -eu
           month=$(python - <<'PY'
-          import os,re
+          import json,os,re
+          from datetime import date, datetime, timedelta, timezone
+          from calendar import monthrange
           from pathlib import Path
           base=Path("data/model-skill")
           months=sorted(p.stem for p in base.glob("????-??.json") if p.stem >= "2026-04")
           requested=os.environ.get("MONTH")
           if requested and requested not in months:
               raise SystemExit("Mois hors couverture")
-          print(requested or next((m for m in reversed(months) if not (base/(m+"-surface.json")).exists()),months[-1]))
+          def needs_update(m):
+              try:
+                  report=json.loads((base/(m+"-surface.json")).read_text())
+                  first=date.fromisoformat(m+"-01")
+                  cutoff=datetime.now(timezone.utc).date()-timedelta(days=20)
+                  eligible=[first.replace(day=d).isoformat() for d in range(1,monthrange(first.year,first.month)[1]+1) if first.replace(day=d)<=cutoff]
+                  return report.get("sampling")!="daily_00z" or report.get("requested_run_dates")!=eligible
+              except (OSError, ValueError, KeyError, TypeError):
+                  return True
+          if not months:
+              raise SystemExit("Aucun mois disponible")
+          print(requested or (months[-1] if os.environ.get("EVENT_NAME")=="push" else next((m for m in reversed(months) if needs_update(m)),months[-1])))
           PY
           )
+          python -m py_compile scripts/build_surface_skill.py
+          PYTHONPATH=scripts python - <<'PY'
+          from datetime import date
+          from build_surface_skill import candidate_dates, value
+          assert len(candidate_dates("2026-10", date(2026,11,26))) == 31
+          assert len(candidate_dates("2024-02", date(2024,4,1))) == 29
+          assert candidate_dates("2026-11", date(2026,11,26))[-1] == "2026-11-06"
+          hours=[str(h) for h in range(1,25)]
+          assert value({"precipitation":dict.fromkeys(hours,1)}, "precipitation",hours)==24
+          assert value({"precipitation":dict.fromkeys(hours[1:],1)}, "precipitation",hours) is None
+          PY
           python scripts/build_surface_skill.py "$month"
           file="data/model-skill/$month-surface.json"
           git config user.name 'github-actions[bot]'
