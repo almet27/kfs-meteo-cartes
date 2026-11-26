@@ -4,8 +4,12 @@ on:
     paths:
       - .github/workflows/eumetsat-li-backfill-2026.yml
       - foudre-li/parallax-lut.npz
+  workflow_run:
+    workflows: ['Préparer les tables de parallaxe EUMETSAT LI']
+    types: [completed]
+    branches: [main]
   schedule:
-    - cron: '35 4 * * *'
+    - cron: '35 4,16 * * *'
   workflow_dispatch:
     inputs:
       backlog_days:
@@ -19,6 +23,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   collect:
+    if: github.event_name != 'workflow_run' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_repository.full_name == github.repository)
     runs-on: ubuntu-latest
     timeout-minutes: 55
     steps:
@@ -45,7 +50,7 @@ jobs:
         env:
           EUMETSAT_CONSUMER_KEY: ${{ secrets.EUMETSAT_CONSUMER_KEY }}
           EUMETSAT_CONSUMER_SECRET: ${{ secrets.EUMETSAT_CONSUMER_SECRET }}
-          BACKLOG: ${{ inputs.backlog_days || '1' }}
+          BACKLOG: ${{ inputs.backlog_days || '2' }}
         run: |
           python - <<'PY'
           import os, subprocess, sys, json
@@ -58,7 +63,7 @@ jobs:
           n=int(os.environ['BACKLOG'])
           if not 0<=n<=3: raise ValueError('backlog_days doit être compris entre 0 et 3')
           end=datetime.now(ZoneInfo('Europe/Paris')).date()-timedelta(days=1)
-          start=max(date(2026,1,1),date(end.year,1,1))
+          start=date(2026,1,1)
           base=Path('data/eumetsat-li/daily')
           def complete(day):
               p=base/(day.isoformat()+'.json')
@@ -68,7 +73,10 @@ jobs:
                   return d.get('complete') is True and d.get('pilot') is False and d.get('parallax')==METHOD and d.get('date')==day.isoformat()
               except Exception: return False
           missing=[end-timedelta(days=i) for i in range((end-start).days+1) if not complete(end-timedelta(days=i))]
-          targets=([end] if end in missing else [])+[d for d in missing if d!=end][:n]
+          older=[d for d in missing if d!=end]
+          # Faire progresser le rattrapage même si une journée ancienne est lacunaire.
+          offset=(datetime.now(ZoneInfo('Europe/Paris')).hour//12)%max(1,len(older))
+          targets=([end] if end in missing else [])+(older[offset:offset+n] if older else [])
           for day in targets:
               p=base/(day.isoformat()+'.json')
               print('COLLECTE',day,flush=True)
