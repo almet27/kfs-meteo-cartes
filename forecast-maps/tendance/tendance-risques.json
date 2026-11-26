@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "generated_utc": "2026-11-26T03:05:42.925155+00:00",
-  "atlas_generated_utc": "2026-11-26T00:29:09.851431+00:00",
+  "generated_utc": "2026-11-26T07:24:23.521211+00:00",
+  "atlas_generated_utc": "2026-11-26T05:33:46.809279+00:00",
   "reference": "ECMWF Open Data, Copernicus DEM GLO-90 via Open-Meteo — champs géoréférencés",
   "stages": [
     {
@@ -117,25 +117,15 @@
         }
       ],
       "synoptic_consensus": {
-        "method": "weighted_blend",
+        "method": "ifs_reference",
         "models": [
-          "ifs",
-          "aifs-single",
-          "gfs",
-          "aigfs"
+          "ifs"
         ],
         "weights": {
-          "ifs": 0.2982,
-          "aifs-single": 0.2904,
-          "gfs": 0.2281,
-          "aigfs": 0.1833
+          "ifs": 1.0
         },
-        "representative": null,
-        "normalized_spread": 0.281,
         "excluded": {},
-        "valid_utc": "2026-11-28T18:00:00+00:00",
-        "risk_source": "ifs",
-        "weight_method": "Inverse MAE pression France, 3 derniers mois complets ; poids indicatifs"
+        "reason": "Moins de deux grilles complètes à validité identique"
       },
       "t850_shading": {
         "enabled": true,
@@ -440,8 +430,15 @@
       "background_path": "forecast-maps/tendance/tendance-risques-fond-j15.png",
       "risks": {
         "neige": {
-          "status": "indisponible",
-          "reason": "Filtre altitude indisponible : Altitude Copernicus non accessible : <urlopen error _ssl.c:1001: The handshake operation timed out>"
+          "status": "possible",
+          "max": 0.7,
+          "unit": "mm équiv. eau/6h",
+          "reason": "Neige hors relief ≤ 500 m, hors vallée de montagne (Copernicus GLO-90) ; relief : 26 zones échantillonnées",
+          "mountain_signal": true,
+          "mountain_max": 4.6,
+          "lowland_sample_count": 5,
+          "highland_sample_count": 26,
+          "terrain_source": "Copernicus DEM GLO-90 via Open-Meteo"
         },
         "verglas": {
           "status": "indisponible",
@@ -677,25 +674,15 @@
         }
       ],
       "synoptic_consensus": {
-        "method": "weighted_blend",
+        "method": "ifs_reference",
         "models": [
-          "ifs",
-          "aifs-single",
-          "gfs",
-          "aigfs"
+          "ifs"
         ],
         "weights": {
-          "ifs": 0.2982,
-          "aifs-single": 0.2904,
-          "gfs": 0.2281,
-          "aigfs": 0.1833
+          "ifs": 1.0
         },
-        "representative": null,
-        "normalized_spread": 0.281,
         "excluded": {},
-        "valid_utc": "2026-11-28T18:00:00+00:00",
-        "risk_source": "ifs",
-        "weight_method": "Inverse MAE pression France, 3 derniers mois complets ; poids indicatifs"
+        "reason": "Moins de deux grilles complètes à validité identique"
       },
       "t850_shading": {
         "enabled": true,
@@ -988,8 +975,15 @@
       "background_path": "forecast-maps/tendance/tendance-risques-fond-france-j15.png",
       "risks": {
         "neige": {
-          "status": "indisponible",
-          "reason": "Filtre altitude indisponible : Altitude Copernicus non accessible : <urlopen error _ssl.c:1001: The handshake operation timed out>"
+          "status": "relief_uniquement",
+          "max": 0,
+          "unit": "mm équiv. eau/6h",
+          "reason": "Neige hors relief ≤ 500 m, hors vallée de montagne (Copernicus GLO-90) ; relief : 1 zones échantillonnées",
+          "mountain_signal": true,
+          "mountain_max": 1.2,
+          "lowland_sample_count": 0,
+          "highland_sample_count": 1,
+          "terrain_source": "Copernicus DEM GLO-90 via Open-Meteo"
         },
         "verglas": {
           "status": "indisponible",
