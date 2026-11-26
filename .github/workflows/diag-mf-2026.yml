@@ -25,7 +25,7 @@ jobs:
                   url="https://kfs-meteo.fr/api/climato-city?"+urllib.parse.urlencode(dict(code=code,annee=2026,mois=month,rubrique="bilan"))
                   with read(url,60) as f:d=json.load(f)
                   e=d.get("embeds",[])
-                  print("AUDIT_API "+json.dumps(dict(city=city,month=month,content=d.get("content"),partial=d.get("partial"),error=d.get("error"),embeds=[dict(title=x.get("title"),desc=x.get("description","")[:350],fields=[dict(name=y.get("name"),value=str(y.get("value"))[:100]) for y in x.get("fields",[])[:4]]) for x in e[:3]]),flush=True)
+                  print("AUDIT_API "+json.dumps(dict(city=city,month=month,content=d.get("content"),partial=d.get("partial"),error=d.get("error"),embeds=[dict(title=x.get("title"),desc=x.get("description","")[:350],fields=[dict(name=y.get("name"),value=str(y.get("value"))[:100]) for y in x.get("fields",[])[:4]]) for x in e[:3]])),flush=True)
               except Exception as ex:
                   msg=ex.read().decode()[:300] if isinstance(ex,urllib.error.HTTPError) else str(ex)
                   print("AUDIT_API "+json.dumps(dict(city=city,month=month,error=msg)),flush=True)
@@ -44,6 +44,6 @@ jobs:
               except Exception as ex:print("AUDIT_SOURCE "+json.dumps(dict(dep=dep,error=str(ex))),flush=True)
           with concurrent.futures.ThreadPoolExecutor(max_workers=4) as ex:
               tasks=[ex.submit(source,d) for d in ("27","61","76","75","59","69","13")]
-              tasks += [ex.submit(api,(c,n,m)) for c,n in cities for m in ("en_cours","annee","1")]
+              tasks += [ex.submit(api,(c,n,m)) for c,n in cities[:5] for m in ("en_cours","1")]
               for f in concurrent.futures.as_completed(tasks):f.result()
           PY
