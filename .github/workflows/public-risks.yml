@@ -5,6 +5,9 @@ on:
     paths:
       - scripts/build_public_risks.cjs
       - .github/workflows/public-risks.yml
+  workflow_run:
+    workflows: ["KFS PROBA - ECMWF ENS and GEFS probabilities"]
+    types: [completed]
   schedule:
     - cron: '3,18,33,48 * * * *'
 permissions:
@@ -14,6 +17,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   render:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
