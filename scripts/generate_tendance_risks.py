@@ -114,13 +114,13 @@ def verify(ref,fields):
             raise RuntimeError("Grilles incompatibles")
         if when(ref[3])!=when(v[3]):raise RuntimeError("Runs GRIB non synchronisés")
 
-def peaks(lon,lat,field,threshold,kind,limit=3,km=210):
+def peaks(lon,lat,field,threshold,kind,limit=3,km=210,bounds=FOCUS):
     ys,xs=np.where(np.isfinite(field) & (field>=threshold))
     points=[]
     land=land_geometry() if kind=="gel" else None
     for j,i in zip(ys,xs):
         x,y=float(lon[i]),float(lat[j])
-        if not (FOCUS[0]<=x<=FOCUS[1] and FOCUS[2]<=y<=FOCUS[3]):continue
+        if not (bounds[0]<=x<=bounds[1] and bounds[2]<=y<=bounds[3]):continue
         if land is not None and not land.intersects(Point(x,y)):continue
         points.append((float(field[j,i]),x,y))
     points.sort(reverse=True)
@@ -351,7 +351,8 @@ def render(id,run,fields,marks,risks,france=False):
             j,i=np.unravel_index(n,pres.shape)
             if j<dy or i<dx or j>=len(yy)-dy or i>=len(xx)-dx:continue
             x,y=float(xx[i]),float(yy[j])
-            if not (FR_GEOGRAPHY[0]<=x<=FR_GEOGRAPHY[1] and FR_GEOGRAPHY[2]<=y<=FR_GEOGRAPHY[3]) if france else not (-72<=x<=42 and 30<=y<=80):continue
+            bounds=FR_GEOGRAPHY if france else (-72,42,30,80)
+            if not (bounds[0]<=x<=bounds[1] and bounds[2]<=y<=bounds[3]):continue
             v=float(pres[j,i])
             if (low and v>1010) or (not low and v<1018):break
             patch=pres[j-dy:j+dy+1,i-dx:i+dx+1]
@@ -654,8 +655,10 @@ def build_risk(id,step,model,recorded,run,f,x,y,wind,wind_error,rain,snow,tmin,c
     storm_markers=[]
     cape=f.get("_cape")
     if cape is not None:
-        signal=np.where(region & (rain>=1),cape,np.nan)
-        storm_markers=peaks(x,y,signal,500,"orage",10)
+        storm_bounds=FR_GEOGRAPHY if france else (-30,45,30,72)
+        storm_region=region if france else ((y>=storm_bounds[2])&(y<=storm_bounds[3]))[:,None]&((x>=storm_bounds[0])&(x<=storm_bounds[1]))[None,:]
+        signal=np.where(storm_region & (rain>=1),cape,np.nan)
+        storm_markers=peaks(x,y,signal,500,"orage",10,bounds=storm_bounds)
         vmax=float(np.nanmax(signal)) if np.isfinite(signal).any() else 0.0
         risks["orage"]={"status":status(vmax,500,1500),"max":round(vmax,1),
                          "unit":"J/kg","reason":"Potentiel convectif IFS : CAPE à échéance et pluie ≥ 1 mm/6h ; pas une probabilité d'orage"}
@@ -671,7 +674,7 @@ def build_risk(id,step,model,recorded,run,f,x,y,wind,wind_error,rain,snow,tmin,c
     # Europe : carte plus lisible, priorité aux signaux sévères et espacement accru.
     # France : conserver la densité et la sélection existantes.
     min_spacing_km=125 if france else 250
-    for p in sorted(markers,key=priority,reverse=True):
+    for p in sorted(markers,key=lambda p:(red_marker(p),p["kind"]=="orage",priority(p)[1]),reverse=True):
         if all(distance_km(p["lon"],p["lat"],q["lon"],q["lat"])>=min_spacing_km for q in selected):
             selected.append(p)
             if not france and len(selected)>=10:
