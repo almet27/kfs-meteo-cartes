@@ -55,7 +55,7 @@ jobs:
                   density_all.append(np.where(valid,m,0).sum(axis=0).astype(float).round(8).ravel().tolist())
                   daily_values=np.where(valid,np.round(m.astype(float)*100000000),-1).astype(np.int64).reshape(m.shape[0],-1)
                   daily_payload={'version':1,'year':year,'month':month,'lat':lats,'lon':lons,'scale':100000000,'density':daily_values.tolist()}
-                  (daily_out/f'{year}-{month:02d}.json').write_text(json.dumps(daily_payload,separators=(',',':'),allow_nan=False)+'\\n')
+                  (daily_out/f'{year}-{month:02d}.json').write_text(json.dumps(daily_payload,separators=(',',':'),allow_nan=False)+'\n')
                   days_all.append((valid&(m>0)).sum(axis=0).astype(int).ravel().tolist())
               result={'version':2,'year':year,'lat':lats,'lon':lons,'valid':valid_all,'days':days_all,'active_masks':dates_all,'valid_masks':valid_masks,'density_monthly':density_all,'resolution_deg':0.5,'source':'WWLLN WGLC 2026, Jed O. Kaplan, CC BY-SA 4.0, DOI 10.5281/zenodo.20277101','day':'UTC','method':'one day with positive lightning stroke density in the grid cell'}
               (out/f'{year}.json').write_text(json.dumps(result,separators=(',',':'),allow_nan=False)+'\n')
