@@ -38,11 +38,11 @@ async function main(){
  const checkpoint=path.join(root,'proba/ensemble-checkpoint'+suffix+'.json');
  const delay=Number(process.env?.PROBA_BATCH_DELAY_MS??65000);
  const batchSize=24;
- let state={schema:5,today,models:{}};
+ let state={schema:6,today,models:{}};
  if(fs.existsSync(checkpoint)){
   try{
    const saved=JSON.parse(fs.readFileSync(checkpoint,'utf8'));
-   if(saved.schema===5&&saved.today===today&&saved.total===total&&saved.shard===shard&&saved.models&&
+   if(saved.schema===6&&saved.today===today&&saved.total===total&&saved.shard===shard&&saved.models&&
     JSON.stringify(saved.zone_points)===JSON.stringify(points))state=saved;
   }catch(error){console.log('Ignoring incompatible checkpoint:',error.message);}
  }
@@ -94,7 +94,8 @@ async function main(){
        const values=fields[String(threshold)]??=new Array(points[zone].length).fill(null);
        const value=type==='orage'?api.kfsProbaStormMembers(hourly,period.start_day,threshold,period.end_day):
         api.kfsProbaMemberProbability(hourly,period.start_day,type,threshold,period.end_day);
-       values[index]=jour!=='6'&&type==='neige'&&point.elevation>800?null:(value&&['neige_chutes','vent','gel'].includes(type)?{...value,elevation:Number.isFinite(point.elevation)?point.elevation:null,...(type==='gel'&&threshold===0?{tmax:alertTmax(hourly,period.start_day,period.end_day)}:{})}:value);
+       // Snow depth is valid at every model elevation for every period. Do not mask mountain points.
+        values[index]=value&&['neige','neige_chutes','vent','gel'].includes(type)?{...value,elevation:Number.isFinite(point.elevation)?point.elevation:null,...(type==='gel'&&threshold===0?{tmax:alertTmax(hourly,period.start_day,period.end_day)}:{})}:value;
        if(values[index]&&runUtc)values[index].run_utc=runUtc;
       }
      }
