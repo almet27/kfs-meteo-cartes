@@ -1,0 +1,38 @@
+name: Native daily snow and freezing rain
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '52 */3 * * *'
+  push:
+    branches: [main]
+    paths: ['scripts/generate_native_daily_phase.py', '.github/workflows/native-daily-phase.yml']
+permissions:
+  contents: write
+concurrency:
+  group: native-daily-phase
+  cancel-in-progress: false
+jobs:
+  generate:
+    strategy:
+      fail-fast: false
+      matrix:
+        model: [arome, icon]
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      GH_TOKEN: ${{ github.token }}
+      MODEL: ${{ matrix.model }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install numpy scipy pillow eccodes
+      - run: python -m py_compile scripts/generate_native_daily_phase.py
+      - run: python scripts/generate_native_daily_phase.py "$MODEL"
+      - name: Publish validated native daily fields
+        run: |
+          tag="$MODEL-native-daily"
+          gh release view "$tag" >/dev/null 2>&1 || gh release create "$tag" --title "$MODEL native daily precipitation phases" --notes "Native model accumulation, mm water equivalent." --prerelease
+          gh release upload "$tag" "$tag"/*.png --clobber
+          gh release upload "$tag" "$tag/manifest.json" --clobber
