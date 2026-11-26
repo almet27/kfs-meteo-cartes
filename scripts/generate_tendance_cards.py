@@ -416,7 +416,9 @@ def write_premium_stage(stage, meta, data, now, risk_document, france=False):
     d.line((1181,25,1181,75),fill="#CED4DB",width=2)
     txt(d,(1195,20),"KFS • "+str(len(synoptic.get("models",[])))+" modèle(s)",19,ink,True)
     comparisons=" / ".join(map_names.get(k,k) for k in synoptic.get("models",["ifs"]))
-    txt(d,(1195,54),comparisons,16,muted)
+    weights=synoptic.get("weights",{})
+    comparisons=" / ".join(f"{map_names.get(k,k)} {v*100:.0f}%" for k,v in weights.items())
+    txt(d,(1195,54),comparisons,15,muted)
 
     # Footer: scale, four actual calculated hazard types, dynamic summary.
     d.rounded_rectangle((0,700,1600,940),radius=16,fill="#F3F4F6",outline="#D4D9DF",width=1)
@@ -439,7 +441,7 @@ def write_premium_stage(stage, meta, data, now, risk_document, france=False):
         d.line((x,818,x,824),fill=muted,width=1)
         tw=d.textlength(label,font=font(13,True))
         txt(d,(max(12,min(385-tw,x-tw/2)),831),label,13,ink,True)
-    txt(d,(25,865),"T850 IFS France : %+.1f °C"%t850,16,ink,True)
+    txt(d,(25,865),"T850 France : %+.1f °C"%synoptic.get("t850_france",t850),16,ink,True)
     txt(d,(25,887),"Isobares : 5 hPa  •  H / D",14,muted)
 
     def pill(x,y,label):
@@ -451,17 +453,18 @@ def write_premium_stage(stage, meta, data, now, risk_document, france=False):
         ("pluie_forte","pluie_forte","Pluie","≥ 10 mm","! > 50 mm"),
         ("neige","neige","Neige hors relief","≥ 0,5 mm éq.","! ≥ 2 mm éq."),
         ("tempete","vent_fort","Rafales","≥ 50 km/h","! ≥ 100 km/h"),
-        ("gel","gel","Gel (Tmin 2 m)","≤ 0 °C","! ≤ −10 °C"),
+        ("gel","gel","Gel","≤ 0 °C","! ≤ −10 °C"),
+        ("orage","orage","Orage possible","CAPE ≥ 500","Pluie ≥ 1 mm"),
     ]
     for i,(key,kind,label,normal,severe) in enumerate(entries):
-        x=411+i*156
+        x=405+i*127
         if i:d.line((x,751,x,899),fill="#D5D9DF",width=1)
         icon=Image.fromarray(premium_pictogram(kind).get_data()).convert("RGBA")
         icon.thumbnail((57,57),Image.Resampling.LANCZOS)
-        canvas.alpha_composite(icon,(x+78-icon.width//2,746))
+        canvas.alpha_composite(icon,(x+63-icon.width//2,746))
         def centred(text,y,size,col,bold=False):
             tw=d.textlength(text,font=font(size,bold))
-            txt(d,(x+78-tw/2,y),text,size,col,bold)
+            txt(d,(x+63-tw/2,y),text,size,col,bold)
         centred(label,807,14,ink,True)
         centred(normal,829,14,muted)
         centred(severe,850,14,"#B7273C",True)
@@ -487,18 +490,27 @@ def write_premium_stage(stage, meta, data, now, risk_document, france=False):
         signals.append("neige hors relief")
     if risks["gel"].get("status") in ("possible","marque"):
         signals.append("gel jusqu’à %.0f °C"%risks["gel"]["min"])
+    if risks.get("orage",{}).get("status") in ("possible","marque"):
+        signals.append("potentiel orageux (CAPE et pluie)")
     if signals:sentence+=(" Signaux en France : " if france else " Signaux sur France et abords : ")+", ".join(signals)+"."
     elif all(risks[k].get("status")!="indisponible" for k, *_ in entries):
-        sentence+=" Aucun signal notable parmi les quatre risques calculés."
+        sentence+=" Aucun signal notable parmi les risques calculés."
     else:sentence+=" Aucun signal notable parmi les données disponibles."
     missing=[label for k,_,label,_,_ in entries if risks[k].get("status")=="indisponible"]
     if missing:sentence+=" Non calculé : "+", ".join(missing)+"."
     consensus=weighted_analysis(data,step,details["valid_utc"])
     # Keep the on-map summary compact; full IFS hazard text remains in JSON.
-    if len(consensus["models"])>=2:
-        map_sentence=consensus["summary"]+" Risques : IFS."
+    if mode=="weighted_blend":
+        map_sentence=("KFS : "+comparisons+". T850 France %+.1f °C, pression %.0f hPa. " %
+                      (synoptic.get("t850_france",t850),synoptic.get("msl_france",pressure))+
+                      "Divergence normalisée %.2f. Risques : IFS."%synoptic.get("normalized_spread",0))
     else:
-        map_sentence=sentence+" Confiance "+stage["confidence"].lower()+"."
+        map_sentence="Repli IFS (grilles KFS incomplètes). "+sentence
+    consensus["summary"]=map_sentence
+    consensus["method"]=synoptic.get("weight_method",mode)
+    consensus["effective_weights"]=weights
+    for k,item in consensus.get("models",{}).items():
+        item["weight"]=weights.get(k,0)
     sentence+=" Confiance "+stage["confidence"].lower()+"."
     pill(1058,712,"Synthèse")
     def wrap_px(s,width,sz):
@@ -534,7 +546,8 @@ def write_premium_stage(stage, meta, data, now, risk_document, france=False):
         runs[model_b.lower()]=other_run
     if gfs_ready:
         runs["gfs"]=gfs_record["run_utc"]
-    display_models=model_a+" / "+model_b+(" / GFS" if gfs_ready else "")
+    runs.update(synoptic.get("runs_utc",{}))
+    display_models=" / ".join(map_names.get(k,k) for k in synoptic.get("models",["ifs"]))
     return {"id":stage["id"],"step_h":int(step),"path":str(out),
        "image_url":"https://almet27.github.io/kfs-meteo-cartes/"+str(out),
        "size_bytes":out.stat().st_size, "run_utc":runs,
@@ -542,7 +555,7 @@ def write_premium_stage(stage, meta, data, now, risk_document, france=False):
        "zone":"france" if france else "europe",
        "confidence_label":stage["confidence"]+" (indicative)",
        "marked_phenomena":marked_categories, "not_official_warning":True,
-       "gfs_available":gfs_ready,
+       "gfs_available":"gfs" in synoptic.get("models",[]),
        "risk_status":"altitude_filtered_georeferenced", "risks":hazards["risks"], "risk_markers":hazards["markers"],
        "t850_shading":hazards.get("t850_shading",{}),
        "style":"kfs-editorial-lambert-consensus-v13","summary":consensus["summary"]+" "+sentence,"analysis":consensus,
@@ -576,7 +589,7 @@ def main():
       "not_weekly_anomalies":True,"period_maps":maps,"france_maps":france_maps,"public":True,
       "graphic_style":"KFS PREMIUM Lambert — consensus synoptique selon grilles disponibles ; risques IFS",
       "analysis_summary":" ".join(x["id"].upper()+" : "+x["analysis"]["summary"] for x in maps),
-      "note":"Synthèse synoptique pondérée si grilles alignées disponibles ; scénario représentatif si divergence marquée, sinon repli IFS explicite. Risques IFS. Aucune probabilité calibrée."}
+      "note":"Synthèse KFS pondérée de grilles alignées à validité identique ; bonus adaptatif de 10 points à J+10/J+15 selon accord des champs ; repli IFS explicite si grilles incomplètes. Risques IFS. Aucune probabilité calibrée."}
     (OUT/"tendance-cartes.json").write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
     print(json.dumps({"generated_utc":manifest["generated_utc"],
                       "cards":[{"id":x["id"],"size_bytes":x["size_bytes"],"title":x["title"]} for x in maps]},
