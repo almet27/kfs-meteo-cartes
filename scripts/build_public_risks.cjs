@@ -21,10 +21,10 @@ const KFS_PROBA_MODELS = [
 ];
 const KFS_PROBA_DEPTS={"11":["75","77","78","91","92","93","94","95"],"24":["18","28","36","37","41","45"],"27":["21","25","39","58","70","71","89","90"],"28":["14","27","50","61","76"],"32":["02","59","60","62","80"],"44":["08","10","51","52","54","55","57","67","68","88"],"52":["44","49","53","72","85"],"53":["22","29","35","56"],"75":["16","17","19","23","24","33","40","47","64","79","86","87"],"76":["09","11","12","30","31","32","34","46","48","65","66","81","82"],"84":["01","03","07","15","26","38","42","43","63","69","73","74"],"93":["04","05","06","13","83","84"],"94":["2A","2B"]};
 const KFS_PROBA_BLEND_MODELS=[KFS_PROBA_MODELS[0],KFS_PROBA_MODELS[2]];
-const KFS_ALERT_RULES={vent:[100,'Rafales (40/70/100/140 km/h)','💨','V'],pluie:[40,'Pluie 24h (1/15/50/>80 mm)','🌧️','P'],neige_chutes:[5,'Neige en plaine ≤500 m (0,1/3/5/10 cm en 24h)','❄️','N'],gel:[-10,'Tmin (0/−4/−10/−15 °C)','🥶','F'],orage:[4,'Potentiel convectif fort (indice)','⚡','O']};
+const KFS_ALERT_RULES={vent:[100,'Rafales (40/70/100/140 km/h)','💨','V'],pluie:[40,'Pluie 24h (1/20/50/>80 mm)','🌧️','P'],neige_chutes:[5,'Neige en plaine ≤500 m (0,1/3/5/10 cm en 24h)','❄️','N'],gel:[-10,'Tmin (0/−4/−10/−15 °C)','🥶','F'],orage:[4,'Potentiel convectif fort (indice)','⚡','O']};
 const KFS_ALERT_LEVEL_NAMES=["Très faible","Faible","Modéré","Fort","Très fort"];
 const KFS_ALERT_COLORS=[[66,163,103],[233,220,89],[242,151,45],[213,58,58],[142,53,168],[63,77,89]];
-const KFS_ALERT_THRESHOLDS={pluie:[1,15,50,80],vent:[40,70,100,140],neige_chutes:[0.1,3,5,10],gel:[0,-4,-10,-15],chaleur:[28,32,35,40],orage:[1,3,4,5],verglas:[1,1,1,1]};
+const KFS_ALERT_THRESHOLDS={pluie:[1,20,50,80],vent:[40,70,100,140],neige_chutes:[0.1,3,5,10],gel:[0,-4,-10,-15],chaleur:[28,32,35,40],orage:[1,3,4,5],verglas:[1,1,1,1]};
 const KFS_ALERT_PLAIN_MAX_ELEVATION=500;
 function kfsProbaDay(day){
  const today=new Intl.DateTimeFormat("sv-SE",{timeZone:"Europe/Paris",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
@@ -234,7 +234,7 @@ return svg;
  if(ensemble.schema!==2||ensemble.provider!=='Open-Meteo ECMWF ENS + GEFS members'||ensemble.timezone!=='Europe/Paris')throw Error('Ensemble incompatible');
  const today=kfsProbaDay(0),out='proba/public-risks';
  await fs.mkdir(out,{recursive:true});
- const manifest={schema:1,risk_schema:10,today,generated_utc:new Date().toISOString(),days:{}};
+ const manifest={schema:1,risk_schema:11,today,generated_utc:new Date().toISOString(),days:{}};
  for(let day=0;day<=5;day++){
   const date=kfsProbaDay(day);
   const d=await kfsAlertData(day,'FR',[...Object.keys(KFS_ALERT_RULES),'chaleur','verglas'],{geo,ensemble,publicOnly:true});
