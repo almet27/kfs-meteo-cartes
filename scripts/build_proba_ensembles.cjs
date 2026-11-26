@@ -14,7 +14,7 @@ function alertTmax(hourly,start,end){
  const values=Object.keys(hourly).filter(k=>k.startsWith('temperature_2m_')&&/member\d+/.test(k)).flatMap(k=>{const a=ids.map(i=>hourly[k]?.[i]);return a.length&&a.every(Number.isFinite)?[Math.max(...a)]:[];});
  return values.length>=2?values.reduce((x,y)=>x+y,0)/values.length:null;
 }
-const variables=['rain','snow_depth','snowfall','temperature_2m','wind_gusts_10m','cape','precipitation','dew_point_2m'];
+const variables=['rain','snow_depth','snowfall','temperature_2m','wind_gusts_10m','cape','precipitation','dew_point_2m','weather_code'];
 // Snow depth quality check: a sustained warm, snow-free 24-hour period
 // must not produce a large increase in the model's snow depth.
 // Reject the whole snow-depth series only when at least half the comparable
@@ -61,11 +61,11 @@ async function main(){
  const checkpoint=path.join(root,'proba/ensemble-checkpoint'+suffix+'.json');
  const delay=Number(process.env?.PROBA_BATCH_DELAY_MS??65000);
  const batchSize=24;
- let state={schema:7,today,models:{}};
+ let state={schema:8,today,models:{}};
  if(fs.existsSync(checkpoint)){
   try{
    const saved=JSON.parse(fs.readFileSync(checkpoint,'utf8'));
-   if(saved.schema===7&&saved.today===today&&saved.total===total&&saved.shard===shard&&saved.models&&
+   if(saved.schema===8&&saved.today===today&&saved.total===total&&saved.shard===shard&&saved.models&&
     JSON.stringify(saved.zone_points)===JSON.stringify(points))state=saved;
   }catch(error){console.log('Ignoring incompatible checkpoint:',error.message);}
  }
