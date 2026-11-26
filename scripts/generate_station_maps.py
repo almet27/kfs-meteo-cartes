@@ -890,7 +890,25 @@ def main():
                 records["values"][metric] = dict(max(points, key=lambda p: p["value"]), sites=len(points))
     except (RuntimeError, TypeError, ValueError, KeyError) as exc:
         print(f"INFO neige du jour indisponible : {exc}", file=sys.stderr)
+    # Compact hourly history for the live station popup. Keep timestamps and missing values.
+    history_times = [(end_hour - timedelta(hours=i)).strftime("%Y-%m-%dT%H:%M:%SZ") for i in range(23, -1, -1)]
+    history_idx = {t: i for i, t in enumerate(history_times)}
+    history = {}
+    for snapshot in hourly_samples:
+        for sid, (lon, lat, p) in stations(snapshot).items():
+            stamp = obs_stamp(p)
+            if stamp not in history_idx:
+                continue
+            k = str(sid)
+            row = history.setdefault(k, [round(lon, 4), round(lat, 4), [[None, None, None] for _ in history_times]])
+            rain = bounded(p, "rr1", 0, 400)
+            row[2][history_idx[stamp]] = [kelvin(p.get("t")), hourly_gust(p)[0], rain]
+    history_rows = []
+    for sid, (lon, lat, series) in history.items():
+        if any(any(v is not None for v in slot) for slot in series):
+            history_rows.append([lon, lat, sid, official_names.get(sid.zfill(8), "") if sid.isdigit() else "", series])
     metadata = {
+        "web_history": {"schema": 1, "times": history_times, "stations": history_rows},
         "daily_records": records,
         "generated_utc": now.isoformat().replace("+00:00","Z"),
         "observation_utc": observation_time.isoformat().replace("+00:00","Z"),
@@ -905,7 +923,7 @@ def main():
         "zones": {k:v[0] for k,v in ZONES.items()},
         "note": "Maximum/minimum/cumuls calculés sur les relevés disponibles. Une station peut être exclue si ses relevés sont incomplets."
     }
-    (OUT/"manifest.json").write_text(json.dumps(metadata, ensure_ascii=False, indent=2),
+    (OUT/"manifest.json").write_text(json.dumps(metadata, ensure_ascii=False, separators=(",", ":")),
                                        encoding="utf-8")
     print(f"Cartes créées : {len(ZONES)*len(METRICS)}; stations={len(current)}; "
           f"horaires={len(hourly_samples)}; mesure={latest}")
