@@ -1,6 +1,8 @@
 name: Archives StatIC - lot contrôlé
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '17 */6 * * *'
   push:
     paths:
       - .github/workflows/infoclimat-historical-batch.yml
@@ -22,6 +24,11 @@ jobs:
           base="https://climato.chom.engineering"
           out=pathlib.Path("climato/infoclimat/history")
           out.mkdir(parents=True,exist_ok=True)
+          statepath=out/"_progress.json"
+          state=json.loads(statepath.read_text()) if statepath.exists() else {"empty":[],"paused":False}
+          if state.get("paused"):
+              print("Collection paused after source error; inspect before resuming")
+              raise SystemExit(0)
           def get(url, params=None):
               if params: url+="?"+urllib.parse.urlencode(params)
               req=urllib.request.Request(url,headers={"Accept":"application/json","User-Agent":"KFS-METEO-historical-batch/1.0"})
@@ -56,7 +63,8 @@ jobs:
           if not stations:raise ValueError("No licensed historical stations matched")
           candidates=sorted(stations,key=lambda sid:(stations[sid][0],sid))
           end=dt.date.today().replace(day=1)
-          pending=[s for s in candidates if not (out/(s+".json")).exists()]
+          pending=[s for s in candidates if not (out/(s+".json")).exists() and s not in state["empty"]]
+          state["eligible"]=len(candidates)
           print("Eligible",len(candidates),"pending",len(pending),"earliest catalogue",stations[candidates[0]][0],flush=True)
           completed=0
           for sid in pending[:12]:
@@ -69,7 +77,9 @@ jobs:
                   if obj.get("tronque") or obj.get("suite") or "Etalab" not in str(obj.get("licence")):raise ValueError("Truncated or unexpected licence")
                   data=obj.get("mesures")
                   if not isinstance(data,list) or any(str(r.get("ic_id"))!=sid for r in data):raise ValueError("Invalid station series")
-                  if not data:continue
+                  if not data:
+                      state["empty"].append(sid)
+                      continue
                   keys=set()
                   for r in data:
                       month=dt.date.fromisoformat(str(r["mois"])[:7]+"-01")
@@ -82,9 +92,16 @@ jobs:
                   print(sid,"months",len(data),"first",min(keys),"last",max(keys),flush=True)
               except Exception as exc:
                   print("Stopping batch safely:",type(exc).__name__,flush=True)
+                  state["paused"]=True
+                  state["error_category"]=type(exc).__name__
+                  if hasattr(exc,"code"):state["http_status"]=exc.code
                   break
           print("Completed this run",completed,flush=True)
-          if not completed and pending:raise SystemExit("No archive added; diagnose source before retry")
+          state["archived"]=sum((out/(sid+".json")).exists() for sid in candidates)
+          state["remaining"]=sum(not (out/(sid+".json")).exists() and sid not in state["empty"] for sid in candidates)
+          state["updated_utc"]=dt.datetime.now(dt.timezone.utc).isoformat()
+          statepath.write_text(json.dumps(state,ensure_ascii=False,indent=2)+"\n")
+          print("Progress",state,flush=True)
           PY
       - name: Publish historical files only
         run: |
