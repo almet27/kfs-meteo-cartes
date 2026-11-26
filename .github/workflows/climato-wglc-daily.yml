@@ -68,5 +68,9 @@ jobs:
           git add data/wglc/daily-sectors data/wglc/daily-density
           git diff --cached --quiet && exit 0
           git commit -m 'Publish WGLC lightning dates and monthly density 2010-2025'
-          git pull --rebase
-          git push
+          for attempt in $(seq 1 12); do
+            git pull --rebase origin main || exit 1
+            if git push origin HEAD:main; then exit 0; fi
+            sleep $((2 + attempt))
+          done
+          exit 1
