@@ -1,0 +1,49 @@
+name: KFS - audit stations MF 2026
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/diag-mf-2026.yml
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Check site API and source archives
+        run: |
+          python - <<'PY'
+          import urllib.request,urllib.error,urllib.parse,concurrent.futures,json,gzip,csv,io,collections
+          base="https://meteofrance.s3.sbg.io.cloud.ovh.net/data/synchro_ftp/"
+          def read(url,timeout=45):
+              return urllib.request.urlopen(urllib.request.Request(url,headers={"User-Agent":"KFS-climato-audit/1.0"}),timeout=timeout)
+          cities=[("Bourth","27107"),("Bernay","27056"),("Evreux","27229"),("L'Aigle","61214"),("Rouen","76540"),("Paris","75056"),("Lille","59350"),("Lyon","69123"),("Marseille","13055")]
+          def api(item):
+              city,code,month=item
+              try:
+                  url="https://kfs-meteo.fr/api/climato-city?"+urllib.parse.urlencode(dict(code=code,annee=2026,mois=month,rubrique="bilan"))
+                  with read(url,60) as f:d=json.load(f)
+                  e=d.get("embeds",[])
+                  print("AUDIT_API "+json.dumps(dict(city=city,month=month,content=d.get("content"),partial=d.get("partial"),error=d.get("error"),embeds=[dict(title=x.get("title"),desc=x.get("description","")[:350],fields=[dict(name=y.get("name"),value=str(y.get("value"))[:100]) for y in x.get("fields",[])[:4]]) for x in e[:3]]),flush=True)
+              except Exception as ex:
+                  msg=ex.read().decode()[:300] if isinstance(ex,urllib.error.HTTPError) else str(ex)
+                  print("AUDIT_API "+json.dumps(dict(city=city,month=month,error=msg)),flush=True)
+          def source(dep):
+              try:
+                  count=collections.defaultdict(lambda:[0,0,0,0,None])
+                  with read(base+"BASE/QUOT/Q_"+dep+"_latest-2025-2026_RR-T-Vent.csv.gz",90) as f:
+                      for r in csv.DictReader(io.TextIOWrapper(gzip.GzipFile(fileobj=f),encoding="utf-8-sig"),delimiter=";"):
+                          date=r.get("AAAAMMJJ","")
+                          if not date.startswith("2026"):continue
+                          sid=r.get("NUM_POSTE");v=count[sid];v[0]+=1
+                          if date.startswith("202611"):
+                              v[1]+=1;v[2]+=bool(r.get("TN","").strip() and r.get("TX","").strip());v[3]+=bool(r.get("RR","").strip())
+                          v[4]=max(v[4] or "",date)
+                  print("AUDIT_SOURCE "+json.dumps(dict(dep=dep,stations_2026=len(count),stations_nov=sum(v[1]>0 for v in count.values()),temperature_nov=sum(v[2]>0 for v in count.values()),rain_nov=sum(v[3]>0 for v in count.values()),latest=max((v[4] for v in count.values()),default=None))),flush=True)
+              except Exception as ex:print("AUDIT_SOURCE "+json.dumps(dict(dep=dep,error=str(ex))),flush=True)
+          with concurrent.futures.ThreadPoolExecutor(max_workers=4) as ex:
+              tasks=[ex.submit(source,d) for d in ("27","61","76","75","59","69","13")]
+              tasks += [ex.submit(api,(c,n,m)) for c,n in cities for m in ("en_cours","annee","1")]
+              for f in concurrent.futures.as_completed(tasks):f.result()
+          PY
