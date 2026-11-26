@@ -204,14 +204,14 @@ function renderRisk(d,day,date){
    const color=v.type==="gel"?"#49baff":"#ff4b47";
    icon='<path d="M-3 -4V-9a3 3 0 0 1 6 0v5a6 6 0 1 1 -6 0Z" fill="#f3f8ff" stroke="#102030" stroke-width="1.4"/><path d="M0 -8V2" stroke="'+color+'" stroke-width="3.5" stroke-linecap="round"/><circle cx="0" cy="3" r="4" fill="'+color+'"/><path d="M4 -7h2M4 -3h2" stroke="#102030" stroke-width="1" stroke-linecap="round"/>';
   }else if(v.type==="verglas"){
-   icon='<path d="M-8 -6L0 -10 8 -6 8 4 0 9 -8 4Z" fill="#80e5db" stroke="#102030" stroke-width="1.6"/><path d="M-8 -6L0 -2 8 -6M0 -2V9M-4 -8L4 -4" fill="none" stroke="#1c6571" stroke-width="1.4"/>';
+   icon='<path d="M0 -12.5L12 9.5Q12.5 11 10.8 11H-10.8Q-12.5 11 -12 9.5Z" fill="#fff" stroke="#d52b2b" stroke-width="2.5" stroke-linejoin="round"/><g fill="#17212a" transform="rotate(-12 0 0)"><path d="M-4.5 -1L-3 -4.1H2.5L4.4 -1L5.1 .2V3.3H-5.1V.2Z"/><path d="M-2.5 -3.2H1.9L3 -.7H-3.5Z" fill="#fff"/><rect x="-4.6" y="2.5" width="2" height="1.8" rx=".4"/><rect x="2.6" y="2.5" width="2" height="1.8" rx=".4"/></g><path d="M-5 5C-2.5 3.5 -3.5 7.7 -6 8.1M2 5C4.8 3.5 4.1 7.7 1.5 8.2" fill="none" stroke="#17212a" stroke-width="1.15" stroke-linecap="round"/>';
   }else if(v.type==="vent"){
    icon='<path d="M-9 10V-9" stroke="#102030" stroke-width="4" stroke-linecap="round"/><path d="M-9 10V-9" stroke="#edf5fc" stroke-width="1.8" stroke-linecap="round"/><path d="M-8 -9L12 -5 12 0 -8 3Z" fill="#f6f8ff" stroke="#102030" stroke-width="1.3" stroke-linejoin="round"/><path d="M-8 -9L-3 -8 -3 2 -8 3Z M2 -7L7 -6 7 1 2 1.5Z" fill="#ef5348"/><path d="M-8 -9L12 -5 12 0 -8 3Z" fill="none" stroke="#102030" stroke-width="1.3" stroke-linejoin="round"/>';
   }else{
    icon='<text fill="#fff" stroke="#091426" stroke-width="2" paint-order="stroke">'+esc(symbols[v.type]||"!")+'</text>';
   }
   svg+='<g transform="translate('+x+' '+y+')"><title>'+esc(row.name+" · "+v.type)+'</title>'+icon+'</g>';
-  const ice=row.values.verglas;if(v.type!=='verglas'&&ice?.level>=1)svg+='<g transform="translate('+(Number(x)+12)+' '+(Number(y)+10)+') scale(.62)"><title>'+esc(row.name+' · verglas')+'</title><path d="M-8 -6L0 -10 8 -6 8 4 0 9 -8 4Z" fill="#80e5db" stroke="#102030" stroke-width="1.6"/><path d="M-8 -6L0 -2 8 -6M0 -2V9M-4 -8L4 -4" fill="none" stroke="#1c6571" stroke-width="1.4"/></g>';
+  const ice=row.values.verglas;if(v.type!=='verglas'&&ice?.level>=1)svg+='<g transform="translate('+(Number(x)+12)+' '+(Number(y)+10)+') scale(.62)"><title>'+esc(row.name+' · verglas')+'</title><path d="M0 -12.5L12 9.5Q12.5 11 10.8 11H-10.8Q-12.5 11 -12 9.5Z" fill="#fff" stroke="#d52b2b" stroke-width="2.5" stroke-linejoin="round"/><g fill="#17212a" transform="rotate(-12 0 0)"><path d="M-4.5 -1L-3 -4.1H2.5L4.4 -1L5.1 .2V3.3H-5.1V.2Z"/><path d="M-2.5 -3.2H1.9L3 -.7H-3.5Z" fill="#fff"/><rect x="-4.6" y="2.5" width="2" height="1.8" rx=".4"/><rect x="2.6" y="2.5" width="2" height="1.8" rx=".4"/></g><path d="M-5 5C-2.5 3.5 -3.5 7.7 -6 8.1M2 5C4.8 3.5 4.1 7.7 1.5 8.2" fill="none" stroke="#17212a" stroke-width="1.15" stroke-linecap="round"/></g>';
  }
  svg+='</g><text x="450" y="22" fill="#fff" font-size="18" font-weight="bold" text-anchor="middle" font-family="system-ui,sans-serif">KFS MÉTÉO · RISQUES J+'+day+' · '+esc(date)+'</text>';
  const names=["Très faible","Faible","Modéré","Fort","Très fort","Indisponible"];
@@ -227,7 +227,7 @@ return svg;
  if(ensemble.schema!==2||ensemble.provider!=='Open-Meteo ECMWF ENS + GEFS members'||ensemble.timezone!=='Europe/Paris')throw Error('Ensemble incompatible');
  const today=kfsProbaDay(0),out='proba/public-risks';
  await fs.mkdir(out,{recursive:true});
- const manifest={schema:1,risk_schema:2,today,generated_utc:new Date().toISOString(),days:{}};
+ const manifest={schema:1,risk_schema:3,today,generated_utc:new Date().toISOString(),days:{}};
  for(let day=0;day<=5;day++){
   const date=kfsProbaDay(day);
   const d=await kfsAlertData(day,'FR',[...Object.keys(KFS_ALERT_RULES),'chaleur','verglas'],{geo,ensemble,publicOnly:true});
