@@ -35,6 +35,7 @@ def station_catalog():
             p=f["properties"]; sid=str(p["num"]).zfill(8); lon,lat=f["geometry"]["coordinates"][:2]
             if -6<=lon<=10 and 41<=lat<=52: out[sid]=(float(lon),float(lat),p.get("nom",sid))
         except (KeyError,ValueError,TypeError): continue
+    globals()["_KFS_STATION_IDS"]={tuple(loc):sid for sid,loc in out.items()}
     return out
 
 def val(row, key):
@@ -222,7 +223,12 @@ def render(points,boundaries,title,units,cmap,norm,metric,cutoff,filename,period
                     path_effects=[patheffects.withStroke(linewidth=1.7,foreground=bg)],clip_on=True))
         source=source_label
         foot.set_text(f"{period_label or cutoff.strftime('Du 1er au %d/%m/%Y')}  •  {local} stations dans la zone  •  {source}")
-        fig.savefig(OUT/(filename if zone=="france" else zone_filename(filename,zone)),dpi=150,bbox_inches="tight",pad_inches=.2)
+        map_file=filename if zone=="france" else zone_filename(filename,zone)
+        fig.savefig(OUT/map_file,dpi=150,bbox_inches="tight",pad_inches=.2)
+        # Station coordinates are published alongside each map, never inferred from PNG pixels.
+        lookup=globals().get("_KFS_STATION_IDS",{})
+        station_rows=[{"id":lookup[tuple(loc)],"name":loc[2],"lon":float(loc[0]),"lat":float(loc[1]),"value":float(v)} for loc,v in points if tuple(loc) in lookup and west<=loc[0]<=east and south<=loc[1]<=north and math.isfinite(v)]
+        (OUT/(map_file.removesuffix(".png")+"-stations.json")).write_text(json.dumps({"schema":1,"file":map_file,"end":cutoff.isoformat(),"extent":list(extent),"stations":station_rows},ensure_ascii=False,separators=(",",":")))
         for artist in artists:artist.remove()
     plt.close(fig)
 
