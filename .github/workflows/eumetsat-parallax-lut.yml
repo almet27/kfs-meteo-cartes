@@ -1,5 +1,8 @@
 name: Préparer les tables de parallaxe EUMETSAT LI
 on:
+  push:
+    paths:
+      - .github/workflows/eumetsat-parallax-lut.yml
   workflow_dispatch:
     inputs:
       archive_url:
@@ -24,7 +27,7 @@ jobs:
           python-version: '3.12'
       - name: Télécharger les tables officielles
         env:
-          ARCHIVE_URL: ${{ inputs.archive_url }}
+          ARCHIVE_URL: ${{ inputs.archive_url || 'https://sftp.eumetsat.int/public/folder/UsCVknVOOkSyCdgpMimJNQ/User-Materials/MTGUP/LI_parallax_correction/SSP_0_LUT.tar.gz' }}
         run: |
           python - <<'PY'
           import os
@@ -34,6 +37,8 @@ jobs:
               raise SystemExit("URL HTTPS officielle sftp.eumetsat.int requise")
           PY
           curl --fail --silent --show-error --location --proto '=https' --proto-redir '=https' --max-time 1500 --max-filesize 4000000000 --output /tmp/SSP_0_LUT.tar.gz "$ARCHIVE_URL"
+      - name: Vérifier le format gzip
+        run: python -c 'from pathlib import Path; f=Path("/tmp/SSP_0_LUT.tar.gz").open("rb"); assert f.read(2)==bytes([31,139]), "Le serveur ne fournit pas un fichier gzip"'
       - name: Construire et contrôler la table régionale
         run: |
           python -m pip install numpy netCDF4 scipy
