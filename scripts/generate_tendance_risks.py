@@ -276,7 +276,7 @@ def metropolitan_outline():
 def render(id,run,fields,marks,risks,france=False):
     # The padded source domain covers the curved edges of the conformal map.
     # It does not change the geographic mask used for risk statistics.
-    geography=(-25,30,32,62) if france else (-85,85,20,85)
+    geography=(-25,30,32,62) if france else (-100,100,15,89)
     lon,lat=fields["msl"][0],fields["msl"][1]
     msl=fields["msl"][2]/100.0
     gh=fields["gh"][2]/10.0
@@ -287,11 +287,11 @@ def render(id,run,fields,marks,risks,france=False):
     geop=gh[np.ix_(iy,ix)]
     fig=plt.figure(figsize=(16,9 if france else 7),dpi=100,facecolor="#E7E9EC")
     # Lambert conformal conic: equal projected scales, no horizontal stretching.
-    projection=ccrs.LambertConformal(central_longitude=2.5,
-        central_latitude=46.5 if france else 48.0,
+    projection=ccrs.LambertConformal(central_longitude=2.5 if france else -12,
+        central_latitude=46.5 if france else 58.0,
         standard_parallels=(44,49) if france else (37,65))
     ax=fig.add_axes([0,0,1,1],projection=projection)
-    half_height=710000 if france else 1550000
+    half_height=710000 if france else 2350000
     half_width=half_height*16/(9 if france else 7)
     ax.set_xlim(-half_width,half_width)
     ax.set_ylim(-half_height,half_height)
@@ -326,9 +326,9 @@ def render(id,run,fields,marks,risks,france=False):
     for a in labels:
         a.set_fontweight("bold")
         a.set_path_effects([pe.Stroke(linewidth=2.5,foreground="#173147",alpha=.65),pe.Normal()])
-    ax.coastlines("50m",linewidth=.85 if france else .65,color="#EFF6F9",zorder=10)
-    ax.add_feature(cfeature.BORDERS.with_scale("50m"),linewidth=.7 if france else .55,
-                   edgecolor="#E2EFF5",alpha=.82,zorder=10)
+    ax.coastlines("50m",linewidth=.85 if france else .65,color="#191919",zorder=10)
+    ax.add_feature(cfeature.BORDERS.with_scale("50m"),linewidth=.9 if france else .85,
+                   edgecolor="#171717",alpha=.95,zorder=10)
     # The contrast outline remains readable on cold and warm T850 colours;
     # no opaque land fill is added over the meteorological fields.
     outline=metropolitan_outline()
@@ -336,7 +336,7 @@ def render(id,run,fields,marks,risks,france=False):
                       edgecolor="#173147",linewidth=3.4 if france else 2.8,
                       alpha=.92,zorder=11)
     ax.add_geometries([outline],ccrs.PlateCarree(),facecolor="none",
-                      edgecolor="#FFFFFF",linewidth=1.55 if france else 1.3,
+                      edgecolor="#171717",linewidth=1.55 if france else 1.3,
                       alpha=.98,zorder=12)
     # D/H at genuine local MSL pressure extrema, never fabricated.
     # Require a surrounding pressure contrast and enough room for the label.
@@ -351,7 +351,7 @@ def render(id,run,fields,marks,risks,france=False):
             j,i=np.unravel_index(n,pres.shape)
             if j<dy or i<dx or j>=len(yy)-dy or i>=len(xx)-dx:continue
             x,y=float(xx[i]),float(yy[j])
-            if y>67 or y<34 or x<-41 or x>31:continue
+            if not (FR_GEOGRAPHY[0]<=x<=FR_GEOGRAPHY[1] and FR_GEOGRAPHY[2]<=y<=FR_GEOGRAPHY[3]) if france else not (-72<=x<=42 and 30<=y<=80):continue
             v=float(pres[j,i])
             if (low and v>1010) or (not low and v<1018):break
             patch=pres[j-dy:j+dy+1,i-dx:i+dx+1]
@@ -408,16 +408,22 @@ def france_mask(x,y):
 
 def synoptic_consensus(fields, step, run):
     """Blend genuine synoptic fields at an identical UTC validity.
-    IFS hazards stay separate. In large disagreement select a real scenario.
+    IFS hazards stay separate. A strong disagreement is reported, not hidden.
     Every additional field must cover the full projected map domain.
     """
-    from generate_tendance_cards import weighted_analysis
     valid=run+timedelta(hours=step)
-    analysis=json.loads((OUT/"tendance-analyse-donnees.json").read_text(encoding="utf-8"))
-    consensus=weighted_analysis(analysis,str(step),valid.isoformat())
+    atlas=json.loads((EU/"metadata.json").read_text(encoding="utf-8"))
+    noaa=json.loads((EU/"noaa-metadata.json").read_text(encoding="utf-8"))
+    base_weights={72:{"ifs":.50,"aifs-single":.30,"gfs":.20},
+                  168:{"ifs":.40,"aifs-single":.40,"gfs":.20},
+                  240:{"ifs":.40,"aifs-single":.20,"gfs":.30},
+                  360:{"ifs":.20,"aifs-single":.30,"gfs":.40}}[step]
+    candidates={"ifs":[run],
+                "aifs-single":[when(atlas["runs_utc"]["aifs-single"][str(step)]),run],
+                "gfs":[when(noaa["runs_utc"]["gfs"][str(step)]),run]}
     lon,lat=fields["msl"][:2]
-    ix=np.flatnonzero((lon>=-85)&(lon<=85))
-    iy=np.flatnonzero((lat>=20)&(lat<=85))
+    ix=np.flatnonzero((lon>=-100)&(lon<=100))
+    iy=np.flatnonzero((lat>=15)&(lat<=89))
     target_lon,target_lat=lon[ix],lat[iy]
     names=("msl","gh","t850")
     reference={k:np.asarray(fields[k][2][np.ix_(iy,ix)],dtype=float) for k in names}
@@ -425,7 +431,8 @@ def synoptic_consensus(fields, step, run):
     if not all(np.isfinite(v).all() for v in reference.values()):
         return fields,{"method":"ifs_reference","models":["ifs"],"weights":{"ifs":1.0},
                        "reason":"Grille de référence incomplète"}
-    active={}
+    active={"ifs":reference}
+    used_runs={"ifs":run.isoformat()}
     excluded={}
     def regrid(x,y,v):
         x=np.asarray(x,dtype=float);y=np.asarray(y,dtype=float);v=np.asarray(v,dtype=float)
@@ -457,58 +464,54 @@ def synoptic_consensus(fields, step, run):
             y=np.asarray(d.latitude.values)
             return x,y,np.asarray(d.transpose("latitude","longitude").values)
         finally:dataset.close()
-    for key,item in consensus.get("models",{}).items():
-        if not item.get("weight",0):continue
-        if key=="ifs":
-            active[key]=reference
-            continue
-        try:
-            issue=when(item["run_utc"])
-            lead=int((valid-issue).total_seconds()/3600)
-            if issue+timedelta(hours=lead)!=valid or lead<0:
-                raise ValueError("Échéance non alignée")
-            got={}
-            if key=="aifs-single":
-                client=Client(source="ecmwf",model=key,resol="0p25")
-                for name,param,var,level in (("msl","msl","msl",None),("gh","gh","gh",500),("t850","t","t",850)):
-                    g=single(client,key,lead,issue,param,var,level)
-                    if when(g[3])!=issue:raise ValueError("Cycle ECMWF incorrect")
-                    got[name]=regrid(g[0],g[1],g[2])
-            elif key in ("gfs","aigfs"):
-                upper="pgrb2.0p25" if key=="gfs" else "pres"
-                surface="pgrb2.0p25" if key=="gfs" else "sfc"
-                for name,product,pattern in (("msl",surface,":PRMSL:mean sea level:"),
-                      ("gh",upper,":HGT:500 mb:"),("t850",upper,":TMP:850 mb:")):
-                    x,y,v=noaa_field(key,issue,lead,product,pattern)
-                    got[name]=regrid(x,y,v)
-            else:continue
-            if not (90000<np.median(got["msl"])<110000 and
-                    4000<np.median(got["gh"])<6500 and 150<np.median(got["t850"])<340):
-                raise ValueError("Unités synoptiques non plausibles")
-            active[key]=got
-        except Exception as exc:
-            excluded[key]=str(exc)[:180]
-            print("Consensus carte : exclusion",key,str(exc)[:180],flush=True)
-    if len(active)<2:
+    for key in ("aifs-single","gfs"):
+        errors=[]
+        for issue in dict.fromkeys(candidates[key]):
+            try:
+                lead=int((valid-issue).total_seconds()/3600)
+                if issue+timedelta(hours=lead)!=valid or not 0<=lead<=384:
+                    raise ValueError("Échéance non alignée")
+                if abs((run-issue).total_seconds())>24*3600:
+                    raise ValueError("Cycle trop éloigné")
+                got={}
+                if key=="aifs-single":
+                    client=Client(source="ecmwf",model=key,resol="0p25")
+                    for name,param,var,level in (("msl","msl","msl",None),("gh","gh","gh",500),("t850","t","t",850)):
+                        g=single(client,key,lead,issue,param,var,level)
+                        if when(g[3])!=issue:raise ValueError("Cycle ECMWF incorrect")
+                        got[name]=regrid(g[0],g[1],g[2])
+                else:
+                    for name,pattern in (("msl",":PRMSL:mean sea level:"),
+                          ("gh",":HGT:500 mb:"),("t850",":TMP:850 mb:")):
+                        x,y,v=noaa_field(key,issue,lead,"pgrb2.0p25",pattern)
+                        got[name]=regrid(x,y,v)
+                if not (90000<np.median(got["msl"])<110000 and
+                        4000<np.median(got["gh"])<6500 and 150<np.median(got["t850"])<340):
+                    raise ValueError("Unités synoptiques non plausibles")
+                active[key]=got
+                used_runs[key]=issue.isoformat()
+                break
+            except Exception as exc:
+                errors.append(str(exc)[:160])
+                print("Consensus KFS : tentative",key,issue,str(exc)[:160],flush=True)
+        if key not in active:excluded[key]=" | ".join(errors)
+    if set(active)!=set(base_weights):
         return fields,{"method":"ifs_reference","models":["ifs"],"weights":{"ifs":1.0},
-                       "excluded":excluded,"reason":"Moins de deux grilles complètes à validité identique"}
-    weights={k:consensus["models"][k]["weight"] for k in active}
-    total=sum(weights.values());weights={k:v/total for k,v in weights.items()}
-    # Normalized domain differences: heuristic, not calibrated regime skill.
+                       "excluded":excluded,"reason":"Trois grilles complètes nécessaires à validité identique"}
+    weights=dict(base_weights)
     area=np.broadcast_to(np.cos(np.radians(target_lat))[:,None],reference["msl"].shape)
     scales={"msl":1200.0,"gh":120.0,"t850":5.0}
     def distance(a,b):
         return math.sqrt(sum(np.average(((active[a][k]-active[b][k])/scales[k])**2,
                          weights=area) for k in names)/len(names))
     spread=max(distance(a,b) for a in active for b in active)
-    medoid=None
-    if spread>=1 or consensus.get("agreement")=="forte divergence":
-        medoid=min(active,key=lambda a:(sum(weights[b]*distance(a,b) for b in active),-weights[a]))
-        chosen=active[medoid]
-        method="weighted_representative"
-    else:
-        chosen={k:sum(weights[m]*active[m][k] for m in active) for k in names}
-        method="weighted_blend"
+    bonus=None
+    if step in (240,360):
+        # Accord actuel des champs, pas un score prédictif ni une probabilité.
+        bonus=min(active,key=lambda a:(sum(base_weights[b]*distance(a,b) for b in active),-base_weights[a]))
+        weights[bonus]+=.10
+    chosen={k:sum(weights[m]*active[m][k] for m in active) for k in names}
+    method="weighted_blend"
     result=dict(fields)
     for name in names:
         original=fields[name]
@@ -516,9 +519,12 @@ def synoptic_consensus(fields, step, run):
         v[np.ix_(iy,ix)]=chosen[name]
         result[name]=(original[0],original[1],v,original[3],original[4])
     return result,{"method":method,"models":list(active),"weights":weights,
-                   "representative":medoid,"normalized_spread":round(spread,3),
+                   "bonus_model":bonus,"normalized_spread":round(spread,3),
                    "excluded":excluded,"valid_utc":valid.isoformat(),
-                   "risk_source":"ifs","weight_method":consensus.get("method")}
+                   "runs_utc":{"aifs" if k=="aifs-single" else k:v for k,v in used_runs.items()},
+                   "t850_france":round(float(np.mean(chosen["t850"][(target_lat>=43)&(target_lat<=50)][:,(target_lon>=-4)&(target_lon<=7)]))-273.15,2),
+                   "msl_france":round(float(np.mean(chosen["msl"][(target_lat>=43)&(target_lat<=50)][:,(target_lon>=-4)&(target_lon<=7)]))/100,2),
+                   "risk_source":"ifs","weight_method":"Poids KFS configurés ; bonus de 10 points selon accord synoptique actuel"}
 
 
 def calculate(id,step,model,atlas,now):
@@ -580,6 +586,18 @@ def calculate(id,step,model,atlas,now):
     except Exception as exc:
         tmin=None
         cold_error=str(exc)[:155]
+    cape=None
+    try:
+        c=single(client,model,step,run,"cape","cape")
+        verify(f["msl"],[c])
+        if not np.isfinite(c[2]).all() or np.min(c[2])<0 or np.max(c[2])>20000:
+            raise ValueError("CAPE non plausible")
+        if c[4].lower().replace(" ","") not in {"jkg**-1","jkg^-1","jkg-1","j/kg","jkg**(-1)"}:
+            raise ValueError("Unité CAPE inconnue : "+c[4])
+        cape=c[2]
+    except Exception as exc:
+        print("CAPE IFS indisponible",str(exc)[:150],flush=True)
+    f["_cape"]=cape
     f["rain6h"]=(x,y,rain,recorded,"mm")
     # Blend only T850, MSLP and Z500 after all IFS hazard calculations.
     try:
@@ -633,14 +651,22 @@ def build_risk(id,step,model,recorded,run,f,x,y,wind,wind_error,rain,snow,tmin,c
         risks["gel"]={"status":"indisponible","reason":"Tmin 2 m indisponible : "+str(cold_error)}
     risks["inondation"]={"status":"indisponible",
                          "reason":"Crue non déductible d'un seul cumul de pluie de 6 h"}
-    markers=((peaks(x,y,wind,50,"vent_fort",20) if wind is not None else []) +
+    storm_markers=[]
+    cape=f.get("_cape")
+    if cape is not None:
+        signal=np.where(region & (rain>=1),cape,np.nan)
+        storm_markers=peaks(x,y,signal,500,"orage",10)
+        vmax=float(np.nanmax(signal)) if np.isfinite(signal).any() else 0.0
+        risks["orage"]={"status":status(vmax,500,1500),"max":round(vmax,1),
+                         "unit":"J/kg","reason":"Potentiel convectif IFS : CAPE à échéance et pluie ≥ 1 mm/6h ; pas une probabilité d'orage"}
+    markers=(storm_markers+(peaks(x,y,wind,50,"vent_fort",20) if wind is not None else []) +
              peaks(x,y,rain,10,"pluie_forte",20) +
              snow_markers + cold_markers)
     # Adjacent pin collision is undesirable even across different phenomena.
     selected=[]
     # Priorité aux pictogrammes rouges, puis aux pics normalisés par phénomène.
     def priority(p):
-        threshold=RED_MARKER_THRESHOLDS[p["kind"]]
+        threshold=RED_MARKER_THRESHOLDS.get(p["kind"],1500.0)
         return (red_marker(p),(-p["value"] if p["kind"]=="gel" else p["value"])/threshold)
     # Europe : carte plus lisible, priorité aux signaux sévères et espacement accru.
     # France : conserver la densité et la sélection existantes.
