@@ -10,7 +10,7 @@ from kfs_weather_cache import check_quota, record_quota
 OUT=Path("forecast-maps/france/hourly-web")
 MODELS={"arome":"meteofrance_arome_france","gfs":"gfs_global","ifs":"ecmwf_ifs025"}
 FIELDS=["temperature_2m","wind_speed_10m","wind_gusts_10m","precipitation","wind_direction_10m","weather_code"]
-EXTRA_FIELDS=["rain","showers","snowfall","cape","visibility","snow_depth"]
+EXTRA_FIELDS=["rain","showers","snowfall","cape","visibility","snow_depth","relative_humidity_2m","dew_point_2m","cloud_cover_low"]
 FIELDS=FIELDS+EXTRA_FIELDS
 def get(url):
     with urlopen(Request(url,headers={"User-Agent":"KFS-Meteo-Hourly/1.0"}),timeout=40) as r:return json.load(r)
@@ -71,7 +71,7 @@ def build(name,code,pts):
                     a=h.get(field,[])
                     v=a[idx] if idx is not None and idx<len(a) else None
                     unit=r.get("hourly_units",{}).get(field)
-                    expected={"rain":"mm","showers":"mm","snowfall":"cm","cape":"J/kg","visibility":"m","snow_depth":"m"}.get(field)
+                    expected={"rain":"mm","showers":"mm","snowfall":"cm","cape":"J/kg","visibility":"m","snow_depth":"m","relative_humidity_2m":"%","dew_point_2m":"°C","cloud_cover_low":"%"}.get(field)
                     vals.append(round(v,3 if field=="snow_depth" else 1) if numeric(v) and (expected is None or unit==expected) else None)
                 values.append(vals)
             rows.append(values)
