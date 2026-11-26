@@ -1,0 +1,38 @@
+name: KFS - diagnostic brouillard
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/diag-fog-sources.yml
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Test visibility fields over France
+        run: |
+          python - <<'PY'
+          import json,urllib.request,urllib.parse,urllib.error,concurrent.futures
+          pts=[(48.76,.63),(49.08,.59),(48.44,.09),(49.44,1.1),(48.86,2.35),(47.22,-1.55),(48.11,-1.68),(47.32,5.04),(45.76,4.83),(48.58,7.75)]
+          models=['ecmwf_ifs','ecmwf_ifs025','icon_eu','icon_d2','gfs_global','meteofrance_arome_france']
+          def test(model):
+              q=urllib.parse.urlencode(dict(latitude=','.join(str(p[0]) for p in pts),longitude=','.join(str(p[1]) for p in pts),models=model,hourly='visibility,weather_code,temperature_2m,relative_humidity_2m,dew_point_2m,precipitation',forecast_hours=36,timezone='GMT'))
+              try:
+                  with urllib.request.urlopen('https://api.open-meteo.com/v1/forecast?'+q,timeout=20) as r: data=json.load(r)
+                  if isinstance(data,dict):data=[data]
+                  fields={}
+                  for key in ['visibility','weather_code','temperature_2m','relative_humidity_2m','dew_point_2m','precipitation']:
+                      vals=[v for row in data for v in row.get('hourly',{}).get(key,[]) if isinstance(v,(int,float))]
+                      fields[key]={'n':len(vals),'min':min(vals) if vals else None,'max':max(vals) if vals else None}
+                  low=[]
+                  for i,row in enumerate(data):
+                      h=row.get('hourly',{})
+                      for t,v,c in zip(h.get('time',[]),h.get('visibility',[]),h.get('weather_code',[])):
+                          if (isinstance(v,(int,float)) and v<1000) or c in (45,48):low.append([pts[i],t,v,c])
+                  print('FOG_RESULT '+json.dumps(dict(model=model,locations=len(data),units=data[0].get('hourly_units'),fields=fields,low_count=len(low),examples=low[:8])),flush=True)
+              except urllib.error.HTTPError as e:print('FOG_RESULT '+json.dumps(dict(model=model,status=e.code,error=e.read().decode()[:400])),flush=True)
+              except Exception as e:print('FOG_RESULT '+json.dumps(dict(model=model,error=str(e))),flush=True)
+          with concurrent.futures.ThreadPoolExecutor(max_workers=2) as ex:list(ex.map(test,models))
+          PY
