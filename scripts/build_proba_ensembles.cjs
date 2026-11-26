@@ -15,6 +15,29 @@ function alertTmax(hourly,start,end){
  return values.length>=2?values.reduce((x,y)=>x+y,0)/values.length:null;
 }
 const variables=['rain','snow_depth','snowfall','temperature_2m','wind_gusts_10m','cape','precipitation','dew_point_2m'];
+// Snow depth quality check: a sustained warm, snow-free 24-hour period
+// must not produce a large increase in the model's snow depth.
+// Reject the whole snow-depth series only when at least half the comparable
+// ensemble members show the anomaly. Keep the other variables unchanged.
+function suspectSnowDepth(hourly){
+ const times=hourly?.time;if(!Array.isArray(times)||times.length<25)return false;
+ let comparable=0,suspect=0;
+ for(const key of Object.keys(hourly).filter(k=>/^snow_depth_member\d+$/.test(k))){
+  const suffix=key.slice('snow_depth'.length),depth=hourly[key],temp=hourly['temperature_2m'+suffix],snow=hourly['snowfall'+suffix];
+  if(!Array.isArray(depth)||!Array.isArray(temp)||!Array.isArray(snow))continue;
+  let tested=false,bad=false;
+  for(let i=24;i<times.length;i++){
+   if(Date.parse(times[i])-Date.parse(times[i-24])!==86400000)continue;
+   const t=temp.slice(i-24,i+1),s=snow.slice(i-23,i+1);
+   if(t.length!==25||s.length!==24||!t.every(Number.isFinite)||!s.every(v=>Number.isFinite(v)&&v>=0)||!Number.isFinite(depth[i])||!Number.isFinite(depth[i-24]))continue;
+   tested=true;
+   if(Math.min(...t)>=4&&s.reduce((a,v)=>a+v,0)<=0.01&&depth[i]-depth[i-24]>=0.03){bad=true;break;}
+  }
+  if(tested){comparable++;if(bad)suspect++;}
+ }
+ return comparable>=10&&suspect>=Math.ceil(comparable/2);
+}
+
 async function probaCycle(id){
  try{
   const r=await fetch('https://api.open-meteo.com/data/'+id+'/static/meta.json?ts='+Date.now(),{cache:'no-store',signal:AbortSignal.timeout(8000)});
@@ -38,11 +61,11 @@ async function main(){
  const checkpoint=path.join(root,'proba/ensemble-checkpoint'+suffix+'.json');
  const delay=Number(process.env?.PROBA_BATCH_DELAY_MS??65000);
  const batchSize=24;
- let state={schema:6,today,models:{}};
+ let state={schema:7,today,models:{}};
  if(fs.existsSync(checkpoint)){
   try{
    const saved=JSON.parse(fs.readFileSync(checkpoint,'utf8'));
-   if(saved.schema===6&&saved.today===today&&saved.total===total&&saved.shard===shard&&saved.models&&
+   if(saved.schema===7&&saved.today===today&&saved.total===total&&saved.shard===shard&&saved.models&&
     JSON.stringify(saved.zone_points)===JSON.stringify(points))state=saved;
   }catch(error){console.log('Ignoring incompatible checkpoint:',error.message);}
  }
@@ -87,6 +110,8 @@ async function main(){
    if(data.length!==batch.length)throw Error('Unexpected point count for '+name);
    data.forEach((point,i)=>{
     const {zone,index}=batch[i],hourly=api.kfsProbaNormalizeHourly(point.hourly);
+    const snowDepthSuspect=suspectSnowDepth(hourly);
+    if(snowDepthSuspect)console.warn('Snow depth QC: excluded inconsistent series',name,zone,index, batch[i].lat,batch[i].lon);
     for(const [jour,period] of Object.entries(model.periods)){
      for(const [type,rule] of Object.entries(api.KFS_PROBA_RULES)){
       const fields=period.zones[zone][type]??={};
@@ -95,7 +120,7 @@ async function main(){
        const value=type==='orage'?api.kfsProbaStormMembers(hourly,period.start_day,threshold,period.end_day):
         api.kfsProbaMemberProbability(hourly,period.start_day,type,threshold,period.end_day);
        // Snow depth is valid at every model elevation for every period. Do not mask mountain points.
-        values[index]=value&&['neige','neige_chutes','vent','gel'].includes(type)?{...value,elevation:Number.isFinite(point.elevation)?point.elevation:null,...(type==='gel'&&threshold===0?{tmax:alertTmax(hourly,period.start_day,period.end_day)}:{})}:value;
+        values[index]=type==='neige'&&snowDepthSuspect?null:(value&&['neige','neige_chutes','vent','gel'].includes(type)?{...value,elevation:Number.isFinite(point.elevation)?point.elevation:null,...(type==='gel'&&threshold===0?{tmax:alertTmax(hourly,period.start_day,period.end_day)}:{})}:value);
        if(values[index]&&runUtc)values[index].run_utc=runUtc;
       }
      }
