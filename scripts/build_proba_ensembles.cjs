@@ -61,11 +61,11 @@ async function main(){
  const checkpoint=path.join(root,'proba/ensemble-checkpoint'+suffix+'.json');
  const delay=Number(process.env?.PROBA_BATCH_DELAY_MS??65000);
  const batchSize=24;
- let state={schema:8,today,models:{}};
+ let state={schema:9,today,models:{}};
  if(fs.existsSync(checkpoint)){
   try{
    const saved=JSON.parse(fs.readFileSync(checkpoint,'utf8'));
-   if(saved.schema===8&&saved.today===today&&saved.total===total&&saved.shard===shard&&saved.models&&
+   if(saved.schema===9&&saved.today===today&&saved.total===total&&saved.shard===shard&&saved.models&&
     JSON.stringify(saved.zone_points)===JSON.stringify(points))state=saved;
   }catch(error){console.log('Ignoring incompatible checkpoint:',error.message);}
  }
