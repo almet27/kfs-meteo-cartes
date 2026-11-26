@@ -24,6 +24,7 @@ const KFS_PROBA_RULES = {
  neige:{unit:"cm",defaults:1,allowed:[1,3,5,10],variable:"snow_depth",title:"Neige présente au sol"},
  neige_chutes:{unit:"mm équiv.-eau",defaults:0.1,allowed:[0.1,1,3,5],variable:"snowfall",title:"Précipitations sous forme de neige"},
  pluie:{unit:"mm / 24 h",defaults:1,allowed:[0.1,1,5,10,20,40],variable:"rain",title:"Cumul de pluie"},
+ verglas:{unit:"h",defaults:1,allowed:[1],variable:"weather_code",title:"Risque de précipitations verglaçantes"},
  gel:{unit:"°C",defaults:0,allowed:[0,-2,-5,-10],variable:"temperature_2m",title:"Température minimale à 2 m"},
  vent:{unit:"km/h",defaults:90,allowed:[54,60,80,90,100,120],variable:"wind_gusts_10m",title:"Rafales maximales"},
  orage:{unit:"niveau",defaults:2,allowed:[1,2,3,4,5],variable:"cape",title:"Potentiel orageux"}
@@ -35,7 +36,7 @@ async function kfsProbaRegister(env){
   {name:"phenomene",type:3,description:"Pluie, neige, gelées, rafales et orages",required:true,
    choices:[{name:"🌨️ Neige au sol",value:"neige"},
     {name:"❄️ Précipitations neigeuses (même sans tenue)",value:"neige_chutes"},
-    {name:"🌧️ Pluie",value:"pluie"},{name:"🥶 Gelées (Tmin 2 m)",value:"gel"},{name:"💨 Rafales",value:"vent"},{name:"🌩️ Orages",value:"orage"}]},
+    {name:"🌧️ Pluie",value:"pluie"},{name:"🧊 Verglas (précipitations verglaçantes)",value:"verglas"},{name:"🥶 Gelées (Tmin 2 m)",value:"gel"},{name:"💨 Rafales",value:"vent"},{name:"🌩️ Orages",value:"orage"}]},
   {name:"zone",type:3,description:"France entière ou région",required:false,
    choices:[{name:"France métropolitaine",value:"FR"},...KFS_PROBA_REGIONS.map(([code,name])=>({name,value:code}))]},
   {name:"jour",type:4,description:"Une journée ou cinq jours cumulés (J+1 à J+5)",required:false,
@@ -174,7 +175,8 @@ function kfsProbaMemberProbability(hourly,day,type,threshold,endDay=day){
   const arr=hourly[key];if(!Array.isArray(arr))continue;
   const nums=ids.map(i=>arr[i]).filter(v=>typeof v==="number"&&Number.isFinite(v));
   if(nums.length<ids.length)continue;
-  const amount=type==="pluie"?Math.max(0,nums.reduce((a,b)=>a+b,0)):
+  if(type==="verglas"&&!nums.every(v=>[0,1,2,3,45,48,51,53,55,56,57,61,63,65,66,67,71,73,75,77,80,81,82,85,86,95,96,99].includes(v)))continue;
+  const amount=type==="verglas"?nums.filter(v=>[56,57,66,67].includes(v)).length:type==="pluie"?Math.max(0,nums.reduce((a,b)=>a+b,0)):
    // Open-Meteo 'snowfall' est un cumul horaire de neige fraiche en cm.
    // 7 cm = 10 mm eau selon sa documentation ; ne pas confondre avec neige au sol.
    type==="neige_chutes"?Math.max(0,nums.reduce((a,b)=>a+b,0))*10/7:
@@ -396,6 +398,7 @@ const KFS_PROBA_SCALE={
   colors:[[26,52,91],[45,94,160],[76,148,209],[105,172,230],[135,138,221],[168,98,210],[224,67,157]]},
  neige_chutes:{unit:"mm équiv.-eau",ticks:[0,0.1,0.5,1,3,5,10],
   colors:[[26,48,76],[43,89,147],[61,139,192],[103,195,225],[143,177,228],[154,126,216],[211,83,190]]},
+ verglas:{unit:"h",ticks:[0,0.1,1,2,4,8,24],colors:[[26,48,76],[43,89,147],[61,139,192],[103,195,225],[143,177,228],[154,126,216],[211,83,190]]},
  gel:{unit:"°C",ticks:[-15,-10,-7,-5,-3,-1,0,3],
   colors:[[91,41,128],[82,69,164],[57,105,183],[57,142,204],[69,179,208],[98,198,196],[153,188,179],[200,188,148]]},
  vent:{unit:"km/h",ticks:[0,30,50,70,90,110,130],
@@ -850,6 +853,7 @@ async function kfsProbaComplete(interaction,phenom,zone,jour,seuil){
    "Paramètres invalides. Seuils : gel 0/-2/-5/-10 °C ; chutes de neige 0,1/1/3/5 mm équiv.-eau ; neige au sol 1/3/5/10 cm ; pluie 0,1/1/5/10/20/40 mm ; rafales 54/60/80/90/100/120 km/h."
   );
   if(await kfsProbaMultiComplete(interaction,phenom,zone,jour,seuil))return;
+   if(phenom==="verglas")throw Error("Codes de précipitations verglaçantes indisponibles ; aucun risque nul supposé.");
   const all=await kfsProbaFeatures(),features=zone==="FR"?all:all.filter(f=>String(f.properties.code)===zone);
   if(!features.length)throw Error("Région non reconnue.");
   const departmentsPromise=zone==="FR"?Promise.resolve([]):kfsProbaDepartments(zone).catch(e=>{
@@ -1260,11 +1264,12 @@ async function kfsProbaMultiComplete(interaction,type,zone,jour,threshold){
  });
  const label=type==="pluie"?"cumul de pluie ≥ "+threshold+" mm":
   type==="neige_chutes"?"cumul de neige fraîche ≥ "+threshold+" mm équiv.-eau":
+  type==="verglas"?"précipitations verglaçantes pendant au moins une heure":
   type==="gel"?"température minimale à 2 m ≤ "+threshold+" °C":
   type==="neige"?"neige présente au sol ≥ "+threshold+" cm":
   type==="vent"?"rafale maximale ≥ "+threshold+" km/h":
   "potentiel orageux au moins "+KFS_STORM_NAMES[threshold].toLowerCase();
- const quantity=type==="pluie"||type==="neige_chutes"?"cumul":type==="gel"?"minimum":
+ const quantity=type==="verglas"?"nombre d’heures de précipitations verglaçantes":type==="pluie"||type==="neige_chutes"?"cumul":type==="gel"?"minimum":
   type==="neige"?"épaisseur maximale":type==="vent"?"rafale maximale":"niveau maximal";
  const name=zone==="FR"?"France métropolitaine":KFS_PROBA_REGIONS.find(r=>r[0]===zone)?.[1]||zone;
  const consulted=resolved.results.map(r=>r.name+" : "+r.consulted).join(" ; ");
@@ -1285,6 +1290,7 @@ async function kfsProbaMultiComplete(interaction,type,zone,jour,threshold){
   (type==="orage"?"⚠️ Potentiel convectif expérimental fondé sur CAPE, pluie, rafales et humidité ; seuils communs aux deux ensembles, sans équivalence avec une vigilance.\n":"")+
   (type==="neige_chutes"?"❄️ Équivalent-eau approximatif converti depuis les cm Open-Meteo (7 cm ≈ 10 mm d'eau), sans exigence de tenue au sol.\n":"")+
   (type==="neige"?"❄️ Épaisseur maximale présente au sol ; les épaisseurs quotidiennes ne sont pas additionnées.\n":"")+
+  (type==="verglas"?"🧊 Codes WMO 56/57/66/67 : risque de précipitations verglaçantes, pas une prévision de l’état des routes.\n":"")+
   (type==="gel"?"❄️ Gel à 2 m, sans diagnostic de verglas ni des microclimats.\n":"")+
   "**Données récupérées :** "+consulted+". Ces horaires ne sont pas les heures des runs.\n"+
   "_Source : Open-Meteo, ECMWF / NOAA. Proportions non calibrées, à la maille des modèles ; ne remplacent pas une vigilance officielle._";
