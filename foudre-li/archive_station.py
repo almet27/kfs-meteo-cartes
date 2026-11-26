@@ -6,6 +6,9 @@ Les coordonnées sont des centres optiques, pas des impacts au sol.
 import argparse
 import json
 import os
+import time
+import signal
+import hashlib
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -13,6 +16,20 @@ import numpy as np
 import requests
 import eumdac
 from collect import COLLECTION, PRODUCT_TIME, download_one, decode_product, Parallax, LUT, METHOD
+
+class ProductDeadline(BaseException):
+    pass
+
+def bounded_product(product,name):
+    def expired(signum,frame):
+        raise ProductDeadline()
+    old=signal.signal(signal.SIGALRM,expired)
+    signal.setitimer(signal.ITIMER_REAL,35)
+    try:
+        return decode_product(download_one(product),name)
+    finally:
+        signal.setitimer(signal.ITIMER_REAL,0)
+        signal.signal(signal.SIGALRM,old)
 
 def main():
     p=argparse.ArgumentParser()
@@ -48,6 +65,33 @@ def main():
     tree=cKDTree(xyz([s[1] for s in stations],[s[2] for s in stations]))
     hits=np.zeros(len(stations),dtype=np.int64)
     intervals=[]; decoded=0; seen=set()
+    checkpoint=Path(f"data/eumetsat-li/progress/{a.date}.json")
+    station_signature=hashlib.sha256(json.dumps(stations,separators=(",",":")).encode()).hexdigest()
+    signature={"schema":1,"date":a.date,"parallax":METHOD,"radius_km":15,
+               "stations_sha256":station_signature,"start_utc":start.isoformat(),"end_utc":end.isoformat()}
+    if not a.pilot and checkpoint.exists():
+        try:
+            c=json.loads(checkpoint.read_text())
+            if any(c.get(k)!=v for k,v in signature.items()):raise ValueError("signature")
+            saved=c["products"]
+            allowed={str(p) for p in products}
+            if len(saved)>170 or len(set(saved))!=len(saved) or any(name not in allowed or not PRODUCT_TIME.search(name) for name in saved):raise ValueError("catalogue")
+            arr=np.asarray(c["hits"],dtype=np.int64)
+            if arr.shape!=hits.shape or np.any(arr<0):raise ValueError("hits")
+            intervals=[(max(start,datetime.strptime(PRODUCT_TIME.search(name).group(1),"%Y%m%d%H%M%S").replace(tzinfo=timezone.utc)),min(end,datetime.strptime(PRODUCT_TIME.search(name).group(2),"%Y%m%d%H%M%S").replace(tzinfo=timezone.utc))) for name in saved]
+            if any(y<=x for x,y in intervals):raise ValueError("intervalle")
+            hits=arr;seen=set(saved);decoded=len(seen)
+            print("REPRISE",a.date,decoded,"produits déjà validés",flush=True)
+        except (ValueError,KeyError,TypeError,OverflowError):
+            hits=np.zeros(len(stations),dtype=np.int64);seen=set();intervals=[];decoded=0
+    def save_checkpoint():
+        if a.pilot:return
+        checkpoint.parent.mkdir(parents=True,exist_ok=True)
+        tmp=checkpoint.with_suffix(".tmp")
+        tmp.write_text(json.dumps({**signature,"products":sorted(seen),"hits":hits.tolist()},separators=(",",":")))
+        tmp.replace(checkpoint)
+    deadline=time.monotonic()+540
+    failed=0
     # Étendre le filtrage du décodeur de production pour tenir compte
     # du rayon et du décalage de parallaxe aux frontières du domaine.
     import collect
@@ -58,7 +102,13 @@ def main():
         if not m: continue
         begin,finish=[datetime.strptime(s,"%Y%m%d%H%M%S").replace(tzinfo=timezone.utc) for s in m.groups()]
         if finish<=start or begin>=end or name in seen: continue
-        pts=decode_product(download_one(product),name)
+        if time.monotonic()>deadline:break
+        try:
+            pts=bounded_product(product,name)
+        except (ProductDeadline,Exception) as exc:
+            failed+=1
+            print("PRODUIT DIFFERE",begin.isoformat(),type(exc).__name__,flush=True)
+            continue
         seen.add(name); intervals.append((max(start,begin),min(end,finish))); decoded+=1
         lat=[];lon=[]
         for v in pts:
@@ -68,6 +118,7 @@ def main():
         if lat:
             for indexes in tree.query_ball_point(xyz(lat,lon),2*np.sin(15/(2*6371.0088))):
                 hits[indexes]+=1
+        save_checkpoint()
         print("Produit décodé",decoded,"points France élargie",len(lat),flush=True)
     cursor=start; coverage=0.; largest_gap=0.
     for x,y in sorted(intervals):
@@ -85,7 +136,8 @@ def main():
           "station_ids":[s[0] for s in stations]}
     out=Path("data/eumetsat-li/pilot.json" if a.pilot else f"data/eumetsat-li/daily/{a.date}.json")
     out.parent.mkdir(parents=True,exist_ok=True)
-    out.write_text(json.dumps(data,separators=(",",":"))+"\n")
+    tmp=out.with_suffix(".tmp");tmp.write_text(json.dumps(data,separators=(",",":"))+"\n");tmp.replace(out)
+    if complete and not a.pilot:checkpoint.unlink(missing_ok=True)
     print("Bilan",json.dumps({k:v for k,v in data.items() if k not in ("station_ids","stations_with_flashes")}),flush=True)
     if not complete: raise RuntimeError("Couverture insuffisante ; aucune publication")
 if __name__=="__main__":
