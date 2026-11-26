@@ -8,7 +8,7 @@ const source=fs.readFileSync(path.join(root,'cloudflare/kfs-proba-module.js'),'u
 const api=new Function(source+';return {KFS_PROBA_RULES,kfsProbaDay,kfsProbaMemberProbability,kfsProbaStormMembers,kfsProbaNormalizeHourly};')();
 const points=JSON.parse(fs.readFileSync(path.join(root,'proba/points-ecmwf.json'),'utf8')).zones;
 const variables=['rain','snow_depth','snowfall','temperature_2m','wind_gusts_10m',
- 'cape','precipitation','dew_point_2m'];
+ 'cape','precipitation','dew_point_2m','weather_code'];
 async function main(){
  const start=api.kfsProbaDay(1),end=api.kfsProbaDay(5);
  const entries=Object.entries(points).flatMap(([zone,locations])=>locations.map(([lat,lon],index)=>({zone,index,lat,lon})));
@@ -18,7 +18,7 @@ async function main(){
  if(fs.existsSync(checkpoint)){
   try{
    const saved=JSON.parse(fs.readFileSync(checkpoint,'utf8'));
-   if(saved.schema===1&&saved.start===start&&saved.end===end&&saved.model==='ncep_gefs025'&&
+   if(saved.schema===2&&saved.start===start&&saved.end===end&&saved.model==='ncep_gefs025'&&
     Number.isInteger(saved.next)&&saved.next>=0&&saved.next<=entries.length&&saved.zones&&
     Date.now()-Date.parse(saved.consulted)<20*3600000){
     zones=saved.zones;consulted=saved.consulted;next=saved.next;
@@ -66,11 +66,11 @@ async function main(){
      const values=fields[String(threshold)]??=new Array(points[zone].length).fill(null);
      values[index]=type==='orage'?api.kfsProbaStormMembers(hourly,start,threshold,end):
       api.kfsProbaMemberProbability(hourly,start,type,threshold,end);
-     if(!values[index] || values[index].members<5)throw Error('Incomplete member coverage: '+zone+'/'+type+'/'+threshold);
+     if(type!=='verglas'&&(!values[index] || values[index].members<5))throw Error('Incomplete member coverage: '+zone+'/'+type+'/'+threshold);
     }
    }
   });
-  fs.writeFileSync(checkpoint+'.tmp',JSON.stringify({schema:1,start,end,model:'ncep_gefs025',
+  fs.writeFileSync(checkpoint+'.tmp',JSON.stringify({schema:2,start,end,model:'ncep_gefs025',
    consulted,zones,next:Math.min(offset+24,entries.length)}));
   fs.renameSync(checkpoint+'.tmp',checkpoint);
   console.log('Five-day members:',Math.min(offset+24,entries.length)+'/'+entries.length,'points');
@@ -79,6 +79,7 @@ async function main(){
  if(start!==api.kfsProbaDay(1))throw Error('Paris date changed during generation; rerun');
  // A partial new forecast must never replace a valid published dataset.
  for(const [zone,types] of Object.entries(zones))for(const [type,thresholds] of Object.entries(types)){
+  if(type==='verglas')continue;
   for(const [threshold,values] of Object.entries(thresholds)){
    if(values.some(v=>!v||v.members<5||!Number.isFinite(v.amount)||!Number.isFinite(v.pct)))
     throw Error('Incomplete five-day forecast: '+zone+'/'+type+'/'+threshold);
