@@ -42,7 +42,7 @@ def build(name,code,pts):
     start=now.replace(minute=0,second=0,microsecond=0)
     # Global models need a buffer for the three-hour publication cadence.
     # ARÔME has a finite native run horizon; unavailable trailing hours stay null.
-    hours=52 if name!="arome" else 48
+    hours=150 if name!="arome" else 48
     times=[(start+timedelta(hours=i)).strftime("%Y-%m-%dT%H:%M") for i in range(hours)]
     rows=[]
     for k in range(0,len(pts),25):
