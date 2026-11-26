@@ -42,13 +42,18 @@ jobs:
               if v.sizes[t]!=expected: raise ValueError(f'{year}: {v.sizes[t]} / {expected}')
               dates=v[t].dt.strftime('%Y-%m-%d').values
               if len(set(dates))!=expected: raise ValueError('duplicate dates')
-              valid_all=[]; days_all=[]
+              valid_all=[]; days_all=[]; dates_all=[]; density_all=[]; valid_masks=[]
               for month in range(1,13):
                   m=v.isel({t:np.flatnonzero(v[t].dt.month.values==month)}).values
                   valid=np.isfinite(m)&(m>=0)
                   valid_all.append(valid.sum(axis=0).astype(int).ravel().tolist())
+                  # Bit d-1 = jour d du mois ; distinguer absence de mesure et zéro.
+                  bits=(np.uint64(1)<<np.arange(m.shape[0],dtype=np.uint64))[:,None,None]
+                  dates_all.append(((valid&(m>0)).astype(np.uint64)*bits).sum(axis=0).ravel().tolist())
+                  valid_masks.append((valid.astype(np.uint64)*bits).sum(axis=0).ravel().tolist())
+                  density_all.append(np.where(valid,m,0).sum(axis=0).astype(float).round(8).ravel().tolist())
                   days_all.append((valid&(m>0)).sum(axis=0).astype(int).ravel().tolist())
-              result={'version':1,'year':year,'lat':lats,'lon':lons,'valid':valid_all,'days':days_all,'resolution_deg':0.5,'source':'WWLLN WGLC 2026, Jed O. Kaplan, CC BY-SA 4.0, DOI 10.5281/zenodo.20277101','day':'UTC','method':'one day with positive lightning stroke density in the grid cell'}
+              result={'version':2,'year':year,'lat':lats,'lon':lons,'valid':valid_all,'days':days_all,'active_masks':dates_all,'valid_masks':valid_masks,'density_monthly':density_all,'resolution_deg':0.5,'source':'WWLLN WGLC 2026, Jed O. Kaplan, CC BY-SA 4.0, DOI 10.5281/zenodo.20277101','day':'UTC','method':'one day with positive lightning stroke density in the grid cell'}
               (out/f'{year}.json').write_text(json.dumps(result,separators=(',',':'),allow_nan=False)+'\n')
               print(year,len(lats),len(lons),expected,flush=True)
           PY
@@ -58,6 +63,6 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add data/wglc/daily-sectors
           git diff --cached --quiet && exit 0
-          git commit -m 'Publish WGLC daily lightning sector counts 2010-2025'
+          git commit -m 'Publish WGLC lightning dates and monthly density 2010-2025'
           git pull --rebase
           git push
