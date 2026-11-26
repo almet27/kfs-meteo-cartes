@@ -3,6 +3,7 @@ on:
   push:
     paths:
       - .github/workflows/eumetsat-li-backfill-2026.yml
+      - foudre-li/archive_station.py
       - foudre-li/parallax-lut.npz
   workflow_run:
     workflows: ['Préparer les tables de parallaxe EUMETSAT LI']
@@ -81,6 +82,7 @@ jobs:
                   d=json.loads((partial/(day.isoformat()+'.json')).read_text())
                   return d.get('complete') is False and d.get('pilot') is False and d.get('parallax')==METHOD and d.get('date')==day.isoformat() and .99<=d.get('coverage_fraction',0)<=1 and 0<=d.get('max_gap_seconds',9999)<=900
               except Exception: return False
+          progress=Path('data/eumetsat-li/progress')
           older=[d for d in missing if d!=end and not usable(d)]
           # Priorité juin, puis saison orageuse, puis reste de l'année.
           # Rotation par créneau absolu : une date défaillante ne bloque pas les autres.
@@ -100,6 +102,10 @@ jobs:
               retry=[date(2026,6,5),date(2026,6,6)]
               retry=[d for d in retry if not complete(d) and not usable(d)]
               chosen=(retry+[d for d in chosen if d not in retry])[:n]
+          # Resume June dates already started before selecting more new days.
+          resumable=sorted(d for d in older if d.month==6 and (progress/(d.isoformat()+'.json')).exists())
+          if n and resumable:
+              chosen=(resumable+[d for d in chosen if d not in resumable])[:n]
           targets=([end] if end in missing and not usable(end) else [])+chosen
           for day in targets:
               p=base/(day.isoformat()+'.json')
@@ -117,7 +123,13 @@ jobs:
                           if p.exists(): p.unlink()
                   print('JOUR NON COMPLET',day,flush=True)
               if not complete(day) and not usable(day): print('COUVERTURE INSUFFISANTE',day,flush=True)
-          print('Jours manquants restants',sum(not complete(d) for d in missing),flush=True)
+          remaining=sum(not complete(d) for d in missing)
+          validated=sum(complete(d) for d in targets)
+          print('Jours manquants restants',remaining,flush=True)
+          print('Jours validés sur les dates traitées',validated,'/',len(targets),flush=True)
+          if validated<len(targets): print('::warning::Collecte incomplète : les produits validés sont conservés pour reprise, aucune journée incomplète présentée comme complète.',flush=True)
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f:
+              f.write(f'### Archives foudre 2026\n\nJours validés parmi les dates traitées : {validated}/{len(targets)}.\n\nJours restant à valider : {remaining}.\n')
           PY
       - name: Publier les journées complètes et cartes partielles documentées
         if: steps.lut.outputs.ready == 'true'
@@ -128,6 +140,7 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add data/eumetsat-li/daily data/eumetsat-li/monthly data/eumetsat-li/yearly
           if test -d data/eumetsat-li/partial; then git add data/eumetsat-li/partial; fi
+          if test -d data/eumetsat-li/progress; then git add -A data/eumetsat-li/progress; fi
           git diff --cached --quiet && exit 0
           git commit -m 'Update validated EUMETSAT station lightning archives'
           for attempt in 1 2 3; do
