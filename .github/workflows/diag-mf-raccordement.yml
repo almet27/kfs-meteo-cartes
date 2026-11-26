@@ -1,0 +1,35 @@
+name: KFS - test raccordement MF
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/diag-mf-raccordement.yml
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - name: Verify public climate responses
+        run: |
+          python - <<'PY'
+          import json,urllib.request,urllib.parse,urllib.error,concurrent.futures
+          def get(url):
+              with urllib.request.urlopen(url,timeout=65) as r:return json.load(r)
+          def test(task):
+              name,month,rub=task
+              try:
+                  c=get("https://geo.api.gouv.fr/communes?"+urllib.parse.urlencode(dict(nom=name,fields="nom,code",limit=10)))
+                  city=next(x for x in c if x["nom"].casefold()==name.casefold())
+                  q=urllib.parse.urlencode(dict(code=city["code"],annee=2026,mois=month,rubrique=rub))
+                  d=get("https://kfs-meteo.fr/api/climato-city?"+q)
+                  rows=[]
+                  for e in d.get("embeds",[]):
+                      if "Infoclimat" in e.get("title",""):continue
+                      rows.append(dict(title=e.get("title"),description=e.get("description","")[:240],fields=[(f.get("name"),str(f.get("value"))[:110]) for f in e.get("fields",[])[:4]],series_rows=len((e.get("series") or {}).get("rows",[]))))
+                  print("MF_TEST "+json.dumps(dict(city=name,month=month,rub=rub,content=d.get("content"),embeds=rows[:2]),ensure_ascii=False),flush=True)
+              except Exception as e:print("MF_TEST "+json.dumps(dict(city=name,month=month,rub=rub,error=str(e))),flush=True)
+          tasks=[("Rouen","en_cours","bilan"),("Bourth","en_cours","bilan"),("L'Aigle","en_cours","diagrammes"),("Bernay","1","bilan"),("Rouen","annee","mensuel")]
+          with concurrent.futures.ThreadPoolExecutor(max_workers=2) as ex:list(ex.map(test,tasks))
+          PY
