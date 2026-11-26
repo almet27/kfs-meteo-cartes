@@ -1,0 +1,54 @@
+name: KFS - brouillard horaire ICON-EU
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - scripts/build_icon_fog.py
+      - .github/workflows/icon-fog.yml
+  schedule:
+    - cron: '42 */3 * * *'
+permissions:
+  contents: write
+concurrency:
+  group: kfs-icon-fog
+  cancel-in-progress: false
+jobs:
+  fog:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install numpy scipy eccodes
+      - uses: actions/cache/restore@v4
+        with:
+          path: .kfs-weather-cache
+          key: kfs-icon-fog-${{ github.run_id }}
+          restore-keys: kfs-hourly-web-
+      - run: python -m py_compile scripts/build_icon_fog.py && python scripts/build_icon_fog.py
+      - uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: .kfs-weather-cache
+          key: kfs-icon-fog-${{ github.run_id }}
+      - name: Publish ICON only
+        run: |
+          FILE=forecast-maps/france/hourly-web/icon-fog.json
+          cp "$FILE" /tmp/icon-fog.json
+          git config user.name 'KFS METEO Bot'
+          git config user.email 'actions@users.noreply.github.com'
+          for i in 1 2 3 4; do
+            git fetch origin main
+            git reset --hard origin/main
+            cp /tmp/icon-fog.json "$FILE"
+            git add "$FILE"
+            if git diff --cached --quiet; then exit 0; fi
+            git commit -m 'KFS: ICON-EU fog hourly data'
+            if git push origin HEAD:main; then exit 0; fi
+            sleep 4
+          done
+          exit 1
