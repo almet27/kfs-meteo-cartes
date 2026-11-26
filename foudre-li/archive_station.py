@@ -39,7 +39,8 @@ def main():
             stations.append((sid,lat,lon))
     if len(stations)<100: raise RuntimeError("Catalogue station incomplet")
     # Exiger la même correction de parallaxe que la carte live.
-    table=Parallax(LUT)
+    table=Parallax(LUT) if LUT.is_file() else None
+    if table is None and not a.pilot: raise RuntimeError("LUT de parallaxe requise avant la publication quotidienne")
     def xyz(lat,lon):
         lat,lon=np.radians(lat),np.radians(lon)
         return np.stack([np.cos(lat)*np.cos(lon),np.cos(lat)*np.sin(lon),np.sin(lat)],axis=-1)
@@ -62,7 +63,7 @@ def main():
         lat=[];lon=[]
         for v in pts:
             if start.timestamp()<=v["ts"]<end.timestamp():
-                y,x=table.correct(v["lat"],v["lon"],v["ts"])
+                y,x=table.correct(v["lat"],v["lon"],v["ts"]) if table else (v["lat"],v["lon"])
                 lat.append(y);lon.append(x)
         if lat:
             for indexes in tree.query_ball_point(xyz(lat,lon),2*np.sin(15/(2*6371.0088))):
@@ -78,7 +79,7 @@ def main():
     complete=coverage/seconds>=.995 and largest_gap<=30
     data={"schema":1,"source":"EUMETSAT MTG LI LFL EO:EUM:DAT:0691","date":a.date,
           "pilot":a.pilot,"start_utc":start.isoformat(),"end_utc":end.isoformat(),
-          "radius_km":15,"parallax":METHOD,"products":decoded,"coverage_fraction":round(coverage/seconds,6),
+          "radius_km":15,"parallax":METHOD if table else "uncorrected_pilot_only","products":decoded,"coverage_fraction":round(coverage/seconds,6),
           "max_gap_seconds":largest_gap,"complete":complete,"station_count":len(stations),
           "stations_with_flashes":{s[0]:int(h) for s,h in zip(stations,hits) if h>0},
           "station_ids":[s[0] for s in stations]}
