@@ -50,7 +50,8 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add data/eumetsat-li/daily/
+          python foudre-li/aggregate_station_days.py
+          git add data/eumetsat-li/daily/ data/eumetsat-li/monthly/ data/eumetsat-li/yearly/
           git diff --cached --quiet && exit 0
           git commit -m 'Publish validated EUMETSAT LFL station day'
           for attempt in 1 2 3; do
