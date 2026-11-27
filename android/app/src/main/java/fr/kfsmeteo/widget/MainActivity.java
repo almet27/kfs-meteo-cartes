@@ -12,7 +12,7 @@ import org.json.*;
 public class MainActivity extends Activity {
  EditText query; TextView status; Spinner choices; Button save; final ArrayList<JSONObject> cities=new ArrayList<>(); int serial=0;
  @Override public void onCreate(Bundle b){super.onCreate(b);
-  LinearLayout l=new LinearLayout(this);l.setOrientation(1);int p=(int)(20*getResources().getDisplayMetrics().density);l.setPadding(p,p*2,p,p);l.setBackgroundColor(0xff10243a);
+  LinearLayout l=new LinearLayout(this);l.setOrientation(LinearLayout.VERTICAL);int p=(int)(20*getResources().getDisplayMetrics().density);l.setPadding(p,p*2,p,p);l.setBackgroundColor(0xff10243a);
   ScrollView scroll=new ScrollView(this);scroll.addView(l);setContentView(scroll);
   TextView title=new TextView(this);title.setText("KFS MÉTÉO");title.setTextSize(28);l.addView(title);
   TextView intro=new TextView(this);intro.setText("Choisissez votre commune pour les widgets de votre écran d’accueil. Les valeurs sont des prévisions, et non des mesures de station.");l.addView(intro);
