@@ -38,15 +38,31 @@ jobs:
               try:
                   a=json.loads((p/(month+suffix+".json")).read_text())
                   b=json.loads((p/(month+suffix+"-ai.json")).read_text())
-                  return a["generated_utc"]==b["baseline_generated_utc"]
+                  if a["generated_utc"]!=b["baseline_generated_utc"]: return False
+                  fields="regimes" if suffix else "metrics"
+                  limit=9 if suffix else 10
+                  for key,baseline in a[fields].items():
+                      extra=b[fields].get(key,{})
+                      values=extra.get("index_mae_hpa" if suffix else "series",{})
+                      for model in ("pangu","graphcast","fourcastnet"):
+                          counts=extra.get("n_by_model",{}).get(model,[])
+                          series=values.get(model,[])
+                          for i in range(limit):
+                              n=baseline["n"][i]
+                              if n<=0 or len(counts)<=i or len(series)<=i or counts[i]!=n or series[i] is None: return False
+                  return True
               except (OSError,ValueError,KeyError): return False
           months=[]
           for f in sorted(p.glob("20??-??.json"),reverse=True):
               m=f.stem
               if m<"2025-01" or (requested and m!=requested): continue
               if requested or not all(current(m,s) for s in ("","-regimes")): months.append(m)
-          # Weekly retries bounded; initial push covers the whole backlog.
-          if os.environ["EVENT"]=="schedule": months=months[:4]
+          # Weekly retries bounded; a push covers the whole incomplete backlog.
+          if os.environ["EVENT"]=="schedule" and months:
+              from datetime import datetime,timezone
+              # Rotate through all 2025–2026 gaps, including partially published months.
+              start=(datetime.now(timezone.utc).date().toordinal()//7*4)%len(months)
+              months=(months[start:]+months[:start])[:4]
           with open(os.environ["GITHUB_OUTPUT"],"a") as f: print("months="+json.dumps(months),file=f)
           print("Planned",months)
           PY
