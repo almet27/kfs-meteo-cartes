@@ -26,10 +26,14 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - uses: android-actions/setup-android@v3
       - name: Build and verify beta APK
         run: |
-          sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+          export ANDROID_HOME="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          export ANDROID_SDK_ROOT="$ANDROID_HOME"
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          test -x "$SDKMANAGER"
+          "$SDKMANAGER" 'platforms;android-35' 'build-tools;35.0.0'
+          echo "sdk.dir=$ANDROID_HOME" > android/local.properties
           gradle -p android :app:assembleDebug :app:lintDebug --no-daemon
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose android/app/build/outputs/apk/debug/app-debug.apk
           cp android/app/build/outputs/apk/debug/app-debug.apk KFS-Meteo-Android-beta.apk
