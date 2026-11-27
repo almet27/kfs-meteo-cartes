@@ -1,0 +1,1071 @@
+{
+  "schema": 1,
+  "period": "2026-01",
+  "baseline_generated_utc": "2026-11-22T16:32:49.549563+00:00",
+  "models": {
+    "pangu": "PANG_v100_IFS",
+    "graphcast": "GRAP_v100_IFS",
+    "fourcastnet": "FOUR_v200_IFS"
+  },
+  "run_dates": [
+    "2026-01-01",
+    "2026-01-05",
+    "2026-01-09",
+    "2026-01-13",
+    "2026-01-17",
+    "2026-01-21",
+    "2026-01-25",
+    "2026-01-29"
+  ],
+  "method": "Same KFS dates, points, UTC hours, ERA5 and full reproduced confusion matrices / gradients. NOAA AI IFS initialization. Full 6-hourly day coverage through J+9; J+10 only if baseline has no later hours.",
+  "regimes": {
+    "blocage_atlantique": {
+      "n_by_model": {
+        "pangu": [
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "graphcast": [
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "fourcastnet": [
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "scores_pct": {
+        "pangu": [
+          78.1,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          35.2,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "graphcast": [
+          90.0,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          60.0,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "fourcastnet": [
+          88.1,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          50.0,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      "index_mae_hpa": {
+        "pangu": [
+          1.124,
+          1.987,
+          2.932,
+          4.559,
+          7.448,
+          8.132,
+          9.218,
+          14.777,
+          18.501,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "graphcast": [
+          1.017,
+          1.688,
+          2.345,
+          3.322,
+          5.371,
+          5.369,
+          7.472,
+          8.838,
+          13.351,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "fourcastnet": [
+          1.461,
+          2.327,
+          1.825,
+          5.373,
+          7.935,
+          5.664,
+          7.662,
+          13.621,
+          21.7,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      "confusion": {
+        "pangu": [
+          {
+            "tp": 3,
+            "tn": 26,
+            "fp": 1,
+            "fn": 2
+          },
+          {
+            "tp": 4,
+            "tn": 28,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 1,
+            "tn": 29,
+            "fp": 0,
+            "fn": 2
+          },
+          {
+            "tp": 0,
+            "tn": 31,
+            "fp": 0,
+            "fn": 1
+          },
+          {
+            "tp": 1,
+            "tn": 28,
+            "fp": 3,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 28,
+            "fp": 4,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 28,
+            "fp": 4,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 24,
+            "fp": 5,
+            "fn": 3
+          },
+          {
+            "tp": 0,
+            "tn": 19,
+            "fp": 8,
+            "fn": 5
+          },
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "graphcast": [
+          {
+            "tp": 4,
+            "tn": 27,
+            "fp": 0,
+            "fn": 1
+          },
+          {
+            "tp": 4,
+            "tn": 28,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 2,
+            "tn": 29,
+            "fp": 0,
+            "fn": 1
+          },
+          {
+            "tp": 0,
+            "tn": 31,
+            "fp": 0,
+            "fn": 1
+          },
+          {
+            "tp": 0,
+            "tn": 31,
+            "fp": 0,
+            "fn": 1
+          },
+          {
+            "tp": 0,
+            "tn": 32,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 32,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 29,
+            "fp": 0,
+            "fn": 3
+          },
+          {
+            "tp": 1,
+            "tn": 27,
+            "fp": 0,
+            "fn": 4
+          },
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "fourcastnet": [
+          {
+            "tp": 4,
+            "tn": 26,
+            "fp": 1,
+            "fn": 1
+          },
+          {
+            "tp": 4,
+            "tn": 28,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 2,
+            "tn": 29,
+            "fp": 0,
+            "fn": 1
+          },
+          {
+            "tp": 0,
+            "tn": 31,
+            "fp": 0,
+            "fn": 1
+          },
+          {
+            "tp": 1,
+            "tn": 29,
+            "fp": 2,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 32,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 32,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 29,
+            "fp": 0,
+            "fn": 3
+          },
+          {
+            "tp": 0,
+            "tn": 27,
+            "fp": 0,
+            "fn": 5
+          },
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      }
+    },
+    "anticyclone_scandinave": {
+      "n_by_model": {
+        "pangu": [
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "graphcast": [
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "fourcastnet": [
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "scores_pct": {
+        "pangu": [
+          null,
+          null,
+          null,
+          80.0,
+          93.8,
+          74.6,
+          null,
+          84.4,
+          80.0,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "graphcast": [
+          null,
+          null,
+          null,
+          90.0,
+          93.8,
+          57.1,
+          null,
+          56.3,
+          55.5,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "fourcastnet": [
+          null,
+          null,
+          null,
+          64.4,
+          81.2,
+          50.0,
+          null,
+          90.0,
+          60.0,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      "index_mae_hpa": {
+        "pangu": [
+          1.137,
+          1.707,
+          4.803,
+          4.848,
+          6.856,
+          9.152,
+          8.366,
+          10.365,
+          13.267,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "graphcast": [
+          0.907,
+          1.179,
+          3.586,
+          3.547,
+          5.442,
+          5.078,
+          6.322,
+          8.187,
+          12.867,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "fourcastnet": [
+          1.302,
+          2.094,
+          5.677,
+          6.453,
+          6.765,
+          9.967,
+          8.171,
+          11.243,
+          16.386,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      "confusion": {
+        "pangu": [
+          {
+            "tp": 4,
+            "tn": 28,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 4,
+            "tn": 28,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 1,
+            "tn": 30,
+            "fp": 1,
+            "fn": 0
+          },
+          {
+            "tp": 3,
+            "tn": 27,
+            "fp": 0,
+            "fn": 2
+          },
+          {
+            "tp": 7,
+            "tn": 24,
+            "fp": 0,
+            "fn": 1
+          },
+          {
+            "tp": 4,
+            "tn": 23,
+            "fp": 2,
+            "fn": 3
+          },
+          {
+            "tp": 0,
+            "tn": 23,
+            "fp": 8,
+            "fn": 1
+          },
+          {
+            "tp": 4,
+            "tn": 24,
+            "fp": 3,
+            "fn": 1
+          },
+          {
+            "tp": 6,
+            "tn": 22,
+            "fp": 0,
+            "fn": 4
+          },
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "graphcast": [
+          {
+            "tp": 4,
+            "tn": 28,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 4,
+            "tn": 28,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 1,
+            "tn": 31,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 4,
+            "tn": 27,
+            "fp": 0,
+            "fn": 1
+          },
+          {
+            "tp": 7,
+            "tn": 24,
+            "fp": 0,
+            "fn": 1
+          },
+          {
+            "tp": 1,
+            "tn": 25,
+            "fp": 0,
+            "fn": 6
+          },
+          {
+            "tp": 0,
+            "tn": 27,
+            "fp": 4,
+            "fn": 1
+          },
+          {
+            "tp": 1,
+            "tn": 25,
+            "fp": 2,
+            "fn": 4
+          },
+          {
+            "tp": 2,
+            "tn": 20,
+            "fp": 2,
+            "fn": 8
+          },
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "fourcastnet": [
+          {
+            "tp": 4,
+            "tn": 28,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 4,
+            "tn": 28,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 28,
+            "fp": 3,
+            "fn": 1
+          },
+          {
+            "tp": 2,
+            "tn": 24,
+            "fp": 3,
+            "fn": 3
+          },
+          {
+            "tp": 5,
+            "tn": 24,
+            "fp": 0,
+            "fn": 3
+          },
+          {
+            "tp": 0,
+            "tn": 25,
+            "fp": 0,
+            "fn": 7
+          },
+          {
+            "tp": 0,
+            "tn": 27,
+            "fp": 4,
+            "fn": 1
+          },
+          {
+            "tp": 4,
+            "tn": 27,
+            "fp": 0,
+            "fn": 1
+          },
+          {
+            "tp": 2,
+            "tn": 22,
+            "fp": 0,
+            "fn": 8
+          },
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      }
+    },
+    "flux_zonal": {
+      "n_by_model": {
+        "pangu": [
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "graphcast": [
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "fourcastnet": [
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "scores_pct": {
+        "pangu": [
+          98.2,
+          80.8,
+          66.7,
+          null,
+          78.6,
+          76.9,
+          80.1,
+          null,
+          75.0,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "graphcast": [
+          96.4,
+          96.2,
+          81.4,
+          null,
+          89.3,
+          71.7,
+          75.6,
+          null,
+          48.2,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "fourcastnet": [
+          98.2,
+          84.6,
+          66.7,
+          null,
+          83.9,
+          85.8,
+          76.3,
+          null,
+          42.9,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      "index_mae_hpa": {
+        "pangu": [
+          1.042,
+          2.059,
+          3.721,
+          4.252,
+          4.607,
+          7.824,
+          11.089,
+          11.088,
+          15.44,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "graphcast": [
+          1.082,
+          1.75,
+          2.755,
+          3.661,
+          4.484,
+          7.901,
+          7.977,
+          8.789,
+          10.764,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "fourcastnet": [
+          1.454,
+          2.439,
+          3.851,
+          4.376,
+          5.142,
+          6.941,
+          7.573,
+          12.516,
+          15.356,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      "confusion": {
+        "pangu": [
+          {
+            "tp": 4,
+            "tn": 27,
+            "fp": 1,
+            "fn": 0
+          },
+          {
+            "tp": 8,
+            "tn": 19,
+            "fp": 0,
+            "fn": 5
+          },
+          {
+            "tp": 2,
+            "tn": 26,
+            "fp": 0,
+            "fn": 4
+          },
+          {
+            "tp": 0,
+            "tn": 30,
+            "fp": 1,
+            "fn": 1
+          },
+          {
+            "tp": 3,
+            "tn": 23,
+            "fp": 5,
+            "fn": 1
+          },
+          {
+            "tp": 7,
+            "tn": 19,
+            "fp": 0,
+            "fn": 6
+          },
+          {
+            "tp": 5,
+            "tn": 20,
+            "fp": 6,
+            "fn": 1
+          },
+          {
+            "tp": 1,
+            "tn": 23,
+            "fp": 8,
+            "fn": 0
+          },
+          {
+            "tp": 4,
+            "tn": 14,
+            "fp": 14,
+            "fn": 0
+          },
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "graphcast": [
+          {
+            "tp": 4,
+            "tn": 26,
+            "fp": 2,
+            "fn": 0
+          },
+          {
+            "tp": 12,
+            "tn": 19,
+            "fp": 0,
+            "fn": 1
+          },
+          {
+            "tp": 4,
+            "tn": 25,
+            "fp": 1,
+            "fn": 2
+          },
+          {
+            "tp": 0,
+            "tn": 31,
+            "fp": 0,
+            "fn": 1
+          },
+          {
+            "tp": 4,
+            "tn": 22,
+            "fp": 6,
+            "fn": 0
+          },
+          {
+            "tp": 7,
+            "tn": 17,
+            "fp": 2,
+            "fn": 6
+          },
+          {
+            "tp": 4,
+            "tn": 22,
+            "fp": 4,
+            "fn": 2
+          },
+          {
+            "tp": 1,
+            "tn": 30,
+            "fp": 1,
+            "fn": 0
+          },
+          {
+            "tp": 1,
+            "tn": 20,
+            "fp": 8,
+            "fn": 3
+          },
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "fourcastnet": [
+          {
+            "tp": 4,
+            "tn": 27,
+            "fp": 1,
+            "fn": 0
+          },
+          {
+            "tp": 9,
+            "tn": 19,
+            "fp": 0,
+            "fn": 4
+          },
+          {
+            "tp": 2,
+            "tn": 26,
+            "fp": 0,
+            "fn": 4
+          },
+          {
+            "tp": 0,
+            "tn": 31,
+            "fp": 0,
+            "fn": 1
+          },
+          {
+            "tp": 4,
+            "tn": 19,
+            "fp": 9,
+            "fn": 0
+          },
+          {
+            "tp": 10,
+            "tn": 18,
+            "fp": 1,
+            "fn": 3
+          },
+          {
+            "tp": 5,
+            "tn": 18,
+            "fp": 8,
+            "fn": 1
+          },
+          {
+            "tp": 1,
+            "tn": 22,
+            "fp": 9,
+            "fn": 0
+          },
+          {
+            "tp": 1,
+            "tn": 17,
+            "fp": 11,
+            "fn": 3
+          },
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      }
+    }
+  },
+  "errors": []
+}
