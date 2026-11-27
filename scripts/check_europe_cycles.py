@@ -12,7 +12,7 @@ import os
 from check_france_cycles import noaa_latest, ecmwf_latest
 
 ROOT=Path("forecast-maps/europe")
-SPECS={"ifs":("ecmwf",240),"aifs-single":("ecmwf",360),
+SPECS={"ifs":("ecmwf",360),"aifs-single":("ecmwf",360),
        "gfs":("noaa",360),"aigfs":("noaa",360)}
 def parse(value):
     try:
