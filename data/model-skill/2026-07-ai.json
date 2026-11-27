@@ -1,0 +1,438 @@
+{
+  "schema": 1,
+  "period": "2026-07",
+  "baseline_generated_utc": "2026-11-22T16:48:59.181717+00:00",
+  "run_dates": [
+    "2026-07-01",
+    "2026-07-05",
+    "2026-07-09",
+    "2026-07-13",
+    "2026-07-17",
+    "2026-07-21",
+    "2026-07-25",
+    "2026-07-29"
+  ],
+  "models": {
+    "pangu": "PANG_v100_IFS",
+    "graphcast": "GRAP_v100_IFS",
+    "fourcastnet": "FOUR_v200_IFS"
+  },
+  "source": "NOAA/CIRA AIWP IFS initialization; doi:10.1175/BAMS-D-24-0057.1",
+  "method": "Identical KFS dates, sites, valid times, ERA5 and fully reproduced baseline MAE/counts; NOAA nearest native grid; J+10 max",
+  "metrics": {
+    "temperature_2m": {
+      "unit": "°C",
+      "series": {
+        "pangu": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "graphcast": [
+          1.247,
+          1.448,
+          1.517,
+          1.734,
+          1.679,
+          1.819,
+          2.189,
+          2.821,
+          2.756,
+          2.751,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "fourcastnet": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      "n_by_model": {
+        "pangu": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "graphcast": [
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "fourcastnet": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    "pressure_msl": {
+      "unit": "hPa",
+      "series": {
+        "pangu": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "graphcast": [
+          0.544,
+          0.629,
+          0.895,
+          1.232,
+          1.219,
+          1.758,
+          1.947,
+          3.175,
+          2.076,
+          3.07,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "fourcastnet": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      "n_by_model": {
+        "pangu": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "graphcast": [
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "fourcastnet": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    }
+  },
+  "errors": [
+    "2026-07-01 pangu: https://noaa-oar-mlwp-data.s3.amazonaws.com/PANG_v100_IFS/2026/0701/PANG_v100_IFS_2026070100_f000_f240_06.nc",
+    "2026-07-01 fourcastnet: https://noaa-oar-mlwp-data.s3.amazonaws.com/FOUR_v200_IFS/2026/0701/FOUR_v200_IFS_2026070100_f000_f240_06.nc",
+    "2026-07-05 pangu: https://noaa-oar-mlwp-data.s3.amazonaws.com/PANG_v100_IFS/2026/0705/PANG_v100_IFS_2026070500_f000_f240_06.nc",
+    "2026-07-05 fourcastnet: https://noaa-oar-mlwp-data.s3.amazonaws.com/FOUR_v200_IFS/2026/0705/FOUR_v200_IFS_2026070500_f000_f240_06.nc",
+    "2026-07-09 pangu: https://noaa-oar-mlwp-data.s3.amazonaws.com/PANG_v100_IFS/2026/0709/PANG_v100_IFS_2026070900_f000_f240_06.nc",
+    "2026-07-09 fourcastnet: https://noaa-oar-mlwp-data.s3.amazonaws.com/FOUR_v200_IFS/2026/0709/FOUR_v200_IFS_2026070900_f000_f240_06.nc"
+  ],
+  "diagnostics": {
+    "raw_n_by_model": {
+      "temperature_2m": {
+        "pangu": [
+          60,
+          60,
+          60,
+          60,
+          60,
+          60,
+          60,
+          60,
+          60,
+          60,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "graphcast": [
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "fourcastnet": [
+          60,
+          60,
+          60,
+          60,
+          60,
+          60,
+          60,
+          60,
+          60,
+          60,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "pressure_msl": {
+        "pangu": [
+          60,
+          60,
+          60,
+          60,
+          60,
+          60,
+          60,
+          60,
+          60,
+          60,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "graphcast": [
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "fourcastnet": [
+          60,
+          60,
+          60,
+          60,
+          60,
+          60,
+          60,
+          60,
+          60,
+          60,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    "baseline_recomputed_n": {
+      "temperature_2m": [
+        96,
+        96,
+        96,
+        96,
+        96,
+        96,
+        96,
+        96,
+        96,
+        96,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "pressure_msl": [
+        96,
+        96,
+        96,
+        96,
+        96,
+        96,
+        96,
+        96,
+        96,
+        96,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "sample_validation": {
+      "temperature_2m": {
+        "pangu": {
+          "missing": 0,
+          "out_of_range": 0,
+          "valid": 600,
+          "examples": []
+        },
+        "graphcast": {
+          "missing": 0,
+          "out_of_range": 0,
+          "valid": 960,
+          "examples": []
+        },
+        "fourcastnet": {
+          "missing": 0,
+          "out_of_range": 0,
+          "valid": 600,
+          "examples": []
+        }
+      },
+      "pressure_msl": {
+        "pangu": {
+          "missing": 0,
+          "out_of_range": 0,
+          "valid": 600,
+          "examples": []
+        },
+        "graphcast": {
+          "missing": 0,
+          "out_of_range": 0,
+          "valid": 960,
+          "examples": []
+        },
+        "fourcastnet": {
+          "missing": 0,
+          "out_of_range": 0,
+          "valid": 600,
+          "examples": []
+        }
+      }
+    }
+  }
+}

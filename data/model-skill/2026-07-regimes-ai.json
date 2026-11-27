@@ -1,0 +1,808 @@
+{
+  "schema": 1,
+  "period": "2026-07",
+  "baseline_generated_utc": "2026-11-22T16:54:54.832738+00:00",
+  "models": {
+    "pangu": "PANG_v100_IFS",
+    "graphcast": "GRAP_v100_IFS",
+    "fourcastnet": "FOUR_v200_IFS"
+  },
+  "run_dates": [
+    "2026-07-01",
+    "2026-07-05",
+    "2026-07-09",
+    "2026-07-13",
+    "2026-07-17",
+    "2026-07-21",
+    "2026-07-25",
+    "2026-07-29"
+  ],
+  "method": "Same KFS dates, points, UTC hours, ERA5 and full reproduced confusion matrices / gradients. NOAA AI IFS initialization. Full 6-hourly day coverage through J+9; J+10 only if baseline has no later hours.",
+  "regimes": {
+    "blocage_atlantique": {
+      "n_by_model": {
+        "pangu": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "graphcast": [
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "fourcastnet": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "scores_pct": {
+        "pangu": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "graphcast": [
+          null,
+          null,
+          87.8,
+          89.7,
+          null,
+          null,
+          83.3,
+          79.5,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "fourcastnet": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      "index_mae_hpa": {
+        "pangu": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "graphcast": [
+          0.598,
+          1.382,
+          1.552,
+          1.396,
+          3.524,
+          5.909,
+          5.653,
+          5.105,
+          3.233,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "fourcastnet": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      "confusion": {
+        "pangu": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "graphcast": [
+          {
+            "tp": 0,
+            "tn": 32,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 1,
+            "tn": 31,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 5,
+            "tn": 24,
+            "fp": 2,
+            "fn": 1
+          },
+          {
+            "tp": 5,
+            "tn": 25,
+            "fp": 1,
+            "fn": 1
+          },
+          {
+            "tp": 0,
+            "tn": 32,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 29,
+            "fp": 2,
+            "fn": 1
+          },
+          {
+            "tp": 4,
+            "tn": 26,
+            "fp": 0,
+            "fn": 2
+          },
+          {
+            "tp": 4,
+            "tn": 24,
+            "fp": 2,
+            "fn": 2
+          },
+          {
+            "tp": 0,
+            "tn": 27,
+            "fp": 5,
+            "fn": 0
+          },
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "fourcastnet": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      }
+    },
+    "anticyclone_scandinave": {
+      "n_by_model": {
+        "pangu": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "graphcast": [
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "fourcastnet": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "scores_pct": {
+        "pangu": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "graphcast": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "fourcastnet": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      "index_mae_hpa": {
+        "pangu": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "graphcast": [
+          0.633,
+          0.884,
+          1.135,
+          1.628,
+          2.938,
+          3.784,
+          5.613,
+          9.36,
+          8.355,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "fourcastnet": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      "confusion": {
+        "pangu": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "graphcast": [
+          {
+            "tp": 0,
+            "tn": 32,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 32,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 32,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 32,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 32,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 32,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 32,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 32,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 31,
+            "fp": 1,
+            "fn": 0
+          },
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "fourcastnet": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      }
+    },
+    "flux_zonal": {
+      "n_by_model": {
+        "pangu": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "graphcast": [
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          32,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "fourcastnet": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "scores_pct": {
+        "pangu": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "graphcast": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "fourcastnet": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      "index_mae_hpa": {
+        "pangu": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "graphcast": [
+          0.627,
+          0.93,
+          1.619,
+          1.311,
+          2.791,
+          4.765,
+          5.041,
+          4.824,
+          4.77,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "fourcastnet": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      "confusion": {
+        "pangu": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "graphcast": [
+          {
+            "tp": 4,
+            "tn": 28,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 3,
+            "tn": 28,
+            "fp": 1,
+            "fn": 0
+          },
+          {
+            "tp": 1,
+            "tn": 29,
+            "fp": 0,
+            "fn": 2
+          },
+          {
+            "tp": 0,
+            "tn": 31,
+            "fp": 1,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 32,
+            "fp": 0,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 28,
+            "fp": 2,
+            "fn": 2
+          },
+          {
+            "tp": 0,
+            "tn": 28,
+            "fp": 1,
+            "fn": 3
+          },
+          {
+            "tp": 0,
+            "tn": 30,
+            "fp": 2,
+            "fn": 0
+          },
+          {
+            "tp": 0,
+            "tn": 30,
+            "fp": 0,
+            "fn": 2
+          },
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "fourcastnet": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      }
+    }
+  },
+  "errors": [
+    "2026-07-01 pangu: https://noaa-oar-mlwp-data.s3.amazonaws.com/PANG_v100_IFS/2026/0701/PANG_v100_IFS_2026070100_f000_f240_06.nc",
+    "2026-07-01 fourcastnet: https://noaa-oar-mlwp-data.s3.amazonaws.com/FOUR_v200_IFS/2026/0701/FOUR_v200_IFS_2026070100_f000_f240_06.nc",
+    "2026-07-05 pangu: https://noaa-oar-mlwp-data.s3.amazonaws.com/PANG_v100_IFS/2026/0705/PANG_v100_IFS_2026070500_f000_f240_06.nc",
+    "2026-07-05 fourcastnet: https://noaa-oar-mlwp-data.s3.amazonaws.com/FOUR_v200_IFS/2026/0705/FOUR_v200_IFS_2026070500_f000_f240_06.nc",
+    "2026-07-09 pangu: https://noaa-oar-mlwp-data.s3.amazonaws.com/PANG_v100_IFS/2026/0709/PANG_v100_IFS_2026070900_f000_f240_06.nc",
+    "2026-07-09 fourcastnet: https://noaa-oar-mlwp-data.s3.amazonaws.com/FOUR_v200_IFS/2026/0709/FOUR_v200_IFS_2026070900_f000_f240_06.nc"
+  ]
+}
