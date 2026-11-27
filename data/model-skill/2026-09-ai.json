@@ -1,0 +1,531 @@
+{
+  "schema": 1,
+  "period": "2026-09",
+  "baseline_generated_utc": "2026-11-22T17:08:38.030147+00:00",
+  "run_dates": [
+    "2026-09-01",
+    "2026-09-05",
+    "2026-09-09",
+    "2026-09-13",
+    "2026-09-17",
+    "2026-09-21",
+    "2026-09-25",
+    "2026-09-29"
+  ],
+  "models": {
+    "pangu": "PANG_v100_IFS",
+    "graphcast": "GRAP_v100_IFS",
+    "fourcastnet": "FOUR_v200_IFS"
+  },
+  "source": "NOAA/CIRA AIWP IFS initialization; doi:10.1175/BAMS-D-24-0057.1",
+  "method": "Identical KFS dates, sites, valid times, ERA5 and fully reproduced baseline MAE/counts; NOAA nearest native grid; J+10 max",
+  "metrics": {
+    "temperature_2m": {
+      "unit": "°C",
+      "series": {
+        "pangu": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "graphcast": [
+          1.526,
+          1.552,
+          1.688,
+          1.684,
+          2.223,
+          2.329,
+          1.98,
+          2.244,
+          2.991,
+          2.553,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "fourcastnet": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      "n_by_model": {
+        "pangu": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "graphcast": [
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "fourcastnet": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    "pressure_msl": {
+      "unit": "hPa",
+      "series": {
+        "pangu": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "graphcast": [
+          0.643,
+          0.785,
+          0.701,
+          0.877,
+          1.107,
+          1.342,
+          2.577,
+          2.587,
+          3.757,
+          3.26,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "fourcastnet": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      "n_by_model": {
+        "pangu": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "graphcast": [
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "fourcastnet": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    }
+  },
+  "errors": [
+    "2026-09-21 fourcastnet: Unable to get group info (incorrect metadata checksum after all read attempts)"
+  ],
+  "diagnostics": {
+    "raw_n_by_model": {
+      "temperature_2m": {
+        "pangu": [
+          84,
+          84,
+          84,
+          84,
+          84,
+          84,
+          84,
+          84,
+          84,
+          84,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "graphcast": [
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "fourcastnet": [
+          84,
+          84,
+          84,
+          84,
+          84,
+          84,
+          84,
+          84,
+          84,
+          84,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "pressure_msl": {
+        "pangu": [
+          84,
+          84,
+          84,
+          84,
+          84,
+          84,
+          84,
+          84,
+          84,
+          84,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "graphcast": [
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "fourcastnet": [
+          84,
+          84,
+          84,
+          84,
+          84,
+          84,
+          84,
+          84,
+          84,
+          84,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    "baseline_recomputed_n": {
+      "temperature_2m": [
+        96,
+        96,
+        96,
+        96,
+        96,
+        96,
+        96,
+        96,
+        96,
+        96,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "pressure_msl": [
+        96,
+        96,
+        96,
+        96,
+        96,
+        96,
+        96,
+        96,
+        96,
+        96,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "sample_validation": {
+      "temperature_2m": {
+        "pangu": {
+          "missing": 0,
+          "out_of_range": 120,
+          "valid": 840,
+          "examples": [
+            [
+              "2026-09-21",
+              "Brest",
+              1,
+              9.969209968386869e+36
+            ],
+            [
+              "2026-09-21",
+              "Lille",
+              1,
+              9.969209968386869e+36
+            ],
+            [
+              "2026-09-21",
+              "Paris",
+              1,
+              9.969209968386869e+36
+            ],
+            [
+              "2026-09-21",
+              "Strasbourg",
+              1,
+              9.969209968386869e+36
+            ],
+            [
+              "2026-09-21",
+              "Nantes",
+              1,
+              9.969209968386869e+36
+            ],
+            [
+              "2026-09-21",
+              "Dijon",
+              1,
+              9.969209968386869e+36
+            ],
+            [
+              "2026-09-21",
+              "Clermont-Ferrand",
+              1,
+              9.969209968386869e+36
+            ],
+            [
+              "2026-09-21",
+              "Lyon",
+              1,
+              9.969209968386869e+36
+            ]
+          ]
+        },
+        "graphcast": {
+          "missing": 0,
+          "out_of_range": 0,
+          "valid": 960,
+          "examples": []
+        },
+        "fourcastnet": {
+          "missing": 0,
+          "out_of_range": 0,
+          "valid": 840,
+          "examples": []
+        }
+      },
+      "pressure_msl": {
+        "pangu": {
+          "missing": 0,
+          "out_of_range": 120,
+          "valid": 840,
+          "examples": [
+            [
+              "2026-09-21",
+              "Brest",
+              1,
+              9.969210364527682e+34
+            ],
+            [
+              "2026-09-21",
+              "Lille",
+              1,
+              9.969210364527682e+34
+            ],
+            [
+              "2026-09-21",
+              "Paris",
+              1,
+              9.969210364527682e+34
+            ],
+            [
+              "2026-09-21",
+              "Strasbourg",
+              1,
+              9.969210364527682e+34
+            ],
+            [
+              "2026-09-21",
+              "Nantes",
+              1,
+              9.969210364527682e+34
+            ],
+            [
+              "2026-09-21",
+              "Dijon",
+              1,
+              9.969210364527682e+34
+            ],
+            [
+              "2026-09-21",
+              "Clermont-Ferrand",
+              1,
+              9.969210364527682e+34
+            ],
+            [
+              "2026-09-21",
+              "Lyon",
+              1,
+              9.969210364527682e+34
+            ]
+          ]
+        },
+        "graphcast": {
+          "missing": 0,
+          "out_of_range": 0,
+          "valid": 960,
+          "examples": []
+        },
+        "fourcastnet": {
+          "missing": 0,
+          "out_of_range": 0,
+          "valid": 840,
+          "examples": []
+        }
+      }
+    }
+  }
+}
