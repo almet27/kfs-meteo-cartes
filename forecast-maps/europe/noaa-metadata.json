@@ -1,5 +1,5 @@
 {
-  "generated_utc": "2026-11-27T22:38:53.194343+00:00",
+  "generated_utc": "2026-11-27T22:54:32.801402+00:00",
   "run_utc": "2026-11-27T18:00:00+00:00",
   "runs_utc": {
     "gfs": {
@@ -18,7 +18,7 @@
       "120": "2026-11-27T18:00:00+00:00",
       "168": "2026-11-27T18:00:00+00:00",
       "240": "2026-11-27T18:00:00+00:00",
-      "360": "2026-11-27T12:00:00+00:00"
+      "360": "2026-11-27T18:00:00+00:00"
     }
   },
   "source": "NOAA NCEP NOMADS",
@@ -179,8 +179,5 @@
       }
     }
   },
-  "errors": {
-    "aigfs-h360-z500_msl": "[Errno 2] No such file or directory: '/home/runner/data/aigfs/20261127/subset_8c110967__aigfs.t18z.sfc.f360.grib2'",
-    "aigfs-h360-wind10m": "[Errno 2] No such file or directory: '/home/runner/data/aigfs/20261127/subset_8c114461__aigfs.t18z.sfc.f360.grib2'"
-  }
+  "errors": {}
 }
