@@ -49,7 +49,7 @@ def model_frames(model,start,end):
     for lag in range(1,6):
         run=anchor-dt.timedelta(hours=3*lag)
         h0=int((start-run).total_seconds()/3600);h1=int((end-run).total_seconds()/3600)
-        if h0<0 or h1>48:continue
+        if h0<0 or h1>(48 if model=="icon-d2" else 78):continue
         if not all(available(url(model,run,f,h)) for f,h in [("CLAT",0),("CLON",0),("H_SNOW",h0),("H_SNOW",h1)]):continue
         try:
             with ThreadPoolExecutor(max_workers=3) as pool:
@@ -90,27 +90,39 @@ def render(v,path):
     im.save(path,transparency=bytes([0]+[230]*len(COLORS)+[150]),optimize=True)
 def main():
     start=dt.datetime.now(UTC).replace(minute=0,second=0,microsecond=0)
-    end=start+dt.timedelta(hours=2)
-    eu,base=model_frames("icon-eu",start,end)
-    if min(np.isfinite(v).mean() for v in base)<.85:raise RuntimeError("ICON-EU insufficient national coverage")
+    # Native hourly ICON-EU states, with quarter-hour frames retained for
+    # current conditions. Never extrapolate an unavailable forecast hour.
+    for horizon in (48,24,2):
+        try:
+            eu,base=model_frames("icon-eu",start,start+dt.timedelta(hours=horizon))
+            if min(np.isfinite(v).mean() for v in base)<.85:
+                raise RuntimeError("ICON-EU insufficient national coverage")
+            break
+        except Exception as e:
+            print("ICON-EU horizon",horizon,str(e)[:200],flush=True)
+            if horizon==2:raise
     models={"icon-eu":eu.isoformat()}
+    detail_horizon=-1
     try:
-        d2,detail=model_frames("icon-d2",start,end)
+        detail_hours=min(12,horizon)
+        d2,detail=model_frames("icon-d2",start,start+dt.timedelta(hours=detail_hours))
         if abs((d2-eu).total_seconds())<=6*3600:
-            base=[np.where(np.isfinite(d),d,b) for b,d in zip(base,detail)]
+            for i,d in enumerate(detail):
+                base[i]=np.where(np.isfinite(d),d,base[i])
+            detail_horizon=detail_hours
             models["icon-d2"]=d2.isoformat()
     except Exception as e:print("ICON-D2 fallback to national ICON-EU:",str(e)[:200],flush=True)
     out=Path("data/snow-depth");out.mkdir(parents=True,exist_ok=True)
     frames=[]
     stamp=eu.strftime("%Y%m%d%H")
-    for k in range(9):
+    for k in list(range(9))+list(range(12,4*horizon+1,4)):
         h=k//4;f=(k%4)/4
         vals=base[h] if f==0 else interpolate(base[h],base[h+1],f)
         valid=start+dt.timedelta(minutes=15*k)
         file=f"depth-{stamp}-{valid:%Y%m%d%H%M}.png"
         render(vals,out/file)
-        frames.append({"valid_utc":valid.isoformat(),"file":file,"valid_pixels":int(np.isfinite(vals).sum()),"snow_pixels":int((vals>=.2).sum())})
-    manifest={"schema":1,"projection":"KFS-730x735-v1","width":W,"height":H,"method":"native_model_depth_linear_15min","models":models,"units":"cm","levels":LEVELS.tolist(),"colors":COLORS,"frames":frames,"published_utc":dt.datetime.now(UTC).isoformat()}
+        frames.append({"valid_utc":valid.isoformat(),"file":file,"valid_pixels":int(np.isfinite(vals).sum()),"snow_pixels":int((vals>=.2).sum()),"icon_d2":k<=4*detail_horizon})
+    manifest={"schema":1,"projection":"KFS-730x735-v1","width":W,"height":H,"method":"native_model_depth_linear_15min","models":models,"units":"cm","levels":LEVELS.tolist(),"colors":COLORS,"frames":frames,"forecast_hours":horizon,"published_utc":dt.datetime.now(UTC).isoformat()}
     (out/"latest.json").write_text(json.dumps(manifest,separators=(",",":"))+"\n")
     # Retain the previous day's images so cached manifests do not break.
     keep={f["file"] for f in frames}
