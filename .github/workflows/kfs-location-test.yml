@@ -1,0 +1,36 @@
+name: Test personnalisation KFS
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/kfs-location-test.yml'
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - run: npm install --no-audit --no-fund playwright-core@1.56.1
+      - name: Localisation mobile et refus
+        run: |
+          cat > test.cjs <<'EOF'
+          const {chromium,devices}=require('playwright-core');
+          (async()=>{const b=await chromium.launch({channel:'chrome',headless:true,args:['--no-sandbox']});
+          try{for(const mode of ['gps','denied']){
+          const c=await b.newContext({...devices['iPhone 13'],browserName:undefined,defaultBrowserType:undefined,serviceWorkers:'block',...(mode==='gps'?{geolocation:{latitude:48.769,longitude:0.807},permissions:['geolocation']}:{})});
+          if(mode==='denied')await c.addInitScript(()=>{Object.defineProperty(navigator,'geolocation',{value:{getCurrentPosition:(ok,fail)=>fail({code:1})}})});
+          const p=await c.newPage(),errors=[];p.on('pageerror',e=>errors.push(e.message));
+          await p.goto('https://kfs-meteo.fr/',{waitUntil:'domcontentloaded',timeout:60000});
+          await p.waitForFunction(()=>window.kfsLocalContext?.mode,{timeout:35000}).catch(()=>{});
+          await p.waitForTimeout(2000);
+          console.log('LOCATION_TEST '+JSON.stringify({mode,...await p.evaluate(()=>({location:window.kfsLocalContext?.city,mode:window.kfsLocalContext?.mode,label:document.querySelector('#kfs-local-context [role=status]')?.textContent,city:document.getElementById('city-query')?.value,dept:document.getElementById('present-dept')?.value,summaryDept:document.getElementById('short-summary-dept')?.value,proba:document.getElementById('pzone')?.value})),errors}));
+          if(mode==='gps'){
+          for(const hash of ['#diagramme-modeles','#probabilites','#climatologie']){
+          await p.evaluate(h=>location.hash=h,hash);await p.waitForTimeout(4000);
+          console.log('LOCATION_SECTION '+JSON.stringify({hash,...await p.evaluate(()=>({multi:document.getElementById('multi-city-query')?.value,proba:document.getElementById('p-city-query')?.value,clim:document.getElementById('clim-city-query')?.value,climDept:window.kfsLocalContext?.climDept})),errors}));
+          }
+          }await c.close();}
+          }finally{await b.close()}})().catch(e=>{console.error(e);process.exitCode=1});
+          EOF
+          node test.cjs
