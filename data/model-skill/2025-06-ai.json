@@ -1,0 +1,431 @@
+{
+  "schema": 1,
+  "period": "2025-06",
+  "baseline_generated_utc": "2026-11-22T15:48:56.249805+00:00",
+  "run_dates": [
+    "2025-06-01",
+    "2025-06-05",
+    "2025-06-09",
+    "2025-06-13",
+    "2025-06-17",
+    "2025-06-21",
+    "2025-06-25",
+    "2025-06-29"
+  ],
+  "models": {
+    "pangu": "PANG_v100_IFS",
+    "graphcast": "GRAP_v100_IFS",
+    "fourcastnet": "FOUR_v200_IFS"
+  },
+  "source": "NOAA/CIRA AIWP IFS initialization; doi:10.1175/BAMS-D-24-0057.1",
+  "method": "Identical KFS dates, sites, valid times, ERA5 and fully reproduced baseline MAE/counts; NOAA nearest native grid; J+10 max",
+  "metrics": {
+    "temperature_2m": {
+      "unit": "°C",
+      "series": {
+        "pangu": [
+          1.268,
+          1.206,
+          1.141,
+          1.429,
+          1.347,
+          1.5,
+          1.599,
+          1.737,
+          1.664,
+          2.926,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "graphcast": [
+          1.434,
+          1.313,
+          1.287,
+          1.458,
+          1.421,
+          1.677,
+          1.847,
+          1.887,
+          1.875,
+          2.688,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "fourcastnet": [
+          1.401,
+          1.347,
+          1.252,
+          1.418,
+          1.566,
+          1.64,
+          1.65,
+          1.457,
+          2.497,
+          2.877,
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      "n_by_model": {
+        "pangu": [
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "graphcast": [
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "fourcastnet": [
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    "pressure_msl": {
+      "unit": "hPa",
+      "series": {
+        "pangu": [
+          0.559,
+          0.686,
+          0.945,
+          1.361,
+          1.614,
+          1.903,
+          2.268,
+          2.439,
+          2.959,
+          2.955,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "graphcast": [
+          0.572,
+          0.554,
+          0.767,
+          1.108,
+          1.415,
+          1.957,
+          1.999,
+          2.064,
+          2.665,
+          3.412,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "fourcastnet": [
+          0.575,
+          0.519,
+          1.025,
+          1.298,
+          2.237,
+          2.438,
+          2.514,
+          2.74,
+          3.041,
+          4.144,
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      "n_by_model": {
+        "pangu": [
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "graphcast": [
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "fourcastnet": [
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    }
+  },
+  "errors": [],
+  "diagnostics": {
+    "raw_n_by_model": {
+      "temperature_2m": {
+        "pangu": [
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "graphcast": [
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "fourcastnet": [
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "pressure_msl": {
+        "pangu": [
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "graphcast": [
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "fourcastnet": [
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          96,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    "baseline_recomputed_n": {
+      "temperature_2m": [
+        96,
+        96,
+        96,
+        96,
+        96,
+        96,
+        96,
+        96,
+        96,
+        96,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "pressure_msl": [
+        96,
+        96,
+        96,
+        96,
+        96,
+        96,
+        96,
+        96,
+        96,
+        96,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "sample_validation": {
+      "temperature_2m": {
+        "pangu": {
+          "missing": 0,
+          "out_of_range": 0,
+          "valid": 960,
+          "examples": []
+        },
+        "graphcast": {
+          "missing": 0,
+          "out_of_range": 0,
+          "valid": 960,
+          "examples": []
+        },
+        "fourcastnet": {
+          "missing": 0,
+          "out_of_range": 0,
+          "valid": 960,
+          "examples": []
+        }
+      },
+      "pressure_msl": {
+        "pangu": {
+          "missing": 0,
+          "out_of_range": 0,
+          "valid": 960,
+          "examples": []
+        },
+        "graphcast": {
+          "missing": 0,
+          "out_of_range": 0,
+          "valid": 960,
+          "examples": []
+        },
+        "fourcastnet": {
+          "missing": 0,
+          "out_of_range": 0,
+          "valid": 960,
+          "examples": []
+        }
+      }
+    }
+  }
+}
