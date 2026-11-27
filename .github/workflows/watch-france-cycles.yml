@@ -51,22 +51,27 @@ jobs:
           from zoneinfo import ZoneInfo
           from pathlib import Path
           now = datetime.now(ZoneInfo("Europe/Paris"))
-          minute = now.hour * 60 + now.minute
-          if 120 <= minute < 360:
-              sys.exit(1)
-          evening = minute >= 20 * 60 + 30 or minute < 120
-          day = (now - timedelta(days=1)).date() if minute < 120 else now.date()
-          expected = datetime(day.year, day.month, day.day, 12 if evening else 0, tzinfo=timezone.utc)
           pairs = {"j3":72, "j7":168, "j10":240, "j15":360}
           def parse(s):
               return datetime.fromisoformat(s.replace("Z","+00:00")).astimezone(timezone.utc)
           def read(path):
               return json.loads(Path(path).read_text())
+          try:
+              atlas = read("forecast-maps/europe/metadata.json")
+              cycles = [parse(atlas["runs_utc"]["ifs"][str(h)]) for h in pairs.values()]
+              expected = cycles[-1]
+              if (any(c != expected for c in cycles) or expected.hour not in (0,12)
+                  or expected > now or now - expected > timedelta(hours=24)):
+                  print("Tendance : attente d'un cycle IFS complet et homogène.")
+                  sys.exit(1)
+          except (OSError, ValueError, KeyError, TypeError):
+              print("Tendance : atlas Europe indisponible.")
+              sys.exit(1)
           def ready(d):
               generated = parse(d["generated_utc"])
-              if generated > now + timedelta(minutes=10) or now - generated > timedelta(hours=8 if evening else 14):
+              if generated > now + timedelta(minutes=10) or now - generated > timedelta(hours=14):
                   return False
-              if generated.astimezone(now.tzinfo).date() not in ({day, now.date()} if minute < 120 else {day}):
+              if generated < expected:
                   return False
               if d.get("schema_version") != 1 or d.get("status") != "illustrative_model_maps":
                   return False
@@ -89,14 +94,6 @@ jobs:
                   sys.exit(1)
           except (OSError, ValueError, KeyError, TypeError):
               pass
-          try:
-              atlas = read("forecast-maps/europe/metadata.json")
-              if not all(parse(atlas["runs_utc"]["ifs"][str(h)]) == expected for h in pairs.values()):
-                  print("Tendance : attente de l'IFS complet", expected.isoformat())
-                  sys.exit(1)
-          except (OSError, ValueError, KeyError, TypeError):
-              print("Tendance : atlas Europe indisponible.")
-              sys.exit(1)
           print("Tendance : IFS complet mais cartes non prêtes, génération nécessaire.", expected.isoformat())
           PY
           then exit 0; fi
