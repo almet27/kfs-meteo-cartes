@@ -22,7 +22,7 @@ jobs:
           const c=await b.newContext({...devices['iPhone 13'],browserName:undefined,defaultBrowserType:undefined,serviceWorkers:'block'});
           await c.addInitScript(()=>{if(!sessionStorage.getItem('kfs-test-initialized')){localStorage.setItem('kfs-local-context-v1',JSON.stringify({mode:'manual',localMaps:true,city:{name:'Bourth',code:'27108',department:'27'}}));sessionStorage.setItem('kfs-test-initialized','1')}});
           const p=await c.newPage();const errors=[];p.on('pageerror',e=>errors.push(e.message));
-          async function load(hash){await p.goto('https://kfs-meteo.fr/'+hash,{waitUntil:'domcontentloaded',timeout:60000});await p.waitForFunction(()=>window.kfsLocalContext?.city&&window.kfsMapMemory,{timeout:30000});}
+          async function load(hash){await p.goto('https://kfs-meteo.fr/'+hash,{waitUntil:'domcontentloaded',timeout:60000});await p.reload({waitUntil:'domcontentloaded',timeout:60000});await p.waitForFunction(()=>window.kfsLocalContext?.city&&window.kfsMapMemory,{timeout:30000});}
           const snapshot=()=>p.evaluate(()=>({city:window.kfsLocalContext.city?.name,live:[presentKind,presentId],short:[shortSummaryDept,kfsInlineForecastScope,kfsSnowScope],record:recordZoom,clim:window.kfsLocalContext.climDept,proba:document.getElementById('pzone').value}));
           await load('#france');let first=await snapshot();console.log('DEFAULT',JSON.stringify(first),errors);assert.equal(first.live[1],'27');assert.equal(first.short[0],'27');assert.equal(first.record.id,'27');assert.equal(first.clim,'27');
           await p.evaluate(()=>{window.kfsMapMemory.put('live','dept','76');window.kfsMapMemory.put('short','dept','61');window.kfsMapMemory.put('record','fr','');window.kfsMapMemory.put('clim-map','dept','14');});
