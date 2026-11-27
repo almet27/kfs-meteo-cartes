@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
   "status": "illustrative_model_maps",
-  "generated_utc": "2026-11-27T09:21:14.856980+00:00",
-  "source_generated_utc": "2026-11-27T09:15:12.726113+00:00",
-  "charts_generated_utc": "2026-11-27T07:38:34.570029+00:00",
+  "generated_utc": "2026-11-27T15:41:28.427426+00:00",
+  "source_generated_utc": "2026-11-27T15:39:01.171535+00:00",
+  "charts_generated_utc": "2026-11-27T12:28:40.728062+00:00",
   "source": "ECMWF Open Data (CC BY 4.0), NOAA GFS si disponible",
   "not_weekly_anomalies": true,
   "period_maps": [
@@ -12,13 +12,13 @@
       "step_h": 72,
       "path": "forecast-maps/tendance/tendance-carte-j3.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j3.png",
-      "size_bytes": 786255,
+      "size_bytes": 807123,
       "run_utc": {
-        "ifs": "2026-11-27T00:00:00+00:00",
-        "aifs": "2026-11-27T00:00:00+00:00",
-        "gfs": "2026-11-27T00:00:00+00:00"
+        "ifs": "2026-11-27T06:00:00+00:00",
+        "aifs": "2026-11-27T06:00:00+00:00",
+        "gfs": "2026-11-27T06:00:00+00:00"
       },
-      "valid_utc": "2026-11-30T00:00:00+00:00",
+      "valid_utc": "2026-11-30T06:00:00+00:00",
       "title": "J+3 — synthèse KFS",
       "zone": "europe",
       "confidence_label": "Modérée (indicative)",
@@ -30,8 +30,15 @@
       "risk_status": "altitude_filtered_georeferenced",
       "risks": {
         "neige": {
-          "status": "indisponible",
-          "reason": "Filtre altitude indisponible : Altitude Copernicus non accessible : <urlopen error _ssl.c:1001: The handshake operation timed out>"
+          "status": "possible",
+          "max": 1.1,
+          "unit": "mm équiv. eau/6h",
+          "reason": "Neige hors relief ≤ 500 m, hors vallée de montagne (Copernicus GLO-90) ; relief : 30 zones échantillonnées",
+          "mountain_signal": true,
+          "mountain_max": 4.0,
+          "lowland_sample_count": 2,
+          "highland_sample_count": 30,
+          "terrain_source": "Copernicus DEM GLO-90 via Open-Meteo"
         },
         "verglas": {
           "status": "indisponible",
@@ -43,14 +50,14 @@
         },
         "tempete": {
           "status": "possible",
-          "max": 76.2,
+          "max": 79.0,
           "unit": "km/h (rafales max 10 m/6 h)",
           "reason": "Rafales maximales ECMWF IFS des 6 h précédentes, pas une vigilance officielle"
         },
         "gel": {
           "status": "marque",
           "severity": "severe",
-          "min": -11.46,
+          "min": -13.36,
           "unit": "°C (Tmin 2 m/6 h)",
           "reason": "Minimum sur les 6 h précédentes, points terrestres"
         },
@@ -64,7 +71,7 @@
         },
         "pluie_forte": {
           "status": "absent",
-          "max": 6.3,
+          "max": 4.9,
           "unit": "mm/6h",
           "reason": "Cumul des 6 heures précédant l'échéance"
         }
@@ -73,55 +80,63 @@
         {
           "lon": 7.75,
           "lat": 46.0,
-          "value": -11.459875488281227,
+          "value": -13.358801269531227,
           "kind": "gel"
         },
         {
-          "lon": 11.5,
-          "lat": 46.75,
-          "value": -9.959875488281227,
-          "kind": "gel"
-        },
-        {
-          "lon": -10.0,
-          "lat": 53.0,
-          "value": 76.2,
+          "lon": -9.75,
+          "lat": 51.75,
+          "value": 79.0,
           "kind": "vent_fort"
         },
         {
-          "lon": 11.75,
-          "lat": 42.5,
-          "value": 59.9,
+          "lon": -5.5,
+          "lat": 52.75,
+          "value": 73.2,
           "kind": "vent_fort"
         },
         {
-          "lon": 3.25,
-          "lat": 43.0,
-          "value": 56.3,
-          "kind": "vent_fort"
-        },
-        {
-          "lon": -10.0,
-          "lat": 49.0,
-          "value": 51.5,
+          "lon": -9.5,
+          "lat": 49.5,
+          "value": 70.5,
           "kind": "vent_fort"
         },
         {
           "lon": 0.0,
           "lat": 42.75,
-          "value": -3.4598754882812273,
+          "value": -6.608801269531227,
           "kind": "gel"
+        },
+        {
+          "lon": 5.0,
+          "lat": 44.5,
+          "value": 64.9,
+          "kind": "vent_fort"
         },
         {
           "lon": 12.0,
-          "lat": 50.0,
-          "value": -3.2098754882812273,
+          "lat": 48.5,
+          "value": 1.1,
+          "kind": "neige",
+          "altitude_m": 411,
+          "terrain_context": "hors relief marqué"
+        },
+        {
+          "lon": 10.5,
+          "lat": 44.25,
+          "value": -3.3969177246093523,
           "kind": "gel"
         },
         {
-          "lon": 6.0,
-          "lat": 50.25,
-          "value": -2.2098754882812273,
+          "lon": 7.5,
+          "lat": 49.75,
+          "value": -3.3588012695312273,
+          "kind": "gel"
+        },
+        {
+          "lon": 10.5,
+          "lat": 51.75,
+          "value": -1.8588012695312273,
           "kind": "gel"
         }
       ],
@@ -138,23 +153,23 @@
         "description": "Température à 850 hPa modélisée, pas température au sol"
       },
       "style": "kfs-editorial-lambert-consensus-v14",
-      "summary": "Une dominante anticyclonique se dessine sur la France, avec air plus frais en altitude (+1.7 °C). Signaux possibles : rafales jusqu’à 76 km/h, gel jusqu’à -11 °C.",
+      "summary": "Une dominante anticyclonique se dessine sur la France, avec air plus frais en altitude (+1.7 °C). Signaux possibles : rafales jusqu’à 79 km/h, neige hors relief.",
       "analysis": {
-        "summary": "Une dominante anticyclonique se dessine sur la France, avec air plus frais en altitude (+1.7 °C). Signaux possibles : rafales jusqu’à 76 km/h, gel jusqu’à -11 °C.",
+        "summary": "Une dominante anticyclonique se dessine sur la France, avec air plus frais en altitude (+1.7 °C). Signaux possibles : rafales jusqu’à 79 km/h, neige hors relief.",
         "method": "Poids KFS configurés ; bonus de 10 points selon accord synoptique actuel",
         "models": {
           "ifs": {
             "name": "IFS",
-            "run_utc": "2026-11-27T00:00Z",
+            "run_utc": "2026-11-27T06:00Z",
             "lead": 3.0,
-            "t850": 1.87,
-            "msl": 1030.0,
-            "z500": 569.16,
+            "t850": 1.97,
+            "msl": 1029.72,
+            "z500": 569.76,
             "flow": {
-              "u_mean_ms": 3.56,
-              "v_mean_ms": -2.42,
-              "vector_speed_ms": 4.3,
-              "from_deg": 304,
+              "u_mean_ms": 1.84,
+              "v_mean_ms": -0.9,
+              "vector_speed_ms": 2.0,
+              "from_deg": 296,
               "note": "Vent vectoriel moyen à 850 hPa sur un domaine. Pas un vent de surface, ni une mesure directe d’advection."
             },
             "weight": 0.5,
@@ -162,16 +177,16 @@
           },
           "aifs-single": {
             "name": "AIFS",
-            "run_utc": "2026-11-27T00:00Z",
+            "run_utc": "2026-11-27T06:00Z",
             "lead": 3.0,
-            "t850": 2.15,
-            "msl": 1029.1,
-            "z500": 569.67,
+            "t850": 2.09,
+            "msl": 1029.04,
+            "z500": 570.28,
             "flow": {
-              "u_mean_ms": 4.04,
-              "v_mean_ms": -1.25,
-              "vector_speed_ms": 4.2,
-              "from_deg": 287,
+              "u_mean_ms": 3.11,
+              "v_mean_ms": 0.09,
+              "vector_speed_ms": 3.1,
+              "from_deg": 268,
               "note": "Vent vectoriel moyen à 850 hPa sur un domaine. Pas un vent de surface, ni une mesure directe d’advection."
             },
             "weight": 0.3,
@@ -179,16 +194,16 @@
           },
           "gfs": {
             "name": "GFS",
-            "run_utc": "2026-11-27T00:00:00+00:00",
+            "run_utc": "2026-11-27T06:00:00+00:00",
             "lead": 3.0,
-            "t850": 1.84,
-            "msl": 1029.05,
-            "z500": 568.37,
+            "t850": 1.53,
+            "msl": 1029.33,
+            "z500": 568.48,
             "flow": {
-              "u_mean_ms": 1.72,
-              "v_mean_ms": -2.2,
-              "vector_speed_ms": 2.8,
-              "from_deg": 322,
+              "u_mean_ms": 0.41,
+              "v_mean_ms": -1.38,
+              "vector_speed_ms": 1.4,
+              "from_deg": 343,
               "note": "Vecteur moyen vent 850 hPa, pas un vent au sol ni une trajectoire réelle d'advection."
             },
             "weight": 0.2,
@@ -196,15 +211,15 @@
           },
           "aigfs": {
             "name": "AIGFS",
-            "run_utc": "2026-11-27T00:00:00+00:00",
+            "run_utc": "2026-11-27T06:00:00+00:00",
             "lead": 3.0,
-            "t850": 2.14,
-            "msl": 1029.16,
-            "z500": 569.0,
+            "t850": 1.8,
+            "msl": 1029.89,
+            "z500": 570.05,
             "flow": {
-              "u_mean_ms": 2.56,
-              "v_mean_ms": -1.72,
-              "vector_speed_ms": 3.1,
+              "u_mean_ms": 1.71,
+              "v_mean_ms": -1.17,
+              "vector_speed_ms": 2.1,
               "from_deg": 304,
               "note": "Vecteur moyen vent 850 hPa, pas un vent au sol ni une trajectoire réelle d'advection."
             },
@@ -212,11 +227,11 @@
             "mae_msl_hpa": 1.144
           }
         },
-        "valid_utc": "2026-11-30T00:00:00+00:00",
-        "t850_france": 1.99,
-        "msl_france": 1029.37,
-        "t850_spread": 0.31,
-        "msl_spread": 0.95,
+        "valid_utc": "2026-11-30T06:00:00+00:00",
+        "t850_france": 1.87,
+        "msl_france": 1029.46,
+        "t850_spread": 0.56,
+        "msl_spread": 0.85,
         "agreement": "accord relatif",
         "note": "Consensus régional indicatif ; fond et risques IFS, sans moyenne de grilles ni probabilité calibrée.",
         "effective_weights": {
@@ -238,16 +253,16 @@
           "gfs": 0.2
         },
         "bonus_model": null,
-        "normalized_spread": 0.257,
+        "normalized_spread": 0.246,
         "excluded": {},
-        "valid_utc": "2026-11-30T00:00:00+00:00",
+        "valid_utc": "2026-11-30T06:00:00+00:00",
         "runs_utc": {
-          "ifs": "2026-11-27T00:00:00+00:00",
-          "aifs": "2026-11-27T00:00:00+00:00",
-          "gfs": "2026-11-27T00:00:00+00:00"
+          "ifs": "2026-11-27T06:00:00+00:00",
+          "aifs": "2026-11-27T06:00:00+00:00",
+          "gfs": "2026-11-27T06:00:00+00:00"
         },
-        "t850_france": 1.67,
-        "msl_france": 1030.3,
+        "t850_france": 1.71,
+        "msl_france": 1030.25,
         "risk_source": "ifs",
         "weight_method": "Poids KFS configurés ; bonus de 10 points selon accord synoptique actuel"
       },
@@ -258,11 +273,11 @@
       "step_h": 168,
       "path": "forecast-maps/tendance/tendance-carte-j7.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j7.png",
-      "size_bytes": 755842,
+      "size_bytes": 754008,
       "run_utc": {
         "ifs": "2026-11-27T00:00:00+00:00",
-        "aifs": "2026-11-27T00:00:00+00:00",
-        "gfs": "2026-11-27T00:00:00+00:00"
+        "aifs": "2026-11-27T06:00:00+00:00",
+        "gfs": "2026-11-27T06:00:00+00:00"
       },
       "valid_utc": "2026-12-04T00:00:00+00:00",
       "title": "J+7 — synthèse KFS",
@@ -399,9 +414,9 @@
         "description": "Température à 850 hPa modélisée, pas température au sol"
       },
       "style": "kfs-editorial-lambert-consensus-v14",
-      "summary": "Une dominante anticyclonique se dessine sur la France, avec air plus frais en altitude (+2.1 °C). Signaux possibles : rafales jusqu’à 79 km/h, neige hors relief.",
+      "summary": "Une dominante anticyclonique se dessine sur la France, avec air plus frais en altitude (+2.6 °C). Signaux possibles : rafales jusqu’à 79 km/h, neige hors relief.",
       "analysis": {
-        "summary": "Une dominante anticyclonique se dessine sur la France, avec air plus frais en altitude (+2.1 °C). Signaux possibles : rafales jusqu’à 79 km/h, neige hors relief.",
+        "summary": "Une dominante anticyclonique se dessine sur la France, avec air plus frais en altitude (+2.6 °C). Signaux possibles : rafales jusqu’à 79 km/h, neige hors relief.",
         "method": "Poids KFS configurés ; bonus de 10 points selon accord synoptique actuel",
         "models": {
           "ifs": {
@@ -420,65 +435,14 @@
             },
             "weight": 0.4,
             "mae_msl_hpa": 3.007
-          },
-          "aifs-single": {
-            "name": "AIFS",
-            "run_utc": "2026-11-27T00:00Z",
-            "lead": 7.0,
-            "t850": 3.4,
-            "msl": 1037.05,
-            "z500": 578.8,
-            "flow": {
-              "u_mean_ms": -4.9,
-              "v_mean_ms": -0.7,
-              "vector_speed_ms": 4.9,
-              "from_deg": 82,
-              "note": "Vent vectoriel moyen à 850 hPa sur un domaine. Pas un vent de surface, ni une mesure directe d’advection."
-            },
-            "weight": 0.4,
-            "mae_msl_hpa": 4.343
-          },
-          "gfs": {
-            "name": "GFS",
-            "run_utc": "2026-11-27T00:00:00+00:00",
-            "lead": 7.0,
-            "t850": 3.76,
-            "msl": 1035.21,
-            "z500": 578.42,
-            "flow": {
-              "u_mean_ms": -3.37,
-              "v_mean_ms": -1.65,
-              "vector_speed_ms": 3.8,
-              "from_deg": 64,
-              "note": "Vecteur moyen vent 850 hPa, pas un vent au sol ni une trajectoire réelle d'advection."
-            },
-            "weight": 0.2,
-            "mae_msl_hpa": 3.4949999999999997
-          },
-          "aigfs": {
-            "name": "AIGFS",
-            "run_utc": "2026-11-27T00:00:00+00:00",
-            "lead": 7.0,
-            "t850": 2.54,
-            "msl": 1035.34,
-            "z500": 575.6,
-            "flow": {
-              "u_mean_ms": -0.99,
-              "v_mean_ms": -3.06,
-              "vector_speed_ms": 3.2,
-              "from_deg": 18,
-              "note": "Vecteur moyen vent 850 hPa, pas un vent au sol ni une trajectoire réelle d'advection."
-            },
-            "weight": 0,
-            "mae_msl_hpa": 4.705
           }
         },
         "valid_utc": "2026-12-04T00:00:00+00:00",
-        "t850_france": 2.35,
-        "msl_france": 1036.95,
-        "t850_spread": 3.46,
-        "msl_spread": 4.21,
-        "agreement": "divergence modérée",
+        "t850_france": 0.3,
+        "msl_france": 1039.42,
+        "t850_spread": 0.0,
+        "msl_spread": 0.0,
+        "agreement": "comparaison impossible (un seul modèle)",
         "note": "Consensus régional indicatif ; fond et risques IFS, sans moyenne de grilles ni probabilité calibrée.",
         "effective_weights": {
           "ifs": 0.4,
@@ -499,16 +463,16 @@
           "gfs": 0.2
         },
         "bonus_model": null,
-        "normalized_spread": 0.468,
+        "normalized_spread": 0.469,
         "excluded": {},
         "valid_utc": "2026-12-04T00:00:00+00:00",
         "runs_utc": {
           "ifs": "2026-11-27T00:00:00+00:00",
-          "aifs": "2026-11-27T00:00:00+00:00",
-          "gfs": "2026-11-27T00:00:00+00:00"
+          "aifs": "2026-11-27T06:00:00+00:00",
+          "gfs": "2026-11-27T06:00:00+00:00"
         },
-        "t850_france": 2.11,
-        "msl_france": 1037.75,
+        "t850_france": 2.62,
+        "msl_france": 1037.38,
         "risk_source": "ifs",
         "weight_method": "Poids KFS configurés ; bonus de 10 points selon accord synoptique actuel"
       },
@@ -519,11 +483,11 @@
       "step_h": 240,
       "path": "forecast-maps/tendance/tendance-carte-j10.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j10.png",
-      "size_bytes": 706655,
+      "size_bytes": 699043,
       "run_utc": {
         "ifs": "2026-11-27T00:00:00+00:00",
-        "aifs": "2026-11-27T00:00:00+00:00",
-        "gfs": "2026-11-27T00:00:00+00:00"
+        "aifs": "2026-11-27T06:00:00+00:00",
+        "gfs": "2026-11-27T06:00:00+00:00"
       },
       "valid_utc": "2026-12-07T00:00:00+00:00",
       "title": "J+10 — synthèse KFS",
@@ -660,9 +624,9 @@
         "description": "Température à 850 hPa modélisée, pas température au sol"
       },
       "style": "kfs-editorial-lambert-consensus-v14",
-      "summary": "Une dominante anticyclonique se dessine sur la France, avec air relativement doux (+5.3 °C). Signaux possibles : rafales jusqu’à 53 km/h, neige hors relief.",
+      "summary": "Une dominante anticyclonique se dessine sur la France, avec air relativement doux (+5.2 °C). Signaux possibles : rafales jusqu’à 53 km/h, neige hors relief.",
       "analysis": {
-        "summary": "Une dominante anticyclonique se dessine sur la France, avec air relativement doux (+5.3 °C). Signaux possibles : rafales jusqu’à 53 km/h, neige hors relief.",
+        "summary": "Une dominante anticyclonique se dessine sur la France, avec air relativement doux (+5.2 °C). Signaux possibles : rafales jusqu’à 53 km/h, neige hors relief.",
         "method": "Poids KFS configurés ; bonus de 10 points selon accord synoptique actuel",
         "models": {
           "ifs": {
@@ -681,65 +645,14 @@
             },
             "weight": 0.5,
             "mae_msl_hpa": 3.8800000000000003
-          },
-          "aifs-single": {
-            "name": "AIFS",
-            "run_utc": "2026-11-27T00:00Z",
-            "lead": 10.0,
-            "t850": 4.96,
-            "msl": 1035.19,
-            "z500": 576.86,
-            "flow": {
-              "u_mean_ms": 0.2,
-              "v_mean_ms": -0.35,
-              "vector_speed_ms": 0.4,
-              "from_deg": 330,
-              "note": "Vent vectoriel moyen à 850 hPa sur un domaine. Pas un vent de surface, ni une mesure directe d’advection."
-            },
-            "weight": 0.2,
-            "mae_msl_hpa": 6.999
-          },
-          "gfs": {
-            "name": "GFS",
-            "run_utc": "2026-11-27T00:00:00+00:00",
-            "lead": 10.0,
-            "t850": 6.5,
-            "msl": 1026.73,
-            "z500": 574.9,
-            "flow": {
-              "u_mean_ms": 6.02,
-              "v_mean_ms": -0.95,
-              "vector_speed_ms": 6.1,
-              "from_deg": 279,
-              "note": "Vecteur moyen vent 850 hPa, pas un vent au sol ni une trajectoire réelle d'advection."
-            },
-            "weight": 0.3,
-            "mae_msl_hpa": 4.013
-          },
-          "aigfs": {
-            "name": "AIGFS",
-            "run_utc": "2026-11-27T00:00:00+00:00",
-            "lead": 10.0,
-            "t850": 5.83,
-            "msl": 1032.35,
-            "z500": 575.05,
-            "flow": {
-              "u_mean_ms": 4.32,
-              "v_mean_ms": -1.74,
-              "vector_speed_ms": 4.7,
-              "from_deg": 292,
-              "note": "Vecteur moyen vent 850 hPa, pas un vent au sol ni une trajectoire réelle d'advection."
-            },
-            "weight": 0,
-            "mae_msl_hpa": 6.428999999999999
           }
         },
         "valid_utc": "2026-12-07T00:00:00+00:00",
-        "t850_france": 5.27,
-        "msl_france": 1030.99,
-        "t850_spread": 2.58,
-        "msl_spread": 8.46,
-        "agreement": "divergence modérée",
+        "t850_france": 3.92,
+        "msl_france": 1031.95,
+        "t850_spread": 0.0,
+        "msl_spread": 0.0,
+        "agreement": "comparaison impossible (un seul modèle)",
         "note": "Consensus régional indicatif ; fond et risques IFS, sans moyenne de grilles ni probabilité calibrée.",
         "effective_weights": {
           "ifs": 0.5,
@@ -760,16 +673,16 @@
           "gfs": 0.3
         },
         "bonus_model": "ifs",
-        "normalized_spread": 0.672,
+        "normalized_spread": 0.843,
         "excluded": {},
         "valid_utc": "2026-12-07T00:00:00+00:00",
         "runs_utc": {
           "ifs": "2026-11-27T00:00:00+00:00",
-          "aifs": "2026-11-27T00:00:00+00:00",
-          "gfs": "2026-11-27T00:00:00+00:00"
+          "aifs": "2026-11-27T06:00:00+00:00",
+          "gfs": "2026-11-27T06:00:00+00:00"
         },
-        "t850_france": 5.26,
-        "msl_france": 1031.56,
+        "t850_france": 5.19,
+        "msl_france": 1033.02,
         "risk_source": "ifs",
         "weight_method": "Poids KFS configurés ; bonus de 10 points selon accord synoptique actuel"
       },
@@ -780,11 +693,11 @@
       "step_h": 360,
       "path": "forecast-maps/tendance/tendance-carte-j15.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j15.png",
-      "size_bytes": 729915,
+      "size_bytes": 756691,
       "run_utc": {
         "ifs": "2026-11-27T00:00:00+00:00",
-        "aifs": "2026-11-27T00:00:00+00:00",
-        "gfs": "2026-11-27T00:00:00+00:00"
+        "aifs": "2026-11-27T06:00:00+00:00",
+        "gfs": "2026-11-27T06:00:00+00:00"
       },
       "valid_utc": "2026-12-12T00:00:00+00:00",
       "title": "J+15 — synthèse KFS",
@@ -913,9 +826,9 @@
         "description": "Température à 850 hPa modélisée, pas température au sol"
       },
       "style": "kfs-editorial-lambert-consensus-v14",
-      "summary": "Une dominante anticyclonique se dessine sur la France, avec air plus frais en altitude (+2.9 °C). Signaux possibles : rafales jusqu’à 104 km/h, gel jusqu’à -22 °C.",
+      "summary": "Une dominante anticyclonique se dessine sur la France, avec air plus frais en altitude (+1.3 °C). Signaux possibles : rafales jusqu’à 104 km/h, gel jusqu’à -22 °C.",
       "analysis": {
-        "summary": "Une dominante anticyclonique se dessine sur la France, avec air plus frais en altitude (+2.9 °C). Signaux possibles : rafales jusqu’à 104 km/h, gel jusqu’à -22 °C.",
+        "summary": "Une dominante anticyclonique se dessine sur la France, avec air plus frais en altitude (+1.3 °C). Signaux possibles : rafales jusqu’à 104 km/h, gel jusqu’à -22 °C.",
         "method": "Poids KFS configurés ; bonus de 10 points selon accord synoptique actuel",
         "models": {
           "ifs": {
@@ -934,65 +847,14 @@
             },
             "weight": 0.2,
             "mae_msl_hpa": 10.209
-          },
-          "aifs-single": {
-            "name": "AIFS",
-            "run_utc": "2026-11-27T00:00Z",
-            "lead": 15.0,
-            "t850": 7.76,
-            "msl": 1031.38,
-            "z500": 579.93,
-            "flow": {
-              "u_mean_ms": 7.84,
-              "v_mean_ms": -2.65,
-              "vector_speed_ms": 8.3,
-              "from_deg": 289,
-              "note": "Vent vectoriel moyen à 850 hPa sur un domaine. Pas un vent de surface, ni une mesure directe d’advection."
-            },
-            "weight": 0.3,
-            "mae_msl_hpa": 8.024
-          },
-          "gfs": {
-            "name": "GFS",
-            "run_utc": "2026-11-27T00:00:00+00:00",
-            "lead": 15.0,
-            "t850": 2.42,
-            "msl": 1017.47,
-            "z500": 556.32,
-            "flow": {
-              "u_mean_ms": 1.46,
-              "v_mean_ms": 3.06,
-              "vector_speed_ms": 3.4,
-              "from_deg": 206,
-              "note": "Vecteur moyen vent 850 hPa, pas un vent au sol ni une trajectoire réelle d'advection."
-            },
-            "weight": 0.5,
-            "mae_msl_hpa": 6.171
-          },
-          "aigfs": {
-            "name": "AIGFS",
-            "run_utc": "2026-11-27T00:00:00+00:00",
-            "lead": 15.0,
-            "t850": -3.48,
-            "msl": 1019.36,
-            "z500": 549.77,
-            "flow": {
-              "u_mean_ms": 2.07,
-              "v_mean_ms": -3.82,
-              "vector_speed_ms": 4.3,
-              "from_deg": 332,
-              "note": "Vecteur moyen vent 850 hPa, pas un vent au sol ni une trajectoire réelle d'advection."
-            },
-            "weight": 0,
-            "mae_msl_hpa": 7.541999999999999
           }
         },
         "valid_utc": "2026-12-12T00:00:00+00:00",
-        "t850_france": 1.13,
-        "msl_france": 1021.5,
-        "t850_spread": 11.24,
-        "msl_spread": 13.91,
-        "agreement": "forte divergence",
+        "t850_france": -3.2,
+        "msl_france": 1018.49,
+        "t850_spread": 0.0,
+        "msl_spread": 0.0,
+        "agreement": "comparaison impossible (un seul modèle)",
         "note": "Consensus régional indicatif ; fond et risques IFS, sans moyenne de grilles ni probabilité calibrée.",
         "effective_weights": {
           "ifs": 0.2,
@@ -1013,16 +875,16 @@
           "gfs": 0.5
         },
         "bonus_model": "gfs",
-        "normalized_spread": 1.067,
+        "normalized_spread": 0.923,
         "excluded": {},
         "valid_utc": "2026-12-12T00:00:00+00:00",
         "runs_utc": {
           "ifs": "2026-11-27T00:00:00+00:00",
-          "aifs": "2026-11-27T00:00:00+00:00",
-          "gfs": "2026-11-27T00:00:00+00:00"
+          "aifs": "2026-11-27T06:00:00+00:00",
+          "gfs": "2026-11-27T06:00:00+00:00"
         },
-        "t850_france": 2.88,
-        "msl_france": 1022.48,
+        "t850_france": 1.33,
+        "msl_france": 1026.09,
         "risk_source": "ifs",
         "weight_method": "Poids KFS configurés ; bonus de 10 points selon accord synoptique actuel"
       },
@@ -1035,13 +897,13 @@
       "step_h": 72,
       "path": "forecast-maps/tendance/tendance-carte-france-j3.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-france-j3.png",
-      "size_bytes": 399615,
+      "size_bytes": 421968,
       "run_utc": {
-        "ifs": "2026-11-27T00:00:00+00:00",
-        "aifs": "2026-11-27T00:00:00+00:00",
-        "gfs": "2026-11-27T00:00:00+00:00"
+        "ifs": "2026-11-27T06:00:00+00:00",
+        "aifs": "2026-11-27T06:00:00+00:00",
+        "gfs": "2026-11-27T06:00:00+00:00"
       },
-      "valid_utc": "2026-11-30T00:00:00+00:00",
+      "valid_utc": "2026-11-30T06:00:00+00:00",
       "title": "J+3 — France • synthèse KFS",
       "zone": "france",
       "confidence_label": "Modérée (indicative)",
@@ -1053,8 +915,10 @@
       "risk_status": "altitude_filtered_georeferenced",
       "risks": {
         "neige": {
-          "status": "indisponible",
-          "reason": "Filtre altitude indisponible : Altitude Copernicus non accessible : <urlopen error _ssl.c:1001: The handshake operation timed out>"
+          "status": "absent",
+          "max": 0.0,
+          "unit": "mm équiv. eau/6h",
+          "reason": "Pas de neige ≥ 0,5 mm/6h sur le domaine terrestre"
         },
         "verglas": {
           "status": "indisponible",
@@ -1066,14 +930,14 @@
         },
         "tempete": {
           "status": "possible",
-          "max": 55.7,
+          "max": 64.9,
           "unit": "km/h (rafales max 10 m/6 h)",
           "reason": "Rafales maximales ECMWF IFS des 6 h précédentes, pas une vigilance officielle"
         },
         "gel": {
           "status": "marque",
-          "severity": "marque",
-          "min": -8.09,
+          "severity": "severe",
+          "min": -12.61,
           "unit": "°C (Tmin 2 m/6 h)",
           "reason": "Minimum sur les 6 h précédentes, points terrestres"
         },
@@ -1087,40 +951,52 @@
         },
         "pluie_forte": {
           "status": "absent",
-          "max": 5.9,
+          "max": 1.0,
           "unit": "mm/6h",
           "reason": "Cumul des 6 heures précédant l'échéance"
         }
       },
       "risk_markers": [
         {
-          "lon": 7.0,
-          "lat": 45.5,
-          "value": -8.086950683593727,
+          "lon": 6.75,
+          "lat": 45.25,
+          "value": -12.608801269531227,
           "kind": "gel"
-        },
-        {
-          "lon": 3.0,
-          "lat": 42.5,
-          "value": 55.7,
-          "kind": "vent_fort"
-        },
-        {
-          "lon": 5.0,
-          "lat": 44.5,
-          "value": 51.0,
-          "kind": "vent_fort"
         },
         {
           "lon": 0.0,
           "lat": 42.75,
-          "value": -3.4598754882812273,
+          "value": -6.608801269531227,
           "kind": "gel"
         },
         {
-          "lon": 5.75,
-          "lat": 49.5,
-          "value": -0.9598754882812273,
+          "lon": 5.0,
+          "lat": 44.5,
+          "value": 64.9,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": 6.75,
+          "lat": 48.0,
+          "value": -2.8588012695312273,
+          "kind": "gel"
+        },
+        {
+          "lon": 4.25,
+          "lat": 47.0,
+          "value": -1.1088012695312273,
+          "kind": "gel"
+        },
+        {
+          "lon": 2.75,
+          "lat": 45.0,
+          "value": -0.14691772460935226,
+          "kind": "gel"
+        },
+        {
+          "lon": 9.0,
+          "lat": 42.25,
+          "value": -0.10880126953122726,
           "kind": "gel"
         }
       ],
@@ -1137,23 +1013,23 @@
         "description": "Température à 850 hPa modélisée, pas température au sol"
       },
       "style": "kfs-editorial-lambert-consensus-v14",
-      "summary": "Une dominante anticyclonique se dessine sur la France, avec air plus frais en altitude (+1.7 °C). Signaux possibles : rafales jusqu’à 56 km/h, gel jusqu’à -8 °C.",
+      "summary": "Une dominante anticyclonique se dessine sur la France, avec air plus frais en altitude (+1.7 °C). Signaux possibles : rafales jusqu’à 65 km/h, gel jusqu’à -13 °C.",
       "analysis": {
-        "summary": "Une dominante anticyclonique se dessine sur la France, avec air plus frais en altitude (+1.7 °C). Signaux possibles : rafales jusqu’à 56 km/h, gel jusqu’à -8 °C.",
+        "summary": "Une dominante anticyclonique se dessine sur la France, avec air plus frais en altitude (+1.7 °C). Signaux possibles : rafales jusqu’à 65 km/h, gel jusqu’à -13 °C.",
         "method": "Poids KFS configurés ; bonus de 10 points selon accord synoptique actuel",
         "models": {
           "ifs": {
             "name": "IFS",
-            "run_utc": "2026-11-27T00:00Z",
+            "run_utc": "2026-11-27T06:00Z",
             "lead": 3.0,
-            "t850": 1.87,
-            "msl": 1030.0,
-            "z500": 569.16,
+            "t850": 1.97,
+            "msl": 1029.72,
+            "z500": 569.76,
             "flow": {
-              "u_mean_ms": 3.56,
-              "v_mean_ms": -2.42,
-              "vector_speed_ms": 4.3,
-              "from_deg": 304,
+              "u_mean_ms": 1.84,
+              "v_mean_ms": -0.9,
+              "vector_speed_ms": 2.0,
+              "from_deg": 296,
               "note": "Vent vectoriel moyen à 850 hPa sur un domaine. Pas un vent de surface, ni une mesure directe d’advection."
             },
             "weight": 0.5,
@@ -1161,16 +1037,16 @@
           },
           "aifs-single": {
             "name": "AIFS",
-            "run_utc": "2026-11-27T00:00Z",
+            "run_utc": "2026-11-27T06:00Z",
             "lead": 3.0,
-            "t850": 2.15,
-            "msl": 1029.1,
-            "z500": 569.67,
+            "t850": 2.09,
+            "msl": 1029.04,
+            "z500": 570.28,
             "flow": {
-              "u_mean_ms": 4.04,
-              "v_mean_ms": -1.25,
-              "vector_speed_ms": 4.2,
-              "from_deg": 287,
+              "u_mean_ms": 3.11,
+              "v_mean_ms": 0.09,
+              "vector_speed_ms": 3.1,
+              "from_deg": 268,
               "note": "Vent vectoriel moyen à 850 hPa sur un domaine. Pas un vent de surface, ni une mesure directe d’advection."
             },
             "weight": 0.3,
@@ -1178,16 +1054,16 @@
           },
           "gfs": {
             "name": "GFS",
-            "run_utc": "2026-11-27T00:00:00+00:00",
+            "run_utc": "2026-11-27T06:00:00+00:00",
             "lead": 3.0,
-            "t850": 1.84,
-            "msl": 1029.05,
-            "z500": 568.37,
+            "t850": 1.53,
+            "msl": 1029.33,
+            "z500": 568.48,
             "flow": {
-              "u_mean_ms": 1.72,
-              "v_mean_ms": -2.2,
-              "vector_speed_ms": 2.8,
-              "from_deg": 322,
+              "u_mean_ms": 0.41,
+              "v_mean_ms": -1.38,
+              "vector_speed_ms": 1.4,
+              "from_deg": 343,
               "note": "Vecteur moyen vent 850 hPa, pas un vent au sol ni une trajectoire réelle d'advection."
             },
             "weight": 0.2,
@@ -1195,15 +1071,15 @@
           },
           "aigfs": {
             "name": "AIGFS",
-            "run_utc": "2026-11-27T00:00:00+00:00",
+            "run_utc": "2026-11-27T06:00:00+00:00",
             "lead": 3.0,
-            "t850": 2.14,
-            "msl": 1029.16,
-            "z500": 569.0,
+            "t850": 1.8,
+            "msl": 1029.89,
+            "z500": 570.05,
             "flow": {
-              "u_mean_ms": 2.56,
-              "v_mean_ms": -1.72,
-              "vector_speed_ms": 3.1,
+              "u_mean_ms": 1.71,
+              "v_mean_ms": -1.17,
+              "vector_speed_ms": 2.1,
               "from_deg": 304,
               "note": "Vecteur moyen vent 850 hPa, pas un vent au sol ni une trajectoire réelle d'advection."
             },
@@ -1211,11 +1087,11 @@
             "mae_msl_hpa": 1.144
           }
         },
-        "valid_utc": "2026-11-30T00:00:00+00:00",
-        "t850_france": 1.99,
-        "msl_france": 1029.37,
-        "t850_spread": 0.31,
-        "msl_spread": 0.95,
+        "valid_utc": "2026-11-30T06:00:00+00:00",
+        "t850_france": 1.87,
+        "msl_france": 1029.46,
+        "t850_spread": 0.56,
+        "msl_spread": 0.85,
         "agreement": "accord relatif",
         "note": "Consensus régional indicatif ; fond et risques IFS, sans moyenne de grilles ni probabilité calibrée.",
         "effective_weights": {
@@ -1237,16 +1113,16 @@
           "gfs": 0.2
         },
         "bonus_model": null,
-        "normalized_spread": 0.257,
+        "normalized_spread": 0.246,
         "excluded": {},
-        "valid_utc": "2026-11-30T00:00:00+00:00",
+        "valid_utc": "2026-11-30T06:00:00+00:00",
         "runs_utc": {
-          "ifs": "2026-11-27T00:00:00+00:00",
-          "aifs": "2026-11-27T00:00:00+00:00",
-          "gfs": "2026-11-27T00:00:00+00:00"
+          "ifs": "2026-11-27T06:00:00+00:00",
+          "aifs": "2026-11-27T06:00:00+00:00",
+          "gfs": "2026-11-27T06:00:00+00:00"
         },
-        "t850_france": 1.67,
-        "msl_france": 1030.3,
+        "t850_france": 1.71,
+        "msl_france": 1030.25,
         "risk_source": "ifs",
         "weight_method": "Poids KFS configurés ; bonus de 10 points selon accord synoptique actuel"
       },
@@ -1257,11 +1133,11 @@
       "step_h": 168,
       "path": "forecast-maps/tendance/tendance-carte-france-j7.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-france-j7.png",
-      "size_bytes": 402011,
+      "size_bytes": 398317,
       "run_utc": {
         "ifs": "2026-11-27T00:00:00+00:00",
-        "aifs": "2026-11-27T00:00:00+00:00",
-        "gfs": "2026-11-27T00:00:00+00:00"
+        "aifs": "2026-11-27T06:00:00+00:00",
+        "gfs": "2026-11-27T06:00:00+00:00"
       },
       "valid_utc": "2026-12-04T00:00:00+00:00",
       "title": "J+7 — France • synthèse KFS",
@@ -1384,9 +1260,9 @@
         "description": "Température à 850 hPa modélisée, pas température au sol"
       },
       "style": "kfs-editorial-lambert-consensus-v14",
-      "summary": "Une dominante anticyclonique se dessine sur la France, avec air plus frais en altitude (+2.1 °C). Signaux possibles : rafales jusqu’à 72 km/h, gel jusqu’à -14 °C.",
+      "summary": "Une dominante anticyclonique se dessine sur la France, avec air plus frais en altitude (+2.6 °C). Signaux possibles : rafales jusqu’à 72 km/h, gel jusqu’à -14 °C.",
       "analysis": {
-        "summary": "Une dominante anticyclonique se dessine sur la France, avec air plus frais en altitude (+2.1 °C). Signaux possibles : rafales jusqu’à 72 km/h, gel jusqu’à -14 °C.",
+        "summary": "Une dominante anticyclonique se dessine sur la France, avec air plus frais en altitude (+2.6 °C). Signaux possibles : rafales jusqu’à 72 km/h, gel jusqu’à -14 °C.",
         "method": "Poids KFS configurés ; bonus de 10 points selon accord synoptique actuel",
         "models": {
           "ifs": {
@@ -1405,65 +1281,14 @@
             },
             "weight": 0.4,
             "mae_msl_hpa": 3.007
-          },
-          "aifs-single": {
-            "name": "AIFS",
-            "run_utc": "2026-11-27T00:00Z",
-            "lead": 7.0,
-            "t850": 3.4,
-            "msl": 1037.05,
-            "z500": 578.8,
-            "flow": {
-              "u_mean_ms": -4.9,
-              "v_mean_ms": -0.7,
-              "vector_speed_ms": 4.9,
-              "from_deg": 82,
-              "note": "Vent vectoriel moyen à 850 hPa sur un domaine. Pas un vent de surface, ni une mesure directe d’advection."
-            },
-            "weight": 0.4,
-            "mae_msl_hpa": 4.343
-          },
-          "gfs": {
-            "name": "GFS",
-            "run_utc": "2026-11-27T00:00:00+00:00",
-            "lead": 7.0,
-            "t850": 3.76,
-            "msl": 1035.21,
-            "z500": 578.42,
-            "flow": {
-              "u_mean_ms": -3.37,
-              "v_mean_ms": -1.65,
-              "vector_speed_ms": 3.8,
-              "from_deg": 64,
-              "note": "Vecteur moyen vent 850 hPa, pas un vent au sol ni une trajectoire réelle d'advection."
-            },
-            "weight": 0.2,
-            "mae_msl_hpa": 3.4949999999999997
-          },
-          "aigfs": {
-            "name": "AIGFS",
-            "run_utc": "2026-11-27T00:00:00+00:00",
-            "lead": 7.0,
-            "t850": 2.54,
-            "msl": 1035.34,
-            "z500": 575.6,
-            "flow": {
-              "u_mean_ms": -0.99,
-              "v_mean_ms": -3.06,
-              "vector_speed_ms": 3.2,
-              "from_deg": 18,
-              "note": "Vecteur moyen vent 850 hPa, pas un vent au sol ni une trajectoire réelle d'advection."
-            },
-            "weight": 0,
-            "mae_msl_hpa": 4.705
           }
         },
         "valid_utc": "2026-12-04T00:00:00+00:00",
-        "t850_france": 2.35,
-        "msl_france": 1036.95,
-        "t850_spread": 3.46,
-        "msl_spread": 4.21,
-        "agreement": "divergence modérée",
+        "t850_france": 0.3,
+        "msl_france": 1039.42,
+        "t850_spread": 0.0,
+        "msl_spread": 0.0,
+        "agreement": "comparaison impossible (un seul modèle)",
         "note": "Consensus régional indicatif ; fond et risques IFS, sans moyenne de grilles ni probabilité calibrée.",
         "effective_weights": {
           "ifs": 0.4,
@@ -1484,16 +1309,16 @@
           "gfs": 0.2
         },
         "bonus_model": null,
-        "normalized_spread": 0.468,
+        "normalized_spread": 0.469,
         "excluded": {},
         "valid_utc": "2026-12-04T00:00:00+00:00",
         "runs_utc": {
           "ifs": "2026-11-27T00:00:00+00:00",
-          "aifs": "2026-11-27T00:00:00+00:00",
-          "gfs": "2026-11-27T00:00:00+00:00"
+          "aifs": "2026-11-27T06:00:00+00:00",
+          "gfs": "2026-11-27T06:00:00+00:00"
         },
-        "t850_france": 2.11,
-        "msl_france": 1037.75,
+        "t850_france": 2.62,
+        "msl_france": 1037.38,
         "risk_source": "ifs",
         "weight_method": "Poids KFS configurés ; bonus de 10 points selon accord synoptique actuel"
       },
@@ -1504,11 +1329,11 @@
       "step_h": 240,
       "path": "forecast-maps/tendance/tendance-carte-france-j10.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-france-j10.png",
-      "size_bytes": 415879,
+      "size_bytes": 373975,
       "run_utc": {
         "ifs": "2026-11-27T00:00:00+00:00",
-        "aifs": "2026-11-27T00:00:00+00:00",
-        "gfs": "2026-11-27T00:00:00+00:00"
+        "aifs": "2026-11-27T06:00:00+00:00",
+        "gfs": "2026-11-27T06:00:00+00:00"
       },
       "valid_utc": "2026-12-07T00:00:00+00:00",
       "title": "J+10 — France • synthèse KFS",
@@ -1626,9 +1451,9 @@
         "description": "Température à 850 hPa modélisée, pas température au sol"
       },
       "style": "kfs-editorial-lambert-consensus-v14",
-      "summary": "Une dominante anticyclonique se dessine sur la France, avec air relativement doux (+5.3 °C). Signaux possibles : rafales jusqu’à 50 km/h, gel jusqu’à -10 °C.",
+      "summary": "Une dominante anticyclonique se dessine sur la France, avec air relativement doux (+5.2 °C). Signaux possibles : rafales jusqu’à 50 km/h, gel jusqu’à -10 °C.",
       "analysis": {
-        "summary": "Une dominante anticyclonique se dessine sur la France, avec air relativement doux (+5.3 °C). Signaux possibles : rafales jusqu’à 50 km/h, gel jusqu’à -10 °C.",
+        "summary": "Une dominante anticyclonique se dessine sur la France, avec air relativement doux (+5.2 °C). Signaux possibles : rafales jusqu’à 50 km/h, gel jusqu’à -10 °C.",
         "method": "Poids KFS configurés ; bonus de 10 points selon accord synoptique actuel",
         "models": {
           "ifs": {
@@ -1647,65 +1472,14 @@
             },
             "weight": 0.5,
             "mae_msl_hpa": 3.8800000000000003
-          },
-          "aifs-single": {
-            "name": "AIFS",
-            "run_utc": "2026-11-27T00:00Z",
-            "lead": 10.0,
-            "t850": 4.96,
-            "msl": 1035.19,
-            "z500": 576.86,
-            "flow": {
-              "u_mean_ms": 0.2,
-              "v_mean_ms": -0.35,
-              "vector_speed_ms": 0.4,
-              "from_deg": 330,
-              "note": "Vent vectoriel moyen à 850 hPa sur un domaine. Pas un vent de surface, ni une mesure directe d’advection."
-            },
-            "weight": 0.2,
-            "mae_msl_hpa": 6.999
-          },
-          "gfs": {
-            "name": "GFS",
-            "run_utc": "2026-11-27T00:00:00+00:00",
-            "lead": 10.0,
-            "t850": 6.5,
-            "msl": 1026.73,
-            "z500": 574.9,
-            "flow": {
-              "u_mean_ms": 6.02,
-              "v_mean_ms": -0.95,
-              "vector_speed_ms": 6.1,
-              "from_deg": 279,
-              "note": "Vecteur moyen vent 850 hPa, pas un vent au sol ni une trajectoire réelle d'advection."
-            },
-            "weight": 0.3,
-            "mae_msl_hpa": 4.013
-          },
-          "aigfs": {
-            "name": "AIGFS",
-            "run_utc": "2026-11-27T00:00:00+00:00",
-            "lead": 10.0,
-            "t850": 5.83,
-            "msl": 1032.35,
-            "z500": 575.05,
-            "flow": {
-              "u_mean_ms": 4.32,
-              "v_mean_ms": -1.74,
-              "vector_speed_ms": 4.7,
-              "from_deg": 292,
-              "note": "Vecteur moyen vent 850 hPa, pas un vent au sol ni une trajectoire réelle d'advection."
-            },
-            "weight": 0,
-            "mae_msl_hpa": 6.428999999999999
           }
         },
         "valid_utc": "2026-12-07T00:00:00+00:00",
-        "t850_france": 5.27,
-        "msl_france": 1030.99,
-        "t850_spread": 2.58,
-        "msl_spread": 8.46,
-        "agreement": "divergence modérée",
+        "t850_france": 3.92,
+        "msl_france": 1031.95,
+        "t850_spread": 0.0,
+        "msl_spread": 0.0,
+        "agreement": "comparaison impossible (un seul modèle)",
         "note": "Consensus régional indicatif ; fond et risques IFS, sans moyenne de grilles ni probabilité calibrée.",
         "effective_weights": {
           "ifs": 0.5,
@@ -1726,16 +1500,16 @@
           "gfs": 0.3
         },
         "bonus_model": "ifs",
-        "normalized_spread": 0.672,
+        "normalized_spread": 0.843,
         "excluded": {},
         "valid_utc": "2026-12-07T00:00:00+00:00",
         "runs_utc": {
           "ifs": "2026-11-27T00:00:00+00:00",
-          "aifs": "2026-11-27T00:00:00+00:00",
-          "gfs": "2026-11-27T00:00:00+00:00"
+          "aifs": "2026-11-27T06:00:00+00:00",
+          "gfs": "2026-11-27T06:00:00+00:00"
         },
-        "t850_france": 5.26,
-        "msl_france": 1031.56,
+        "t850_france": 5.19,
+        "msl_france": 1033.02,
         "risk_source": "ifs",
         "weight_method": "Poids KFS configurés ; bonus de 10 points selon accord synoptique actuel"
       },
@@ -1746,11 +1520,11 @@
       "step_h": 360,
       "path": "forecast-maps/tendance/tendance-carte-france-j15.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-france-j15.png",
-      "size_bytes": 390340,
+      "size_bytes": 388591,
       "run_utc": {
         "ifs": "2026-11-27T00:00:00+00:00",
-        "aifs": "2026-11-27T00:00:00+00:00",
-        "gfs": "2026-11-27T00:00:00+00:00"
+        "aifs": "2026-11-27T06:00:00+00:00",
+        "gfs": "2026-11-27T06:00:00+00:00"
       },
       "valid_utc": "2026-12-12T00:00:00+00:00",
       "title": "J+15 — France • synthèse KFS",
@@ -1872,9 +1646,9 @@
         "description": "Température à 850 hPa modélisée, pas température au sol"
       },
       "style": "kfs-editorial-lambert-consensus-v14",
-      "summary": "Une dominante anticyclonique se dessine sur la France, avec air plus frais en altitude (+2.9 °C). Signaux possibles : rafales jusqu’à 86 km/h, gel jusqu’à -21 °C.",
+      "summary": "Une dominante anticyclonique se dessine sur la France, avec air plus frais en altitude (+1.3 °C). Signaux possibles : rafales jusqu’à 86 km/h, gel jusqu’à -21 °C.",
       "analysis": {
-        "summary": "Une dominante anticyclonique se dessine sur la France, avec air plus frais en altitude (+2.9 °C). Signaux possibles : rafales jusqu’à 86 km/h, gel jusqu’à -21 °C.",
+        "summary": "Une dominante anticyclonique se dessine sur la France, avec air plus frais en altitude (+1.3 °C). Signaux possibles : rafales jusqu’à 86 km/h, gel jusqu’à -21 °C.",
         "method": "Poids KFS configurés ; bonus de 10 points selon accord synoptique actuel",
         "models": {
           "ifs": {
@@ -1893,65 +1667,14 @@
             },
             "weight": 0.2,
             "mae_msl_hpa": 10.209
-          },
-          "aifs-single": {
-            "name": "AIFS",
-            "run_utc": "2026-11-27T00:00Z",
-            "lead": 15.0,
-            "t850": 7.76,
-            "msl": 1031.38,
-            "z500": 579.93,
-            "flow": {
-              "u_mean_ms": 7.84,
-              "v_mean_ms": -2.65,
-              "vector_speed_ms": 8.3,
-              "from_deg": 289,
-              "note": "Vent vectoriel moyen à 850 hPa sur un domaine. Pas un vent de surface, ni une mesure directe d’advection."
-            },
-            "weight": 0.3,
-            "mae_msl_hpa": 8.024
-          },
-          "gfs": {
-            "name": "GFS",
-            "run_utc": "2026-11-27T00:00:00+00:00",
-            "lead": 15.0,
-            "t850": 2.42,
-            "msl": 1017.47,
-            "z500": 556.32,
-            "flow": {
-              "u_mean_ms": 1.46,
-              "v_mean_ms": 3.06,
-              "vector_speed_ms": 3.4,
-              "from_deg": 206,
-              "note": "Vecteur moyen vent 850 hPa, pas un vent au sol ni une trajectoire réelle d'advection."
-            },
-            "weight": 0.5,
-            "mae_msl_hpa": 6.171
-          },
-          "aigfs": {
-            "name": "AIGFS",
-            "run_utc": "2026-11-27T00:00:00+00:00",
-            "lead": 15.0,
-            "t850": -3.48,
-            "msl": 1019.36,
-            "z500": 549.77,
-            "flow": {
-              "u_mean_ms": 2.07,
-              "v_mean_ms": -3.82,
-              "vector_speed_ms": 4.3,
-              "from_deg": 332,
-              "note": "Vecteur moyen vent 850 hPa, pas un vent au sol ni une trajectoire réelle d'advection."
-            },
-            "weight": 0,
-            "mae_msl_hpa": 7.541999999999999
           }
         },
         "valid_utc": "2026-12-12T00:00:00+00:00",
-        "t850_france": 1.13,
-        "msl_france": 1021.5,
-        "t850_spread": 11.24,
-        "msl_spread": 13.91,
-        "agreement": "forte divergence",
+        "t850_france": -3.2,
+        "msl_france": 1018.49,
+        "t850_spread": 0.0,
+        "msl_spread": 0.0,
+        "agreement": "comparaison impossible (un seul modèle)",
         "note": "Consensus régional indicatif ; fond et risques IFS, sans moyenne de grilles ni probabilité calibrée.",
         "effective_weights": {
           "ifs": 0.2,
@@ -1972,16 +1695,16 @@
           "gfs": 0.5
         },
         "bonus_model": "gfs",
-        "normalized_spread": 1.067,
+        "normalized_spread": 0.923,
         "excluded": {},
         "valid_utc": "2026-12-12T00:00:00+00:00",
         "runs_utc": {
           "ifs": "2026-11-27T00:00:00+00:00",
-          "aifs": "2026-11-27T00:00:00+00:00",
-          "gfs": "2026-11-27T00:00:00+00:00"
+          "aifs": "2026-11-27T06:00:00+00:00",
+          "gfs": "2026-11-27T06:00:00+00:00"
         },
-        "t850_france": 2.88,
-        "msl_france": 1022.48,
+        "t850_france": 1.33,
+        "msl_france": 1026.09,
         "risk_source": "ifs",
         "weight_method": "Poids KFS configurés ; bonus de 10 points selon accord synoptique actuel"
       },
@@ -1990,6 +1713,6 @@
   ],
   "public": true,
   "graphic_style": "KFS PREMIUM Lambert — consensus synoptique selon grilles disponibles ; risques IFS",
-  "analysis_summary": "J3 : Une dominante anticyclonique se dessine sur la France, avec air plus frais en altitude (+1.7 °C). Signaux possibles : rafales jusqu’à 76 km/h, gel jusqu’à -11 °C. J7 : Une dominante anticyclonique se dessine sur la France, avec air plus frais en altitude (+2.1 °C). Signaux possibles : rafales jusqu’à 79 km/h, neige hors relief. J10 : Une dominante anticyclonique se dessine sur la France, avec air relativement doux (+5.3 °C). Signaux possibles : rafales jusqu’à 53 km/h, neige hors relief. J15 : Une dominante anticyclonique se dessine sur la France, avec air plus frais en altitude (+2.9 °C). Signaux possibles : rafales jusqu’à 104 km/h, gel jusqu’à -22 °C.",
+  "analysis_summary": "J3 : Une dominante anticyclonique se dessine sur la France, avec air plus frais en altitude (+1.7 °C). Signaux possibles : rafales jusqu’à 79 km/h, neige hors relief. J7 : Une dominante anticyclonique se dessine sur la France, avec air plus frais en altitude (+2.6 °C). Signaux possibles : rafales jusqu’à 79 km/h, neige hors relief. J10 : Une dominante anticyclonique se dessine sur la France, avec air relativement doux (+5.2 °C). Signaux possibles : rafales jusqu’à 53 km/h, neige hors relief. J15 : Une dominante anticyclonique se dessine sur la France, avec air plus frais en altitude (+1.3 °C). Signaux possibles : rafales jusqu’à 104 km/h, gel jusqu’à -22 °C.",
   "note": "Synthèse KFS pondérée de grilles alignées à validité identique ; bonus adaptatif de 10 points à J+10/J+15 selon accord des champs ; repli IFS explicite si grilles incomplètes. Risques IFS. Aucune probabilité calibrée."
 }
