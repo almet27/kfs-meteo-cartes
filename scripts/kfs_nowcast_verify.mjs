@@ -74,7 +74,10 @@ function test(){
 }
 if(process.argv.includes("--test")){test();process.exit(0)}
 const manifest=read(process.argv[2],null);if(!manifest||!Number.isFinite(Date.parse(manifest.observation_utc))||now-Date.parse(manifest.observation_utc)>90*60000||Date.parse(manifest.observation_utc)>now+120000)throw Error("Fresh station manifest required");
-const dir="forecast-maps/france/hourly-web/",docs=["arome","gfs","ifs","icon-d2"].map(k=>read(dir+k+".json",null)).filter(d=>d&&d.schema===1&&Date.parse(d.fetched_utc)<=now&&now-Date.parse(d.fetched_utc)<=6*H);
+const dir="forecast-maps/france/hourly-web/",freshDoc=d=>d&&d.schema===1&&Date.parse(d.fetched_utc)<=now&&now-Date.parse(d.fetched_utc)<=6*H;
+const primaryIFS=read(dir+"ifs.json",null),nativeIFS=read(dir+"ifs-native.json",null);
+const docs=[read(dir+"arome.json",null),read(dir+"gfs.json",null),freshDoc(primaryIFS)?primaryIFS:nativeIFS,read(dir+"icon-d2.json",null)].filter(freshDoc);
+console.log("Fresh model grids:",docs.map(d=>d.model+":"+d.fetched_utc).join(", "));
 const obs=observations(manifest);fs.mkdirSync(root,{recursive:true});let state=read(statePath,{schema:1,lastIssue:null,pending:[]}),skill=read(skillPath,{schema:1,method:"KFS v1 · stations Météo-France exclues de la correction · MAE appariée · horizon horaire",months:{}});
 if(state.schema!==1||skill.schema!==1)throw Error("Incompatible archive");
 let scored=0,remaining=[];
