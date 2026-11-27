@@ -9,7 +9,8 @@ from eccodes import codes_grib_new_from_file, codes_get, codes_get_array, codes_
 
 ROOT=Path("forecast-maps/france/hourly-web")
 STEPS=list(range(3,73,3))
-FIELDS=["temperature_2m","wind_speed_10m","wind_gusts_10m","precipitation","wind_direction_10m","weather_code"]
+FIELDS=["temperature_2m","wind_speed_10m","wind_gusts_10m","precipitation","wind_direction_10m","weather_code","cloud_cover","snowfall_water_equivalent"]
+DIAGNOSTIC_VERSION=1
 def utc(x):
     d=x if isinstance(x,datetime) else datetime.fromisoformat(str(x).replace("Z","+00:00"))
     return d.replace(tzinfo=timezone.utc) if d.tzinfo is None else d.astimezone(timezone.utc)
@@ -56,6 +57,8 @@ def convert(d,kind):
     for step,(a,unit,start) in d.items():
         if kind=="temp" and unit=="K":a=a-273.15
         elif kind=="wind" and unit in ("m s**-1","m s-1","m/s"):a=a*3.6
+        elif kind=="cloud" and unit in ("(0 - 1)","1","~","fraction","0-1"):a=np.clip(a,0,1)*100
+        elif kind=="cloud" and unit in ("%","percent"):a=np.clip(a,0,100)
         elif kind=="precip" and unit in ("m","m of water equivalent"):a=a*1000
         elif kind=="precip" and unit in ("kg m**-2","kg m-2","mm"):pass
         else:raise ValueError("Unexpected units "+kind+" "+unit)
@@ -74,6 +77,19 @@ def intervals(d):
         if np.nanmin(diff)<-.15:raise ValueError("Negative precipitation interval")
         out[step]=np.maximum(diff,0)/3
     return out
+def diagnostic(cloud,precip,snow):
+    """Approximate WMO-style symbols; no diagnosis of storms, fog or freezing rain."""
+    if not math.isfinite(precip):return None
+    if precip>=.1:
+        if not math.isfinite(snow):return None
+        if snow>precip+.15:return None
+        fraction=snow/max(precip,.001)
+        if fraction>=.8:return 71 if precip<1 else 73 if precip<3 else 75
+        if fraction>=.2:return 100
+        return 61 if precip<1 else 63 if precip<4 else 65
+    if not math.isfinite(cloud):return None
+    return 0 if cloud<15 else 1 if cloud<35 else 2 if cloud<80 else 3
+
 def main():
     old=json.loads((ROOT/"ifs.json").read_text())
     points=np.asarray(old["points"],dtype=float)
@@ -85,7 +101,7 @@ def main():
     dest=ROOT/"ifs-native.json"
     if dest.exists():
         prev=json.loads(dest.read_text())
-        if utc(prev["run_utc"])>=cycle and now-utc(prev["fetched_utc"])<timedelta(hours=12):
+        if prev.get("diagnostic_version")==DIAGNOSTIC_VERSION and utc(prev["run_utc"])>=cycle and now-utc(prev["fetched_utc"])<timedelta(hours=12):
             print("Native IFS cycle already available",cycle.isoformat());return
     with tempfile.TemporaryDirectory() as t:
         tmp=Path(t)
@@ -97,6 +113,10 @@ def main():
         if not G:G=extract(client,cycle,"10fg3",points,tmp,optional=True)
         try:G=convert(G,"wind")
         except ValueError:G={}
+        try:C=convert(extract(client,cycle,"tcc",points,tmp,optional=True),"cloud")
+        except ValueError as exc:print("Cloud unavailable",exc,flush=True);C={}
+        try:S=intervals(convert(extract(client,cycle,"sf",points,tmp,optional=True),"precip"))
+        except (ValueError,KeyError) as exc:print("Snow phase unavailable",exc,flush=True);S={}
     def interp(d,h):
         lo=h//3*3;hi=((h+2)//3)*3
         if lo not in d or hi not in d:return np.full(len(points),np.nan)
@@ -109,16 +129,21 @@ def main():
         speed=np.hypot(u,v);direction=(270-np.degrees(np.arctan2(v,u)))%360
         upper=((h+2)//3)*3
         precip=P[upper]
+        cloud=interp(C,h)
+        snow=S.get(upper,np.full(len(points),np.nan))
         # The native interval maximum is only a 3-hour diagnostic, not hourly gust.
         gust=G[upper][0] if h%3==0 and upper in G and G[upper][1] in (upper-3,upper) else np.full(len(points),np.nan)
         if np.isfinite(t).sum()<len(points)*.8:raise ValueError("Temperature coverage incomplete")
         for i in range(len(points)):
-            rows[i].append([clean(t[i]),clean(speed[i]),clean(gust[i]),clean(precip[i]),clean(direction[i]),None])
+            rows[i].append([clean(t[i]),clean(speed[i]),clean(gust[i]),clean(precip[i]),clean(direction[i]),diagnostic(cloud[i],precip[i],snow[i]),clean(cloud[i]),clean(snow[i])])
     doc={"schema":1,"model":"ifs","provider":"ECMWF Open Data","run_utc":cycle.isoformat(),
          "fetched_utc":datetime.now(timezone.utc).isoformat(),"points":points.tolist(),
          "times":[(cycle+timedelta(hours=h)).isoformat() for h in hours],"rows":rows,
          "fields":FIELDS,"grid_degrees":.58,"native_grid_degrees":.25,
-         "temporal_method":"temperature/wind linear interpolation; 3-hour total precipitation divided equally among hours; native gust at interval end only; no weather code"}
+         "diagnostic_version":DIAGNOSTIC_VERSION,"weather_code_source":"KFS diagnostic: IFS total cloud cover, precipitation and snow water equivalent; no direct WMO code",
+         "temporal_method":"temperature/wind/cloud linear interpolation; 3-hour precipitation and snow water equivalent divided equally among hours; native gust at interval end only"}
+    count=sum(r[5] is not None for row in rows for r in row)
+    print("Diagnostic weather symbols",count,"/",len(points)*len(hours),flush=True)
     temp=dest.with_suffix(".tmp");temp.write_text(json.dumps(doc,separators=(",",":"),allow_nan=False));temp.replace(dest)
     print("IFS native ready",cycle.isoformat(),len(points),len(hours),flush=True)
 if __name__=="__main__":main()
