@@ -2,7 +2,7 @@
 
 > **Non diffusée sur Discord.** Analyse de sorties déterministes ponctuelles IFS, AIFS, et GFS si les données sont vérifiées. Ce document n'est pas une prévision probabiliste à quatre semaines.
 
-Génération : 27/11/2026 17:40 UTC. Sources : ECMWF Open Data et NOAA GFS vérifié le cas échéant. Champs : température à 850 hPa, pression au niveau de la mer, géopotentiel à 500 hPa et, lorsque accessibles, vents à 850 hPa. Toutes les heures citées sont en UTC.
+Génération : 27/11/2026 19:48 UTC. Sources : ECMWF Open Data et NOAA GFS vérifié le cas échéant. Champs : température à 850 hPa, pression au niveau de la mer, géopotentiel à 500 hPa et, lorsque accessibles, vents à 850 hPa. Toutes les heures citées sont en UTC.
 
 ## 1. Méthode et limites de lecture
 
@@ -10,41 +10,41 @@ Nous confrontons les prévisions numériques à +72, +168, +240 et +360 heures (
 
 ## 2. Première partie — évolution à court terme
 
-À +72 h sur France et alentours, IFS prévoit 2.0 °C et AIFS 2.7 °C (AIFS moins IFS : +0,7 °C). GFS : 2.0 °C sur le même domaine à +72 h, depuis un run NOAA dont l'heure de validité peut différer. La dispersion de trois sorties déterministes n'est pas une probabilité et ne remplace pas les ensembles.
+À +72 h sur France et alentours, IFS prévoit 2.5 °C et AIFS 2.7 °C (AIFS moins IFS : +0,2 °C). GFS : 2.0 °C sur le même domaine à +72 h, depuis un run NOAA dont l'heure de validité peut différer. La dispersion de trois sorties déterministes n'est pas une probabilité et ne remplace pas les ensembles.
 
-À +72 h sur Atlantique nord-est, IFS prévoit 999.5 hPa et AIFS 1000.8 hPa (AIFS moins IFS : +1,3 hPa). GFS : 1002.7 hPa sur le même domaine à +72 h, depuis un run NOAA dont l'heure de validité peut différer. La dispersion de trois sorties déterministes n'est pas une probabilité et ne remplace pas les ensembles.
+À +72 h sur Atlantique nord-est, IFS prévoit 1001.4 hPa et AIFS 1000.8 hPa (AIFS moins IFS : -0,7 hPa). GFS : 1002.7 hPa sur le même domaine à +72 h, depuis un run NOAA dont l'heure de validité peut différer. La dispersion de trois sorties déterministes n'est pas une probabilité et ne remplace pas les ensembles.
 
-À +72 h sur Europe occidentale, IFS prévoit 564.4 dam et AIFS 565.1 dam (AIFS moins IFS : +0,7 dam). GFS : 566.2 dam sur le même domaine à +72 h, depuis un run NOAA dont l'heure de validité peut différer. La dispersion de trois sorties déterministes n'est pas une probabilité et ne remplace pas les ensembles.
+À +72 h sur Europe occidentale, IFS prévoit 565.6 dam et AIFS 565.1 dam (AIFS moins IFS : -0,5 dam). GFS : 566.2 dam sur le même domaine à +72 h, depuis un run NOAA dont l'heure de validité peut différer. La dispersion de trois sorties déterministes n'est pas une probabilité et ne remplace pas les ensembles.
 
 La lecture croisée des trois champs sert à examiner la cohérence du scénario synoptique à une échéance donnée. Elle ne démontre pas à elle seule un régime de NAO, un blocage anticyclonique ni une trajectoire des perturbations. Pour identifier ces structures, il faudrait examiner les gradients, les anomalies par rapport à une référence climatique et, idéalement, un ensemble de prévisions.
 
 ## 3. Deuxième partie — évolution à moyen terme
 
-À +168 h sur France et alentours, IFS prévoit 0.3 °C et AIFS 4.0 °C (AIFS moins IFS : +3,7 °C). GFS : 4.5 °C sur le même domaine à +168 h, depuis un run NOAA dont l'heure de validité peut différer. La dispersion de trois sorties déterministes n'est pas une probabilité et ne remplace pas les ensembles.
+À +168 h sur France et alentours, IFS prévoit 4.0 °C et AIFS 4.0 °C (AIFS moins IFS : +0,0 °C). GFS : 4.5 °C sur le même domaine à +168 h, depuis un run NOAA dont l'heure de validité peut différer. La dispersion de trois sorties déterministes n'est pas une probabilité et ne remplace pas les ensembles.
 
-À +168 h sur Atlantique nord-est, IFS prévoit 1021.1 hPa et AIFS 1022.9 hPa (AIFS moins IFS : +1,8 hPa). GFS : 1019.8 hPa sur le même domaine à +168 h, depuis un run NOAA dont l'heure de validité peut différer. La dispersion de trois sorties déterministes n'est pas une probabilité et ne remplace pas les ensembles.
+À +168 h sur Atlantique nord-est, IFS prévoit 1023.5 hPa et AIFS 1022.9 hPa (AIFS moins IFS : -0,5 hPa). GFS : 1019.8 hPa sur le même domaine à +168 h, depuis un run NOAA dont l'heure de validité peut différer. La dispersion de trois sorties déterministes n'est pas une probabilité et ne remplace pas les ensembles.
 
-À +168 h sur Groenland et environs, IFS prévoit 528.2 dam et AIFS 516.0 dam (AIFS moins IFS : -12,2 dam). GFS : 522.0 dam sur le même domaine à +168 h, depuis un run NOAA dont l'heure de validité peut différer. La dispersion de trois sorties déterministes n'est pas une probabilité et ne remplace pas les ensembles.
+À +168 h sur Groenland et environs, IFS prévoit 519.9 dam et AIFS 516.0 dam (AIFS moins IFS : -3,9 dam). GFS : 522.0 dam sur le même domaine à +168 h, depuis un run NOAA dont l'heure de validité peut différer. La dispersion de trois sorties déterministes n'est pas une probabilité et ne remplace pas les ensembles.
 
 À ce délai, les écarts entre deux modèles peuvent augmenter. Un accord ponctuel entre IFS et AIFS est intéressant, mais ne fournit pas à lui seul un niveau de confiance élevé. Il est nécessaire de comparer plusieurs cycles et d'examiner la dispersion des membres d'ensemble pour apprécier la robustesse d'une tendance.
 
 ## 4. Troisième partie — évolution à J+10
 
-À +240 h sur France et alentours, IFS prévoit 3.9 °C et AIFS 4.7 °C (AIFS moins IFS : +0,7 °C). GFS : -0.2 °C sur le même domaine à +240 h, depuis un run NOAA dont l'heure de validité peut différer. La dispersion de trois sorties déterministes n'est pas une probabilité et ne remplace pas les ensembles.
+À +240 h sur France et alentours, IFS prévoit 4.5 °C et AIFS 4.7 °C (AIFS moins IFS : +0,2 °C). GFS : -0.2 °C sur le même domaine à +240 h, depuis un run NOAA dont l'heure de validité peut différer. La dispersion de trois sorties déterministes n'est pas une probabilité et ne remplace pas les ensembles.
 
-À +240 h sur Atlantique nord-est, IFS prévoit 1026.1 hPa et AIFS 1017.8 hPa (AIFS moins IFS : -8,3 hPa). GFS : 1027.7 hPa sur le même domaine à +240 h, depuis un run NOAA dont l'heure de validité peut différer. La dispersion de trois sorties déterministes n'est pas une probabilité et ne remplace pas les ensembles.
+À +240 h sur Atlantique nord-est, IFS prévoit 1019.1 hPa et AIFS 1017.8 hPa (AIFS moins IFS : -1,4 hPa). GFS : 1027.7 hPa sur le même domaine à +240 h, depuis un run NOAA dont l'heure de validité peut différer. La dispersion de trois sorties déterministes n'est pas une probabilité et ne remplace pas les ensembles.
 
-À +240 h sur Europe occidentale, IFS prévoit 566.4 dam et AIFS 574.4 dam (AIFS moins IFS : +8,0 dam). GFS : 557.7 dam sur le même domaine à +240 h, depuis un run NOAA dont l'heure de validité peut différer. La dispersion de trois sorties déterministes n'est pas une probabilité et ne remplace pas les ensembles.
+À +240 h sur Europe occidentale, IFS prévoit 564.3 dam et AIFS 574.4 dam (AIFS moins IFS : +10,1 dam). GFS : 557.7 dam sur le même domaine à +240 h, depuis un run NOAA dont l'heure de validité peut différer. La dispersion de trois sorties déterministes n'est pas une probabilité et ne remplace pas les ensembles.
 
 L'échéance de +240 heures représente un état de l'atmosphère prévu à environ dix jours, pas la moyenne de la deuxième semaine. Les détails géographiques sont à interpréter comme une possibilité de scénario, et non comme une prévision stabilisée de chaque région. Cette prudence s'applique encore davantage au-delà de J+10.
 
 ## 5. Évolution à J+15 — IFS / AIFS / GFS
 
-À +360 h sur France et alentours, IFS prévoit -3.2 °C et AIFS 4.5 °C (AIFS moins IFS : +7,7 °C). GFS : 3.3 °C sur le même domaine à +360 h, depuis un run NOAA dont l'heure de validité peut différer. La dispersion de trois sorties déterministes n'est pas une probabilité et ne remplace pas les ensembles.
+À +360 h sur France et alentours, IFS prévoit 6.4 °C et AIFS 4.5 °C (AIFS moins IFS : -1,9 °C). GFS : 3.3 °C sur le même domaine à +360 h, depuis un run NOAA dont l'heure de validité peut différer. La dispersion de trois sorties déterministes n'est pas une probabilité et ne remplace pas les ensembles.
 
-À +360 h sur Atlantique nord-est, IFS prévoit 1013.5 hPa et AIFS 1014.6 hPa (AIFS moins IFS : +1,1 hPa). GFS : 1024.5 hPa sur le même domaine à +360 h, depuis un run NOAA dont l'heure de validité peut différer. La dispersion de trois sorties déterministes n'est pas une probabilité et ne remplace pas les ensembles.
+À +360 h sur Atlantique nord-est, IFS prévoit 1010.0 hPa et AIFS 1014.6 hPa (AIFS moins IFS : +4,6 hPa). GFS : 1024.5 hPa sur le même domaine à +360 h, depuis un run NOAA dont l'heure de validité peut différer. La dispersion de trois sorties déterministes n'est pas une probabilité et ne remplace pas les ensembles.
 
-À +360 h sur Europe occidentale, IFS prévoit 544.1 dam et AIFS 566.1 dam (AIFS moins IFS : +22,0 dam). GFS : 563.1 dam sur le même domaine à +360 h, depuis un run NOAA dont l'heure de validité peut différer. La dispersion de trois sorties déterministes n'est pas une probabilité et ne remplace pas les ensembles.
+À +360 h sur Europe occidentale, IFS prévoit 567.8 dam et AIFS 566.1 dam (AIFS moins IFS : -1,7 dam). GFS : 563.1 dam sur le même domaine à +360 h, depuis un run NOAA dont l'heure de validité peut différer. La dispersion de trois sorties déterministes n'est pas une probabilité et ne remplace pas les ensembles.
 
 À J+15, ces sorties déterministes sont des scénarios indicatifs et non des probabilités.
 
