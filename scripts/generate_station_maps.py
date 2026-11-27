@@ -899,6 +899,26 @@ def main():
             continue
         web_weather.append([round(lon, 5), round(lat, 5), stamp, rain, vis,
                             sun, clouds if cloud_stamp else None, cloud_stamp, sid])
+    # Individually timestamped measurements for short-range KFS post-processing.
+    # Missing sensor values remain null. Dew point is converted from Kelvin.
+    web_nowcast = []
+    for sid, (lon, lat, p) in current.items():
+        stamp = obs_stamp(p)
+        if not stamp or not (-5.8 <= lon <= 10.0 and 41.1 <= lat <= 51.6):
+            continue
+        temp = kelvin(p.get("t"))
+        dew = kelvin(p.get("td"))
+        rh = bounded(p, "u", 0, 100)
+        wind = kmh(p.get("ff"))
+        alt = station_elevations.get(str(sid).zfill(8))
+        if temp is not None and dew is not None and dew > temp + 0.5:
+            dew = None
+        if rh is None and temp is not None and dew is not None:
+            rh = round(min(100.0, max(0.0, 100 * math.exp(
+                17.625 * dew / (243.04 + dew) - 17.625 * temp / (243.04 + temp)))), 1)
+        if any(v is not None for v in (temp, dew, rh, wind)):
+            web_nowcast.append([round(lon, 5), round(lat, 5), stamp, alt,
+                                temp, dew, rh, wind])
     records = daily_records(current, hourly_samples, official_names, now, station_elevations)
     try:
         for metric, points in estimated_snow_records(now).items():
@@ -933,6 +953,8 @@ def main():
         "hourly_snapshots": len(hourly_samples),
         "web_points_schema": 1,
         "web_points": web_points,
+        "web_nowcast_schema": 1,
+        "web_nowcast": web_nowcast,
         "web_weather_schema": 1,
         "web_weather": web_weather,
         "metric_details": {k: v[0] for k, v in METRICS.items()},
