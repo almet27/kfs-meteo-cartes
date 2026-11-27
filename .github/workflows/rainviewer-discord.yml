@@ -62,7 +62,7 @@ jobs:
                       str(int(dt.datetime.now(dt.timezone.utc).timestamp())))
                   pub_stamp = dt.datetime.fromisoformat(
                       published["derniere_observation_utc"]).timestamp()
-                  build = latest_stamp > pub_stamp or published.get("web_projection") != "KFS-stations-730x735-v2"
+                  build = latest_stamp > pub_stamp or published.get("web_projection") != "KFS-stations-730x735-v2" or published.get("community_echo_schema") != 1
                   print("Dernier radar RainViewer :", latest_stamp)
                   print("Dernier radar déjà publié :", pub_stamp)
               except Exception as exc:
@@ -96,6 +96,28 @@ jobs:
           for frame in m['web_frames']:
               with Image.open(root/frame['file']) as layer:
                   assert layer.size == (730,735) and layer.mode == 'RGBA'
+          import base64
+          import datetime as dt
+          frames=sorted(m['web_frames'],key=lambda f:dt.datetime.fromisoformat(f['observation_utc'].replace('Z','+00:00')))[-2:]
+          echo_frames=[]
+          for frame in frames:
+              with Image.open(root/frame['file']) as layer:
+                  assert layer.size == (730,735) and layer.mode == 'RGBA'
+                  packed=bytearray((730*735+7)//8)
+                  for i,(red,green,blue,alpha) in enumerate(layer.getdata()):
+                      hi=max(red,green,blue)
+                      lo=min(red,green,blue)
+                      if alpha>=100 and hi>=100 and hi-lo>=55 and (hi-lo)*100>=40*hi:
+                          packed[i//8] |= 1 << (i%8)
+              echo_frames.append({'observation_utc':frame['observation_utc'],
+                                  'mask':base64.b64encode(packed).decode('ascii')})
+          assert len(echo_frames)==2 and all(len(base64.b64decode(x['mask']))==(730*735+7)//8 for x in echo_frames)
+          (root/'community-echo.json').write_text(json.dumps({
+              'schema':1,'source':'RainViewer','projection':m['web_projection'],
+              'width':730,'height':735,'encoding':'base64-lsb-bitset',
+              'frames':echo_frames},separators=(',',':')))
+          m['community_echo_schema']=1
+          (root/'radar-rainviewer.json').write_text(json.dumps(m,ensure_ascii=False))
           with Image.open(root/'radar-rainviewer.gif') as gif:
               assert gif.n_frames >= 2, 'Animation avec moins de 2 images'
               assert gif.size == (1536,1536), 'Emprise radar invalide'
