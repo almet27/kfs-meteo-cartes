@@ -1,26 +1,26 @@
 {
   "schema_version": 1,
-  "generated_utc": "2026-11-26T20:01:06.300734+00:00",
-  "atlas_generated_utc": "2026-11-26T19:39:50.587707+00:00",
+  "generated_utc": "2026-11-27T01:12:32.220357+00:00",
+  "atlas_generated_utc": "2026-11-27T00:28:38.034230+00:00",
   "reference": "ECMWF Open Data, Copernicus DEM GLO-90 via Open-Meteo — champs géoréférencés",
   "stages": [
     {
       "id": "j3",
       "step_h": 72,
       "model": "ifs",
-      "run_utc": "2026-11-26T12:00:00+00:00",
-      "valid_utc": "2026-11-29T12:00:00+00:00",
+      "run_utc": "2026-11-26T18:00:00+00:00",
+      "valid_utc": "2026-11-29T18:00:00+00:00",
       "background_path": "forecast-maps/tendance/tendance-risques-fond-j3.png",
       "risks": {
         "neige": {
           "status": "possible",
-          "max": 1.8,
+          "max": 1.5,
           "unit": "mm équiv. eau/6h",
-          "reason": "Neige hors relief ≤ 500 m, hors vallée de montagne (Copernicus GLO-90) ; relief : 0 zones échantillonnées",
-          "mountain_signal": false,
-          "mountain_max": 0,
-          "lowland_sample_count": 8,
-          "highland_sample_count": 0,
+          "reason": "Neige hors relief ≤ 500 m, hors vallée de montagne (Copernicus GLO-90) ; relief : 4 zones échantillonnées",
+          "mountain_signal": true,
+          "mountain_max": 2.0,
+          "lowland_sample_count": 1,
+          "highland_sample_count": 4,
           "terrain_source": "Copernicus DEM GLO-90 via Open-Meteo"
         },
         "verglas": {
@@ -33,14 +33,14 @@
         },
         "tempete": {
           "status": "possible",
-          "max": 70.5,
+          "max": 59.6,
           "unit": "km/h (rafales max 10 m/6 h)",
           "reason": "Rafales maximales ECMWF IFS des 6 h précédentes, pas une vigilance officielle"
         },
         "gel": {
           "status": "marque",
-          "severity": "severe",
-          "min": -18.05,
+          "severity": "marque",
+          "min": -9.07,
           "unit": "°C (Tmin 2 m/6 h)",
           "reason": "Minimum sur les 6 h précédentes, points terrestres"
         },
@@ -53,73 +53,67 @@
           "reason": "Crue non déductible d'un seul cumul de pluie de 6 h"
         },
         "pluie_forte": {
-          "status": "possible",
-          "max": 15.1,
+          "status": "absent",
+          "max": 8.8,
           "unit": "mm/6h",
           "reason": "Cumul des 6 heures précédant l'échéance"
         }
       },
       "markers": [
         {
-          "lon": 10.5,
-          "lat": 46.75,
-          "value": -18.046697998046852,
+          "lon": 12.0,
+          "lat": 46.5,
+          "value": -9.074835205078102,
           "kind": "gel"
         },
         {
-          "lon": 7.25,
-          "lat": 51.0,
-          "value": 1.8,
+          "lon": 7.75,
+          "lat": 46.0,
+          "value": -8.824835205078102,
+          "kind": "gel"
+        },
+        {
+          "lon": 7.75,
+          "lat": 50.75,
+          "value": 1.5,
           "kind": "neige",
-          "altitude_m": 230,
+          "altitude_m": 309,
           "terrain_context": "hors relief marqué"
         },
         {
-          "lon": 6.5,
-          "lat": 44.25,
-          "value": -8.546697998046852,
-          "kind": "gel"
+          "lon": 11.75,
+          "lat": 42.5,
+          "value": 59.6,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": -9.75,
+          "lat": 53.0,
+          "value": 56.6,
+          "kind": "vent_fort"
+        },
+        {
+          "lon": -2.0,
+          "lat": 50.5,
+          "value": 51.4,
+          "kind": "vent_fort"
         },
         {
           "lon": -5.25,
-          "lat": 53.0,
-          "value": 70.5,
+          "lat": 52.5,
+          "value": 50.6,
           "kind": "vent_fort"
         },
         {
-          "lon": 0.25,
+          "lon": 0.0,
           "lat": 42.75,
-          "value": -6.546697998046852,
+          "value": -1.0748352050781023,
           "kind": "gel"
-        },
-        {
-          "lon": 11.5,
-          "lat": 42.0,
-          "value": 61.9,
-          "kind": "vent_fort"
-        },
-        {
-          "lon": -10.0,
-          "lat": 53.0,
-          "value": 59.9,
-          "kind": "vent_fort"
-        },
-        {
-          "lon": -7.5,
-          "lat": 49.5,
-          "value": 51.6,
-          "kind": "vent_fort"
         },
         {
           "lon": 12.0,
-          "lat": 53.0,
-          "value": -3.2966979980468523,
-          "kind": "gel"
-        },
-        {
-          "lon": 10.5,
-          "lat": 44.25,
-          "value": -3.0466979980468523,
+          "lat": 52.0,
+          "value": -0.07483520507810226,
           "kind": "gel"
         }
       ],
@@ -136,16 +130,16 @@
           "gfs": 0.2
         },
         "bonus_model": null,
-        "normalized_spread": 0.263,
+        "normalized_spread": 0.254,
         "excluded": {},
-        "valid_utc": "2026-11-29T12:00:00+00:00",
+        "valid_utc": "2026-11-29T18:00:00+00:00",
         "runs_utc": {
-          "ifs": "2026-11-26T12:00:00+00:00",
-          "aifs": "2026-11-26T12:00:00+00:00",
-          "gfs": "2026-11-26T12:00:00+00:00"
+          "ifs": "2026-11-26T18:00:00+00:00",
+          "aifs": "2026-11-26T18:00:00+00:00",
+          "gfs": "2026-11-26T18:00:00+00:00"
         },
-        "t850_france": 2.92,
-        "msl_france": 1025.37,
+        "t850_france": 1.93,
+        "msl_france": 1027.95,
         "risk_source": "ifs",
         "weight_method": "Poids KFS configurés ; bonus de 10 points selon accord synoptique actuel"
       },
@@ -299,16 +293,16 @@
           "gfs": 0.2
         },
         "bonus_model": null,
-        "normalized_spread": 0.622,
+        "normalized_spread": 0.554,
         "excluded": {},
         "valid_utc": "2026-12-03T12:00:00+00:00",
         "runs_utc": {
           "ifs": "2026-11-26T12:00:00+00:00",
-          "aifs": "2026-11-26T12:00:00+00:00",
-          "gfs": "2026-11-26T12:00:00+00:00"
+          "aifs": "2026-11-26T18:00:00+00:00",
+          "gfs": "2026-11-26T18:00:00+00:00"
         },
-        "t850_france": 2.53,
-        "msl_france": 1033.57,
+        "t850_france": 2.76,
+        "msl_france": 1034.39,
         "risk_source": "ifs",
         "weight_method": "Poids KFS configurés ; bonus de 10 points selon accord synoptique actuel"
       },
@@ -460,16 +454,16 @@
           "gfs": 0.3
         },
         "bonus_model": "ifs",
-        "normalized_spread": 0.816,
+        "normalized_spread": 0.772,
         "excluded": {},
         "valid_utc": "2026-12-06T12:00:00+00:00",
         "runs_utc": {
           "ifs": "2026-11-26T12:00:00+00:00",
-          "aifs": "2026-11-26T12:00:00+00:00",
-          "gfs": "2026-11-26T12:00:00+00:00"
+          "aifs": "2026-11-26T18:00:00+00:00",
+          "gfs": "2026-11-26T18:00:00+00:00"
         },
-        "t850_france": -2.78,
-        "msl_france": 1032.64,
+        "t850_france": -0.02,
+        "msl_france": 1032.02,
         "risk_source": "ifs",
         "weight_method": "Poids KFS configurés ; bonus de 10 points selon accord synoptique actuel"
       },
@@ -614,16 +608,16 @@
           "gfs": 0.5
         },
         "bonus_model": "gfs",
-        "normalized_spread": 1.014,
+        "normalized_spread": 0.959,
         "excluded": {},
         "valid_utc": "2026-12-11T12:00:00+00:00",
         "runs_utc": {
           "ifs": "2026-11-26T12:00:00+00:00",
-          "aifs": "2026-11-26T12:00:00+00:00",
-          "gfs": "2026-11-26T12:00:00+00:00"
+          "aifs": "2026-11-26T18:00:00+00:00",
+          "gfs": "2026-11-26T18:00:00+00:00"
         },
-        "t850_france": -1.24,
-        "msl_france": 1027.53,
+        "t850_france": 2.37,
+        "msl_france": 1027.78,
         "risk_source": "ifs",
         "weight_method": "Poids KFS configurés ; bonus de 10 points selon accord synoptique actuel"
       },
@@ -649,19 +643,19 @@
       "id": "j3",
       "step_h": 72,
       "model": "ifs",
-      "run_utc": "2026-11-26T12:00:00+00:00",
-      "valid_utc": "2026-11-29T12:00:00+00:00",
+      "run_utc": "2026-11-26T18:00:00+00:00",
+      "valid_utc": "2026-11-29T18:00:00+00:00",
       "background_path": "forecast-maps/tendance/tendance-risques-fond-france-j3.png",
       "risks": {
         "neige": {
-          "status": "possible",
-          "max": 1.0,
+          "status": "relief_uniquement",
+          "max": 0,
           "unit": "mm équiv. eau/6h",
-          "reason": "Neige hors relief ≤ 500 m, hors vallée de montagne (Copernicus GLO-90) ; relief : 0 zones échantillonnées",
-          "mountain_signal": false,
-          "mountain_max": 0,
-          "lowland_sample_count": 1,
-          "highland_sample_count": 0,
+          "reason": "Neige hors relief ≤ 500 m, hors vallée de montagne (Copernicus GLO-90) ; relief : 2 zones échantillonnées",
+          "mountain_signal": true,
+          "mountain_max": 1.0,
+          "lowland_sample_count": 0,
+          "highland_sample_count": 2,
           "terrain_source": "Copernicus DEM GLO-90 via Open-Meteo"
         },
         "verglas": {
@@ -674,14 +668,14 @@
         },
         "tempete": {
           "status": "absent",
-          "max": 45.7,
+          "max": 45.0,
           "unit": "km/h (rafales max 10 m/6 h)",
           "reason": "Rafales maximales ECMWF IFS des 6 h précédentes, pas une vigilance officielle"
         },
         "gel": {
           "status": "marque",
-          "severity": "severe",
-          "min": -10.55,
+          "severity": "marque",
+          "min": -6.57,
           "unit": "°C (Tmin 2 m/6 h)",
           "reason": "Minimum sur les 6 h précédentes, points terrestres"
         },
@@ -694,8 +688,8 @@
           "reason": "Crue non déductible d'un seul cumul de pluie de 6 h"
         },
         "pluie_forte": {
-          "status": "possible",
-          "max": 10.3,
+          "status": "absent",
+          "max": 8.1,
           "unit": "mm/6h",
           "reason": "Cumul des 6 heures précédant l'échéance"
         }
@@ -703,52 +697,14 @@
       "markers": [
         {
           "lon": 7.0,
-          "lat": 44.25,
-          "value": -10.546697998046852,
+          "lat": 45.5,
+          "value": -6.574835205078102,
           "kind": "gel"
         },
         {
-          "lon": 0.25,
+          "lon": 0.0,
           "lat": 42.75,
-          "value": -6.546697998046852,
-          "kind": "gel"
-        },
-        {
-          "lon": 5.75,
-          "lat": 49.25,
-          "value": 1.0,
-          "kind": "neige",
-          "altitude_m": 258,
-          "terrain_context": "hors relief marqué"
-        },
-        {
-          "lon": 7.75,
-          "lat": 49.0,
-          "value": -3.5466979980468523,
-          "kind": "gel"
-        },
-        {
-          "lon": 6.0,
-          "lat": 46.5,
-          "value": -3.0466979980468523,
-          "kind": "gel"
-        },
-        {
-          "lon": 0.75,
-          "lat": 48.5,
-          "value": 10.3,
-          "kind": "pluie_forte"
-        },
-        {
-          "lon": 3.75,
-          "lat": 45.0,
-          "value": -0.5466979980468523,
-          "kind": "gel"
-        },
-        {
-          "lon": 9.0,
-          "lat": 42.25,
-          "value": -0.04669799804685226,
+          "value": -1.0748352050781023,
           "kind": "gel"
         }
       ],
@@ -765,16 +721,16 @@
           "gfs": 0.2
         },
         "bonus_model": null,
-        "normalized_spread": 0.263,
+        "normalized_spread": 0.254,
         "excluded": {},
-        "valid_utc": "2026-11-29T12:00:00+00:00",
+        "valid_utc": "2026-11-29T18:00:00+00:00",
         "runs_utc": {
-          "ifs": "2026-11-26T12:00:00+00:00",
-          "aifs": "2026-11-26T12:00:00+00:00",
-          "gfs": "2026-11-26T12:00:00+00:00"
+          "ifs": "2026-11-26T18:00:00+00:00",
+          "aifs": "2026-11-26T18:00:00+00:00",
+          "gfs": "2026-11-26T18:00:00+00:00"
         },
-        "t850_france": 2.92,
-        "msl_france": 1025.37,
+        "t850_france": 1.93,
+        "msl_france": 1027.95,
         "risk_source": "ifs",
         "weight_method": "Poids KFS configurés ; bonus de 10 points selon accord synoptique actuel"
       },
@@ -894,16 +850,16 @@
           "gfs": 0.2
         },
         "bonus_model": null,
-        "normalized_spread": 0.622,
+        "normalized_spread": 0.554,
         "excluded": {},
         "valid_utc": "2026-12-03T12:00:00+00:00",
         "runs_utc": {
           "ifs": "2026-11-26T12:00:00+00:00",
-          "aifs": "2026-11-26T12:00:00+00:00",
-          "gfs": "2026-11-26T12:00:00+00:00"
+          "aifs": "2026-11-26T18:00:00+00:00",
+          "gfs": "2026-11-26T18:00:00+00:00"
         },
-        "t850_france": 2.53,
-        "msl_france": 1033.57,
+        "t850_france": 2.76,
+        "msl_france": 1034.39,
         "risk_source": "ifs",
         "weight_method": "Poids KFS configurés ; bonus de 10 points selon accord synoptique actuel"
       },
@@ -1083,16 +1039,16 @@
           "gfs": 0.3
         },
         "bonus_model": "ifs",
-        "normalized_spread": 0.816,
+        "normalized_spread": 0.772,
         "excluded": {},
         "valid_utc": "2026-12-06T12:00:00+00:00",
         "runs_utc": {
           "ifs": "2026-11-26T12:00:00+00:00",
-          "aifs": "2026-11-26T12:00:00+00:00",
-          "gfs": "2026-11-26T12:00:00+00:00"
+          "aifs": "2026-11-26T18:00:00+00:00",
+          "gfs": "2026-11-26T18:00:00+00:00"
         },
-        "t850_france": -2.78,
-        "msl_france": 1032.64,
+        "t850_france": -0.02,
+        "msl_france": 1032.02,
         "risk_source": "ifs",
         "weight_method": "Poids KFS configurés ; bonus de 10 points selon accord synoptique actuel"
       },
@@ -1261,16 +1217,16 @@
           "gfs": 0.5
         },
         "bonus_model": "gfs",
-        "normalized_spread": 1.014,
+        "normalized_spread": 0.959,
         "excluded": {},
         "valid_utc": "2026-12-11T12:00:00+00:00",
         "runs_utc": {
           "ifs": "2026-11-26T12:00:00+00:00",
-          "aifs": "2026-11-26T12:00:00+00:00",
-          "gfs": "2026-11-26T12:00:00+00:00"
+          "aifs": "2026-11-26T18:00:00+00:00",
+          "gfs": "2026-11-26T18:00:00+00:00"
         },
-        "t850_france": -1.24,
-        "msl_france": 1027.53,
+        "t850_france": 2.37,
+        "msl_france": 1027.78,
         "risk_source": "ifs",
         "weight_method": "Poids KFS configurés ; bonus de 10 points selon accord synoptique actuel"
       },
