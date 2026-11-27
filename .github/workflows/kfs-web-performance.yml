@@ -1,0 +1,60 @@
+name: Audit performances KFS
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/kfs-web-performance.yml'
+permissions:
+  contents: read
+concurrency:
+  group: kfs-web-performance
+  cancel-in-progress: false
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Mesures HTTP
+        run: |
+          curl -fsSL --compressed --max-time 30 -o /tmp/kfs.html -D /tmp/headers -w 'HTTP %{http_code} TTFB=%{time_starttransfer}s total=%{time_total}s bytes=%{size_download}\n' https://kfs-meteo.fr/
+          grep -iE '^(cache-control|content-encoding|etag|content-length|cf-cache-status):' /tmp/headers || true
+      - name: Installer le navigateur de test
+        run: npm install --no-audit --no-fund playwright-core@1.56.1
+      - name: Mesures navigateur mobile
+        run: |
+          cat > /tmp/unused <<'EOF'
+          EOF
+          cat > audit.cjs <<'EOF'
+          const {chromium,devices}=require('playwright-core');
+          (async()=>{
+            const browser=await chromium.launch({channel:'chrome',headless:true,args:['--no-sandbox']});
+            try {
+              const context=await browser.newContext({...devices['iPhone 13'],browserName:undefined,defaultBrowserType:undefined,serviceWorkers:'block'});
+              const page=await context.newPage();
+              const errors=[],failed=[];
+              page.on('pageerror',e=>errors.push(e.message.slice(0,400)));
+              page.on('response',r=>{if(r.status()>=400&&new URL(r.url()).origin==='https://kfs-meteo.fr')failed.push({path:new URL(r.url()).pathname,status:r.status()})});
+              await page.addInitScript(()=>{window.auditLCP=0;try{new PerformanceObserver(l=>{for(const e of l.getEntries())window.auditLCP=e.startTime}).observe({type:'largest-contentful-paint',buffered:true})}catch{}});
+              for(const kind of ['cold','warm']){
+                const start=Date.now();await page.goto('https://kfs-meteo.fr/',{waitUntil:'load',timeout:60000});
+                await page.waitForTimeout(2000);
+                const m=await page.evaluate(()=>{const n=performance.getEntriesByType('navigation')[0],r=performance.getEntriesByType('resource');return {ttfb:Math.round(n.responseStart),dom:Math.round(n.domContentLoadedEventEnd),load:Math.round(n.loadEventEnd),lcp:Math.round(window.auditLCP),requests:r.length,transfer:n.transferSize+r.reduce((a,v)=>a+v.transferSize,0),top:r.sort((a,b)=>b.duration-a.duration).slice(0,8).map(v=>({path:new URL(v.name).pathname,ms:Math.round(v.duration),bytes:v.transferSize})),core:r.filter(v=>v.name.includes('/assets/kfs/core-')).map(v=>({bytes:v.transferSize,ms:Math.round(v.duration)}))}});
+                console.log('AUDIT_NAV '+JSON.stringify({kind,wall:Date.now()-start,...m}));
+              }
+              await page.goto('https://kfs-meteo.fr/#observations',{waitUntil:'domcontentloaded',timeout:30000});
+              await page.locator('#obs-hour').scrollIntoViewIfNeeded({timeout:20000});
+              await page.waitForTimeout(2000);
+              for(let h=1;h<=6;h++){
+                const start=Date.now();
+                const expected=await page.evaluate(h=>{const el=document.getElementById('obs-hour');el.value=String(h);el.dispatchEvent(new Event('input',{bubbles:true}));return new Date((Math.floor(Date.now()/3600000)+h)*3600000).toISOString()},h);
+                try{
+                  await page.waitForFunction(t=>{const w=document.getElementById('obs-mf-map'),s=document.getElementById('obs-hour-display');return (w?.dataset.validTime===t&&!w.hidden&&w.firstElementChild&&!/chargement/i.test(s.textContent))||/^Échéance indisponible/.test(s?.textContent||'')},expected,{timeout:20000});
+                  const state=await page.evaluate(()=>{const w=document.getElementById('obs-mf-map');return {valid:w.dataset.validTime,status:document.getElementById('obs-hour-display').textContent,precip:!!w.querySelector('[data-kfs-precip="all"]'),snow:!!w.querySelector('#kfs-forecast-snow-layer')}});console.log('AUDIT_HOUR '+JSON.stringify({h,ms:Date.now()-start,expected,...state}));
+                }catch(e){console.log('AUDIT_HOUR '+JSON.stringify({h,ms:Date.now()-start,error:e.message.slice(0,250)}));}
+                await page.waitForTimeout(1000);
+              }
+              console.log('AUDIT_ERRORS '+JSON.stringify({errors:errors.slice(0,20),failed:failed.slice(0,25)}));
+            } finally {await browser.close()}
+          })().catch(e=>{console.error(e);process.exitCode=1});
+          EOF
+          node audit.cjs
