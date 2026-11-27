@@ -61,6 +61,7 @@ def build(month):
     ns={v:{m:[0]*15 for m in MODELS} for v in VARIABLES}
     es={v:{m:[0.0]*15 for m in MODELS} for v in VARIABLES}
     errors=[]
+    diagnostics={v:{m:{"missing":0,"out_of_range":0,"valid":0,"examples":[]} for m in MODELS} for v in VARIABLES}
     for day in baseline["run_dates"]:
         run=datetime.fromisoformat(day).replace(tzinfo=timezone.utc)
         bundle={m:forecast(run,api) for m,api in base.items()}
@@ -81,11 +82,22 @@ def build(month):
                     for m,p in vals.items(): sums[v][m][i]+=abs(p-actual)
                     for m,d in extras.items():
                         p=numeric(d[name][v].get(valid))
-                        if p is None or not ((-100<=p<=70) if v=="temperature_2m" else (850<=p<=1100)): continue
+                        diagnostic=diagnostics[v][m]
+                        if p is None:
+                            diagnostic["missing"]+=1
+                            if len(diagnostic["examples"])<8: diagnostic["examples"].append([day,name,i+1,"missing"])
+                            continue
+                        if not ((-100<=p<=70) if v=="temperature_2m" else (850<=p<=1100)):
+                            diagnostic["out_of_range"]+=1
+                            if len(diagnostic["examples"])<8: diagnostic["examples"].append([day,name,i+1,p])
+                            continue
+                        diagnostic["valid"]+=1
                         ns[v][m][i]+=1
                         es[v][m][i]+=abs(p-actual)
         print("RUN",day,"NOAA",list(extras),flush=True)
     report={"schema":1,"period":month,"baseline_generated_utc":baseline["generated_utc"],"run_dates":baseline["run_dates"],"models":MODELS,"source":"NOAA/CIRA AIWP IFS initialization; doi:10.1175/BAMS-D-24-0057.1","method":"Identical KFS dates, sites, valid times, ERA5 and fully reproduced baseline MAE/counts; NOAA nearest native grid; J+10 max","metrics":{},"errors":errors}
+    report["diagnostics"]={"raw_n_by_model":ns,"baseline_recomputed_n":counts,"sample_validation":diagnostics}
+    print("PANGU_DIAGNOSTICS",json.dumps({v:{"n":ns[v]["pangu"],"details":diagnostics[v]["pangu"]} for v in VARIABLES}),flush=True)
     for v in VARIABLES:
         ref=baseline["metrics"][v]
         out={"unit":ref["unit"],"series":{},"n_by_model":{}}
