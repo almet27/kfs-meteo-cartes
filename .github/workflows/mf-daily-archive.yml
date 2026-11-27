@@ -3,6 +3,8 @@ on:
   workflow_dispatch:
   schedule:
     - cron: '15 10 * * *'
+    - cron: '15 12 * * *'
+    - cron: '15 17 * * *'
   push:
     paths:
       - scripts/build_mf_daily_archive.py
