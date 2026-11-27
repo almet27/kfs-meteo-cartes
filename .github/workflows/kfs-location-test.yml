@@ -26,6 +26,10 @@ jobs:
           await p.waitForTimeout(2000);
           console.log('LOCATION_TEST '+JSON.stringify({mode,...await p.evaluate(()=>({location:window.kfsLocalContext?.city,mode:window.kfsLocalContext?.mode,label:document.querySelector('#kfs-local-context [role=status]')?.textContent,city:document.getElementById('city-query')?.value,dept:document.getElementById('present-dept')?.value,summaryDept:document.getElementById('short-summary-dept')?.value,proba:document.getElementById('pzone')?.value})),errors}));
           if(mode==='gps'){
+          await p.evaluate(()=>location.hash='#france');
+          await p.locator('#france').scrollIntoViewIfNeeded({timeout:10000}).catch(()=>{});
+          await p.waitForFunction(()=>document.querySelector('#short-summary-content svg')||!document.getElementById('short').textContent.includes('Chargement'),{timeout:45000}).catch(()=>{});
+          console.log('LOCATION_SUMMARY '+JSON.stringify({...await p.evaluate(()=>({dept:document.getElementById('short-summary-dept')?.value,svg:!!document.querySelector('#short svg'),label:document.querySelector('#short svg')?.getAttribute('aria-label'),text:document.getElementById('short').textContent.slice(0,200)})),errors}));
           for(const hash of ['#diagramme-modeles','#probabilites','#climatologie']){
           await p.evaluate(h=>location.hash=h,hash);await p.waitForTimeout(4000);
           console.log('LOCATION_SECTION '+JSON.stringify({hash,...await p.evaluate(()=>({multi:document.getElementById('multi-city-query')?.value,proba:document.getElementById('p-city-query')?.value,clim:document.getElementById('clim-city-query')?.value,climDept:window.kfsLocalContext?.climDept})),errors}));
