@@ -1,0 +1,109 @@
+name: KFS rattrapage historique IA 2025-2026
+on:
+  workflow_dispatch:
+    inputs:
+      month:
+        description: "Mois précis (optionnel)"
+        type: string
+        required: false
+  push:
+    paths:
+      - .github/workflows/external-ai-backfill.yml
+  schedule:
+    - cron: '15 3 * * 3'
+permissions:
+  contents: write
+concurrency:
+  group: kfs-external-ai-backfill
+  cancel-in-progress: false
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      months: ${{ steps.plan.outputs.months }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: plan
+        env:
+          MONTH: ${{ inputs.month }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          python - <<'PY'
+          import os,json,re
+          from pathlib import Path
+          p=Path("data/model-skill")
+          requested=os.environ.get("MONTH","")
+          if requested and not re.fullmatch(r"20\d{2}-(0[1-9]|1[0-2])",requested): raise SystemExit("Invalid month")
+          def current(month,suffix):
+              try:
+                  a=json.loads((p/(month+suffix+".json")).read_text())
+                  b=json.loads((p/(month+suffix+"-ai.json")).read_text())
+                  return a["generated_utc"]==b["baseline_generated_utc"]
+              except (OSError,ValueError,KeyError): return False
+          months=[]
+          for f in sorted(p.glob("20??-??.json"),reverse=True):
+              m=f.stem
+              if m<"2025-01" or (requested and m!=requested): continue
+              if requested or not all(current(m,s) for s in ("","-regimes")): months.append(m)
+          # Weekly retries bounded; initial push covers the whole backlog.
+          if os.environ["EVENT"]=="schedule": months=months[:4]
+          with open(os.environ["GITHUB_OUTPUT"],"a") as f: print("months="+json.dumps(months),file=f)
+          print("Planned",months)
+          PY
+  backfill:
+    needs: plan
+    if: needs.plan.outputs.months != '[]'
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        month: ${{ fromJSON(needs.plan.outputs.months) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install numpy xarray h5netcdf h5py 'fsspec[http]'
+      - name: Scores France température et pression
+        continue-on-error: true
+        env:
+          MONTH: ${{ matrix.month }}
+        run: python scripts/build_external_ai_skill.py --month "$MONTH"
+      - name: Scores régimes synoptiques
+        continue-on-error: true
+        env:
+          MONTH: ${{ matrix.month }}
+        run: python scripts/build_external_ai_regimes.py --month "$MONTH"
+      - name: Publier seulement les archives compatibles et sans perte de couverture
+        env:
+          MONTH: ${{ matrix.month }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          for f in "data/model-skill/$MONTH-ai.json" "data/model-skill/$MONTH-regimes-ai.json"; do
+            if [ -f "$f" ]; then git add "$f"; fi
+          done
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Archive IA vérifiée $MONTH"
+          for n in 1 2 3 4 5; do
+            git fetch origin main
+            git rebase origin/main || { git rebase --abort; exit 1; }
+            python - <<'PY'
+          import json,os
+          from pathlib import Path
+          p=Path("data/model-skill")
+          m=os.environ["MONTH"]
+          for suffix in ("","-regimes"):
+              f=p/(m+suffix+"-ai.json")
+              if not f.exists(): continue
+              a=json.loads((p/(m+suffix+".json")).read_text())
+              b=json.loads(f.read_text())
+              if a["generated_utc"]!=b["baseline_generated_utc"]: raise SystemExit("Baseline changed; retry next run")
+          PY
+            git push origin HEAD:main && exit 0
+          done
+          exit 1
