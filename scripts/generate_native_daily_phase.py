@@ -13,6 +13,7 @@ from generate_hourly_precip_phase import (
 LEVELS = [0.05, 0.1, 0.5, 1, 2, 5, 10, 20, 30]
 COLORS = {
     "snow": ["#514075","#655291","#8069b1","#9b80d5","#b69aef","#cbb0ff","#a26be2","#833dc4","#602399"],
+    "snow-cum": ["#514075","#655291","#8069b1","#9b80d5","#b69aef","#cbb0ff","#a26be2","#833dc4","#602399"],
     "freezing": ["#254d36","#326747","#3c8b53","#54b566","#80de83","#b5efa0","#50bc64","#29914d","#126a35"],
 }
 PARIS=ZoneInfo("Europe/Paris")
@@ -63,8 +64,12 @@ def main(model):
     out=Path(model+"-native-daily");out.mkdir(exist_ok=True)
     fields={"snow":["snow"]} if model=="arome" else {"snow":["SNOW_GSP","SNOW_CON"],"freezing":["FRZ_RAIN"]}
     maps=[];grids={};cache={}
-    for date,start,end in boundaries(now):
-        for kind,keys in fields.items():
+    periods=[(date,start,end,fields) for date,start,end in boundaries(now)]
+    origin=now.replace(minute=0,second=0,microsecond=0)
+    # Compute each multiday accumulation directly from one run, never add classified PNGs.
+    periods += [(date,origin,end,{"snow-cum":fields["snow"]}) for date,_,end in boundaries(now)]
+    for date,start,end,period_fields in periods:
+        for kind,keys in period_fields.items():
             for cycle in range(1,6):
                 run=anchor-timedelta(hours=cycle*3)
                 h0=int((start-run).total_seconds()/3600);h1=int((end-run).total_seconds()/3600)
