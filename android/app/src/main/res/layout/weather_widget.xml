@@ -1,0 +1,9 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/root" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:background="@drawable/widget_bg" android:padding="12dp">
+<TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="KFS MÉTÉO" android:textSize="10sp" android:textStyle="bold" android:textColor="#AFCBE3"/>
+<TextView android:id="@+id/city" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Choisir une commune" android:maxLines="1" android:ellipsize="end" android:textSize="15sp" android:textStyle="bold" android:textColor="#FFFFFF"/>
+<TextView android:id="@+id/temp" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="—" android:textSize="30sp" android:textStyle="bold" android:textColor="#FFFFFF"/>
+<TextView android:id="@+id/condition" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Touchez pour configurer" android:maxLines="2" android:textSize="12sp" android:textColor="#DCEEFF"/>
+<TextView android:id="@+id/hours" android:layout_width="match_parent" android:layout_height="wrap_content" android:visibility="gone" android:textSize="13sp" android:textColor="#FFFFFF" android:maxLines="3"/>
+<TextView android:id="@+id/days" android:layout_width="match_parent" android:layout_height="wrap_content" android:visibility="gone" android:textSize="13sp" android:textColor="#DCEEFF" android:maxLines="4"/>
+<TextView android:id="@+id/source" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="9sp" android:textColor="#AFCBE3" android:maxLines="1"/>
+</LinearLayout>

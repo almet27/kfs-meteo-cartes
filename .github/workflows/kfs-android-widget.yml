@@ -1,0 +1,50 @@
+name: KFS Android widget beta
+on:
+  push:
+    paths:
+      - 'android/**'
+      - '.github/workflows/kfs-android-widget.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: kfs-android-widget
+  cancel-in-progress: false
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: android
+          filter: blob:none
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Build and verify beta APK
+        run: |
+          sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+          gradle -p android :app:assembleDebug :app:lintDebug --no-daemon
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose android/app/build/outputs/apk/debug/app-debug.apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk KFS-Meteo-Android-beta.apk
+          sha256sum KFS-Meteo-Android-beta.apk > KFS-Meteo-Android-beta.apk.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: KFS-Meteo-Android-beta
+          path: |
+            KFS-Meteo-Android-beta.apk
+            KFS-Meteo-Android-beta.apk.sha256
+      - name: Publish immutable first beta
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view android-widget-v0.1-beta >/dev/null 2>&1; then
+            echo "Beta already published; do not replace its signing identity."
+          else
+            gh release create android-widget-v0.1-beta KFS-Meteo-Android-beta.apk KFS-Meteo-Android-beta.apk.sha256 --target "$GITHUB_SHA" --prerelease --title "KFS Météo Android – bêta 0.1" --notes "Prototype signé avec une clé de débogage temporaire. Android 8+. Pas de mise à jour garantie : une future version signée avec une clé permanente nécessitera de désinstaller la bêta. Non testé sur téléphone. Prévisions IFS/GFS."
+          fi
