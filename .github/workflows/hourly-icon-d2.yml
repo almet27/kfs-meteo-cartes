@@ -1,0 +1,47 @@
+name: KFS - Live ICON-D2 natif
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - scripts/build_hourly_icon_d2.py
+      - .github/workflows/hourly-icon-d2.yml
+  schedule:
+    - cron: '10 */3 * * *'
+permissions:
+  contents: write
+concurrency:
+  group: kfs-hourly-icon-d2
+  cancel-in-progress: false
+jobs:
+  native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y libeccodes-dev
+          pip install eccodes numpy scipy Pillow
+      - name: Generate native hourly ICON-D2 grid
+        run: |
+          python -m py_compile scripts/build_hourly_icon_d2.py
+          python scripts/build_hourly_icon_d2.py
+      - name: Publish validated grid
+        run: |
+          set -euo pipefail
+          file=forecast-maps/france/hourly-web/icon-d2.json
+          test -s "$file"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$file"
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'KFS Live : actualiser ICON-D2 natif'
+          for attempt in 1 2 3 4 5; do
+            git pull --rebase origin main
+            if git push origin HEAD:main; then exit 0; fi
+            sleep 5
+          done
+          exit 1
