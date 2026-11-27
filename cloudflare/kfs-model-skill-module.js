@@ -2,8 +2,8 @@
    Les scores proviennent du pipeline scripts/build_model_skill.py.
    Aucune série fictive ou interpolation de résultats manquants. */
 let KFS_SKILL_SYNCED=false;
-const KFS_SKILL_COLORS={ifs:"#37bdf2",aifs:"#75e2a4",aifs_control:"#ae91ff",aigfs:"#f59ed5",gfs:"#fbbf67"};
-const KFS_SKILL_NAMES={ifs:"ECMWF IFS",aifs:"ECMWF AIFS Single",aifs_control:"ECMWF AIFS ENS Control",aigfs:"NOAA AIGFS",gfs:"NOAA GFS"};
+const KFS_SKILL_COLORS={ifs:"#37bdf2",aifs:"#75e2a4",aifs_control:"#ae91ff",aigfs:"#f59ed5",gfs:"#fbbf67",graphcast:"#e45c5c",pangu:"#e1b83c",fourcastnet:"#a1c95b"};
+const KFS_SKILL_NAMES={ifs:"ECMWF IFS",aifs:"ECMWF AIFS Single",aifs_control:"ECMWF AIFS ENS Control",aigfs:"NOAA AIGFS",gfs:"NOAA GFS",graphcast:"GraphCast (IFS)",pangu:"Pangu (IFS)",fourcastnet:"FourCastNet v2 (IFS)"};
 const KFS_SKILL_KEYS=Object.keys(KFS_SKILL_NAMES);
 function kfsSkillPreviousMonth(){
   const d=new Date();d.setUTCDate(1);d.setUTCMonth(d.getUTCMonth()-1);
@@ -62,6 +62,22 @@ async function kfsSkillLoad(month){
   const data=await response.json();
   if(data?.schema!==1||data.period!==month||!data.metrics||!Array.isArray(data.run_dates))
     throw Error("Archive mensuelle non conforme");
+  try {
+    const responseAI=await fetch(base+month+"-ai.json",{cf:{cacheEverything:true,cacheTtl:600},signal:AbortSignal.timeout(8000)});
+    if(responseAI.ok){
+      const ai=await responseAI.json();
+      if(ai.schema===1&&ai.period===month&&ai.baseline_generated_utc===data.generated_utc){
+        for(const metric of Object.keys(data.metrics)){
+          const ref=data.metrics[metric], extra=ai.metrics?.[metric];
+          if(!extra)continue;
+          for(const key of ["graphcast","pangu","fourcastnet"]){
+            const values=Array.from({length:15},(_,i)=>i<10&&extra.n_by_model?.[key]?.[i]===ref.n?.[i]&&ref.n[i]>0&&Number.isFinite(extra.series?.[key]?.[i])?extra.series[key][i]:null);
+            if(values.some(v=>v!==null)){ref.series[key]=values;ref.n_by_model??={};ref.n_by_model[key]=extra.n_by_model[key];}
+          }
+        }
+      }
+    }
+  } catch(e){console.warn("KFS_EXTERNAL_AI",String(e));}
   return data;
 }
 function kfsSkillChart(data,metric,month){
@@ -148,6 +164,8 @@ async function kfsSkillComplete(interaction,month,metric){
       "AIFS ENS Control : membre 0, vérifié sur un sous-échantillon indépendant ("+
         (controlN[6]||0)+" à J+7).":
       "AIFS ENS Control : pas encore de vérification archivée pour ce mois ; aucune courbe fictive.");
+    const aiKeys=["graphcast","pangu","fourcastnet"].filter(k=>result.series?.[k]?.some(Number.isFinite));
+    if(aiKeys.length)lines.push("NOAA/CIRA : "+aiKeys.map(k=>KFS_SKILL_NAMES[k]).join(", ")+" · runs IFS, échantillon commun vérifié, J+10 max.");
     const image=await kfsRenderEnsembleChart(kfsSkillChart(data,metric,month));
     await kfsSkillSend(interaction,{content:lines.join("\n"),allowed_mentions:{parse:[]}},image);
   }catch(error){
