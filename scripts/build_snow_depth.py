@@ -103,15 +103,20 @@ def main():
             if horizon==2:raise
     models={"icon-eu":eu.isoformat()}
     detail_horizon=-1
-    try:
-        detail_hours=min(12,horizon)
-        d2,detail=model_frames("icon-d2",start,start+dt.timedelta(hours=detail_hours))
-        if abs((d2-eu).total_seconds())<=6*3600:
+    # Prefer the longest available fine-grid forecast, without extrapolation.
+    for detail_hours in sorted({min(horizon,h) for h in (36,24,12,6)},reverse=True):
+        try:
+            d2,detail=model_frames("icon-d2",start,start+dt.timedelta(hours=detail_hours))
+            if abs((d2-eu).total_seconds())>6*3600:
+                raise ValueError("ICON-D2 run too far from ICON-EU")
             for i,d in enumerate(detail):
                 base[i]=np.where(np.isfinite(d),d,base[i])
             detail_horizon=detail_hours
             models["icon-d2"]=d2.isoformat()
-    except Exception as e:print("ICON-D2 fallback to national ICON-EU:",str(e)[:200],flush=True)
+            break
+        except Exception as e:
+            print("ICON-D2 horizon",detail_hours,str(e)[:200],flush=True)
+    if detail_horizon<0:print("ICON-D2 unavailable; national ICON-EU retained",flush=True)
     out=Path("data/snow-depth");out.mkdir(parents=True,exist_ok=True)
     frames=[]
     stamp=eu.strftime("%Y%m%d%H")
