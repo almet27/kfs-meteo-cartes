@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "status": "illustrative_model_maps",
-  "generated_utc": "2026-11-27T02:31:35.147482+00:00",
-  "source_generated_utc": "2026-11-27T02:25:56.581650+00:00",
+  "generated_utc": "2026-11-27T02:51:14.393154+00:00",
+  "source_generated_utc": "2026-11-27T02:44:07.986612+00:00",
   "charts_generated_utc": "2026-11-27T00:28:38.034230+00:00",
   "source": "ECMWF Open Data (CC BY 4.0), NOAA GFS si disponible",
   "not_weekly_anomalies": true,
@@ -252,7 +252,7 @@
       "step_h": 168,
       "path": "forecast-maps/tendance/tendance-carte-j7.png",
       "image_url": "https://almet27.github.io/kfs-meteo-cartes/forecast-maps/tendance/tendance-carte-j7.png",
-      "size_bytes": 783391,
+      "size_bytes": 777297,
       "run_utc": {
         "ifs": "2026-11-26T12:00:00+00:00",
         "aifs": "2026-11-26T18:00:00+00:00",
@@ -263,7 +263,6 @@
       "zone": "europe",
       "confidence_label": "Limitée (indicative)",
       "marked_phenomena": [
-        "neige",
         "gel"
       ],
       "not_official_warning": true,
@@ -271,15 +270,8 @@
       "risk_status": "altitude_filtered_georeferenced",
       "risks": {
         "neige": {
-          "status": "marque",
-          "max": 2.3,
-          "unit": "mm équiv. eau/6h",
-          "reason": "Neige hors relief ≤ 500 m, hors vallée de montagne (Copernicus GLO-90) ; relief : 19 zones échantillonnées",
-          "mountain_signal": true,
-          "mountain_max": 2.3,
-          "lowland_sample_count": 14,
-          "highland_sample_count": 19,
-          "terrain_source": "Copernicus DEM GLO-90 via Open-Meteo"
+          "status": "indisponible",
+          "reason": "Filtre altitude indisponible : Altitude Copernicus non accessible : <urlopen error _ssl.c:1001: The handshake operation timed out>"
         },
         "verglas": {
           "status": "indisponible",
@@ -325,26 +317,16 @@
           "kind": "gel"
         },
         {
-          "lon": 11.25,
-          "lat": 50.0,
-          "value": 2.3,
-          "kind": "neige",
-          "altitude_m": 468,
-          "terrain_context": "hors relief marqué"
-        },
-        {
-          "lon": 8.75,
-          "lat": 52.0,
-          "value": 1.8,
-          "kind": "neige",
-          "altitude_m": 100,
-          "terrain_context": "hors relief marqué"
-        },
-        {
           "lon": -2.25,
           "lat": 45.25,
           "value": 63.5,
           "kind": "vent_fort"
+        },
+        {
+          "lon": 12.0,
+          "lat": 49.5,
+          "value": -6.202337646484352,
+          "kind": "gel"
         },
         {
           "lon": 5.0,
@@ -396,9 +378,9 @@
         "description": "Température à 850 hPa modélisée, pas température au sol"
       },
       "style": "kfs-editorial-lambert-consensus-v14",
-      "summary": "Une dominante anticyclonique se dessine sur la France, avec air plus frais en altitude (+2.8 °C). Signaux possibles : rafales jusqu’à 64 km/h, neige hors relief.",
+      "summary": "Une dominante anticyclonique se dessine sur la France, avec air plus frais en altitude (+2.8 °C). Signaux possibles : rafales jusqu’à 64 km/h, gel jusqu’à -18 °C.",
       "analysis": {
-        "summary": "Une dominante anticyclonique se dessine sur la France, avec air plus frais en altitude (+2.8 °C). Signaux possibles : rafales jusqu’à 64 km/h, neige hors relief.",
+        "summary": "Une dominante anticyclonique se dessine sur la France, avec air plus frais en altitude (+2.8 °C). Signaux possibles : rafales jusqu’à 64 km/h, gel jusqu’à -18 °C.",
         "method": "Poids KFS configurés ; bonus de 10 points selon accord synoptique actuel",
         "models": {
           "ifs": {
@@ -1727,6 +1709,6 @@
   ],
   "public": true,
   "graphic_style": "KFS PREMIUM Lambert — consensus synoptique selon grilles disponibles ; risques IFS",
-  "analysis_summary": "J3 : Une dominante anticyclonique se dessine sur la France, avec air plus frais en altitude (+1.9 °C). Signaux possibles : rafales jusqu’à 60 km/h, gel jusqu’à -9 °C. J7 : Une dominante anticyclonique se dessine sur la France, avec air plus frais en altitude (+2.8 °C). Signaux possibles : rafales jusqu’à 64 km/h, neige hors relief. J10 : Une dominante anticyclonique se dessine sur la France, avec air froid à 850 hpa (-0.0 °C). Signaux possibles : pluie jusqu’à 22 mm/6 h, rafales jusqu’à 89 km/h. J15 : Une dominante anticyclonique se dessine sur la France, avec air plus frais en altitude (+2.4 °C). Signaux possibles : rafales jusqu’à 62 km/h, gel jusqu’à -22 °C.",
+  "analysis_summary": "J3 : Une dominante anticyclonique se dessine sur la France, avec air plus frais en altitude (+1.9 °C). Signaux possibles : rafales jusqu’à 60 km/h, gel jusqu’à -9 °C. J7 : Une dominante anticyclonique se dessine sur la France, avec air plus frais en altitude (+2.8 °C). Signaux possibles : rafales jusqu’à 64 km/h, gel jusqu’à -18 °C. J10 : Une dominante anticyclonique se dessine sur la France, avec air froid à 850 hpa (-0.0 °C). Signaux possibles : pluie jusqu’à 22 mm/6 h, rafales jusqu’à 89 km/h. J15 : Une dominante anticyclonique se dessine sur la France, avec air plus frais en altitude (+2.4 °C). Signaux possibles : rafales jusqu’à 62 km/h, gel jusqu’à -22 °C.",
   "note": "Synthèse KFS pondérée de grilles alignées à validité identique ; bonus adaptatif de 10 points à J+10/J+15 selon accord des champs ; repli IFS explicite si grilles incomplètes. Risques IFS. Aucune probabilité calibrée."
 }
