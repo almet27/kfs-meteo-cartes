@@ -1,0 +1,58 @@
+name: HARMONIE DINI - Native hourly precipitation
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '35 */3 * * *'
+  push:
+    branches: [main]
+    paths: ['scripts/generate_harmonie_precip.py','.github/workflows/harmonie-precip.yml']
+permissions:
+  contents: write
+concurrency:
+  group: harmonie-precip
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -q requests eccodes numpy scipy pillow
+      - name: Preserve previous coherent run
+        run: gh release download harmonie-precip --pattern manifest.json --output previous-harmonie.json || true
+      - run: python scripts/generate_harmonie_precip.py
+      - name: Validate and publish complete run
+        run: |
+          if [ ! -s harmonie-precip/manifest.json ]; then exit 0; fi
+          python - <<'PY'
+          from PIL import Image
+          from pathlib import Path
+          from datetime import datetime,timedelta
+          import json
+          p=Path('harmonie-precip');m=json.loads((p/'manifest.json').read_text());fs=m['frames']
+          assert m['unit']=='mm' and m['interval_hours']==1 and m['coverage_fraction']>=.8
+          assert 24<=len(fs)<=48
+          ts=[datetime.fromisoformat(f['valid_utc']) for f in fs]
+          assert all(b-a==timedelta(hours=1) for a,b in zip(ts,ts[1:]))
+          for f in fs:
+              with Image.open(p/f['file']) as im: assert im.size==(801,551)
+          print('VALIDATED',m['run_utc'],len(fs),ts[0],ts[-1],flush=True)
+          PY
+          gh release view harmonie-precip >/dev/null 2>&1 || gh release create harmonie-precip --title 'HARMONIE DINI - Precipitations horaires' --notes 'DMI Open Data. Native Lambert 2 km, geographic output grid 0.02 degree. Hourly accumulated water equivalent (mm).' --prerelease
+          gh release upload harmonie-precip harmonie-precip/*.png --clobber
+          gh release upload harmonie-precip harmonie-precip/manifest.json --clobber
+          python - <<'PY'
+          from pathlib import Path
+          import json,subprocess
+          keep={p.name for p in Path('harmonie-precip').glob('*.png')}
+          prev=Path('previous-harmonie.json')
+          if prev.exists():keep.update(f['file'] for f in json.loads(prev.read_text()).get('frames',[]))
+          for a in json.loads(subprocess.check_output(['gh','release','view','harmonie-precip','--json','assets']))['assets']:
+              if a['name'].startswith('precip-') and a['name'] not in keep:
+                  subprocess.run(['gh','release','delete-asset','harmonie-precip',a['name'],'--yes'],check=False)
+          PY
