@@ -13,7 +13,7 @@ jobs:
     steps:
       - name: Check KFS PIAF status
         run: |
-          curl --fail-with-body --max-time 30 --retry 1 -sS 'https://kfs-meteo.fr/api/piaf/status?check=v3' | python -m json.tool
+          curl --fail-with-body --max-time 75 --retry 1 -sS 'https://kfs-meteo.fr/api/piaf/status?check=v4' | python -m json.tool
 
 # Check both official API hosts (v2).
 
@@ -22,3 +22,5 @@ jobs:
 # Recheck newly configured dedicated PIAF secret.
 
 # Verify dedicated PIAF secret after cache reset.
+
+# Verify an actual PIAF WMS PNG.
