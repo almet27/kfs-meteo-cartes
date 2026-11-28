@@ -16,8 +16,44 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: pip install -q requests h5py numpy pyproj pillow
+      - run: pip install -q requests h5py numpy pyproj pillow scipy
       - run: python scripts/kfs_mf_radar_hd.py
+      - name: Independent timestamp-matched RainViewer location comparison
+        run: |
+          python - <<'PY'
+          import json,io,datetime as dt
+          from pathlib import Path
+          import requests,numpy as np
+          from PIL import Image
+          from scipy.ndimage import gaussian_filter
+          from scipy.signal import correlate
+          p=Path('mf-radar-preview');m=json.loads((p/'manifest.json').read_text())
+          t=dt.datetime.fromisoformat(m['valid_utc'])
+          r=requests.get('https://kfs-meteo.fr/api/rain-web/manifest',timeout=20);r.raise_for_status();d=r.json()
+          assert d['web_projection']==m['projection']
+          def stamp(x):return dt.datetime.fromisoformat(x.replace('Z','+00:00'))
+          frames=sorted(d['web_frames'],key=lambda f:abs((stamp(f['observation_utc'])-t).total_seconds()))
+          report={'official_utc':t.isoformat(),'comparison':'RainViewer independent qualitative footprint only','matched':False}
+          if frames and abs((stamp(frames[0]['observation_utc'])-t).total_seconds())<=300:
+              f=frames[0];delta=(stamp(f['observation_utc'])-t).total_seconds()
+              rr=requests.get('https://kfs-meteo.fr/api/rain-web/'+f['file'],params={'v':d['web_projection']},timeout=20);rr.raise_for_status()
+              a=np.asarray(Image.open(p/m['file'].replace('-2920.png','-730.png')).convert('RGBA')).astype(np.int16)
+              b=np.asarray(Image.open(io.BytesIO(rr.content)).convert('RGBA')).astype(np.int16)
+              assert a.shape==b.shape==(735,730,4)
+              def mask(a):return (a[:,:,3]>40)&((a[:,:,:3].max(axis=2)-a[:,:,:3].min(axis=2))>35)
+              # Compare only where official radar is valid; its explicit grey mask is missing.
+              valid=~((a[:,:,0]==125)&(a[:,:,1]==145)&(a[:,:,2]==160)&(a[:,:,3]==100))
+              x=mask(a)&valid;y=mask(b)&valid
+              report.update(rainviewer_utc=f['observation_utc'],delta_seconds=delta,wet_pixels=[int(x.sum()),int(y.sum())])
+              if min(x.sum(),y.sum())>=100:
+                  u=gaussian_filter(x.astype(float),2);v=gaussian_filter(y.astype(float),2)
+                  corr=correlate(u,v,mode='same',method='fft');cy,cx=367,365;window=corr[cy-20:cy+21,cx-20:cx+21]
+                  iy,ix=np.unravel_index(np.argmax(window),window.shape);den=np.sqrt((u*u).sum()*(v*v).sum())
+                  zero=float(corr[cy,cx]/den);best=float(window[iy,ix]/den)
+                  report.update(matched=True,shift_xy_pixels=[int(ix-20),int(iy-20)],similarity_zero=zero,similarity_best=best,footprint_csi=float((x&y).sum()/(x|y).sum()),note='Diagnostic only: differing radar product, threshold and temporal support; never apply inferred shift.')
+                  Image.fromarray(np.uint8(np.stack([x*255,y*255,np.zeros_like(x,dtype=np.uint8)],axis=-1))).save(p/'rainviewer-comparison.png')
+          (p/'comparison.json').write_text(json.dumps(report,indent=2));print('RADAR COMPARISON',json.dumps(report),flush=True)
+          PY
       - uses: actions/upload-artifact@v4
         with:
           name: mf-radar-hd-preview
