@@ -1,0 +1,39 @@
+name: KFS HARMONIE native precipitation preview
+on:
+  workflow_dispatch:
+  push:
+    paths: ['scripts/generate_harmonie_precip.py','.github/workflows/kfs-harmonie-preview.yml']
+permissions:
+  contents: read
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      KFS_HARMONIE_PREVIEW: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -q requests eccodes numpy scipy pillow
+      - run: python scripts/generate_harmonie_precip.py
+      - name: Check actual map metadata and geometry
+        run: |
+          python - <<'PY'
+          from PIL import Image
+          import json
+          from pathlib import Path
+          p=Path('harmonie-precip');m=json.loads((p/'manifest.json').read_text())
+          assert m['unit']=='mm' and m['interval_hours']==1 and m['coverage_fraction']>=.8
+          assert len(m['frames'])==3
+          for f in m['frames']:
+              im=Image.open(p/f['file'])
+              assert im.size==(801,551)
+              print('MAP',f['valid_utc'],f['file'],im.size,flush=True)
+          print('MANIFEST',json.dumps(m),flush=True)
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: harmonie-precip-preview
+          path: harmonie-precip/
