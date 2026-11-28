@@ -46,7 +46,7 @@ jobs:
               lines=[x.split(':') for x in index.text.splitlines() if x.strip()]
               print('INDEX',index.text[:18000],flush=True)
               offsets=[int(x[1]) for x in lines];assert offsets==sorted(set(offsets))
-              chosen=[i for i,x in enumerate(lines) if i+1<len(lines) and (x[3] in ('APCP','TP','WEASD','REFC','REFD','ASNOW') or x[3]=='TMP' and x[4]=='2 m above ground')]
+              chosen=[i for i,x in enumerate(lines) if i+1<len(lines) and (x[3] in ('TPRATE','TSPRATE','APCP','TP','WEASD','REFC','REFD','ASNOW') or x[3]=='TMP' and x[4]=='2 m above ground')]
               if not chosen:chosen=[0]
               size=0
               for i in chosen:
