@@ -1,0 +1,41 @@
+name: KFS independent rain gauge verification
+on:
+  workflow_dispatch:
+  push:
+    paths: ['scripts/kfs_precip_station_verify.py','.github/workflows/kfs-precip-station-verify.yml']
+  schedule:
+    - cron: '10 * * * *'
+permissions:
+  contents: write
+concurrency:
+  group: kfs-precip-station-verify
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -q numpy
+      - run: python scripts/kfs_precip_station_verify.py --test
+      - run: gh release download stations-live --pattern manifest.json --dir /tmp/kfs-rain-stations
+      - run: python scripts/kfs_precip_station_verify.py --manifest /tmp/kfs-rain-stations/manifest.json
+      - name: Publish paired skill without changing model weights
+        run: |
+          git config user.name "KFS METEO Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add precip-skill/station-pairs.json precip-skill/station-skill.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "KFS: update prospective rainfall gauge verification"
+          for i in 1 2 3; do
+            git pull --rebase origin main && git push origin main && exit 0
+            sleep 3
+          done
+          exit 1
