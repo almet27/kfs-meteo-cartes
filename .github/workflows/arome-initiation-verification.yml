@@ -1,0 +1,26 @@
+name: KFS - Verification initiation convective
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17,47 * * * *'
+  push:
+    branches: [main]
+    paths: ['scripts/verify_arome_initiation.py', '.github/workflows/arome-initiation-verification.yml']
+permissions:
+  contents: write
+concurrency:
+  group: arome-initiation-verification
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install numpy scipy
+      - run: python scripts/verify_arome_initiation.py
