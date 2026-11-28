@@ -96,7 +96,7 @@ def extract(url,run,h,model,field=None,grid=None):
                 valid=run+timedelta(hours=h)
                 if key(g,"validityDate")!=int(valid.strftime("%Y%m%d")) or key(g,"validityTime")!=valid.hour*100:continue
                 if key(g,"stepType")!="accum" or hours(key(g,"endStep"))!=h:continue
-                if str(key(g,"units","")).replace(" ","") not in ("kgm**-2","kgm-2","kg/m^2","kg/m2","mm"):raise ValueError("Unexpected unit")
+                if str(key(g,"units","")).replace(" ","") not in ("kgm**-2","kgm-2","kg/m^2","kg/m2","mm"):raise ValueError("Unexpected unit "+repr(key(g,"units",""))+" for "+model+" "+str(field)+" "+str(key(g,"shortName"))+" at "+str(h)+"; no conversion assumed")
                 codes_set(g,"missingValue",1e30)
                 v=np.asarray(codes_get_array(g,"values"))
                 if model=="icon":
