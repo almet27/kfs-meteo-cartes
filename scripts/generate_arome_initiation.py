@@ -42,6 +42,10 @@ def identify(g,pkg):
     if pkg=="SP2":
         if code==(0,7,6) or sn in ("cape_ins","mucape","cape"): return "cape"
         if code==(0,7,7) or sn=="cin": return "cin"
+    if pkg=="SP3" and code==(0,3,6) and key(g,"typeOfLevel")=="surface": return "terrain"
+    if pkg=="HP1" and key(g,"typeOfLevel")=="heightAboveGround" and key(g,"level")==100:
+        if code==(0,2,2): return "u100"
+        if code==(0,2,3): return "v100"
     if pkg=="SP1" and key(g,"typeOfLevel")=="heightAboveGround":
         level=key(g,"level")
         if level==10 and code==(0,2,2): return "u"
@@ -61,7 +65,7 @@ def fields(run,h,pkg,tmp):
                     name=identify(g,pkg)
                     if not name: continue
                     if name in out: raise ValueError("Ambiguous field "+name)
-                    if key(g,"dataDate")!=int(run.strftime("%Y%m%d")) or key(g,"dataTime")!=run.hour*100 or key(g,"endStep")!=h or key(g,"stepType")!="instant": raise ValueError("Run/step mismatch")
+                    if key(g,"dataDate")!=int(run.strftime("%Y%m%d")) or key(g,"dataTime")!=run.hour*100 or (name!="terrain" and (key(g,"endStep")!=h or key(g,"stepType")!="instant")): raise ValueError("Run/step mismatch")
                     if key(g,"gridType")!="regular_ll" or not np.isclose(key(g,"iDirectionIncrementInDegrees"),RES) or not np.isclose(key(g,"jDirectionIncrementInDegrees"),RES): raise ValueError("Unexpected grid")
                     codes_set(g,"missingValue",1e30)
                     lon=(np.asarray(codes_get_array(g,"longitudes"))+180)%360-180
@@ -74,7 +78,8 @@ def fields(run,h,pkg,tmp):
                     good=np.isfinite(raw)&(abs(raw)<1e20)&(raw!=9999)
                     if name=="cape": good&=(raw>=0)&(raw<=15000)
                     elif name=="rh": good&=(raw>=0)&(raw<=105)
-                    elif name in ("u","v"): good&=(abs(raw)<=150)
+                    elif name in ("u","v","u100","v100"): good&=(abs(raw)<=150)
+                    elif name=="terrain": good&=(raw>=-500)&(raw<=9000)
                     elif name=="cin": good&=(abs(raw)<=3000)
                     if good.mean()<.8: raise ValueError("Incomplete "+name)
                     a=np.full(SHAPE,np.nan,dtype=np.float32)
@@ -90,7 +95,18 @@ def smooth(a,n=5):
     num=uniform_filter(np.where(valid,a,0).astype(np.float32),size=n,mode="constant")
     return np.divide(num,weight,out=np.full_like(num,np.nan),where=weight>=.8)
 
-def diagnose(cape,u,v,rh,cin=None):
+def forcing(u,v,terrain=None):
+    us,vs=smooth(u),smooth(v)
+    dx=(111195*RES*np.cos(np.deg2rad(N-np.arange(u.shape[0])*RES)))[:,None]
+    dy=111195*RES
+    conv=-(np.gradient(us,axis=1)/dx-np.gradient(vs,axis=0)/dy)
+    lift=None
+    if terrain is not None:
+        z=smooth(terrain,9)
+        lift=us*np.gradient(z,axis=1)/dx-vs*np.gradient(z,axis=0)/dy
+    return conv,lift
+
+def diagnose(cape,u,v,rh,cin=None,u100=None,v100=None,terrain=None):
     # 5-point smoothing then finite differences on latitude-dependent metric grid.
     us,vs=smooth(u),smooth(v)
     dx=(111195*RES*np.cos(np.deg2rad(N-np.arange(u.shape[0])*RES)))[:,None]
@@ -101,13 +117,31 @@ def diagnose(cape,u,v,rh,cin=None):
     cap=np.zeros_like(valid) if cin is None else np.isfinite(cin)&(abs(cin)>=150)
     low=valid&~cap&(cape>=150)&(conv>=2e-4)&(rh>=55)
     high=low&(cape>=500)&(conv>=4e-4)&(rh>=65)
+    if u100 is not None and v100 is not None:
+        upper,lift=forcing(u100,v100,terrain)
+        coherent=valid&~cap&(cape>=150)&(rh>=55)&(conv>=1e-4)&(upper>=2e-4)
+        low |= coherent
+        high |= coherent&(cape>=500)&(rh>=65)&(upper>=4e-4)&(conv>=2e-4)
+        if lift is not None:
+            slope=valid&~cap&(cape>=250)&(rh>=60)&(lift>=.25)&(upper>=0)&(conv>=-1e-4)
+            low |= slope
+            high |= slope&(cape>=700)&(rh>=65)&(lift>=.5)&(conv>=1e-4)
     return valid,conv,low,high
 
-def frame(run,h,tmp):
+def optional_fields(run,h,pkg,tmp):
+    try: return fields(run,h,pkg,tmp)
+    except Exception as e:
+        print("Optional",pkg,h,str(e),flush=True)
+        return {}
+
+def frame(run,h,tmp,terrain=None):
     a=fields(run,h,"SP1",tmp)
     b=fields(run,h,"SP2",tmp)
     if not {"u","v","rh"}<=a.keys() or "cape" not in b: raise ValueError("Required fields missing")
-    valid,conv,low,high=diagnose(b["cape"],a["u"],a["v"],a["rh"],b.get("cin"))
+    upper=optional_fields(run,h,"HP1",tmp) if exists(run,h,"HP1") else {}
+    upper_available={"u100","v100"}<=upper.keys()
+    valid,conv,low,high=diagnose(b["cape"],a["u"],a["v"],a["rh"],b.get("cin"),upper.get("u100"),upper.get("v100"),terrain)
+    sources={"convergence_100m":upper_available,"orographic_lift_proxy":upper_available and terrain is not None,"vertical_velocity":False}
     coverage=float(valid.mean())
     if coverage<.8: raise ValueError("Insufficient joint coverage")
     ny,nx=SHAPE[0]//BLOCK,SHAPE[1]//BLOCK
@@ -116,10 +150,10 @@ def frame(run,h,tmp):
     ys,xs=np.where((lc>=3)&(vc>=20))
     cells=[[int(x),int(y),2 if hc[y,x]>=3 else 1] for y,x in zip(ys,xs)]
     filename=f"init-{run:%Y%m%d%H}-h{h:02d}.json"
-    doc={"schema":1,"run_utc":run.isoformat(),"valid_utc":(run+timedelta(hours=h)).isoformat(),"coverage":round(coverage,4),"cin_available": "cin" in b,"cells":cells}
+    doc={"schema":1,"run_utc":run.isoformat(),"valid_utc":(run+timedelta(hours=h)).isoformat(),"coverage":round(coverage,4),"cin_available": "cin" in b,"sources":sources,"cells":cells}
     (OUT/filename).write_text(json.dumps(doc,separators=(",",":")))
     print(h,"coverage",coverage,"candidates",len(cells),flush=True)
-    return {"hour":h,"valid_utc":doc["valid_utc"],"file":filename,"coverage":doc["coverage"],"cin_available":doc["cin_available"]}
+    return {"hour":h,"valid_utc":doc["valid_utc"],"file":filename,"coverage":doc["coverage"],"cin_available":doc["cin_available"],"sources":sources}
 
 def main():
     OUT.mkdir(exist_ok=True)
@@ -135,11 +169,12 @@ def main():
     if previous.exists():
         try:
             old=json.loads(previous.read_text())
-            if old.get("run_utc")==run.isoformat() and old.get("schema")==1 and {f["hour"] for f in old["frames"]}.issuperset(hours): return
+            if old.get("run_utc")==run.isoformat() and old.get("diagnostic_version")==2 and {f["hour"] for f in old["frames"]}.issuperset(hours): return
         except (ValueError,KeyError): pass
     with TemporaryDirectory() as tmp,ThreadPoolExecutor(max_workers=2) as pool:
-        frames=list(pool.map(lambda h:frame(run,h,tmp),hours))
-    doc={"schema":1,"run_utc":run.isoformat(),"generated_utc":now.isoformat(),"source":"Météo-France ARÔME 0.01 SP1/SP2","bounds":[W,E,S,N],"resolution_degrees":RES*BLOCK,"origin":[W,N],"diagnostic":"experimental uncalibrated MUCAPE + 10m convergence + 2m RH","frames":frames}
+        terrain=optional_fields(run,hours[0],"SP3",tmp).get("terrain")
+        frames=list(pool.map(lambda h:frame(run,h,tmp,terrain),hours))
+    doc={"schema":1,"diagnostic_version":2,"run_utc":run.isoformat(),"generated_utc":now.isoformat(),"source":"Météo-France ARÔME 0.01 SP1/SP2","bounds":[W,E,S,N],"resolution_degrees":RES*BLOCK,"origin":[W,N],"diagnostic":"experimental uncalibrated MUCAPE + 10m convergence + 2m RH + optional 100m convergence and terrain lift proxy","frames":frames}
     (OUT/"manifest.json").write_text(json.dumps(doc,indent=2))
 
 if __name__=="__main__": main()
