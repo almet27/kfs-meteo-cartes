@@ -20,7 +20,7 @@ jobs:
           from scipy.signal import correlate
           root='https://kfs-meteo.fr'
           s=requests.Session()
-          m=s.get(root+'/api/rain-web/manifest.json',timeout=20)
+          m=s.get(root+'/api/rain-web/manifest',timeout=20)
           print('RADAR MANIFEST',m.status_code)
           m.raise_for_status(); m=m.json()
           print('RADAR PROJECTION',m.get('web_projection'))
@@ -40,7 +40,7 @@ jobs:
           for rf in reversed(frames[-5:]):
               t=utc(rf['observation_utc'])
               if t.minute%5 or t.second:continue
-              rad=s.get(root+'/api/rain-web/'+rf['file'],timeout=20)
+              rad=s.get(root+'/api/rain-web/'+rf['file'],params={'v':m['web_projection']},timeout=20)
               if not rad.ok:continue
               a=mask(img(rad.content))
               for lead in [5,10,15,20,25,30]:
