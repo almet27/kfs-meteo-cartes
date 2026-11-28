@@ -37,15 +37,15 @@ jobs:
           assert now-t<=timedelta(minutes=20)
           old=json.loads(Path('previous.json').read_text()) if Path('previous.json').exists() else {}
           rows={f['observation_utc']:f for f in old.get('web_frames',[]) if now-datetime.fromisoformat(f['observation_utc'])<=timedelta(minutes=45)}
-          tag='mf-radar-hd';name=t.strftime('%Y%m%d%H%M');files=[f'radar-{name}-730.png',f'radar-{name}-2920.png',f'radar-{name}.npz']
+          tag='mf-radar-hd';name=t.strftime('%Y%m%d%H%M');files=[f'radar-{name}-730.png',f'radar-{name}-2920.png',f'radar-{name}.npz',f'radar-{name}-1460.png']
           existing={a['name'] for a in json.loads(subprocess.check_output(['gh','release','view',tag,'--json','assets']))['assets']}
           for file in files:
               if file not in existing:subprocess.check_call(['gh','release','upload',tag,str(p/file)])
-          rows[t.isoformat()]={'observation_utc':t.isoformat(),'file':files[0],'hd_file':files[1]}
+          rows[t.isoformat()]={'observation_utc':t.isoformat(),'file':files[0],'hd_file':files[1],'mobile_file':files[3]}
           frames=sorted(rows.values(),key=lambda f:f['observation_utc'])[-8:]
           doc={'schema':1,'source':'Météo-France ACRR 500m','web_projection':'KFS-stations-730x735-v2','web_frames':frames,'derniere_observation_utc':frames[-1]['observation_utc'],'interval_minutes':5,'native_resolution_m':500,'unit':'mm','render_unit':'mm/h equivalent over 5 min','coverage':'grey = missing','validation':'ODIM corner validation; initial matched comparison without detected displacement'}
           (p/'manifest.json').write_text(json.dumps(doc,indent=2));subprocess.check_call(['gh','release','upload',tag,str(p/'manifest.json'),'--clobber'])
-          keep={f[k] for f in frames for k in ('file','hd_file')}
+          keep={f[k] for f in frames for k in ('file','hd_file','mobile_file') if k in f}
           for a in json.loads(subprocess.check_output(['gh','release','view',tag,'--json','assets']))['assets']:
               n=a['name']
               if n.startswith('radar-') and n.endswith('.png') and n not in keep:subprocess.run(['gh','release','delete-asset',tag,n,'--yes'],check=False)
