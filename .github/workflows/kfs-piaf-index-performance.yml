@@ -16,7 +16,7 @@ jobs:
           node <<'JS'
           const {chromium,devices}=require('playwright-core');
           (async()=>{const b=await chromium.launch({channel:'chrome',headless:true,args:['--no-sandbox']});try{
-            const p=await b.newPage({...devices['iPhone 13'],serviceWorkers:'block'}),errors=[],req=[];
+            const p=await b.newPage({...devices['iPhone 13'],serviceWorkers:'block'}),errors=[],req=[];const cdp=await p.context().newCDPSession(p);await cdp.send('Network.enable');await cdp.send('Network.emulateNetworkConditions',{offline:false,latency:160,downloadThroughput:180000,uploadThroughput:90000});
             p.on('pageerror',e=>errors.push(e.message));p.on('response',r=>{if(r.url().includes('/api/piaf/'))req.push([r.status(),r.url().split('/api/piaf/')[1]])});
             await p.goto('https://kfs-meteo.fr/#accueil',{waitUntil:'domcontentloaded',timeout:60000});
             const t=Date.now();await p.evaluate(()=>{const h=document.getElementById('home-live');if(h?.hidden)h.hidden=false;const v=document.getElementById('obs-stations-view');v?.scrollIntoView();document.getElementById('obs-layer').value='temp';document.getElementById('obs-hour-model').value='blend';document.getElementById('obs-rain-overlay-toggle').checked=true;document.getElementById('obs-snow-only-toggle').checked=false;document.getElementById('kfs-piaf-auto').checked=true;const hour=document.getElementById('obs-hour');hour.value='1';hour.dispatchEvent(new Event('input',{bubbles:true}));hour.dispatchEvent(new Event('change',{bubbles:true}));});
