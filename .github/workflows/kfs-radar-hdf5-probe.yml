@@ -1,0 +1,44 @@
+name: KFS official radar 500m HDF5 geometry qualification
+on:
+  workflow_dispatch:
+  push:
+    paths: ['.github/workflows/kfs-radar-hdf5-probe.yml']
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      METEOFRANCE_API_KEY: ${{ secrets.METEOFRANCE_API_KEY }}
+    steps:
+      - run: pip install -q requests h5py numpy pyproj
+      - name: Inspect official self-describing radar grid
+        run: |
+          python - <<'PY'
+          import requests,os,io,json,gzip,h5py,numpy as np
+          from urllib.parse import urlparse,urljoin,parse_qs
+          base='https://public-api.meteofrance.fr/public/DPRadar/v1/'
+          h={'apikey':os.environ['METEOFRANCE_API_KEY']}
+          url=base+'mosaiques/METROPOLE/observations/LAME_D_EAU'
+          r=requests.get(url,headers=h,timeout=30);print('CATALOG',r.status_code,flush=True);r.raise_for_status()
+          d=r.json()
+          links=[l for l in d.get('links',[]) if l.get('href') and l.get('rel','').endswith('/data')]
+          for l in links:
+              print('PRODUCT',l.get('title'),l.get('type'),l.get('validity_time'),parse_qs(urlparse(l['href']).query).get('maille'),flush=True)
+          links=[l for l in links if parse_qs(urlparse(l['href']).query).get('maille')==['500']]
+          assert links,'No native 500m product in catalogue'
+          u=urljoin(base,links[0]['href']);assert urlparse(u).scheme=='https' and urlparse(u).hostname=='public-api.meteofrance.fr'
+          with requests.get(u,headers=h,timeout=(15,90),stream=True) as r:
+              r.raise_for_status();b=bytearray()
+              for c in r.iter_content(1024*1024):
+                  b.extend(c);assert len(b)<30_000_000
+          if b[:2]==b'\x1f\x8b':b=gzip.decompress(b)
+          print('HDF5 SIZE',len(b),repr(bytes(b[:8])),flush=True)
+          with h5py.File(io.BytesIO(b),'r') as f:
+              def show(n,o):
+                  print('NODE',n,type(o).__name__,getattr(o,'shape',None),getattr(o,'dtype',None),'ATTRS',{k:str(v)[:600] for k,v in o.attrs.items()},flush=True)
+                  if isinstance(o,h5py.Dataset) and o.ndim==2 and o.size>10000:
+                      a=o[::8,::8];print('SAMPLE',n,float(np.nanmin(a)),float(np.nanmax(a)),flush=True)
+              show('/',f);f.visititems(show)
+          PY
