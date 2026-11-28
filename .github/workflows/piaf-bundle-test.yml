@@ -28,3 +28,21 @@ jobs:
           assert len(dates)>0 and dates==sorted(set(dates))
           print('BUNDLE RUN',m['run_utc'],'FRAMES',len(dates),'FIRST',dates[0],'LAST',dates[-1])
           PY
+
+      - name: Inspect native PIAF color table
+        run: |
+          python - <<'PY'
+          import json,base64,struct,collections
+          m=json.load(open('bundle.json'))
+          c=collections.Counter()
+          for f in m['frames']:
+              b=base64.b64decode(f['png']); i=8
+              while i+12<=len(b):
+                  n=struct.unpack('>I',b[i:i+4])[0]; tag=b[i+4:i+8]; v=b[i+8:i+8+n]; i+=12+n
+                  if tag==b'IHDR': print('PNG type',v[9]); break
+              i=8
+              while i+12<=len(b):
+                  n=struct.unpack('>I',b[i:i+4])[0]; tag=b[i+4:i+8]; v=b[i+8:i+8+n]; i+=12+n
+                  if tag==b'PLTE': c.update('#'+v[j:j+3].hex() for j in range(0,len(v),3)); break
+          print('NATIVE PIAF PALETTE',c.most_common(40))
+          PY
