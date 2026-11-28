@@ -25,6 +25,8 @@ jobs:
           cache: pip
           cache-dependency-path: 'scripts/kfs_mf_radar_hd.py'
       - run: pip install -q requests h5py numpy pyproj pillow
+      - name: Record radar collection start
+        run: date -u +'%Y-%m-%dT%H:%M:%SZ'
       - run: python scripts/kfs_mf_radar_hd.py
       - name: Publish immutable frames and rolling manifest
         run: |
