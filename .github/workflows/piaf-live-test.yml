@@ -1,0 +1,47 @@
+name: PIAF live integration test
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/piaf-live-test.yml'
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Verify public manifest and PNGs
+        run: |
+          set -eu
+          curl --retry 4 --retry-all-errors --retry-delay 5 --max-time 30 -fsS https://kfs-meteo.fr/api/piaf/manifest.json -o manifest.json
+          python - <<'PY'
+          import json, datetime
+          m=json.load(open("manifest.json"))
+          assert m["schema"]==1 and m["width"]==730 and m["height"]==735
+          now=datetime.datetime.now(datetime.timezone.utc)
+          run=datetime.datetime.fromisoformat(m["run_utc"].replace("Z","+00:00"))
+          assert -60 <= (now-run).total_seconds() <= 1500
+          frames=m["frames"]
+          assert len(frames)>=20
+          print("RUN",m["run_utc"],"FRAMES",len(frames),"FIRST",frames[0],"LAST",frames[-1])
+          for f in frames:
+              assert (datetime.datetime.fromisoformat(f["valid_utc"].replace("Z","+00:00"))-run).total_seconds()==f["lead_minutes"]*60
+          open("files.txt","w").write("\n".join(frames[i]["file"] for i in [0,len(frames)//2,len(frames)-1])+"\n")
+          PY
+          while read -r f; do
+            curl --retry 4 --retry-all-errors --retry-delay 5 --max-time 30 -fsS -D headers.txt "https://kfs-meteo.fr/api/piaf/$f" -o "$f"
+            python - "$f" <<'PY'
+          import sys, struct
+          f=sys.argv[1]; b=open(f,"rb").read()
+          assert b[:8]==b"\x89PNG\r\n\x1a\n" and struct.unpack(">II",b[16:24])==(730,735)
+          print("PNG",f,len(b),"bytes")
+          PY
+            grep -i '^x-kfs-piaf-' headers.txt
+          done < files.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: piaf-test-maps
+          path: |
+            map-*.png
+            manifest.json
