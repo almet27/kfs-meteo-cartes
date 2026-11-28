@@ -37,8 +37,8 @@ jobs:
           assert selection,'No complete operational DINI run'
           run,f=selection;assets=f.get('assets',f.get('asset',{}));url=assets['data']['href']
           u=urlparse(url);print('ASSET HOST',u.hostname,'PATH',u.path,flush=True)
-          assert u.scheme=='https' and u.hostname in ('opendataapi.dmi.dk','dmigw.govcloud.dk') and u.path.startswith('/v1/forecastdata/download/'), 'Unexpected asset URL'
-          url='https://opendataapi.dmi.dk'+u.path
+          assert u.scheme=='https' and ((u.hostname in ('opendataapi.dmi.dk','dmigw.govcloud.dk') and u.path.startswith('/v1/forecastdata/download/')) or (u.hostname=='dmi-opendata.s3.eu-north-1.amazonaws.com' and u.path.startswith('/forecastdata/HARMONIE_DINI_SF/'))), 'Unexpected asset URL'
+          if u.hostname=='dmigw.govcloud.dk':url='https://opendataapi.dmi.dk'+u.path
           print('SELECTED',f['id'],f['bbox'],f['properties'],flush=True)
           report={'source':'DMI HARMONIE DINI native','run':run.isoformat(),'valid':f['properties']['datetime'],'bbox':f['bbox'],'fields':[]}
           with tempfile.TemporaryFile() as stream:
