@@ -12,7 +12,7 @@ jobs:
     env:
       METEOFRANCE_API_KEY: ${{ secrets.METEOFRANCE_API_KEY }}
     steps:
-      - run: pip install -q requests eccodes
+      - run: pip install -q requests eccodes numpy pandas pyproj
       - name: Qualify quantitative 5-minute rainfall product
         run: |
           python - <<'PY'
@@ -47,4 +47,26 @@ jobs:
                   except Exception:pass
               print('DESCRIPTORS',codes_get_array(g,'unexpandedDescriptors').tolist()[:100],flush=True)
           finally:codes_release(g);stream.close()
+          from pathlib import Path
+          import numpy as np,pandas as pd
+          from datetime import datetime,timezone
+          work=Path('rainfall-probe');work.mkdir(exist_ok=True);(work/'radar.bufr').write_bytes(b)
+          tables=work/'tables';tables.mkdir(exist_ok=True)
+          root='https://raw.githubusercontent.com/theperk08/Meteo_France_Radars/a89383b435b26625909a70a16f7be5b75ce54ba5/'
+          for name in ['bufrtabb_16.csv','bufrtabd_16.csv','localtabb_85_14.csv','localtabd_85_14.csv']:
+              r=requests.get(root+'tables/'+name,timeout=30);r.raise_for_status();(tables/name).write_bytes(r.content)
+          r=requests.get(root+'MeteoFrance_Bufr_Decoder.ipynb',timeout=30);r.raise_for_status();notebook=r.json()
+          ns={};exec('import os,gzip,math,numpy as np,pandas as pd',ns)
+          for idx in [5,6,7,8,9,10,11]:exec(''.join(notebook['cells'][idx]['source']),ns)
+          ns.update(DIR_PATH=str(work),FILE_NAME='radar.bufr',DIR_PATH_TABLE=str(tables),FIC_TAB_B='bufrtabb_{master}.csv',FIC_TAB_D='bufrtabd_{master}.csv',FIC_LOCAL_TAB_B='localtabb_{center}_{local}.csv',FIC_LOCAL_TAB_D='localtabd_{center}_{local}.csv',affiche_descriptors=False)
+          ns['deco_bufr']();messages=ns.get('datas_messages',[]);assert messages
+          for m in messages:
+              print('DECODED KEYS',[(k,len(v)) for k,v in m.items()],flush=True)
+              for k,v in m.items():
+                  if len(v)<150:print('META',k,str(v)[:900],flush=True)
+                  elif len(v)>10000:
+                      a=np.asarray(v,dtype=float);unique,counts=np.unique(a,return_counts=True);print('ARRAY',k,len(a),float(np.nanmin(a)),float(np.nanmax(a)),sorted(zip(counts.tolist(),unique.tolist()),reverse=True)[:15],flush=True)
+          for file in tables.glob('*.csv'):
+              for line in file.read_text(encoding='utf-8-sig').splitlines():
+                  if any(x in line.lower() for x in ('precipitation','precipitations','lame d','49209','49210')) and ('49;' in line or '49,' in line or '49209' in line or '49210' in line):print('TABLE',file.name,line[:400],flush=True)
           PY
