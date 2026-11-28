@@ -1,0 +1,60 @@
+name: PIAF radar geographical validation
+on:
+  workflow_dispatch:
+  push:
+    paths: ['.github/workflows/piaf-geo-validation.yml']
+permissions:
+  contents: read
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - run: pip install -q pillow numpy scipy requests
+      - name: Compare timestamp-matched radar and PIAF
+        run: |
+          python - <<'PY'
+          import requests,datetime as dt,io,numpy as np
+          from PIL import Image
+          from scipy.ndimage import gaussian_filter
+          from scipy.signal import correlate
+          root='https://kfs-meteo.fr'
+          s=requests.Session()
+          m=s.get(root+'/api/rain-web/manifest.json',timeout=20)
+          print('RADAR MANIFEST',m.status_code)
+          m.raise_for_status(); m=m.json()
+          print('RADAR PROJECTION',m.get('web_projection'))
+          frames=m['web_frames']
+          utc=lambda x:dt.datetime.fromisoformat(x.replace('Z','+00:00'))
+          def img(b): return np.asarray(Image.open(io.BytesIO(b)).convert('RGBA'))
+          def mask(a):
+              r,g,b,alpha=a.astype(np.int16).transpose(2,0,1)
+              return ((alpha>40)&(np.maximum.reduce([r,g,b])-np.minimum.reduce([r,g,b])>35)).astype(float)
+          def shift(a,b):
+              a=gaussian_filter(a,1.2);b=gaussian_filter(b,1.2)
+              c=correlate(a,b,mode='same',method='fft')
+              y,x=np.unravel_index(np.argmax(c[337:398,335:396]),(61,61));y+=337;x+=335
+              zero=c[367,365];best=c[y,x];den=np.sqrt((a*a).sum()*(b*b).sum())
+              return x-365,y-367,float(zero/den),float(best/den)
+          n=0
+          for rf in reversed(frames[-5:]):
+              t=utc(rf['observation_utc'])
+              if t.minute%5 or t.second:continue
+              rad=s.get(root+'/api/rain-web/'+rf['file'],timeout=20)
+              if not rad.ok:continue
+              a=mask(img(rad.content))
+              for lead in [5,10,15,20,25,30]:
+                  ref=t-dt.timedelta(minutes=lead)
+                  f='map-'+ref.strftime('%Y%m%d%H%M')+'-'+t.strftime('%Y%m%d%H%M')+'.png'
+                  r=s.get(root+'/api/piaf/'+f,timeout=10)
+                  if not r.ok or r.headers.get('Content-Type','').split(';')[0]!='image/png':continue
+                  b=mask(img(r.content))
+                  if a.sum()<50 or b.sum()<50:
+                      print('LOW SIGNAL',t.isoformat(),lead,int(a.sum()),int(b.sum()));continue
+                  print('MATCH',t.isoformat(),'lead_min',lead,'pixels',int(a.sum()),int(b.sum()),'shift_xy_px and similarity_zero_best',shift(a,b))
+                  n+=1
+                  if n>=5:break
+              if n>=5:break
+          print('VALID MATCHES',n)
+          if n==0:print('INCONCLUSIVE: no cached timestamp-matched pairs with enough precipitation')
+          PY
