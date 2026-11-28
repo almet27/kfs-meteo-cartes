@@ -1,0 +1,62 @@
+name: AROME HD - Initiation convective
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '12,42 * * * *'
+  push:
+    branches: [main]
+    paths: ['scripts/generate_arome_initiation.py', '.github/workflows/arome-initiation.yml']
+permissions:
+  contents: write
+concurrency:
+  group: arome-initiation
+  cancel-in-progress: false
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install numpy scipy eccodes
+      - name: Synthetic convergence and missing-data check
+        run: |
+          python - <<'PY'
+          import sys,numpy as np
+          sys.path.insert(0,'scripts')
+          from generate_arome_initiation import diagnose
+          y,x=np.indices((50,50))
+          u=(25-x)*.6
+          v=(y-25)*.6
+          cape=np.full_like(u,600.)
+          rh=np.full_like(u,75.)
+          valid,conv,low,high=diagnose(cape,u,v,rh)
+          assert high[25,25] and conv[25,25]>0
+          assert not diagnose(cape,-u,-v,rh)[2].any()
+          assert not diagnose(cape,u,v,rh,np.full_like(u,-200))[2].any()
+          cape[:]=np.nan
+          assert not diagnose(cape,u,v,rh)[0].any()
+          PY
+      - run: gh release download arome-initiation --pattern manifest.json --output previous-initiation.json || true
+      - run: python scripts/generate_arome_initiation.py
+      - name: Publish coherent diagnostic
+        run: |
+          if [ ! -s arome-initiation/manifest.json ]; then exit 0; fi
+          if ! gh release view arome-initiation >/dev/null 2>&1; then
+            gh release create arome-initiation --title "AROME HD - Initiation convective experimentale" --notes "Source Météo-France ARÔME HD, Licence Ouverte. Diagnostic non calibré." --prerelease
+          fi
+          gh release upload arome-initiation arome-initiation/init-*.json --clobber
+          gh release upload arome-initiation arome-initiation/manifest.json --clobber
+          python - <<'PY'
+          import json,subprocess
+          from pathlib import Path
+          keep={p.name for p in Path("arome-initiation").glob("init-*.json")}
+          assets=json.loads(subprocess.check_output(["gh","release","view","arome-initiation","--json","assets"]))["assets"]
+          for a in assets:
+              if a["name"].startswith("init-") and a["name"] not in keep:
+                  subprocess.run(["gh","release","delete-asset","arome-initiation",a["name"],"--yes"],check=False)
+          PY
