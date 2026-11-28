@@ -1,0 +1,32 @@
+name: KFS ICON-D2 precipitation unit qualification
+on:
+  workflow_dispatch:
+  push:
+    paths: ['.github/workflows/kfs-icon-precip-unit-probe.yml']
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -q eccodes numpy scipy pillow
+      - name: Inspect each native precipitation GRIB message
+        run: |
+          PYTHONPATH=scripts python - <<'PY'
+          from generate_hourly_precip_phase import *
+          now=datetime.now(timezone.utc)
+          anchor=now.replace(hour=now.hour//3*3,minute=0,second=0,microsecond=0)
+          run=next(r for r in (anchor-timedelta(hours=3*i) for i in range(1,6)) if all(available(icon_url(r,6,f)) for f in DWD_FIELDS))
+          for field in DWD_FIELDS:
+              with TemporaryFile() as f:
+                  f.write(payload(icon_url(run,6,field)));f.seek(0)
+                  while (g:=codes_grib_new_from_file(f)) is not None:
+                      try:
+                          print('UNIT',field,{k:key(g,k) for k in ('shortName','name','units','discipline','parameterCategory','parameterNumber','centre','localTablesVersion','stepType','startStep','endStep','stepUnits')},flush=True)
+                      finally:codes_release(g)
+          PY
