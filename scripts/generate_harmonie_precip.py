@@ -41,7 +41,7 @@ def grib(url):
     if offsets!=sorted(set(offsets)):raise ValueError("Index offsets invalid")
     # DMI parameter table 0/1/52 is total precipitation. Verify GRIB metadata,
     # not merely its index label. Index aliases differ between decoder versions.
-    ids=[i for i,x in enumerate(rows) if i+1<len(rows) and len(x)>=6 and x[3] in ("APCP","TP","TOTP","ACPCP","TOTAL_PRECIPITATION") and "surface" in x[4].lower()]
+    ids=[i for i,x in enumerate(rows) if i+1<len(rows) and len(x)>=6 and x[3] in ("TPRATE","APCP","TP","TOTP","ACPCP","TOTAL_PRECIPITATION") and "surface" in x[4].lower()]
     if not ids:raise ValueError("Total precipitation absent from GRIB index")
     for i in ids:
         a,b=offsets[i],offsets[i+1]-1
@@ -111,7 +111,7 @@ def main():
         if np.any(rate[np.isfinite(rate)]<-.15):raise ValueError("Negative precipitation increment")
         rate=np.maximum(rate,0)
         if np.count_nonzero(np.isfinite(rate))<.95*coverage.sum():raise ValueError("Incomplete precipitation field")
-        pixels=np.searchsorted(LEVELS,rate,side="right").astype(np.uint8)
+        pixels=np.searchsorted(LEVELS,np.nan_to_num(rate,nan=0),side="right").astype(np.uint8)
         pixels[~np.isfinite(rate)]=len(COLORS)+1
         im=Image.fromarray(pixels.reshape(551,801),mode="P");palette=[0,0,0]+[int(c[i:i+2],16) for c in COLORS for i in (1,3,5)]+[125,145,160];im.putpalette(palette+[0]*(768-len(palette)));im.info["transparency"]=bytes([0]+[255]*len(COLORS)+[100])
         name=f"precip-{run:%Y%m%d%H}-h{h:02d}.png";im.save(OUT/name,optimize=True)
