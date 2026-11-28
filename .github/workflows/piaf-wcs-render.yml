@@ -1,0 +1,68 @@
+name: PIAF WCS native map prototype
+on:
+  workflow_dispatch:
+  push:
+    paths: ['.github/workflows/piaf-wcs-render.yml']
+permissions:
+  contents: read
+jobs:
+  render:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -q eccodes pillow numpy scipy requests
+      - name: Generate geographically referenced native image
+        run: |
+          python - <<'PY'
+          import requests,base64,io,numpy as np,datetime as dt,json
+          from PIL import Image
+          from scipy.interpolate import RegularGridInterpolator
+          from eccodes import codes_new_from_message,codes_get,codes_get_array,codes_release
+          r=requests.get('https://kfs-meteo.fr/api/piaf/geo-diagnostic.json',timeout=90)
+          r.raise_for_status();d=r.json()
+          print('UPSTREAM',d.get('tests'),d.get('error'))
+          assert 'grib' in d, d.get('coverageError')
+          g=codes_new_from_message(base64.b64decode(d['grib']))
+          meta={k:codes_get(g,k) for k in ['gridType','Ni','Nj','dataDate','dataTime','validityDate','validityTime','stepRange','shortName','units']}
+          print('GRIB',meta)
+          assert meta['gridType']=='regular_ll' and meta['shortName']=='tp' and meta['units']=='kg m**-2' and meta['stepRange']=='0m-5m'
+          valid=dt.datetime.strptime(str(meta['validityDate'])+str(meta['validityTime']).zfill(4),'%Y%m%d%H%M').replace(tzinfo=dt.timezone.utc)
+          assert valid==dt.datetime.fromisoformat(d['valid'])
+          lat=codes_get_array(g,'latitudes');lon=(codes_get_array(g,'longitudes')+180)%360-180;v=codes_get_array(g,'values');codes_release(g)
+          lats=np.unique(np.round(lat,6));lons=np.unique(np.round(lon,6))
+          assert len(lats)==1051 and len(lons)==1651,(len(lats),len(lons))
+          assert np.allclose([lons[0],lats[0],lons[-1],lats[-1]],[-6,41,10.5,51.5],atol=.00001)
+          assert len(v)==len(lats)*len(lons)
+          grid=np.full((len(lats),len(lons)),np.nan)
+          i=np.searchsorted(lats,np.round(lat,6));j=np.searchsorted(lons,np.round(lon,6))
+          good=np.isfinite(v)&(v>=0)&(v<1e10)
+          grid[i[good],j[good]]=v[good]*12 # equivalent mean rate mm/h over five minutes
+          assert np.count_nonzero(np.isfinite(grid))>0
+          west,east,south,north=-5.8,-5.8+730/46,51.6-735/65,51.6
+          xs=west+(np.arange(730)+.5)/46
+          ys=north-(np.arange(735)+.5)/65
+          yy,xx=np.meshgrid(ys,xs,indexing='ij')
+          field=RegularGridInterpolator((lats,lons),grid,method='nearest',bounds_error=False,fill_value=np.nan)(np.stack([yy,xx],axis=-1))
+          levels=[.1,.3,1,3,8,15,30]
+          palette=np.array([[72,61,138,190],[33,28,201,210],[0,163,224,230],[0,130,185,235],[255,221,0,245],[255,129,0,250],[193,0,0,255]],dtype=np.uint8)
+          rgba=np.zeros((735,730,4),dtype=np.uint8)
+          for threshold,color in zip(levels,palette):rgba[np.isfinite(field)&(field>=threshold)]=color
+          Image.fromarray(rgba).save('piaf-wcs-native.png')
+          if 'wms' in d:Image.open(io.BytesIO(base64.b64decode(d['wms']))).save('piaf-wms-reference.png')
+          report={'run':d['run'],'valid':d['valid'],'source':'PIAF WCS GRIB2 PT5M','unit':'mm/h equivalent over 5 minutes','projection':'KFS-stations-730x735-v2','bounds':[west,east,south,north],'native_bounds':[-6,10.5,41,51.5],'wet_pixels':int(np.count_nonzero(rgba[:,:,3])),'missing_pixels':int(np.count_nonzero(~np.isfinite(field))),'max_mm_h':float(np.nanmax(field)),'grid':meta}
+          for name,lo,la in [('Bourth',.85,48.77),('Brest',-4.49,48.39),('Nantes',-1.55,47.22),('Lille',3.06,50.63),('Nice',7.26,43.70)]:
+              x=int((lo+5.8)*46);y=int((51.6-la)*65)
+              assert abs(xs[x]-lo)<=.5/46+1e-8 and abs(ys[y]-la)<=.5/65+1e-8
+              print('CONTROL',name,x,y,'sample_lon_lat',xs[x],ys[y])
+          print('RESULT',json.dumps(report));open('piaf-wcs-report.json','w').write(json.dumps(report,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: piaf-wcs-native-preview
+          path: |
+            piaf-wcs-native.png
+            piaf-wms-reference.png
+            piaf-wcs-report.json
