@@ -42,7 +42,7 @@ def identify(g,pkg):
     if pkg=="SP2":
         if code==(0,7,6) or sn in ("cape_ins","mucape","cape"): return "cape"
         if code==(0,7,7) or sn=="cin": return "cin"
-    if pkg=="SP3" and code==(0,3,6) and key(g,"typeOfLevel")=="surface": return "terrain"
+    if pkg=="SP3" and (code==(0,3,7) or sn=="h") and key(g,"typeOfLevel")=="surface": return "terrain"
     if pkg=="HP1" and key(g,"typeOfLevel")=="heightAboveGround" and key(g,"level")==100:
         if code==(0,2,2): return "u100"
         if code==(0,2,3): return "v100"
@@ -65,7 +65,7 @@ def fields(run,h,pkg,tmp):
                     name=identify(g,pkg)
                     if not name: continue
                     if name in out: raise ValueError("Ambiguous field "+name)
-                    if key(g,"dataDate")!=int(run.strftime("%Y%m%d")) or key(g,"dataTime")!=run.hour*100 or (name!="terrain" and (key(g,"endStep")!=h or key(g,"stepType")!="instant")): raise ValueError("Run/step mismatch")
+                    if name!="terrain" and (key(g,"dataDate")!=int(run.strftime("%Y%m%d")) or key(g,"dataTime")!=run.hour*100 or key(g,"endStep")!=h or key(g,"stepType")!="instant"): raise ValueError("Run/step mismatch")
                     if key(g,"gridType")!="regular_ll" or not np.isclose(key(g,"iDirectionIncrementInDegrees"),RES) or not np.isclose(key(g,"jDirectionIncrementInDegrees"),RES): raise ValueError("Unexpected grid")
                     codes_set(g,"missingValue",1e30)
                     lon=(np.asarray(codes_get_array(g,"longitudes"))+180)%360-180
