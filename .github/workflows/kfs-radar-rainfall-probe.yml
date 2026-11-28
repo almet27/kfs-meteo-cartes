@@ -16,7 +16,7 @@ jobs:
       - name: Qualify quantitative 5-minute rainfall product
         run: |
           python - <<'PY'
-          import requests,os,gzip,io,json
+          import requests,os,gzip,io,json,tempfile
           from urllib.parse import urlparse,urljoin
           from eccodes import codes_bufr_new_from_file,codes_get,codes_get_array,codes_release
           token=os.environ.get('METEOFRANCE_API_KEY')
@@ -39,12 +39,12 @@ jobs:
           if b[:2]==b'\x1f\x8b':b=gzip.decompress(b)
           print('RAW',len(b),bytes(b[:4]),flush=True)
           assert b[:4]==b'BUFR'
-          stream=io.BytesIO(b);g=codes_bufr_new_from_file(stream)
+          stream=tempfile.TemporaryFile();stream.write(b);stream.seek(0);g=codes_bufr_new_from_file(stream)
           assert g is not None
           try:
               for k in ('edition','bufrHeaderCentre','masterTablesVersionNumber','localTablesVersionNumber','typicalDate','typicalTime','numberOfSubsets','compressedData'):
                   try:print('BUFR',k,codes_get(g,k),flush=True)
                   except Exception:pass
               print('DESCRIPTORS',codes_get_array(g,'unexpandedDescriptors').tolist()[:100],flush=True)
-          finally:codes_release(g)
+          finally:codes_release(g);stream.close()
           PY
