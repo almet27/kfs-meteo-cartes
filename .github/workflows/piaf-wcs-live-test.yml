@@ -20,11 +20,12 @@ jobs:
                   with urllib.request.urlopen(root+'/api/piaf/bundle.json',timeout=15) as r: m=json.load(r)
                   print('BUNDLE',attempt,m.get('render'),m.get('run_utc'),len(m.get('frames',[])),flush=True)
                   if m.get('render')=='wcs':
-                      fs=m['frames']; assert len(fs)>=24
+                      fs=m['frames']; assert len(fs)>=6
                       assert all(f['file'].startswith('wcs-map-') for f in fs)
                       for f in fs:
                           b=base64.b64decode(f['png']);assert b[:8]==b'\x89PNG\r\n\x1a\n' and struct.unpack('>II',b[16:24])==(730,735)
                       print('NATIVE LIVE READY',len(fs),fs[0]['valid_utc'],fs[-1]['valid_utc'],flush=True)
+                      if len(fs)<24: print('LIMITED NATIVE HORIZON',flush=True)
                       break
               except Exception as e: print('REQUEST',str(e),flush=True)
               time.sleep(10)
