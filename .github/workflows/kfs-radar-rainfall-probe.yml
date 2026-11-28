@@ -1,0 +1,50 @@
+name: KFS quantitative radar rainfall qualification
+on:
+  workflow_dispatch:
+  push:
+    paths: ['.github/workflows/kfs-radar-rainfall-probe.yml']
+permissions:
+  contents: read
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      METEOFRANCE_API_KEY: ${{ secrets.METEOFRANCE_API_KEY }}
+    steps:
+      - run: pip install -q requests eccodes
+      - name: Qualify quantitative 5-minute rainfall product
+        run: |
+          python - <<'PY'
+          import requests,os,gzip,io,json
+          from urllib.parse import urlparse,urljoin
+          from eccodes import codes_bufr_new_from_file,codes_get,codes_get_array,codes_release
+          token=os.environ.get('METEOFRANCE_API_KEY')
+          assert token,'Existing radar API key unavailable'
+          base='https://public-api.meteofrance.fr/public/DPRadar/v1/'
+          h={'apikey':token}
+          r=requests.get(base+'mosaiques/METROPOLE/observations/LAME_D_EAU',headers=h,timeout=30)
+          print('RADAR CATALOG',r.status_code,flush=True);r.raise_for_status()
+          d=r.json();print('METADATA KEYS',list(d),flush=True)
+          for k in ['date','datetime','time','timestamp','validityTime','validityDate','observationTime','dateObservation','updated','lastUpdate']:
+              if k in d:print('TIME',k,d[k],flush=True)
+          links=[l for l in d.get('links',[]) if l.get('href') and (l.get('type')=='application/octet-stream+gzip' or l.get('rel','').endswith('/data'))]
+          assert links,'No quantitative product'
+          url=urljoin(base,links[0]['href']);assert urlparse(url).scheme=='https' and urlparse(url).hostname=='public-api.meteofrance.fr'
+          with requests.get(url,headers=h,timeout=(15,90),stream=True) as r:
+              print('RADAR DATA',r.status_code,r.headers.get('Content-Type'),flush=True);r.raise_for_status()
+              b=bytearray()
+              for chunk in r.iter_content(1024*1024):
+                  b.extend(chunk);assert len(b)<25_000_000
+          if b[:2]==b'\x1f\x8b':b=gzip.decompress(b)
+          print('RAW',len(b),bytes(b[:4]),flush=True)
+          assert b[:4]==b'BUFR'
+          stream=io.BytesIO(b);g=codes_bufr_new_from_file(stream)
+          assert g is not None
+          try:
+              for k in ('edition','bufrHeaderCentre','masterTablesVersionNumber','localTablesVersionNumber','typicalDate','typicalTime','numberOfSubsets','compressedData'):
+                  try:print('BUFR',k,codes_get(g,k),flush=True)
+                  except Exception:pass
+              print('DESCRIPTORS',codes_get_array(g,'unexpandedDescriptors').tolist()[:100],flush=True)
+          finally:codes_release(g)
+          PY
