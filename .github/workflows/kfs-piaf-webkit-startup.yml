@@ -1,0 +1,31 @@
+name: KFS Safari engine startup test
+on:
+  workflow_dispatch:
+  push:
+    paths: ['.github/workflows/kfs-piaf-webkit-startup.yml']
+permissions:
+  contents: read
+jobs:
+  webkit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - run: npm install --no-audit --no-fund playwright@1.56.1
+      - run: npx playwright install --with-deps webkit
+      - name: Measure first visible mobile controls and actual touch
+        run: |
+          node <<'JS'
+          const {webkit,devices}=require('playwright');
+          (async()=>{const b=await webkit.launch();try{
+            const p=await b.newPage({...devices['iPhone 13'],serviceWorkers:'block'});
+            const errors=[];p.on('pageerror',e=>errors.push(e.message));
+            await p.addInitScript(()=>{try{localStorage.setItem('kfs-local-context-v1',JSON.stringify({mode:'cached',localMaps:true,city:{name:'Bourth',code:'27108',department:'27',lat:48.77,lon:.81},savedAt:Date.now()}))}catch{}});
+            const start=Date.now();await p.goto('https://kfs-meteo.fr/#accueil',{waitUntil:'commit'});
+            await p.locator('#present-zoom-in').waitFor({state:'visible'});
+            const read=()=>p.evaluate(()=>{const v=document.getElementById('obs-stations-view'),fast=document.querySelector('#kfs-piaf-fast-map:not([hidden]) svg'),model=document.querySelector('#obs-mf-map:not([hidden]) svg'),svg=fast||model||document.getElementById('obs-svg');return {t:Math.round(performance.now()),width:svg.viewBox.baseVal.width,hour:document.getElementById('obs-hour').value,ready:window.kfsEarlyLive?.ready,controls:window.kfsLiveControlsReadyAt||null,view:v.dataset.kfsPiafFast}});
+            const before=await read();await p.locator('#present-zoom-in').tap({timeout:30000});const zoom=await read();console.log('WEBKIT ZOOM',JSON.stringify({before,zoom,elapsed:Date.now()-start}));
+            await p.locator('#obs-hour-next').tap({timeout:30000});const hour=await read();console.log('WEBKIT HOUR',JSON.stringify(hour));
+            await p.waitForFunction(()=>window.kfsEarlyLive?.ready===true,null,{timeout:30000});console.log('WEBKIT READY',JSON.stringify(await read()));
+            console.log('WEBKIT ERRORS',JSON.stringify(errors));if(errors.length)throw Error('Browser errors');if(zoom.width>=before.width||Number(hour.hour)<=Number(before.hour))throw Error('Touch controls did not respond');
+          }finally{await b.close()}})().catch(e=>{console.error(e);process.exitCode=1});
+          JS
