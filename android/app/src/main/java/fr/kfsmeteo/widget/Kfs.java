@@ -19,6 +19,14 @@ final class Kfs {
    try(InputStream in=c.getInputStream();ByteArrayOutputStream out=new ByteArrayOutputStream()){byte[] b=new byte[8192];int n;while((n=in.read(b))!=-1){out.write(b,0,n);if(out.size()>3000000)throw new IOException("Réponse trop grande");}return new JSONObject(new String(out.toByteArray(),StandardCharsets.UTF_8));}
   }finally{c.disconnect();}
  }
+ static java.util.LinkedHashMap<String,String> cities(Context c){
+  android.content.SharedPreferences p=prefs(c);java.util.LinkedHashMap<String,String> out=new java.util.LinkedHashMap<>();
+  if(p.contains("cities"))try{JSONArray a=new JSONArray(p.getString("cities","[]"));for(int i=0;i<a.length()&&out.size()<4;i++){JSONObject j=a.optJSONObject(i);if(j!=null&&valid(j.optString("code")))out.put(j.optString("code"),j.optString("name",j.optString("code")));}}catch(Exception ignored){}
+  else{String code=p.getString("code","");if(valid(code))out.put(code,p.getString("name",code));}return out;
+ }
+ static void saveCities(Context c,java.util.LinkedHashMap<String,String> cities){JSONArray a=new JSONArray();for(java.util.Map.Entry<String,String> e:cities.entrySet()){JSONObject j=new JSONObject();try{j.put("code",e.getKey());j.put("name",e.getValue());a.put(j);}catch(Exception ignored){}}
+  android.content.SharedPreferences.Editor ed=prefs(c).edit().putString("cities",a.toString());String first=cities.isEmpty()?"":cities.keySet().iterator().next();ed.putString("code",first).putString("name",cities.isEmpty()?"":cities.get(first)).apply();}
+ static JSONObject forecast(Context c,String code){try{android.content.SharedPreferences p=prefs(c);String raw=p.getString("forecast_"+code,null);if(raw==null&&code.equals(p.getString("code",""))&&!p.contains("cities"))raw=p.getString("forecast","{}");return new JSONObject(raw==null?"{}":raw);}catch(Exception e){return new JSONObject();}}
  static String deg(JSONObject j,String k){double d=j==null?Double.NaN:j.optDouble(k,Double.NaN);return Double.isFinite(d)?Math.round(d)+"°":"—";}
  static String weather(JSONObject j){int c=j==null?-1:j.optInt("code",-1);if(c<0)return "Indisponible";if(c==0)return "☀ Clair";if(c<=2)return "⛅ Éclaircies";if(c==3)return "☁ Couvert";if(c==45||c==48)return "Brouillard";if(c==56||c==57||c==66||c==67)return "Verglas possible";if(c==71||c==73||c==75||c==77||c==85||c==86)return "❄ Neige";if(c>=95)return "⚡ Orages";return "Pluie";}
  static String now(){return ZonedDateTime.now(PARIS).format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH':00'",Locale.ROOT));}

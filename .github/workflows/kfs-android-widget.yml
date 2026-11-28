@@ -44,12 +44,12 @@ jobs:
           path: |
             KFS-Meteo-Android-beta.apk
             KFS-Meteo-Android-beta.apk.sha256
-      - name: Publish immutable first beta
+      - name: Publish immutable multi-city beta
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if gh release view android-widget-v0.2-beta >/dev/null 2>&1; then
+          if gh release view android-widget-v0.3-beta >/dev/null 2>&1; then
             echo "Beta already published; do not replace its signing identity."
           else
-            gh release create android-widget-v0.2-beta KFS-Meteo-Android-beta.apk KFS-Meteo-Android-beta.apk.sha256 --target "$GITHUB_SHA" --prerelease --title "KFS Météo Android – bêta 0.2" --notes "Prototype signé avec une clé de débogage temporaire. Android 8+. Pas de mise à jour garantie : une future version signée avec une clé permanente nécessitera de désinstaller la bêta. Non testé sur téléphone. Prévisions IFS/GFS."
+            gh release create android-widget-v0.3-beta KFS-Meteo-Android-beta.apk KFS-Meteo-Android-beta.apk.sha256 --target "$GITHUB_SHA" --prerelease --title "KFS Météo Android – bêta 0.3" --notes "Prototype signé avec une clé de débogage temporaire. Android 8+. Pas de mise à jour garantie : une future version signée avec une clé permanente nécessitera de désinstaller la bêta. Non testé sur téléphone. Prévisions IFS/GFS, jusqu’à 4 communes."
           fi
