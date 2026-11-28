@@ -1,0 +1,30 @@
+name: KFS HARMONIE Live integration test
+on:
+  workflow_dispatch:
+  push:
+    paths: ['.github/workflows/kfs-harmonie-live-test.yml']
+permissions:
+  contents: read
+jobs:
+  mobile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - run: npm install --no-audit --no-fund playwright-core@1.56.1
+      - name: Validate published native cycle
+        run: |
+          node <<'JS'
+          const {chromium,devices}=require('playwright-core');
+          (async()=>{const b=await chromium.launch({channel:'chrome',headless:true,args:['--no-sandbox']});try{
+            const p=await b.newPage({...devices['iPhone 13'],serviceWorkers:'block'}),errors=[];
+            p.on('pageerror',e=>errors.push(e.message));
+            await p.goto('https://kfs-meteo.fr/#observations',{waitUntil:'domcontentloaded',timeout:60000});
+            await p.waitForFunction(()=>typeof kfsHarmonieFrame==='function'&&document.getElementById('kfs-live-precip-style'),null,{timeout:30000});
+            const native=await p.evaluate(async()=>{const m=await kfsHarmonieManifest();if(!m)return null;const f=m.frames.find(f=>Date.parse(f.valid_utc)>Date.now()+4*3600000);if(!f)return null;const r=await kfsHarmonieFrame(f.valid_utc);return r&&{valid:r.f.valid_utc,unit:r.m.unit,coverage:r.m.coverage_fraction,frames:m.frames.length,url:r.url}});
+            console.log('NATIVE',JSON.stringify(native));if(!native||native.frames<24)throw Error('Full native cycle not available');
+            await p.evaluate(()=>{const $=id=>document.getElementById(id);$('obs-layer').value='temp';$('obs-hour-model').value='blend';$('obs-rain-overlay-toggle').checked=true;$('obs-snow-only-toggle').checked=false;$('kfs-live-precip-style').value='harmonie';$('obs-hour').value='5';$('obs-hour').dispatchEvent(new Event('change',{bubbles:true}));});
+            await p.waitForFunction(()=>!!document.querySelector('#obs-mf-map [data-kfs-harmonie]'),null,{timeout:60000});
+            console.log('HARMONIE LEGEND',await p.locator('#obs-legend').textContent(),'ERRORS',JSON.stringify(errors));
+            if(errors.some(e=>/kfsHarmonie|Unexpected token|is not defined/.test(e)))throw Error('Browser error');
+          }finally{await b.close()}})().catch(e=>{console.error(e);process.exitCode=1});
+          JS
