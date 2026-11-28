@@ -42,12 +42,20 @@ jobs:
           print('SELECTED',f['id'],f['bbox'],f['properties'],flush=True)
           report={'source':'DMI HARMONIE DINI native','run':run.isoformat(),'valid':f['properties']['datetime'],'bbox':f['bbox'],'fields':[]}
           with tempfile.TemporaryFile() as stream:
-              with requests.get(url,stream=True,timeout=(15,120)) as r:
-                  r.raise_for_status();size=0
-                  for b in r.iter_content(1024*1024):
-                      size+=len(b)
-                      if size>350_000_000:raise ValueError('Source exceeds qualification limit')
-                      stream.write(b)
+              index=requests.get(url+'.index',timeout=30);index.raise_for_status()
+              lines=[x.split(':') for x in index.text.splitlines() if x.strip()]
+              print('INDEX',index.text[:18000],flush=True)
+              offsets=[int(x[1]) for x in lines];assert offsets==sorted(set(offsets))
+              chosen=[i for i,x in enumerate(lines) if i+1<len(lines) and (x[3] in ('APCP','TP','WEASD','REFC','REFD','ASNOW') or x[3]=='TMP' and x[4]=='2 m above ground')]
+              if not chosen:chosen=[0]
+              size=0
+              for i in chosen:
+                  start,end=offsets[i],offsets[i+1]-1
+                  assert 0<end-start<40_000_000
+                  with requests.get(url,headers={'Range':f'bytes={start}-{end}'},stream=True,timeout=(15,90)) as r:
+                      assert r.status_code==206 and r.headers.get('Content-Range','').startswith(f'bytes {start}-{end}/')
+                      data=r.content;assert len(data)==end-start+1 and data[:4]==b'GRIB' and data[-4:]==b'7777'
+                      stream.write(data);size+=len(data)
               print('GRIB BYTES',size,flush=True);stream.seek(0)
               def key(g,k):
                   try:return codes_get(g,k)
