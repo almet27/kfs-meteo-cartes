@@ -1,0 +1,25 @@
+name: KFS official radar HD map preview
+on:
+  workflow_dispatch:
+  push:
+    paths: ['scripts/kfs_mf_radar_hd.py','.github/workflows/kfs-mf-radar-hd-preview.yml']
+permissions:
+  contents: read
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      METEOFRANCE_API_KEY: ${{ secrets.METEOFRANCE_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -q requests h5py numpy pyproj pillow
+      - run: python scripts/kfs_mf_radar_hd.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mf-radar-hd-preview
+          path: mf-radar-preview/
+          retention-days: 3
