@@ -16,3 +16,5 @@ jobs:
           curl --fail-with-body --max-time 30 --retry 1 -sS https://kfs-meteo.fr/api/piaf/status | python -m json.tool
 
 # Check both official API hosts (v2).
+
+# Refresh access check for PIAF integration.
