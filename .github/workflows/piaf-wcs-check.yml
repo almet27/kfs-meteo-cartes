@@ -21,7 +21,7 @@ jobs:
           from PIL import Image
           from scipy.ndimage import gaussian_filter
           from scipy.signal import correlate
-          from eccodes import codes_grib_new_from_message,codes_get,codes_get_array,codes_release
+          from eccodes import codes_new_from_message,codes_get,codes_get_array,codes_release
           r=requests.get('https://kfs-meteo.fr/api/piaf/geo-diagnostic.json',timeout=90)
           print('HTTP',r.status_code);r.raise_for_status();d=r.json()
           print('TESTS',d.get('tests'),'COVERAGE',d.get('coverage'),'VALID',d.get('valid'),'ERROR',d.get('error'))
@@ -30,7 +30,7 @@ jobs:
           if 'grib' not in d or 'wms' not in d:
               print('COVERAGE ERROR',d.get('coverageError'))
               raise SystemExit('Raw comparison not available')
-          g=codes_grib_new_from_message(base64.b64decode(d['grib']))
+          g=codes_new_from_message(base64.b64decode(d['grib']))
           for k in ['gridType','Ni','Nj','latitudeOfFirstGridPointInDegrees','longitudeOfFirstGridPointInDegrees','latitudeOfLastGridPointInDegrees','longitudeOfLastGridPointInDegrees','iDirectionIncrementInDegrees','jDirectionIncrementInDegrees','iScansNegatively','jScansPositively','stepRange','shortName','units','dataDate','dataTime','validityDate','validityTime']:
               try:print(k,codes_get(g,k))
               except Exception:pass
