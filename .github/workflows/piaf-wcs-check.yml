@@ -1,0 +1,52 @@
+name: PIAF WCS geographical check
+on:
+  workflow_dispatch:
+  push:
+    paths: ['.github/workflows/piaf-wcs-check.yml']
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -q eccodes pillow numpy scipy requests
+      - name: Compare raw WCS coordinates to WMS
+        run: |
+          python - <<'PY'
+          import requests,base64,io,numpy as np
+          from PIL import Image
+          from scipy.ndimage import gaussian_filter
+          from scipy.signal import correlate
+          from eccodes import codes_grib_new_from_message,codes_get,codes_get_array,codes_release
+          r=requests.get('https://kfs-meteo.fr/api/piaf/geo-diagnostic.json',timeout=90)
+          print('HTTP',r.status_code);r.raise_for_status();d=r.json()
+          print('TESTS',d.get('tests'),'COVERAGE',d.get('coverage'),'VALID',d.get('valid'),'ERROR',d.get('error'))
+          if 'description' in d:
+              print('DESCRIBE',d['description'][:16000])
+          if 'grib' not in d or 'wms' not in d:
+              print('COVERAGE ERROR',d.get('coverageError'))
+              raise SystemExit('Raw comparison not available')
+          g=codes_grib_new_from_message(base64.b64decode(d['grib']))
+          for k in ['gridType','Ni','Nj','latitudeOfFirstGridPointInDegrees','longitudeOfFirstGridPointInDegrees','latitudeOfLastGridPointInDegrees','longitudeOfLastGridPointInDegrees','iDirectionIncrementInDegrees','jDirectionIncrementInDegrees','iScansNegatively','jScansPositively','stepRange','shortName','units','dataDate','dataTime','validityDate','validityTime']:
+              try:print(k,codes_get(g,k))
+              except Exception:pass
+          lat=codes_get_array(g,'latitudes');lon=codes_get_array(g,'longitudes');v=codes_get_array(g,'values');codes_release(g)
+          lon=(lon+180)%360-180
+          x=np.floor((lon+5.8)*46).astype(int);y=np.floor((51.6-lat)*65).astype(int)
+          ok=(x>=0)&(x<730)&(y>=0)&(y<735)&np.isfinite(v)&(v<1e10)
+          raw=np.zeros((735,730));np.maximum.at(raw,(y[ok],x[ok]),np.maximum(v[ok],0))
+          a=np.asarray(Image.open(io.BytesIO(base64.b64decode(d['wms']))).convert('RGBA')).astype(int)
+          wms=(a[:,:,3]>40)&(a[:,:,:3].max(2)-a[:,:,:3].min(2)>35)
+          roi=np.zeros_like(wms);roi[140:330,16:260]=True
+          aa=gaussian_filter(((raw>0)&roi).astype(float),1);bb=gaussian_filter((wms&roi).astype(float),1)
+          print('RAW RANGE',float(v[ok].min()),float(v[ok].max()),'RAW WET',int((aa>0.2).sum()),'WMS WET',int((bb>0.2).sum()))
+          if aa.sum()==0 or bb.sum()==0:raise SystemExit('Insufficient precipitation signal')
+          cc=correlate(aa,bb,mode='same',method='fft');cy,cx=367,365
+          j,i=np.unravel_index(np.argmax(cc[cy-35:cy+36,cx-35:cx+36]),(71,71));j+=cy-35;i+=cx-35
+          norm=np.sqrt((aa*aa).sum()*(bb*bb).sum())
+          print('ALIGNMENT x_y_pixels',int(i-cx),int(j-cy),'zero_similarity',float(cc[cy,cx]/norm),'best_similarity',float(cc[j,i]/norm))
+          PY
