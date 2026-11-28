@@ -1,0 +1,32 @@
+name: PIAF WCS live activation test
+on:
+  workflow_dispatch:
+  push:
+    paths: ['.github/workflows/piaf-wcs-live-test.yml']
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - name: Verify native timeline bundle
+        run: |
+          python - <<'PY'
+          import urllib.request,json,time,base64,struct,datetime
+          root='https://kfs-meteo.fr'
+          for attempt in range(12):
+              try:
+                  with urllib.request.urlopen(root+'/api/piaf/bundle.json',timeout=15) as r: m=json.load(r)
+                  print('BUNDLE',attempt,m.get('render'),m.get('run_utc'),len(m.get('frames',[])),flush=True)
+                  if m.get('render')=='wcs':
+                      fs=m['frames']; assert len(fs)>=24
+                      assert all(f['file'].startswith('wcs-map-') for f in fs)
+                      for f in fs:
+                          b=base64.b64decode(f['png']);assert b[:8]==b'\x89PNG\r\n\x1a\n' and struct.unpack('>II',b[16:24])==(730,735)
+                      print('NATIVE LIVE READY',len(fs),fs[0]['valid_utc'],fs[-1]['valid_utc'],flush=True)
+                      break
+              except Exception as e: print('REQUEST',str(e),flush=True)
+              time.sleep(10)
+          else: raise SystemExit('WCS bundle not yet ready; fallback remains')
+          PY
