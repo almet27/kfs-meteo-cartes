@@ -11,7 +11,7 @@ jobs:
     timeout-minutes: 6
     steps:
       - run: npm install --no-audit --no-fund playwright-core@1.56.1
-      - name: Validate published native cycle
+      - name: Validate published native cycle after release
         run: |
           node <<'JS'
           const {chromium,devices}=require('playwright-core');
