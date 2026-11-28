@@ -11,6 +11,7 @@ import requests
 import numpy as np
 from scipy.spatial import cKDTree
 from PIL import Image
+from kfs_precip_archive import PrecipArchive
 from eccodes import codes_new_from_message,codes_get,codes_get_array,codes_set,codes_release
 
 API="https://opendataapi.dmi.dk/v1/forecastdata/collections/harmonie_dini_sf/items"
@@ -97,13 +98,13 @@ def main():
     old=Path("previous-harmonie.json")
     if old.exists():
         prev=json.loads(old.read_text())
-        if prev.get("run_utc")==run.isoformat() and len(prev.get("frames",[]))>=end-start+1:
+        if prev.get("run_utc")==run.isoformat() and len(prev.get("frames",[]))>=end-start+1 and prev.get("numeric_archive"):
             print("Already published",flush=True);return
     first=load(frames[start],run,start,geometry=True);index,coverage,identity=first[2:]
     def one(h):return h,load(frames[h],run,h,index=index,coverage=coverage,identity=identity)[:2]
     jobs=list(range(start-1,end+1))
     with ThreadPoolExecutor(max_workers=3) as pool:fields=dict(pool.map(one,jobs))
-    output=[]
+    output=[];archive=PrecipArchive('harmonie',run)
     for h in range(start,end+1):
         a,begin=fields[h]
         if begin==h-1:rate=a
@@ -112,6 +113,7 @@ def main():
         if np.any(rate[np.isfinite(rate)]<-.15):raise ValueError("Negative precipitation increment")
         rate=np.maximum(rate,0)
         if np.count_nonzero(np.isfinite(rate))<.95*coverage.sum():raise ValueError("Incomplete precipitation field")
+        archive.add(run+timedelta(hours=h),rate,coverage,801,551,.02)
         pixels=np.searchsorted(LEVELS,np.nan_to_num(rate,nan=0),side="right").astype(np.uint8)
         pixels[~np.isfinite(rate)]=len(COLORS)+1
         im=Image.fromarray(pixels.reshape(551,801),mode="P");palette=[0,0,0]+[int(c[i:i+2],16) for c in COLORS for i in (1,3,5)]+[125,145,160];im.putpalette(palette+[0]*(768-len(palette)));im.info["transparency"]=bytes([0]+[255]*len(COLORS)+[100])
@@ -119,5 +121,6 @@ def main():
         output.append({"hour":h,"valid_utc":(run+timedelta(hours=h)).isoformat(),"file":name})
         print("HARMONIE",h,"max mm",float(np.nanmax(rate)),flush=True)
     doc={"schema":1,"model":"harmonie","source":"DMI HARMONIE DINI","run_utc":run.isoformat(),"generated_utc":now.isoformat(),"native_grid_km":2,"resolution_degrees":.02,"bounds":BOUNDS,"unit":"mm","interval_hours":1,"levels":LEVELS,"colors":COLORS,"coverage_fraction":float(coverage.mean()),"frames":output}
+    doc["numeric_archive"]=archive.save(OUT)
     (OUT/"manifest.json").write_text(json.dumps(doc,indent=2))
 if __name__=="__main__":main()
