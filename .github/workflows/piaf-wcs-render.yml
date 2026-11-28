@@ -28,6 +28,10 @@ jobs:
           g=codes_new_from_message(base64.b64decode(d['grib']))
           meta={k:codes_get(g,k) for k in ['gridType','Ni','Nj','dataDate','dataTime','validityDate','validityTime','stepRange','shortName','units']}
           print('GRIB',meta)
+          print('PACKING', {k:codes_get(g,k) for k in ['packingType','dataRepresentationTemplateNumber','bitsPerValue','binaryScaleFactor','decimalScaleFactor','bitmapPresent','scanningMode','numberOfValues']})
+          b=base64.b64decode(d['grib']); p=16
+          while p<len(b)-4:
+              n=int.from_bytes(b[p:p+4],'big'); print('SECTION',b[p+4],n,b[p:p+min(n,80)].hex()); assert n>=5; p+=n
           assert meta['gridType']=='regular_ll' and meta['shortName']=='tp' and meta['units']=='kg m**-2' and meta['stepRange']=='0m-5m'
           valid=dt.datetime.strptime(str(meta['validityDate'])+str(meta['validityTime']).zfill(4),'%Y%m%d%H%M').replace(tzinfo=dt.timezone.utc)
           assert valid==dt.datetime.fromisoformat(d['valid'])
