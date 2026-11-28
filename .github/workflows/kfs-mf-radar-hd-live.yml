@@ -1,0 +1,54 @@
+name: KFS official radar HD live publication
+on:
+  workflow_dispatch:
+  push:
+    paths: ['.github/workflows/kfs-mf-radar-hd-live.yml','scripts/kfs_mf_radar_hd.py']
+  schedule:
+    - cron: '*/5 * * * *'
+permissions:
+  contents: write
+concurrency:
+  group: mf-radar-hd-live
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ github.token }}
+      METEOFRANCE_API_KEY: ${{ secrets.METEOFRANCE_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -q requests h5py numpy pyproj pillow
+      - run: python scripts/kfs_mf_radar_hd.py
+      - name: Publish immutable frames and rolling manifest
+        run: |
+          gh release view mf-radar-hd >/dev/null 2>&1 || gh release create mf-radar-hd --title 'KFS radar Météo-France HD' --notes 'Météo-France ODIM ACRR 500 m, 5-minute water-equivalent accumulations. Source: Météo-France. Missing coverage is not dry weather.' --prerelease
+          gh release download mf-radar-hd --pattern manifest.json --output previous.json || true
+          python - <<'PY'
+          from pathlib import Path
+          from datetime import datetime,timezone,timedelta
+          import json,subprocess
+          p=Path('mf-radar-preview');m=json.loads((p/'manifest.json').read_text())
+          t=datetime.fromisoformat(m['valid_utc']);now=datetime.now(timezone.utc)
+          assert now-t<=timedelta(minutes=15)
+          old=json.loads(Path('previous.json').read_text()) if Path('previous.json').exists() else {}
+          rows={f['observation_utc']:f for f in old.get('web_frames',[]) if now-datetime.fromisoformat(f['observation_utc'])<=timedelta(minutes=45)}
+          tag='mf-radar-hd';name=t.strftime('%Y%m%d%H%M');files=[f'radar-{name}-730.png',f'radar-{name}-2920.png',f'radar-{name}.npz']
+          existing={a['name'] for a in json.loads(subprocess.check_output(['gh','release','view',tag,'--json','assets']))['assets']}
+          for file in files:
+              if file not in existing:subprocess.check_call(['gh','release','upload',tag,str(p/file)])
+          rows[t.isoformat()]={'observation_utc':t.isoformat(),'file':files[0],'hd_file':files[1]}
+          frames=sorted(rows.values(),key=lambda f:f['observation_utc'])[-8:]
+          doc={'schema':1,'source':'Météo-France ACRR 500m','web_projection':'KFS-stations-730x735-v2','web_frames':frames,'derniere_observation_utc':frames[-1]['observation_utc'],'interval_minutes':5,'native_resolution_m':500,'unit':'mm','render_unit':'mm/h equivalent over 5 min','coverage':'grey = missing','validation':'ODIM corner validation; initial matched comparison without detected displacement'}
+          (p/'manifest.json').write_text(json.dumps(doc,indent=2));subprocess.check_call(['gh','release','upload',tag,str(p/'manifest.json'),'--clobber'])
+          keep={f[k] for f in frames for k in ('file','hd_file')}
+          for a in json.loads(subprocess.check_output(['gh','release','view',tag,'--json','assets']))['assets']:
+              n=a['name']
+              if n.startswith('radar-') and n.endswith('.png') and n not in keep:subprocess.run(['gh','release','delete-asset',tag,n,'--yes'],check=False)
+              if n.startswith('radar-') and n.endswith('.npz') and datetime.fromisoformat(a['createdAt'].replace('Z','+00:00'))<now-timedelta(hours=48):subprocess.run(['gh','release','delete-asset',tag,n,'--yes'],check=False)
+          print('LIVE RADAR',doc['derniere_observation_utc'],len(frames),flush=True)
+          PY
