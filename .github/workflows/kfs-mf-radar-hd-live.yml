@@ -4,7 +4,8 @@ on:
   push:
     paths: ['.github/workflows/kfs-mf-radar-hd-live.yml','scripts/kfs_mf_radar_hd.py']
   schedule:
-    - cron: '2-59/5 * * * *'
+    # Cloudflare dispatches every 5 minutes; GitHub is a staggered backup.
+    - cron: '7,22,37,52 * * * *'
 permissions:
   contents: write
 concurrency:
@@ -19,19 +20,53 @@ jobs:
       METEOFRANCE_API_KEY: ${{ secrets.METEOFRANCE_API_KEY }}
     steps:
       - uses: actions/checkout@v4
+      - name: Check official timestamp before downloading large radar files
+        id: catalog
+        shell: bash
+        run: |
+          gh release download mf-radar-hd --pattern manifest.json --output previous.json || true
+          gh release view mf-radar-hd --json assets > previous-assets.json || true
+          python3 - <<'PY'
+          import json, os, urllib.request
+          from pathlib import Path
+          from datetime import datetime, timezone, timedelta
+          from urllib.parse import urlparse, parse_qs
+          skip=False
+          try:
+              req=urllib.request.Request('https://public-api.meteofrance.fr/public/DPRadar/v1/mosaiques/METROPOLE/observations/LAME_D_EAU',headers={'apikey':os.environ['METEOFRANCE_API_KEY']})
+              with urllib.request.urlopen(req, timeout=12) as response:
+                  links=[l for l in json.load(response)['links'] if l.get('rel','').endswith('/data') and parse_qs(urlparse(l['href']).query).get('maille')==['500']]
+              if len(links)!=1: raise ValueError('Unexpected catalog')
+              t=datetime.fromisoformat(links[0]['validity_time'].replace('Z','+00:00'))
+              old=json.loads(Path('previous.json').read_text())
+              assets={a['name'] for a in json.loads(Path('previous-assets.json').read_text())['assets']}
+              name=t.strftime('%Y%m%d%H%M')
+              required={'manifest.json',f'radar-{name}-730.png',f'radar-{name}-1460.png',f'radar-{name}-2920.png',f'radar-{name}.npz'}
+              skip=(old.get('schema')==1 and old.get('source')=='Météo-France ACRR 500m' and old.get('web_projection')=='KFS-stations-730x735-v2' and datetime.fromisoformat(old['derniere_observation_utc'])==t and timedelta(0)<=datetime.now(timezone.utc)-t<=timedelta(minutes=12) and required<=assets and any(datetime.fromisoformat(f['observation_utc'])==t and f.get('file')==f'radar-{name}-730.png' and f.get('mobile_file')==f'radar-{name}-1460.png' and f.get('hd_file')==f'radar-{name}-2920.png' for f in old.get('web_frames',[])))
+              print('Official radar catalog:', t.isoformat(), 'already published:', skip, flush=True)
+          except Exception as exc:
+              print('Preflight inconclusive; running normal collection:', type(exc).__name__, flush=True)
+          with open(os.environ['GITHUB_OUTPUT'],'a') as out:
+              out.write('skip='+('true' if skip else 'false')+'\n')
+          PY
       - uses: actions/setup-python@v5
+        if: steps.catalog.outputs.skip != 'true'
         with:
           python-version: '3.12'
           cache: pip
           cache-dependency-path: 'scripts/kfs_mf_radar_hd.py'
       - run: pip install -q requests h5py numpy pyproj pillow
+        if: steps.catalog.outputs.skip != 'true'
       - name: Record radar collection start
+        if: steps.catalog.outputs.skip != 'true'
         run: date -u +'%Y-%m-%dT%H:%M:%SZ'
       - run: python scripts/kfs_mf_radar_hd.py
+        if: steps.catalog.outputs.skip != 'true'
       - name: Publish immutable frames and rolling manifest
+        if: steps.catalog.outputs.skip != 'true'
         run: |
           gh release view mf-radar-hd >/dev/null 2>&1 || gh release create mf-radar-hd --title 'KFS radar Météo-France HD' --notes 'Météo-France ODIM ACRR 500 m, 5-minute water-equivalent accumulations. Source: Météo-France. Missing coverage is not dry weather.' --prerelease
-          gh release download mf-radar-hd --pattern manifest.json --output previous.json || true
+          gh release download mf-radar-hd --pattern manifest.json --output previous.json --clobber || true
           python - <<'PY'
           from pathlib import Path
           from datetime import datetime,timezone,timedelta
@@ -43,8 +78,8 @@ jobs:
           rows={f['observation_utc']:f for f in old.get('web_frames',[]) if now-datetime.fromisoformat(f['observation_utc'])<=timedelta(minutes=45)}
           tag='mf-radar-hd';name=t.strftime('%Y%m%d%H%M');files=[f'radar-{name}-730.png',f'radar-{name}-2920.png',f'radar-{name}.npz',f'radar-{name}-1460.png']
           existing={a['name'] for a in json.loads(subprocess.check_output(['gh','release','view',tag,'--json','assets']))['assets']}
-          for file in files:
-              if file not in existing:subprocess.check_call(['gh','release','upload',tag,str(p/file)])
+          missing=[str(p/file) for file in files if file not in existing]
+          if missing:subprocess.check_call(['gh','release','upload',tag,*missing])
           rows[t.isoformat()]={'observation_utc':t.isoformat(),'file':files[0],'hd_file':files[1],'mobile_file':files[3]}
           frames=sorted(rows.values(),key=lambda f:f['observation_utc'])[-8:]
           doc={'schema':1,'source':'Météo-France ACRR 500m','web_projection':'KFS-stations-730x735-v2','web_frames':frames,'derniere_observation_utc':frames[-1]['observation_utc'],'interval_minutes':5,'native_resolution_m':500,'unit':'mm','render_unit':'mm/h equivalent over 5 min','coverage':'grey = missing','validation':'ODIM corner validation; initial matched comparison without detected displacement'}
