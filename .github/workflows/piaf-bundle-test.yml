@@ -1,0 +1,30 @@
+name: PIAF bundle test
+on:
+  workflow_dispatch:
+  push:
+    paths: ['.github/workflows/piaf-bundle-test.yml']
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - run: |
+          curl --retry 2 --retry-all-errors --retry-delay 5 -fsS --max-time 15 -w 'BUNDLE transfer: %{time_total}s, %{size_download} bytes\n' https://kfs-meteo.fr/api/piaf/bundle.json -o bundle.json
+          python - <<'PY'
+          import json, base64, struct, datetime
+          m=json.load(open('bundle.json'))
+          assert m['schema']==1
+          run=datetime.datetime.fromisoformat(m['run_utc'])
+          dates=[]
+          for f in m['frames']:
+              b=base64.b64decode(f['png'],validate=True)
+              assert b[:8]==b'\x89PNG\r\n\x1a\n'
+              assert struct.unpack('>II',b[16:24])==(730,735)
+              t=datetime.datetime.fromisoformat(f['valid_utc'])
+              assert (t-run).total_seconds()==60*f['lead_minutes']
+              dates.append(t)
+          assert len(dates)>0 and dates==sorted(set(dates))
+          print('BUNDLE RUN',m['run_utc'],'FRAMES',len(dates),'FIRST',dates[0],'LAST',dates[-1])
+          PY
