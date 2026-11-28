@@ -6,7 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime,timedelta,timezone
 from pathlib import Path
 from urllib.parse import urlparse
-import io,json,re
+import io,json,re,os
 import requests
 import numpy as np
 from scipy.spatial import cKDTree
@@ -93,6 +93,7 @@ def main():
             chosen=run,frames,start,end;break
     if not chosen:raise RuntimeError("No recent contiguous HARMONIE cycle")
     run,frames,start,end=chosen
+    if os.environ.get('KFS_HARMONIE_PREVIEW')=='1':end=min(end,start+2)
     old=Path("previous-harmonie.json")
     if old.exists():
         prev=json.loads(old.read_text())
