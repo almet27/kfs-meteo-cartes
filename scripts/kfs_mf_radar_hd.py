@@ -73,7 +73,7 @@ def render(parsed,width,height):
 def main():
     OUT.mkdir(exist_ok=True);b,t=get();p=parse(b,t)
     name=t.strftime('%Y%m%d%H%M')
-    for w,h in ((730,735),(2920,2940)):
+    for w,h in ((730,735),(1460,1470),(2920,2940)):
         image=render(p,w,h);image.save(OUT/f'radar-{name}-{w}.png',optimize=True)
     lon,lat=np.meshgrid(np.linspace(-6,10,401),np.linspace(52,41,276))
     mm,q=sample(p,lon,lat)
