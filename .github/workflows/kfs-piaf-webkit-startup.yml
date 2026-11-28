@@ -7,7 +7,7 @@ permissions:
   contents: read
 jobs:
   webkit:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 8
     steps:
       - run: npm install --no-audit --no-fund playwright@1.56.1
