@@ -10,6 +10,7 @@ from urllib.parse import quote
 import bz2, json, re, sys
 import numpy as np
 from PIL import Image
+from kfs_precip_archive import PrecipArchive
 from scipy.spatial import cKDTree
 from eccodes import codes_grib_new_from_file, codes_get, codes_get_array, codes_set, codes_release
 
@@ -140,7 +141,7 @@ def raster_index(x,y,step):
     d,j=cKDTree(xy(x,y)).query(xy(xx.ravel(),yy.ravel()),workers=2)
     return W,H,j,d<=step*1.15
 
-def render(model,run,h,previous,current,out,mapping):
+def render(model,run,h,previous,current,out,mapping,archive=None):
     step=.01 if model=="arome" else .02
     first=next(iter(current.values()))
     x,y=first[1:3]
@@ -156,6 +157,7 @@ def render(model,run,h,previous,current,out,mapping):
     good=covered&np.isfinite(p).all(axis=0)
     if good.sum()<10000:raise ValueError("Insufficient valid phase pixels")
     total=p.sum(axis=0)
+    if archive is not None:archive.add(run+timedelta(hours=h),total,good,W,H,step)
     strongest=np.argmax(np.nan_to_num(p,nan=-1),axis=0)
     mixed=good&(p[0]>=.1)&((p[1]+p[2])>=.1)&(np.maximum(p[0],p[1]+p[2])<.8*total)
     phase=np.where(mixed,3,strongest)
@@ -194,20 +196,21 @@ def main(model):
     if not candidates:raise RuntimeError("No complete recent cycle")
     # Prefer the latest full-range cycle; do not extend a run beyond its real lead time.
     run,start,end=max(candidates,key=lambda c:(c[0]+timedelta(hours=c[2]),c[0]))
-    if previous.get("render_version")==2 and previous.get("run_utc")==run.isoformat() and previous.get("frames") and max(datetime.fromisoformat(f["valid_utc"]) for f in previous["frames"])>=run+timedelta(hours=end):
+    if previous.get("render_version")==2 and previous.get("run_utc")==run.isoformat() and previous.get("numeric_archive") and previous.get("frames") and max(datetime.fromisoformat(f["valid_utc"]) for f in previous["frames"])>=run+timedelta(hours=end):
         print("Already published");return
     grid=icon_grid(run) if model=="icon" else None
     # One shared predecessor, no duplicate downloads, and bounded memory.
-    prev=fetch(model,run,start-1,grid);frames=[]
+    prev=fetch(model,run,start-1,grid);frames=[];archive=PrecipArchive('icon-d2' if model=='icon' else model,run)
     x,y=next(iter(prev.values()))[1:3]
     mapping=(x,y,raster_index(x,y,.01 if model=="arome" else .02))
     for h in range(start,end+1):
         curr=fetch(model,run,h,grid)
-        frames.append(render(model,run,h,prev,curr,out,mapping));prev=curr
+        frames.append(render(model,run,h,prev,curr,out,mapping,archive));prev=curr
         print(model,run,h,flush=True)
     doc={"schema":1,"render_version":2,"unit":"mm","interval_hours":1,"model":model,"source":"Météo-France ARÔME HD SP2" if model=="arome" else "DWD ICON-D2",
          "run_utc":run.isoformat(),"generated_utc":now.isoformat(),"resolution_degrees":.01 if model=="arome" else .02,"bounds":BOUNDS,
          "levels":LEVELS,"colors":COLORS,"frames":frames}
+    doc["numeric_archive"]=archive.save(out)
     (out/"manifest.json").write_text(json.dumps(doc,indent=2))
 if __name__=="__main__":
     if len(sys.argv)!=2 or sys.argv[1] not in ("arome","icon"):raise SystemExit("Specify arome or icon")
