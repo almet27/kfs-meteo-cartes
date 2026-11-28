@@ -25,6 +25,15 @@ jobs:
       - run: pip install -q requests eccodes numpy scipy pillow
       - name: Preserve previous coherent run
         run: gh release download harmonie-precip --pattern manifest.json --output previous-harmonie.json || true
+      - name: Validate archive geometry and previous archive availability
+        run: |
+          python scripts/kfs_precip_archive.py
+          if [ -f "previous-harmonie.json" ]; then
+            name=$(python -c 'import json,sys;print(json.load(open(sys.argv[1])).get("numeric_archive",""))' "previous-harmonie.json")
+            if [ -n "$name" ] && ! gh release view "harmonie-precip-archive" --json assets --jq '.assets[].name' | grep -Fxq "$name"; then
+              python -c 'import json,sys;p=sys.argv[1];d=json.load(open(p));d.pop("numeric_archive",None);open(p,"w").write(json.dumps(d))' "previous-harmonie.json"
+            fi
+          fi
       - run: python scripts/generate_harmonie_precip.py
       - name: Validate and publish complete run
         run: |
@@ -55,4 +64,23 @@ jobs:
           for a in json.loads(subprocess.check_output(['gh','release','view','harmonie-precip','--json','assets']))['assets']:
               if a['name'].startswith('precip-') and a['name'] not in keep:
                   subprocess.run(['gh','release','delete-asset','harmonie-precip',a['name'],'--yes'],check=False)
+          PY
+
+      - name: Preserve numerical forecasts for seven days
+        run: |
+          shopt -s nullglob
+          files=("harmonie-precip"/verify-*.npz)
+          if [ "${#files[@]}" -eq 0 ]; then exit 0; fi
+          tag="harmonie-precip-archive"
+          gh release view "$tag" >/dev/null 2>&1 || gh release create "$tag" --title "KFS quantitative precipitation archive - harmonie" --notes "Prospective rainfall verification, common 0.04 degree grid. Actual availability is asset creation time. Seven-day rolling retention." --prerelease
+          gh release upload "$tag" "${files[@]}"
+          python - "$tag" <<'PY'
+          import json,subprocess,sys
+          from datetime import datetime,timezone,timedelta
+          tag=sys.argv[1];cut=datetime.now(timezone.utc)-timedelta(days=7)
+          assets=json.loads(subprocess.check_output(['gh','release','view',tag,'--json','assets']))['assets']
+          for a in assets:
+              t=datetime.fromisoformat(a['createdAt'].replace('Z','+00:00'))
+              if a['name'].startswith('verify-') and t<cut:
+                  subprocess.run(['gh','release','delete-asset',tag,a['name'],'--yes'],check=False)
           PY
