@@ -1,0 +1,33 @@
+name: KFS ARÔME HD native reflectivity Live test
+on:
+  workflow_dispatch:
+  push:
+    paths: ['.github/workflows/kfs-arome-live-test.yml']
+permissions:
+  contents: read
+jobs:
+  mobile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - run: npm install --no-audit --no-fund playwright-core@1.56.1
+      - name: Verify native reflectivity and phase selection
+        run: |
+          node <<'JS'
+          const {chromium,devices}=require('playwright-core');
+          (async()=>{const b=await chromium.launch({channel:'chrome',headless:true,args:['--no-sandbox']});try{
+            const p=await b.newPage({...devices['iPhone 13'],serviceWorkers:'block'}),errors=[];
+            p.on('pageerror',e=>errors.push(e.message));
+            await p.goto('https://kfs-meteo.fr/#observations',{waitUntil:'domcontentloaded',timeout:60000});
+            await p.waitForFunction(()=>typeof kfsAromeDbzFrame==='function'&&document.getElementById('kfs-live-precip-style'),null,{timeout:30000});
+            const native=await p.evaluate(async()=>{const m=await kfsAromeDbzManifest();if(!m)return null;const f=m.frames.find(f=>Date.parse(f.valid_utc)>Date.now()+3*3600000);if(!f)return null;const r=await kfsAromeDbzFrame(f.valid_utc);return r&&{valid:r.f.valid_utc,unit:r.m.unit,step:r.m.resolution_degrees,url:r.url}});
+            console.log('NATIVE',JSON.stringify(native));if(!native)throw Error('No recent native frame');
+            await p.evaluate(()=>{const $=id=>document.getElementById(id);$('obs-layer').value='temp';$('obs-hour-model').value='arome';$('obs-rain-overlay-toggle').checked=true;$('obs-snow-only-toggle').checked=false;$('kfs-live-precip-style').value='dbz';$('obs-hour').value='5';$('obs-hour').dispatchEvent(new Event('change',{bubbles:true}));});
+            await p.waitForFunction(()=>!!document.querySelector('#obs-mf-map [data-kfs-arome-dbz]'),null,{timeout:60000});
+            console.log('DBZ LEGEND',await p.locator('#obs-legend').textContent());
+            await p.evaluate(()=>{const el=document.getElementById('kfs-live-precip-style');el.value='phase';el.dispatchEvent(new Event('change',{bubbles:true}));});
+            await p.waitForFunction(()=>!document.querySelector('#obs-mf-map [data-kfs-arome-dbz]')&&!!document.querySelector('#obs-mf-map [data-kfs-precip="all"]'),null,{timeout:60000});
+            console.log('PHASE LEGEND',await p.locator('#obs-legend').textContent(),'ERRORS',JSON.stringify(errors));
+            if(errors.some(e=>/kfsArome|Unexpected token|is not defined/.test(e)))throw Error('Browser error');
+          }finally{await b.close()}})().catch(e=>{console.error(e);process.exitCode=1});
+          JS
