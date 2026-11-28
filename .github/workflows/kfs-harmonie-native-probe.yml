@@ -1,0 +1,68 @@
+name: KFS HARMONIE native source qualification
+on:
+  workflow_dispatch:
+  push:
+    paths: ['.github/workflows/kfs-harmonie-native-probe.yml']
+permissions:
+  contents: read
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -q requests eccodes numpy
+      - name: Inspect official DMI DINI GRIB and France coverage
+        run: |
+          python - <<'PY'
+          import requests,datetime as dt,json,tempfile,numpy as np
+          from eccodes import codes_grib_new_from_file,codes_get,codes_get_array,codes_release
+          from urllib.parse import urlparse
+          api='https://opendataapi.dmi.dk/v1/forecastdata/collections/harmonie_dini_sf/items'
+          now=dt.datetime.now(dt.timezone.utc)
+          anchor=now.replace(hour=now.hour//3*3,minute=0,second=0,microsecond=0)
+          selection=None
+          for lag in range(1,5):
+              run=anchor-dt.timedelta(hours=lag*3)
+              r=requests.get(api,params={'modelRun':run.strftime('%Y-%m-%dT%H:%M:%SZ'),'limit':100},timeout=35)
+              print('CATALOG',run.isoformat(),r.status_code,flush=True)
+              r.raise_for_status()
+              features=r.json().get('features',[])
+              usable=[f for f in features if 3<= (dt.datetime.fromisoformat(f['properties']['datetime'])-run).total_seconds()/3600 <= 60]
+              if usable and len(features)>=40:
+                  selection=run,min(usable,key=lambda f:abs((dt.datetime.fromisoformat(f['properties']['datetime'])-now).total_seconds()-6*3600));break
+          assert selection,'No complete operational DINI run'
+          run,f=selection;assets=f.get('assets',f.get('asset',{}));url=assets['data']['href']
+          assert urlparse(url).scheme=='https' and urlparse(url).hostname=='opendataapi.dmi.dk'
+          print('SELECTED',f['id'],f['bbox'],f['properties'],flush=True)
+          report={'source':'DMI HARMONIE DINI native','run':run.isoformat(),'valid':f['properties']['datetime'],'bbox':f['bbox'],'fields':[]}
+          with tempfile.TemporaryFile() as stream:
+              with requests.get(url,stream=True,timeout=(15,120)) as r:
+                  r.raise_for_status();size=0
+                  for b in r.iter_content(1024*1024):
+                      size+=len(b)
+                      if size>350_000_000:raise ValueError('Source exceeds qualification limit')
+                      stream.write(b)
+              print('GRIB BYTES',size,flush=True);stream.seek(0)
+              def key(g,k):
+                  try:return codes_get(g,k)
+                  except Exception:return None
+              geometry=None
+              while (g:=codes_grib_new_from_file(stream)) is not None:
+                  try:
+                      a={k:key(g,k) for k in ['edition','centre','table2Version','indicatorOfParameter','discipline','parameterCategory','parameterNumber','shortName','name','units','typeOfLevel','level','stepType','startStep','endStep','dataDate','dataTime','validityDate','validityTime','gridType','Ni','Nj']}
+                      report['fields'].append(a);print('FIELD',json.dumps(a),flush=True)
+                      if geometry is None:
+                          lat=codes_get_array(g,'latitudes');lon=(codes_get_array(g,'longitudes')+180)%360-180
+                          geometry={'points':len(lat),'lat_min':float(lat.min()),'lat_max':float(lat.max()),'lon_min':float(lon.min()),'lon_max':float(lon.max()),'france_cells':int(((lat>=41)&(lat<=51.5)&(lon>=-6)&(lon<=10.5)).sum())}
+                          report['geometry']=geometry;print('GEOMETRY',geometry,flush=True)
+                  finally:codes_release(g)
+          assert report['fields'] and report['geometry']['france_cells']>1000,'No France coverage'
+          open('harmonie-source-report.json','w').write(json.dumps(report,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: harmonie-source-report
+          path: harmonie-source-report.json
