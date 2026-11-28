@@ -23,4 +23,19 @@ jobs:
         with:
           python-version: '3.12'
       - run: pip install numpy scipy
+      - name: Test coverage gaps and isolated initiation
+        run: |
+          python - <<'PY'
+          import sys
+          sys.path.insert(0,'scripts')
+          from verify_arome_initiation import score
+          obs={"state":"ready","provider":"EUMETSAT-MTG-LI-LFL","truncated":False,"latest_product_end_utc":"2026-11-28T11:30:00Z","retained_minutes":120,"area_wsen":[-7.5,40.5,10.,52.],"products_seen":["x_OPE_20261128103000_20261128113000_x"],"flashes":[{"lon":0.02,"lat":48.98,"ts":1795863900}]}
+          from datetime import datetime,timezone
+          obs["flashes"][0]["ts"]=datetime(2026,11,28,11,5,tzinfo=timezone.utc).timestamp()
+          doc={"valid_utc":"2026-11-28T11:00:00Z","forecasts":{"1":{"cells":[[120,60,2]]}}}
+          result=score(doc,obs)
+          assert result and result["scores"]["1h_L2"]["events_detected"]==1
+          obs["products_seen"]=[]
+          assert score(doc,obs) is None
+          PY
       - run: python scripts/verify_arome_initiation.py
