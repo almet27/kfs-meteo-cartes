@@ -11,7 +11,9 @@ OUT=Path("forecast-maps/france/hourly-web")
 MODELS={"arome":"meteofrance_arome_france","gfs":"gfs_global","ifs":"ecmwf_ifs025"}
 FIELDS=["temperature_2m","wind_speed_10m","wind_gusts_10m","precipitation","wind_direction_10m","weather_code"]
 EXTRA_FIELDS=["rain","showers","snowfall","cape","visibility","snow_depth","relative_humidity_2m","dew_point_2m","cloud_cover_low"]
-FIELDS=FIELDS+EXTRA_FIELDS
+BASE_FIELDS=FIELDS+EXTRA_FIELDS
+STORM_FIELDS=["convective_inhibition","vertical_velocity_700hPa","lightning_density"]
+FIELDS=BASE_FIELDS+STORM_FIELDS
 def get(url):
     with urlopen(Request(url,headers={"User-Agent":"KFS-Meteo-Hourly/1.0"}),timeout=40) as r:return json.load(r)
 def inside(x,y,ring):
@@ -49,15 +51,19 @@ def build(name,code,pts):
     rows=[]
     for k in range(0,len(pts),25):
         part=pts[k:k+25]
-        q=urlencode({"latitude":",".join(str(p[1]) for p in part),"longitude":",".join(str(p[0]) for p in part),"models":code,"hourly":",".join(FIELDS),"forecast_hours":hours,"timezone":"GMT","wind_speed_unit":"kmh","precipitation_unit":"mm","cell_selection":"land"})
+        wanted=FIELDS if name=="ifs" else BASE_FIELDS+STORM_FIELDS[:2]
+        q=urlencode({"latitude":",".join(str(p[1]) for p in part),"longitude":",".join(str(p[0]) for p in part),"models":code,"hourly":",".join(wanted),"forecast_hours":hours,"timezone":"GMT","wind_speed_unit":"kmh","precipitation_unit":"mm","cell_selection":"land"})
         try:d=get("https://api.open-meteo.com/v1/forecast?"+q)
         except HTTPError as e:
             # A provider/model may reject an optional variable. Retain the original
             # six fields rather than losing the complete timeline.
             if e.code==400:
                 fallback=urlencode({"latitude":",".join(str(p[1]) for p in part),"longitude":",".join(str(p[0]) for p in part),"models":code,"hourly":",".join(FIELDS[:6]),"forecast_hours":hours,"timezone":"GMT","wind_speed_unit":"kmh","precipitation_unit":"mm","cell_selection":"land"})
-                try:d=get("https://api.open-meteo.com/v1/forecast?"+fallback)
-                except HTTPError as err:record_quota(err);raise
+                try:d=get("https://api.open-meteo.com/v1/forecast?"+fallback.replace(urlencode({"hourly":",".join(FIELDS[:6])}),urlencode({"hourly":",".join(BASE_FIELDS)})))
+                except HTTPError as err:
+                    if err.code!=400:record_quota(err);raise
+                    try:d=get("https://api.open-meteo.com/v1/forecast?"+fallback)
+                    except HTTPError as err:record_quota(err);raise
             else:record_quota(e);raise
         if isinstance(d,dict):d=[d]
         if len(d)!=len(part):raise ValueError("Unexpected location count")
@@ -71,8 +77,8 @@ def build(name,code,pts):
                     a=h.get(field,[])
                     v=a[idx] if idx is not None and idx<len(a) else None
                     unit=r.get("hourly_units",{}).get(field)
-                    expected={"rain":"mm","showers":"mm","snowfall":"cm","cape":"J/kg","visibility":"m","snow_depth":"m","relative_humidity_2m":"%","dew_point_2m":"°C","cloud_cover_low":"%"}.get(field)
-                    vals.append(round(v,3 if field=="snow_depth" else 1) if numeric(v) and (expected is None or unit==expected) else None)
+                    expected={"rain":"mm","showers":"mm","snowfall":"cm","cape":"J/kg","visibility":"m","snow_depth":"m","relative_humidity_2m":"%","dew_point_2m":"°C","cloud_cover_low":"%","convective_inhibition":"J/kg","vertical_velocity_700hPa":"m/s"}.get(field)
+                    vals.append(round(v,5 if field=="lightning_density" else 3 if field in ("snow_depth","vertical_velocity_700hPa") else 1) if numeric(v) and (expected is None or unit==expected) and (field!="lightning_density" or (v>=0 and isinstance(unit,str) and ("km" in unit or "flash" in unit))) else None)
                 values.append(vals)
             rows.append(values)
         time.sleep(.3)
@@ -81,7 +87,7 @@ def build(name,code,pts):
     if len(good)<25 or not all(i in good for i in range(1,25)):raise ValueError("Insufficient hourly temperature coverage")
     doc={"schema":1,"model":name,"provider":"Open-Meteo","fetched_utc":now.isoformat(),"points":pts,"times":[t+"Z" for t in times],"rows":rows,"fields":FIELDS,"grid_degrees":.58}
     tmp=OUT/(name+".tmp");tmp.write_text(json.dumps(doc,separators=(",",":"),allow_nan=False));tmp.replace(OUT/(name+".json"))
-    print(name,len(pts),len(good),"hours",flush=True)
+    print(name,len(pts),len(good),"hours", {f:sum(r[i][FIELDS.index(f)] is not None for r in rows for i in good) for f in STORM_FIELDS},flush=True)
 def main():
     OUT.mkdir(parents=True,exist_ok=True);pts=points();ok=0
     for name,code in MODELS.items():
