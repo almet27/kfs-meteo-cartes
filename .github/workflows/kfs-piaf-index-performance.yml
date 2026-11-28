@@ -1,0 +1,30 @@
+name: KFS PIAF lightweight index performance
+on:
+  workflow_dispatch:
+  push:
+    paths: ['.github/workflows/kfs-piaf-index-performance.yml']
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - name: Measure real PIAF index and native cached PNG
+        run: |
+          python - <<'PY'
+          import urllib.request,json,time,struct
+          root='https://kfs-meteo.fr/api/piaf/'
+          def get(path):
+              t=time.monotonic()
+              with urllib.request.urlopen(root+path,timeout=15) as r:
+                  b=r.read();print('HTTP',path,r.status,len(b),'bytes',round((time.monotonic()-t)*1000),'ms',flush=True)
+                  return b
+          b=get('index.json');d=json.loads(b)
+          assert len(b)<15000 and d['schema']==1 and d['frames']
+          assert all('png' not in f for f in d['frames'])
+          f=d['frames'][min(1,len(d['frames'])-1)]
+          p=get('cached/'+f['file'])
+          assert p.startswith(b'\x89PNG\r\n\x1a\n') and struct.unpack('>II',p[16:24])==(730,735)
+          print('PASS',d['render'],len(d['frames']),f['valid_utc'],flush=True)
+          PY
