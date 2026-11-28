@@ -13,8 +13,8 @@ from eccodes import codes_grib_new_from_file, codes_get, codes_get_array, codes_
 BASE = "https://meteofrance-pnt.s3.rbx.io.cloud.ovh.net/pnt/"
 OUT = Path("arome-reflectivity")
 BOUNDS = (-6., 10., 41., 52.)
-LEVELS = [5,10,15,20,25,30,35,40,45,50,55,60,65]
-COLORS = ["#263f80","#2869b1","#42a9e0","#3cbd9b","#28a34d","#a6d739","#f2df32","#ffae22","#f57b20","#e73b38","#b9184b","#be38ba","#f0c8ff"]
+LEVELS = [-5,0,5,10,15,20,25,30,35,40,45,50,55,60,65]
+COLORS = ["#415477","#526e9c","#263f80","#2869b1","#42a9e0","#3cbd9b","#28a34d","#a6d739","#f2df32","#ffae22","#f57b20","#e73b38","#b9184b","#be38ba","#f0c8ff"]
 def url(run,h):
     t=run.strftime("%Y-%m-%dT%H:00:00Z")
     return f"{BASE}{t}/arome/001/SP2/arome__001__SP2__{h:02d}H__{t}.grib2"
@@ -58,7 +58,7 @@ def image_for(run,h,tmp):
                     im=Image.fromarray(raster,mode="P");im.putpalette(palette+[0]*(768-len(palette)))
                     name=f"reflect-{run:%Y%m%d%H}-h{h:02d}.png"
                     im.save(OUT/name,transparency=0,optimize=True)
-                    print("AROME HD",h,"valid",round(float(good.mean()),3),"max dBZ",float(np.max(db)),flush=True)
+                    print("AROME HD",h,"units",units,"valid",round(float(good.mean()),3),"max dBZ",float(np.max(db)),"echo fractions", {str(v):round(float(np.mean(good & (db>=v))),5) for v in (-5,0,5,10,20,30,40)},flush=True)
                     return {"hour":h,"valid_utc":(run+timedelta(hours=h)).isoformat(),"file":name}
                 finally:codes_release(g)
         raise ValueError("SP2 reflectivity field missing")
@@ -71,12 +71,12 @@ def main():
     if old.exists():
         try:
             prev=json.loads(old.read_text())
-            if prev["run_utc"]==run.isoformat() and len(prev["frames"])>=48:
+            if prev.get("render_version")==2 and prev["run_utc"]==run.isoformat() and len(prev["frames"])>=48:
                 print("Already published");return
         except (ValueError,KeyError):pass
     horizon=51 if exists(run,51) else 48
     with TemporaryDirectory() as tmp,ThreadPoolExecutor(max_workers=3) as pool:
         frames=list(pool.map(lambda h:image_for(run,h,tmp),range(1,horizon+1)))
-    doc={"schema":1,"run_utc":run.isoformat(),"generated_utc":now.isoformat(),"resolution_degrees":.01,"source":"Météo-France ARÔME HD SP2","unit":"dBZ","bounds":BOUNDS,"levels":LEVELS,"colors":COLORS,"frames":frames}
+    doc={"schema":1,"render_version":2,"run_utc":run.isoformat(),"generated_utc":now.isoformat(),"resolution_degrees":.01,"source":"Météo-France ARÔME HD SP2","unit":"dBZ","bounds":BOUNDS,"levels":LEVELS,"colors":COLORS,"frames":frames}
     (OUT/"manifest.json").write_text(json.dumps(doc,indent=2))
 if __name__=="__main__":main()
