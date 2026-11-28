@@ -202,8 +202,8 @@ def main(model):
         if candidates and model=="icon":break
         if candidates and candidates[-1][2]==48:break
     if not candidates:raise RuntimeError("No complete recent cycle")
-    # Prefer the latest full-range cycle; do not extend a run beyond its real lead time.
-    run,start,end=max(candidates,key=lambda c:(c[0]+timedelta(hours=c[2]),c[0]))
+    # Prefer the freshest usable cycle (at least 24 hours ahead). A longer older cycle must not override it.
+    run,start,end=max(candidates,key=lambda c:(c[0],c[2]))
     if previous.get("render_version")==2 and previous.get("run_utc")==run.isoformat() and previous.get("numeric_archive") and previous.get("frames") and max(datetime.fromisoformat(f["valid_utc"]) for f in previous["frames"])>=run+timedelta(hours=end):
         print("Already published");return
     grid=icon_grid(run) if model=="icon" else None
