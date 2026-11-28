@@ -96,7 +96,15 @@ def extract(url,run,h,model,field=None,grid=None):
                 valid=run+timedelta(hours=h)
                 if key(g,"validityDate")!=int(valid.strftime("%Y%m%d")) or key(g,"validityTime")!=valid.hour*100:continue
                 if key(g,"stepType")!="accum" or hours(key(g,"endStep"))!=h:continue
-                if str(key(g,"units","")).replace(" ","") not in ("kgm**-2","kgm-2","kg/m^2","kg/m2","mm"):raise ValueError("Unexpected unit "+repr(key(g,"units",""))+" for "+model+" "+str(field)+" "+str(key(g,"shortName"))+" at "+str(h)+"; no conversion assumed")
+                unit=str(key(g,"units","")).replace(" ","")
+                # DWD ICON-D2 output table explicitly defines RAIN_GSP/RAIN_CON
+                # as accumulated kg/m² for GRIB 0/1/77 and 0/1/76 with accum.
+                # ecCodes generic names/units describe the rate form of these IDs.
+                dwd_accum=(model=="icon" and key(g,"centre")=="edzw" and key(g,"stepType")=="accum"
+                    and (key(g,"discipline"),key(g,"parameterCategory"),key(g,"parameterNumber"))==(0,1,{"RAIN_GSP":77,"RAIN_CON":76}.get(field,-1))
+                    and unit=="kgm**-2s**-1")
+                if not dwd_accum and unit not in ("kgm**-2","kgm-2","kg/m^2","kg/m2","mm"):raise ValueError("Unexpected unit "+repr(key(g,"units",""))+" for "+model+" "+str(field)+" "+str(key(g,"shortName"))+" at "+str(h))
+                if dwd_accum:print("DWD documented accumulated rainfall unit",field,h,flush=True)
                 codes_set(g,"missingValue",1e30)
                 v=np.asarray(codes_get_array(g,"values"))
                 if model=="icon":
