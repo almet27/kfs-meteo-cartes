@@ -23,7 +23,7 @@ jobs:
             const start=Date.now();await p.goto('https://kfs-meteo.fr/#accueil',{waitUntil:'commit'});
             await p.locator('#present-zoom-in').waitFor({state:'visible'});
             const read=()=>p.evaluate(()=>{const v=document.getElementById('obs-stations-view'),fast=document.querySelector('#kfs-piaf-fast-map:not([hidden]) svg'),model=document.querySelector('#obs-mf-map:not([hidden]) svg'),svg=fast||model||document.getElementById('obs-svg');return {t:Math.round(performance.now()),width:svg.viewBox.baseVal.width,hour:document.getElementById('obs-hour').value,ready:window.kfsEarlyLive?.ready,controls:window.kfsLiveControlsReadyAt||null,view:v.dataset.kfsPiafFast}});
-            const before=await read();await p.locator('#present-zoom-in').tap({timeout:30000});const zoom=await read();console.log('WEBKIT ZOOM',JSON.stringify({before,zoom,elapsed:Date.now()-start}));
+            await p.locator('#present-zoom-in').scrollIntoViewIfNeeded();const before=await read();const pressed=Date.now();await p.locator('#present-zoom-in').tap({timeout:30000});const zoom=await read();console.log('WEBKIT ZOOM',JSON.stringify({before,zoom,elapsed:Date.now()-start,tapMs:Date.now()-pressed}));
             await p.locator('#obs-hour-next').tap({timeout:30000});const hour=await read();console.log('WEBKIT HOUR',JSON.stringify(hour));
             await p.waitForFunction(()=>window.kfsEarlyLive?.ready===true,null,{timeout:30000});console.log('WEBKIT READY',JSON.stringify(await read()));
             console.log('WEBKIT ERRORS',JSON.stringify(errors));if(errors.length)throw Error('Browser errors');if(zoom.width>=before.width||Number(hour.hour)<=Number(before.hour))throw Error('Touch controls did not respond');
